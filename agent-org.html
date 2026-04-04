@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Jason's AI Agent Team</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0b0c10;
+    color: #e5e7eb;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 60px 24px 80px;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background glows */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -200px; left: 50%;
+    transform: translateX(-50%);
+    width: 800px; height: 600px;
+    background: radial-gradient(ellipse, rgba(99,102,241,0.07) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 1000px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  /* ── SECTION HEADER ───────────────────────────────── */
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin: 28px 0 20px;
+  }
+
+  .section-label .line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.08), transparent);
+  }
+
+  .section-label .text {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: #6b7280;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ── CONNECTOR LINES ──────────────────────────────── */
+  .connector-v {
+    width: 1px;
+    height: 32px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.1), rgba(255,255,255,0.03));
+    margin: 0 auto;
+  }
+
+  .connector-fork {
+    width: 100%;
+    max-width: 580px;
+    height: 32px;
+    position: relative;
+    margin: 0 auto;
+  }
+
+  .connector-fork::before {
+    content: '';
+    position: absolute;
+    left: 50%; top: 0;
+    width: 1px; height: 100%;
+    background: rgba(255,255,255,0.08);
+  }
+
+  .connector-fork::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0;
+    top: 50%;
+    height: 1px;
+    background: rgba(255,255,255,0.08);
+  }
+
+  /* ── FLOW DIVIDER ─────────────────────────────────── */
+  .flow-divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    margin: 24px 0;
+  }
+
+  .flow-divider .line { flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+
+  .flow-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: #4b5563;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* ── AGENT CARD ───────────────────────────────────── */
+  .card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 18px;
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(8px);
+    transition: border-color 0.2s, transform 0.2s;
+    cursor: default;
+  }
+
+  .card:hover {
+    border-color: rgba(255,255,255,0.14);
+    transform: translateY(-2px);
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .card:hover::before { opacity: 1; }
+
+  /* Glow variants */
+  .card.glow-indigo { box-shadow: 0 0 60px rgba(99,102,241,0.08); }
+  .card.glow-green  { box-shadow: 0 0 60px rgba(34,197,94,0.08); }
+  .card.glow-orange { box-shadow: 0 0 60px rgba(249,115,22,0.08); }
+  .card.glow-cyan   { box-shadow: 0 0 60px rgba(6,182,212,0.08); }
+  .card.glow-purple { box-shadow: 0 0 60px rgba(168,85,247,0.08); }
+  .card.glow-pink   { box-shadow: 0 0 60px rgba(236,72,153,0.08); }
+  .card.glow-blue   { box-shadow: 0 0 60px rgba(59,130,246,0.08); }
+
+  .card-inner {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .avatar {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .card-body { flex: 1; min-width: 0; }
+
+  .card-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #f9fafb;
+    margin-bottom: 2px;
+  }
+
+  .card-title {
+    font-size: 13px;
+    color: #9ca3af;
+    margin-bottom: 8px;
+  }
+
+  .card-desc {
+    font-size: 12px;
+    color: #6b7280;
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .tag {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+  }
+
+  .tag-teal  { background: rgba(45,212,191,0.12); color: #2dd4bf; }
+  .tag-orange{ background: rgba(251,146,60,0.12);  color: #fb923c; }
+  .tag-indigo{ background: rgba(129,140,248,0.12); color: #818cf8; }
+  .tag-green { background: rgba(74,222,128,0.12);  color: #4ade80; }
+  .tag-purple{ background: rgba(192,132,252,0.12); color: #c084fc; }
+  .tag-pink  { background: rgba(244,114,182,0.12); color: #f472b6; }
+  .tag-blue  { background: rgba(96,165,250,0.12);  color: #60a5fa; }
+
+  .card-cta {
+    position: absolute;
+    bottom: 14px; right: 18px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #374151;
+    transition: color 0.2s;
+  }
+
+  .card:hover .card-cta { color: #6b7280; }
+
+  /* ── LAYOUT ROWS ──────────────────────────────────── */
+  .row-center {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    width: 100%;
+    max-width: 680px;
+  }
+
+  .row-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    width: 100%;
+  }
+
+  .row-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    width: 100%;
+  }
+
+  /* Wide center card */
+  .card-wide { width: 100%; max-width: 520px; }
+
+  @media (max-width: 900px) {
+    .row-4 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .row-2, .row-4, .row-3 { grid-template-columns: 1fr; }
+    .card-wide { max-width: 100%; }
+    body { padding: 32px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── TIER 1: DEVIN ─────────────────────────────────── -->
+  <div class="row-center">
+    <div class="card glow-indigo card-wide">
+      <div class="card-inner">
+        <div class="avatar" style="background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.25);">🛠️</div>
+        <div class="card-body">
+          <div class="card-name">Devin</div>
+          <div class="card-title">Project Overseer</div>
+          <div class="card-desc">Coordinates the team, keeps the big picture. First point of contact for new projects and cross-agent strategy.</div>
+          <div class="tags">
+            <span class="tag tag-indigo">Coordination</span>
+            <span class="tag tag-indigo">Strategy</span>
+            <span class="tag tag-indigo">Oversight</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-cta">AGENT CARD →</div>
+    </div>
+  </div>
+
+  <div class="connector-v"></div>
+
+  <!-- OPERATIONS SECTION LABEL -->
+  <div class="section-label">
+    <div class="line"></div>
+    <div class="text">💻 OPERATIONS</div>
+    <div class="line"></div>
+  </div>
+
+  <!-- ── TIER 2: TRADERCLAW + WEBCLAW ──────────────────── -->
+  <div class="row-2" style="max-width:680px; margin: 0 auto;">
+
+    <div class="card glow-green">
+      <div class="card-inner">
+        <div class="avatar" style="background: rgba(34,197,94,0.15); border-color: rgba(34,197,94,0.25);">📈</div>
+        <div class="card-body">
+          <div class="card-name">TraderClaw</div>
+          <div class="card-title">Trading Bot</div>
+          <div class="card-desc">Monitors markets, executes paper trades, runs the Hyperliquid pipeline and Polymarket shadow bot.</div>
+          <div class="tags">
+            <span class="tag tag-green">Trading</span>
+            <span class="tag tag-teal">Signals</span>
+            <span class="tag tag-orange">Polymarket</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-cta">AGENT CARD →</div>
+    </div>
+
+    <div class="card glow-blue">
+      <div class="card-inner">
+        <div class="avatar" style="background: rgba(59,130,246,0.15); border-color: rgba(59,130,246,0.25);">🌐</div>
+        <div class="card-body">
+          <div class="card-name">WebClaw</div>
+          <div class="card-title">Web Developer</div>
+          <div class="card-desc">Builds demo sites for local Nanaimo businesses. Generate, deploy, pitch — live URL in minutes.</div>
+          <div class="tags">
+            <span class="tag tag-blue">Design</span>
+            <span class="tag tag-teal">Deploy</span>
+            <span class="tag tag-blue">Pitch</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-cta">AGENT CARD →</div>
+    </div>
+
+  </div>
+
+  <!-- FLOW DIVIDER -->
+  <div class="flow-divider" style="max-width:680px; width:100%; margin-top:28px;">
+    <div class="line"></div>
+    <div class="flow-label">↓ INPUT SIGNAL</div>
+    <div class="line"></div>
+    <div class="flow-label">OUTPUT ACTION ↓</div>
+    <div class="line"></div>
+  </div>
+
+  <!-- EXECUTION SECTION LABEL -->
+  <div class="section-label">
+    <div class="line"></div>
+    <div class="text">⚡ EXECUTION LAYER</div>
+    <div class="line"></div>
+  </div>
+
+  <!-- ── TIER 3: EXECUTION AGENTS ──────────────────────── -->
+  <div class="row-4">
+
+    <div class="card glow-cyan">
+      <div class="card-inner">
+        <div class="avatar" style="background: rgba(6,182,212,0.15); border-color: rgba(6,182,212,0.25);">🐦</div>
+        <div class="card-body">
+          <div class="card-name">X-Hunter</div>
+          <div class="card-title">Social Scout</div>
+          <div class="card-desc">Scans X for crypto trends, drafts replies, tracks key accounts.</div>
+          <div class="tags">
+            <span class="tag tag-teal">Trends</span>
+            <span class="tag tag-orange">Radar</span>
+            <span class="tag tag-teal">Signals</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-cta">AGENT CARD →</div>
+    </div>
+
+    <div class="card glow-orange">
+      <div class="card-inner">
+        <div class="avatar" style="background: rgba(249,115,22,0.15); border-color: rgba(249,115,22,0.25);">⚙️</div>
+        <div class="card-body">
+          <div class="card-name">Forge</div>
+          <div class="card-title">Dev Agent</div>
+          <div class="card-desc">Writes code, debugs, ships features. General-purpose developer.</div>
+          <div class="tags">
+            <span class="tag tag-orange">Coding</span>
+            <span class="tag tag-teal">DevOps</span>
+            <span class="tag tag-orange">Build</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-cta">AGENT CARD →</div>
+    </div>
+
+    <div class="card glow-purple">
+      <div class="card-inner">
+        <div class="avatar" style="background: rgba(168,85,247,0.15); border-color: rgba(168,85,247,0.25);">✨</div>
+        <div class="card-body">
+          <div class="card-name">Lyra</div>
+          <div class="card-title">Innerverse</div>
+          <div class="card-desc">Crafts narrative, builds world lore, writes chapters for the Innerverse project.</div>
+          <div class="tags">
+            <span class="tag tag-purple">Creative</span>
+            <span class="tag tag-purple">Lore</span>
+            <span class="tag tag-pink">Voice</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-cta">AGENT CARD →</div>
+    </div>
+
+    <div class="card glow-pink">
+      <div class="card-inner">
+        <div class="avatar" style="background: rgba(236,72,153,0.15); border-color: rgba(236,72,153,0.25);">🤖</div>
+        <div class="card-body">
+          <div class="card-name">XBot</div>
+          <div class="card-title">X Publisher</div>
+          <div class="card-desc">Posts to @DiamondHands811, reposts content, engages with replies on X.</div>
+          <div class="tags">
+            <span class="tag tag-pink">Posting</span>
+            <span class="tag tag-orange">Reach</span>
+            <span class="tag tag-pink">Engage</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-cta">AGENT CARD →</div>
+    </div>
+
+  </div>
+
+  <!-- SYSTEM LAYER -->
+  <div class="section-label" style="margin-top: 36px;">
+    <div class="line"></div>
+    <div class="text">🔒 SYSTEM LAYER</div>
+    <div class="line"></div>
+  </div>
+
+  <div class="row-2" style="max-width:680px; margin: 0 auto;">
+    <div class="card" style="border-color:rgba(100,116,139,0.2);">
+      <div class="card-inner">
+        <div class="avatar" style="background:rgba(100,116,139,0.15);border-color:rgba(100,116,139,0.25);">👑</div>
+        <div class="card-body">
+          <div class="card-name">FatherClaw</div>
+          <div class="card-title">Orchestrator</div>
+          <div class="card-desc">Routes tasks between all agents, monitors agent health, and manages cross-agent workflows. Jason's system-wide air traffic control.</div>
+          <div class="tags">
+            <span class="tag tag-indigo">Routing</span>
+            <span class="tag tag-teal">Health</span>
+            <span class="tag tag-indigo">Workflows</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-cta">AGENT CARD →</div>
+    </div>
+    <div class="card" style="border-color:rgba(239,68,68,0.15);">
+      <div class="card-inner">
+        <div class="avatar" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.2);">🛡</div>
+        <div class="card-body">
+          <div class="card-name">Guardian</div>
+          <div class="card-title">Security</div>
+          <div class="card-desc">Monitors gateway access, reviews auth logs, and keeps the OpenClaw system locked down. Silent and watchful.</div>
+          <div class="tags">
+            <span class="tag" style="background:rgba(239,68,68,0.12);color:#fca5a5;">Security</span>
+            <span class="tag" style="background:rgba(239,68,68,0.12);color:#fca5a5;">Auth</span>
+            <span class="tag" style="background:rgba(239,68,68,0.12);color:#fca5a5;">Gateway</span>
+          </div>
+        </div>
+      </div>
+      <div class="card-cta">AGENT CARD →</div>
+    </div>
+  </div>
+
+  <!-- META LAYER -->
+  <div class="section-label" style="margin-top: 36px;">
+    <div class="line"></div>
+    <div class="text">⬡ META LAYER — OPENCLAW GATEWAY</div>
+    <div class="line"></div>
+  </div>
+
+  <div class="row-3">
+
+    <div class="card" style="border-color: rgba(255,255,255,0.05);">
+      <div class="card-inner">
+        <div class="avatar" style="background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.08); font-size:18px;">🧠</div>
+        <div class="card-body">
+          <div class="card-name" style="font-size:14px;">Memory</div>
+          <div class="card-title" style="font-size:12px;">Persistent Context</div>
+          <div class="card-desc">MEMORY.md + daily notes. Each agent retains context across sessions.</div>
+          <div class="tags">
+            <span class="tag tag-teal">MEMORY.md</span>
+            <span class="tag tag-indigo">Sessions</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="border-color: rgba(255,255,255,0.05);">
+      <div class="card-inner">
+        <div class="avatar" style="background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.08); font-size:18px;">📡</div>
+        <div class="card-body">
+          <div class="card-name" style="font-size:14px;">Gateway</div>
+          <div class="card-title" style="font-size:12px;">localhost:18789</div>
+          <div class="card-desc">Routes messages, manages agent sessions, handles Telegram bindings.</div>
+          <div class="tags">
+            <span class="tag tag-orange">Railway</span>
+            <span class="tag tag-teal">Telegram</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="border-color: rgba(255,255,255,0.05);">
+      <div class="card-inner">
+        <div class="avatar" style="background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.08); font-size:18px;">⚡</div>
+        <div class="card-body">
+          <div class="card-name" style="font-size:14px;">Models</div>
+          <div class="card-title" style="font-size:12px;">AI Providers</div>
+          <div class="card-desc">Claude Sonnet (default) · GPT-5.4 (WebClaw) · Anthropic + OpenAI.</div>
+          <div class="tags">
+            <span class="tag tag-indigo">Claude</span>
+            <span class="tag tag-green">GPT-5.4</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>

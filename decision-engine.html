@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Decision Engine — @DiamondHands811</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace; background:#09090b; color:#e4e4e7; margin:0; }
+  input::placeholder { color:#3f3f46; }
+  input:focus { outline:none; }
+  .pill-green { background:rgba(6,78,59,0.5); color:#6ee7b7; border:1px solid rgba(16,185,129,0.4); }
+  .pill-red   { background:rgba(127,29,29,0.5); color:#fca5a5; border:1px solid rgba(239,68,68,0.4); }
+  .pill-amber { background:rgba(120,53,15,0.5); color:#fcd34d; border:1px solid rgba(245,158,11,0.4); }
+  .pill-blue  { background:rgba(12,74,110,0.5); color:#7dd3fc; border:1px solid rgba(14,165,233,0.4); }
+  .pill-gray  { background:rgba(39,39,42,0.8);  color:#a1a1aa; border:1px solid rgba(63,63,70,0.5); }
+  .check-yes { background:#10b981; border-color:#10b981; color:#000; }
+  .check-no  { background:#ef4444; border-color:#ef4444; color:#fff; }
+  .check-skip{ background:#3f3f46; border-color:#52525b; color:#a1a1aa; }
+  .btn-yes-active { background:rgba(6,78,59,0.6); color:#6ee7b7; border-color:#10b981; }
+  .btn-no-active  { background:rgba(127,29,29,0.6); color:#fca5a5; border-color:#ef4444; }
+  .btn-skip-active{ background:#3f3f46; color:#d4d4d8; border-color:#52525b; }
+  .row-yes { background:rgba(5,46,22,0.1); }
+  .row-no  { background:rgba(69,10,10,0.1); }
+  scrollbar-width: thin;
+  ::-webkit-scrollbar { width:4px; height:4px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:#3f3f46; border-radius:2px; }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+
+const TAG_STYLE = {
+  X:{bg:"#1d4ed820",border:"#3b82f6",text:"#93c5fd"},
+  TG:{bg:"#0369a120",border:"#0ea5e9",text:"#7dd3fc"},
+  GOOGLE:{bg:"#15803d20",border:"#22c55e",text:"#86efac"},
+  CMC:{bg:"#c2410c20",border:"#f97316",text:"#fdba74"},
+  MEXC:{bg:"#7c3aed20",border:"#a78bfa",text:"#c4b5fd"},
+  TV:{bg:"#0f766e20",border:"#14b8a6",text:"#5eead4"},
+  RSI:{bg:"#b4520920",border:"#d97706",text:"#fcd34d"},
+  SC:{bg:"#4338ca20",border:"#818cf8",text:"#a5b4fc"},
+  TA:{bg:"#05966920",border:"#10b981",text:"#6ee7b7"},
+  ETF:{bg:"#0e749020",border:"#06b6d4",text:"#67e8f9"},
+  FUTURES:{bg:"#be123c20",border:"#f43f5e",text:"#fda4af"},
+  SECTORS:{bg:"#92400e20",border:"#f59e0b",text:"#fbbf24"},
+  ALERTS:{bg:"#6b21a820",border:"#a855f7",text:"#d8b4fe"},
+  CORR:{bg:"#1e3a5f20",border:"#3b82f6",text:"#93c5fd"},
+  SCAN:{bg:"#064e3b20",border:"#059669",text:"#34d399"},
+  DERIV:{bg:"#7f1d1d20",border:"#ef4444",text:"#fca5a5"},
+  CRYPTOPY:{bg:"#1c191720",border:"#78716c",text:"#a8a29e"},
+  SENT:{bg:"#1e293b20",border:"#64748b",text:"#94a3b8"},
+};
+
+const OT_TEMPLATE = [
+  {id:"fib_618",label:".618 — Fib level plotted and noted",hint:"Most common reversal zone.",weight:3},
+  {id:"fib_65",label:".65 — Fib level plotted and noted",hint:"Upper edge of the golden pocket.",weight:3},
+  {id:"fib_gp",label:"Golden Pocket (.618 to .65) identified",hint:"Highest probability long entry on a pullback.",weight:4},
+  {id:"fib_5",label:".5 — Mid level plotted and noted",hint:"Equilibrium.",weight:2},
+  {id:"fib_786",label:".786 — Deep retrace level plotted",hint:"If price is here, trend strength is weakening.",weight:2},
+  {id:"vp_os",label:"Oversold zone identified (low volume node)",hint:"Price below VAL = discount territory.",weight:3},
+  {id:"vp_poc",label:"POC (Point of Control) marked",hint:"Highest volume node. Magnetic draw.",weight:4},
+  {id:"vp_ob",label:"Overbought zone identified (high volume node)",hint:"Price above VAH = premium territory.",weight:3},
+  {id:"vp_pos",label:"Price position vs VP (discount / FV / premium)",hint:"Know where price sits.",weight:3},
+  {id:"sr_key",label:"Key support level identified below price",hint:"Where will buyers step in on a pullback?",weight:3},
+  {id:"sr_res",label:"Key resistance level identified above price",hint:"Where will sellers push back?",weight:3},
+  {id:"sr_flip",label:"Flip zone identified (S turned R or R turned S)",hint:"High-conviction levels.",weight:4},
+  {id:"sr_clear",label:"Price has clear path to next resistance",hint:"No major clusters between entry and first TP.",weight:3},
+  {id:"ms_trend",label:"Trend direction confirmed (HH/HL or LH/LL)",hint:"HH+HL = uptrend. LH+LL = downtrend.",weight:4},
+  {id:"ms_bos",label:"Break of Structure (BOS) identified",hint:"Confirmed BOS = trend continuation signal.",weight:4},
+  {id:"ms_bo",label:"Potential breakout setup visible on chart",hint:"Price coiling at resistance.",weight:3},
+  {id:"ms_choch",label:"No CHoCH (Change of Character) against you",hint:"A CHoCH in opposite direction = potential reversal.",weight:4},
+  {id:"ms_range",label:"Range or consolidation zone mapped",hint:"Mark the high and low.",weight:2},
+];
+
+const OT_TOKENS = [
+  {prefix:"btc",label:"BITCOIN",sub:"Review your BTC drawings on TradingView."},
+  {prefix:"usdtd",label:"USDT.D",sub:"Review your USDT.D drawings on TradingView."},
+  {prefix:"total",label:"TOTAL",sub:"Review your TOTAL market cap drawings on TradingView."},
+  {prefix:"btcd",label:"BTC.D",sub:"Review your BTC.D drawings on TradingView."},
+];
+
+const COMPUTER_USE_GROUPS = [
+  {id:"cu_tv",label:"TRADINGVIEW CHARTS",links:[
+    {id:"cu_dom",label:"Market Dominance",url:"https://www.tradingview.com/chart/uwHQFIja/"},
+    {id:"cu_spec",label:"All Market Spectrum",url:"https://www.tradingview.com/chart/tDSfdLfo/?symbol=SP%3ASPX"},
+    {id:"cu_oi",label:"Global OI Layout",url:"https://www.tradingview.com/chart/UBsUirLO/"},
+    {id:"cu_sum",label:"Market Summary",url:"https://www.tradingview.com/#main-market-summary"},
+  ]},
+  {id:"cu_cmc",label:"COINMARKETCAP",links:[
+    {id:"cu_cov",label:"Crypto Market Overview",url:"https://coinmarketcap.com/charts/"},
+    {id:"cu_lead",label:"Leaderboards",url:"https://coinmarketcap.com/best-cryptos/"},
+  ]},
+  {id:"cu_macro",label:"MACRO & MARKETS",links:[
+    {id:"cu_cnbc",label:"CNBC",url:"https://www.cnbc.com/"},
+    {id:"cu_fut",label:"Futures Market Overview",url:"https://www.barchart.com/futures"},
+    {id:"cu_idx",label:"Indexes",url:"https://tradingeconomics.com/stocks"},
+    {id:"cu_cur",label:"Currencies",url:"https://tradingeconomics.com/currencies"},
+  ]},
+  {id:"cu_moon",label:"MOON PHASES",links:[
+    {id:"cu_moon1",label:"Moon Phases",url:"https://www.timeanddate.com/moon/phases/"},
+  ]},
+];
+
+const MTD_GROUPS = [
+  {id:"mtd_news",label:"NEWS & ANALYSIS",sub:"Run your bots and agents first.",items:[
+    {id:"n_gpt",label:"GPT TA Agent — Screenshot BTC, USDT.D, TOTAL, BTC.D",hint:"Run your GPT TA agent.",weight:4},
+    {id:"n_4h",label:"4H Chart-IMG Bot — Check latest output",hint:"Pull the latest 4H chart image.",weight:3},
+    {id:"n_auto",label:"Automation for Cryptocurrency — Check latest update",hint:"Run or check the automation.",weight:3},
+    {id:"n_news",label:"CoinTrendsZBot — Run /news command",hint:"Read the latest crypto news.",weight:3},
+  ]},
+  {id:"mtd_vol",label:"VOLUME ANALYSIS",sub:"ETF inflows, CVD vs OI, volume template, funding rates.",items:[
+    {id:"etf_pos",label:"ETF inflows positive in the last 24H",hint:"Positive = institutional demand.",weight:4},
+    {id:"etf_size",label:"ETF inflow size is meaningful (not tiny)",hint:"Large inflow day ($200M+) = strong conviction.",weight:2},
+    {id:"cvd_oi",label:"CVD vs OI checked on CoinAnk",hint:"Are they diverging or converging?",weight:4},
+    {id:"cvd_read",label:"CVD and OI relationship noted",hint:"Converging = confirms the move.",weight:3},
+    {id:"vol_tmpl",label:"Volume template reviewed on TradingView",hint:"Does volume support price action?",weight:3},
+    {id:"vol_spike",label:"Volume spike present on the key candle",hint:"High volume on breakout = real participation.",weight:3},
+    {id:"vol_dry",label:"Volume dried up on the pullback",hint:"Low volume retrace = weak selling pressure.",weight:3},
+    {id:"fund_chk",label:"Funding rate checked on Coinglass (BTC)",hint:"Check before entering.",weight:4,link:"https://www.coinglass.com/FundingRate/BTC"},
+    {id:"fund_ok",label:"Funding rate is not extreme (below 0.05%/8H)",hint:"High positive funding = longs overcrowded.",weight:3},
+  ]},
+  {id:"mtd_qual",label:"QUALITATIVE ANALYSIS",sub:"Check X, TradingView Ideas, and Telegram bot.",items:[
+    {id:"q_x",label:"X — Check sentiment and narrative",hint:"What are traders saying right now?",weight:3},
+    {id:"q_tv",label:"TradingView Ideas — Check published ideas",hint:"Read recent TV ideas on BTC.",weight:3},
+    {id:"q_bot",label:"Telegram Bot — Run /ideas command",hint:"Run /ideas and compare against your analysis.",weight:3},
+  ]},
+];
+
+const BTC_STRATEGY_GROUPS = [
+  {id:"bsg_price",label:"PRICE & OVERVIEW",links:[
+    {id:"bs_cmc",label:"CoinMarketCap BTC",url:"https://coinmarketcap.com/currencies/bitcoin/"},
+    {id:"bs_tv",label:"TradingView Overview",url:"https://www.tradingview.com/symbols/BTCUSDT.P/"},
+    {id:"bs_bc",label:"Barchart — BTC Price History",url:"https://www.barchart.com/crypto/quotes/%5EBTCUSD/price-history/historical"},
+  ]},
+  {id:"bsg_flow",label:"ORDER FLOW",links:[
+    {id:"bs_ob",label:"Orderbook (Futures)",url:"https://www.coinglass.com/mergev2/BTC-USDT"},
+    {id:"bs_ls",label:"Longs vs Shorts",url:"https://www.coinglass.com/LongShortRatio"},
+    {id:"bs_vol",label:"Daily Exchange Volume (7DMA)",url:"https://www.theblock.co/data/crypto-markets/spot/total-exchange-volume-daily/embed"},
+  ]},
+  {id:"bsg_ta",label:"TECHNICAL ANALYSIS",links:[
+    {id:"bs_ta",label:"BTC Technical Analysis",url:"https://coinalyze.net/bitcoin/technical-analysis/"},
+    {id:"bs_sum",label:"Indicators Summary",url:"https://www.tradingview.com/symbols/BTCUSD/technicals/"},
+    {id:"bs_sca",label:"Superchart — Coinalyze",url:"https://coinalyze.net/bitcoin/usd/binance/btcusd_perp/price-chart-live/"},
+    {id:"bs_scg",label:"Superchart — Coinglass",url:"https://www.coinglass.com/tv/Binance_BTCUSDT"},
+  ]},
+  {id:"bsg_onchain",label:"ON-CHAIN & SENTIMENT",links:[
+    {id:"bs_cq",label:"CryptoQuant — Featured Indicators",url:"https://cryptoquant.com/asset/btc/summary"},
+    {id:"bs_gn",label:"Glassnode — Active Addresses",url:"https://studio.glassnode.com/charts/addresses.ActiveCount?a=BTC&chartStyle=column&resolution=1month"},
+    {id:"bs_gt",label:"Google Trends (BTC)",url:"https://trends.google.com/trends/explore?date=today%203-m&geo=CA&q=bitcoin&hl=en"},
+  ]},
+  {id:"bsg_exc",label:"EXCHANGES",links:[
+    {id:"bs_exc",label:"Top Cryptocurrency Spot Exchanges",url:"https://coinmarketcap.com/rankings/exchanges/"},
+  ]},
+];
+
+const ALT_RESEARCH_GROUPS = [
+  {id:"ar_market",label:"MARKET OVERVIEW",links:[
+    {id:"ar_bub",label:"Crypto Bubbles",url:"https://cryptobubbles.net/"},
+    {id:"ar_sec",label:"Cryptocurrency Sectors — 24H Change",url:"https://coinmarketcap.com/cryptocurrency-category/"},
+  ]},
+  {id:"ar_etf",label:"ETF & POSITIONING",links:[
+    {id:"ar_etf2",label:"ETF Tracker (ETH)",url:"https://coinank.com/etf/EthEtf"},
+    {id:"ar_pos",label:"Top Futures Trader Positions",url:"https://www.coinglass.com/position"},
+  ]},
+  {id:"ar_scan",label:"SCREENERS",links:[
+    {id:"ar_btr",label:"Better Crypto Scanner",url:"https://bettertrader.io/cryptoscanner"},
+    {id:"ar_rsi",label:"RSI Heatmap",url:"https://coinank.com/chart/derivatives/rsi-map"},
+    {id:"ar_vis",label:"Crypto Derivatives Visual Screener",url:"https://coinank.com/chart/derivatives/visual-map"},
+  ]},
+];
+
+const ALT_LIST = [
+  {id:"p1",phase:true,label:"PHASE 1 — SOCIAL & SENTIMENT",sub:"Search the token across platforms."},
+  {id:"a_x",tag:"X",label:"X — Search token on your trading account",hint:"Recent mentions, sentiment, key takes.",weight:3},
+  {id:"a_tg",tag:"TG",label:"Telegram — Search token in crypto groups",hint:"Major trading channels.",weight:3},
+  {id:"a_g",tag:"GOOGLE",label:"Google — Search token name + news (72H only)",hint:"Recent listings, partnerships, or FUD?",weight:2},
+  {id:"a_mn",tag:"MEXC",label:"MEXC — % notification alert fired",hint:"Large % move alert triggered?",weight:3},
+  {id:"a_s",tag:"SENT",label:"Overall sentiment read: net bullish",hint:"Is the crowd leaning long?",weight:2},
+  {id:"p2",phase:true,label:"PHASE 2 — MARKET DATA",sub:"Where does this token sit vs the broader market?"},
+  {id:"m_cs",tag:"CMC",label:"CMC Sectors — Token in a hot sector (24H)",hint:"Token sector up 5%+ in 24H?",weight:4},
+  {id:"m_ct",tag:"CMC",label:"CMC Trending — Token on trending list",hint:"CMC Trending = retail attention incoming.",weight:3},
+  {id:"m_mf",tag:"MEXC",label:"MEXC Futures — Token in top % movers",hint:"Top 20 on MEXC futures % change.",weight:3},
+  {id:"m_ms",tag:"MEXC",label:"MEXC Spot — Token in top spot movers",hint:"Spot leading futures = organic.",weight:2},
+  {id:"m_mg",tag:"MEXC",label:"MEXC Gainers — Confirmed on multiple lists",hint:"Cross-check: Bitget, CMC, Coingecko.",weight:2},
+  {id:"m_tv",tag:"TV",label:"TradingView — Token in top % change list",hint:"TV screener % change.",weight:3},
+  {id:"p3",phase:true,label:"PHASE 3 — SCREENERS & CHART ANALYSIS",sub:"Look at the actual chart."},
+  {id:"c_ts",tag:"TV",label:"TradingView Screener — Token passes filter",hint:"Standard filter: RSI < 35 or > 65, volume spike.",weight:4},
+  {id:"c_th",tag:"TV",label:"TradingView Heatmap — Token in green cluster",hint:"Token in a strong sector cluster.",weight:3},
+  {id:"c_rh",tag:"RSI",label:"RSI Heatmap — Token at RSI extreme",hint:"RSI < 30 = oversold. RSI > 70 = overbought.",weight:4},
+  {id:"c_sc",tag:"SC",label:"Supercharts — Earliest chart shows clean setup",hint:"Pull full chart history.",weight:3},
+  {id:"c_ma",tag:"TA",label:"Price above key MAs (EMA 20 / EMA 50)",hint:"Above MAs = momentum aligned.",weight:3},
+  {id:"c_vo",tag:"TA",label:"Volume spike visible on the chart",hint:"2x+ volume vs 20-period average.",weight:3},
+  {id:"c_st",tag:"TA",label:"Market structure intact (Higher Lows visible)",hint:"HH + HL = trend is your friend.",weight:3},
+  {id:"p4",phase:true,label:"PHASE 4 — BOOKMARK TOOL CHECKS",sub:"Run through your Brave bookmark tools."},
+  {id:"t_e",tag:"ETF",label:"ETH ETF Inflows — Positive (risk-on signal)",hint:"Positive ETF inflows = institutional risk-on.",weight:3},
+  {id:"t_fp",tag:"FUTURES",label:"Top Futures Trader Positions — Not max long",hint:"If top traders are max long, the move is crowded.",weight:3},
+  {id:"t_s",tag:"SECTORS",label:"Crypto Sectors 24H — Token sector is leading",hint:"Sector % change confirms tailwind.",weight:3},
+  {id:"t_a",tag:"ALERTS",label:"Cryptoalerts.ai — Alert not already triggered",hint:"Fresh alert = early position.",weight:2},
+  {id:"t_c",tag:"CORR",label:"Correlation Tool — Low BTC correlation (< 0.7)",hint:"Low correlation = independent mover.",weight:3},
+  {id:"t_sc",tag:"SCAN",label:"Better Crypto Scanner — Token passes scan",hint:"Breakout candidate or reversal setup?",weight:3},
+  {id:"t_d",tag:"DERIV",label:"Derivatives Screener — OI and funding OK",hint:"Funding > 0.1%/8H = overcrowded.",weight:4},
+  {id:"t_cr",tag:"CRYPTOPY",label:"Cryptopy — Data confirms the move",hint:"Cross-check on-chain/aggregated data.",weight:2},
+  {id:"t_rb",tag:"RSI",label:"RSI Heatmap Bookmark — Still oversold after check",hint:"Confirm the RSI level is still extreme.",weight:3},
+  {id:"p5",phase:true,label:"PHASE 5 — FINAL TOKEN FILTER",sub:"Hard rules before entry."},
+  {id:"f_v",label:"24H volume > 2x its own 7-day average",hint:"Volume spike confirming real demand.",weight:4},
+  {id:"f_b",label:"BTC.D not strongly rising during scan",hint:"Rising BTC dominance = alts get drained.",weight:4},
+  {id:"f_f",label:"Funding rate below 0.05% per 8H on futures",hint:"Not overcrowded.",weight:3},
+  {id:"f_l",label:"No major liquidation cascade in last 2H",hint:"Wait for market to stabilize first.",weight:3},
+  {id:"f_u",label:"USDT.D not rising aggressively",hint:"Rising USDT.D = risk-off.",weight:4},
+  {id:"f_a",label:"Token available on MEXC futures AND spot",hint:"Ensure you can trade it.",weight:2},
+];
+
+const VIEWS = [
+  {id:"home",label:"HOME",dot:"#e4e4e7"},
+  {id:"markettd",label:"MARKET TOP-DOWN",dot:"#a78bfa"},
+  {id:"bottomup",label:"CRYPTO BOTTOM-UP",dot:"#38bdf8"},
+  {id:"btcstrat",label:"BTC STRATEGY",dot:"#f97316"},
+  {id:"altres",label:"ALT RESEARCH",dot:"#f59e0b"},
+  {id:"drafting",label:"DRAFTING IDEAS",dot:"#71717a"},
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const state = {
+  view: 'home',
+  menuOpen: false,
+  checks: {},
+  collapsed: {},
+  filter: 'all',
+  altToken: '',
+  altChecks: {},
+  altCollapsed: {},
+  altFilter: 'all',
+  drafts: [{id:1,text:'',done:false}],
+  draftsOpen: false,
+  tdStep: 1,
+  td: {usdt_above_ema:null,usdt_change:'',btc_d_rising:null,total_bull:null,dxy_bull:null,blackout:false,adx:'',price_ema50:null,ema50_ema200:null,atr_state:null,daily_ema200:null,ema50_cross:null,structure:null,trend:null,momentum:null,reversal:null,participation:null,volatility:null,cipher:null,balance:'',risk:'1',atr_val:'',entry:'',dir:null},
+  linkOpen: {},
+  cuOpen: false,
+  mtdCollapsed: {},
+};
+
+function render() {
+  document.getElementById('app').innerHTML = buildApp();
+  attachEvents();
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function fmt(n, d=0) {
+  if (isNaN(n) || !isFinite(n)) return '—';
+  return Number(n).toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
+}
+function pill(color, text) {
+  return `<span class="pill-${color} text-xs font-mono px-2 py-0.5 rounded-sm tracking-wide">${text}</span>`;
+}
+function tagBadge(tag) {
+  const t = TAG_STYLE[tag];
+  if (!t) return '';
+  return `<span style="background:${t.bg};color:${t.text};border:1px solid ${t.border}" class="text-xs font-mono px-1.5 py-0.5 rounded-sm">${tag}</span>`;
+}
+
+function checkItem(item, value, index, checkKey) {
+  const isY = value === 'yes', isN = value === 'no', isS = value === 'skip';
+  const rowClass = isY ? 'row-yes' : isN ? 'row-no' : '';
+  const boxClass = isY ? 'check-yes' : isN ? 'check-no' : isS ? 'check-skip' : 'border border-zinc-700 text-zinc-700';
+  const boxContent = isY ? '✓' : isN ? '✕' : isS ? '—' : index;
+  const yClass = isY ? 'btn-yes-active' : 'border border-zinc-800 text-zinc-600 hover:border-emerald-800';
+  const nClass = isN ? 'btn-no-active' : 'border border-zinc-800 text-zinc-600 hover:border-red-900';
+  const sClass = isS ? 'btn-skip-active' : 'border border-zinc-800 text-zinc-600 hover:border-zinc-600';
+  const highWt = item.weight >= 4 ? '<span class="text-xs font-mono text-amber-600/80 ml-1">HIGH WT</span>' : '';
+  const tagHtml = item.tag ? tagBadge(item.tag) : '';
+  return `
+    <div class="border-b border-zinc-800/40 last:border-0 transition-all ${rowClass}" data-item-id="${item.id}" data-check-key="${checkKey}">
+      <div class="flex items-start gap-3 px-4 py-3">
+        <div class="flex-shrink-0 w-6 pt-0.5">
+          <div class="w-5 h-5 rounded-sm flex items-center justify-center text-xs font-mono transition-all ${boxClass}">${boxContent}</div>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            ${tagHtml}
+            <span class="text-xs font-mono ${isY?'text-zinc-200':isN?'text-zinc-500':'text-zinc-300'}">${item.label}</span>
+            ${highWt}
+          </div>
+          ${item.hint ? `<div class="text-xs font-mono text-zinc-700 mt-0.5 leading-relaxed">${item.hint}</div>` : ''}
+        </div>
+        <div class="flex gap-1 flex-shrink-0 mt-0.5">
+          <button class="px-2 py-1 text-xs font-mono rounded-sm transition-all ${yClass}" data-action="check" data-id="${item.id}" data-val="yes" data-key="${checkKey}">YES</button>
+          <button class="px-2 py-1 text-xs font-mono rounded-sm transition-all ${nClass}" data-action="check" data-id="${item.id}" data-val="no" data-key="${checkKey}">NO</button>
+          <button class="px-2 py-1 text-xs font-mono rounded-sm transition-all ${sClass}" data-action="check" data-id="${item.id}" data-val="skip" data-key="${checkKey}">—</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function groupHeader(id, label, sub, yes, total, collapsed) {
+  const arrow = collapsed ? '▶' : '▼';
+  return `
+    <button class="w-full flex items-center justify-between px-4 py-3 hover:bg-zinc-900/50 transition-all border-b border-zinc-800/50" data-action="toggle-group" data-group="${id}">
+      <div class="text-left flex-1 min-w-0">
+        <div class="text-xs font-mono font-semibold text-zinc-200 tracking-wide">${label}</div>
+        ${sub ? `<div class="text-xs font-mono text-zinc-600 mt-0.5 hidden sm:block truncate">${sub}</div>` : ''}
+      </div>
+      <div class="flex items-center gap-3 ml-3 flex-shrink-0">
+        <span class="text-xs font-mono text-emerald-500">${yes}</span>
+        <span class="text-xs font-mono text-zinc-700">/</span>
+        <span class="text-xs font-mono text-zinc-500">${total}</span>
+        <span class="text-xs font-mono text-zinc-600">${arrow}</span>
+      </div>
+    </button>`;
+}
+
+function linkDropdown(groupId, label, links) {
+  const open = state.linkOpen[groupId];
+  const arrow = open ? '▼' : '▶';
+  const body = open ? `<div class="border-t border-zinc-800/60">${links.map(l => `<a href="${l.url}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 px-4 py-2 border-b border-zinc-800/40 last:border-0 hover:bg-zinc-800/40 transition-all group"><span class="text-xs font-mono text-zinc-700 group-hover:text-sky-400 transition-all flex-shrink-0">↗</span><span class="text-xs font-mono text-zinc-500 group-hover:text-zinc-200 transition-all">${l.label}</span></a>`).join('')}</div>` : '';
+  return `<div class="rounded-sm border border-zinc-800 overflow-hidden mb-1">
+    <button class="w-full flex items-center justify-between px-3 py-2 hover:bg-zinc-900/60 transition-all" data-action="toggle-link" data-linkgroup="${groupId}">
+      <span class="text-xs font-mono text-zinc-400 tracking-wide">${label}</span>
+      <div class="flex items-center gap-2"><span class="text-xs font-mono text-zinc-700">${links.length}</span><span class="text-xs font-mono text-zinc-700">${arrow}</span></div>
+    </button>
+    ${body}
+  </div>`;
+}
+
+function filterBar(filterKey, label) {
+  const f = state[filterKey];
+  return `<div class="flex items-center justify-between mb-4">
+    <div class="text-xs font-mono text-zinc-700 tracking-widest">${label}</div>
+    <div class="flex gap-1">
+      <button class="px-2.5 py-1 text-xs font-mono rounded-sm border transition-all ${f==='all'?'bg-zinc-700 text-zinc-200 border-zinc-600':'border-zinc-800 text-zinc-600 hover:border-zinc-600'}" data-action="set-filter" data-filterkey="${filterKey}" data-filterval="all">ALL</button>
+      <button class="px-2.5 py-1 text-xs font-mono rounded-sm border transition-all ${f==='unanswered'?'bg-zinc-700 text-zinc-200 border-zinc-600':'border-zinc-800 text-zinc-600 hover:border-zinc-600'}" data-action="set-filter" data-filterkey="${filterKey}" data-filterval="unanswered">UNANSWERED</button>
+      <button class="px-2.5 py-1 text-xs font-mono rounded-sm border border-zinc-800 text-zinc-600 hover:border-red-900 hover:text-red-600 transition-all" data-action="reset-checks" data-filterkey="${filterKey}">RESET</button>
+    </div>
+  </div>`;
+}
+
+// ── VIEWS ─────────────────────────────────────────────────────────────────────
+
+function buildHome() {
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+  const dateStr = now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  const workflow = [
+    {id:'markettd',num:'01',label:'MARKET TOP-DOWN',desc:'Get the macro picture first. News, volume, sentiment.',dot:'#a78bfa'},
+    {id:'bottomup',num:'02',label:'CRYPTO BOTTOM-UP',desc:'Review all object trees. Plot your chart drafts.',dot:'#38bdf8'},
+    {id:'btcstrat',num:'03',label:'BTC STRATEGY',desc:'Deep dive into BTC. TA, on-chain, order flow.',dot:'#f97316'},
+    {id:'altres',num:'04',label:'ALT RESEARCH',desc:'Scan for alt opportunities. Screeners and heatmaps.',dot:'#f59e0b'},
+  ];
+  return `
+    <div class="mb-8">
+      <div class="text-xs font-mono text-zinc-700 tracking-widest mb-1">${dateStr}</div>
+      <div class="text-3xl font-mono font-bold text-zinc-100 tracking-tight mb-1">Decision Engine</div>
+      <div class="text-xs font-mono text-zinc-600">@DiamondHands811 · ${timeStr}</div>
+    </div>
+    <div class="mb-6">
+      <div class="text-xs font-mono text-zinc-700 tracking-widest mb-3">SESSION WORKFLOW</div>
+      <div class="space-y-1">
+        ${workflow.map(w=>`
+        <button class="w-full flex items-center gap-4 px-4 py-3 rounded-sm border border-zinc-800 bg-zinc-950/60 hover:bg-zinc-800/40 hover:border-zinc-700 transition-all text-left" data-action="nav" data-view="${w.id}">
+          <span class="text-xs font-mono text-zinc-700 flex-shrink-0 w-6">${w.num}</span>
+          <div class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background:${w.dot}"></div>
+          <div class="flex-1 min-w-0"><div class="text-xs font-mono font-semibold text-zinc-300">${w.label}</div><div class="text-xs font-mono text-zinc-700 mt-0.5 truncate">${w.desc}</div></div>
+          <span class="text-xs font-mono text-zinc-800 flex-shrink-0">→</span>
+        </button>`).join('')}
+      </div>
+    </div>
+    <div class="mb-5">
+      <div class="text-xs font-mono text-zinc-700 tracking-widest mb-3">ALL SECTIONS</div>
+      <div class="grid grid-cols-2 gap-1">
+        ${VIEWS.filter(v=>v.id!=='home').map(v=>`
+        <button class="flex items-center gap-2 px-3 py-2 rounded-sm border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900/40 transition-all text-left" data-action="nav" data-view="${v.id}">
+          <div class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background:${v.dot}"></div>
+          <span class="text-xs font-mono text-zinc-500 truncate">${v.label}</span>
+        </button>`).join('')}
+      </div>
+    </div>
+    <div class="rounded-sm border border-zinc-800/50 p-4 text-center">
+      <div class="text-xs font-mono text-zinc-700 italic">"Process over prediction. System over impulse."</div>
+    </div>`;
+}
+
+function buildMarketTopDown() {
+  const cuOpen = state.cuOpen;
+  let html = `
+    <div class="mb-5 rounded-sm border border-zinc-800 bg-zinc-950/80 overflow-hidden">
+      <button class="w-full flex items-center justify-between px-4 py-3 hover:bg-zinc-900/50 transition-all border-b border-zinc-800/50" data-action="toggle-cu">
+        <div><div class="text-xs font-mono font-semibold text-zinc-200 tracking-wide">DASHBOARD OVERVIEW — QUICK LINKS</div><div class="text-xs font-mono text-zinc-600 mt-0.5">Open these before starting your analysis.</div></div>
+        <div class="flex items-center gap-2 ml-3"><span class="text-xs font-mono text-zinc-700">${COMPUTER_USE_GROUPS.reduce((a,g)=>a+g.links.length,0)} links</span><span class="text-xs font-mono text-zinc-600">${cuOpen?'▼':'▶'}</span></div>
+      </button>
+      ${cuOpen ? `<div class="p-3">${COMPUTER_USE_GROUPS.map(g=>linkDropdown(g.id,g.label,g.links)).join('')}</div>` : ''}
+    </div>
+    <div class="space-y-3">`;
+  MTD_GROUPS.forEach(grp => {
+    const yes = grp.items.filter(i=>state.checks[i.id]==='yes').length;
+    const total = grp.items.length;
+    const isC = state.mtdCollapsed[grp.id] !== false;
+    html += `<div class="rounded-sm border border-zinc-800 bg-zinc-950/80 overflow-hidden">`;
+    html += groupHeader(grp.id, grp.label, grp.sub, yes, total, isC);
+    if (!isC) {
+      html += '<div>';
+      let idx = 0;
+      grp.items.forEach(item => {
+        idx++;
+        html += checkItem(item, state.checks[item.id]||null, idx, 'checks');
+        if (item.link) html += `<div class="px-4 pb-3 -mt-1"><a href="${item.link}" target="_blank" class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-mono border border-zinc-700 text-zinc-400 rounded-sm hover:border-sky-700 hover:text-sky-400 transition-all bg-zinc-900/60">↗ ${item.link}</a></div>`;
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function buildBottomUp() {
+  const sections = [];
+  let curSec = null, curGrp = null;
+  const buList = [
+    {id:"sec1",sectionDiv:true,label:"SECTION 1 — OBJECT TREE",sub:"Open TradingView. Review each chart."},
+    ...OT_TOKENS.flatMap(t=>[
+      {id:`g_${t.prefix}`,group:true,label:`${t.label} — OBJECT TREE`,sub:t.sub},
+      ...OT_TEMPLATE.map(i=>({...i,id:`${t.prefix}_${i.id}`})),
+    ]),
+  ];
+  buList.forEach(i=>{
+    if(i.sectionDiv){curSec={...i,groups:[]};sections.push(curSec);curGrp=null;}
+    else if(i.group){curGrp={...i,items:[]};if(curSec)curSec.groups.push(curGrp);}
+    else if(curGrp){curGrp.items.push(i);}
+  });
+
+  let html = filterBar('filter', 'S1: OBJECT TREE · S2: SAVED DRAFTS') + '<div class="space-y-5">';
+  sections.forEach(sec => {
+    const allItems = sec.groups.flatMap(g=>g.items);
+    const secYes = allItems.filter(i=>state.checks[i.id]==='yes').length;
+    html += `
+      <div>
+        <div class="flex items-center gap-3 mb-3"><div class="flex-1 h-px bg-zinc-800"></div><div class="px-3 py-1 rounded-sm border border-zinc-700 bg-zinc-900"><span class="text-xs font-mono font-semibold text-zinc-300 tracking-widest">${sec.label}</span></div><div class="text-xs font-mono text-zinc-600">${secYes}/${allItems.length}</div><div class="flex-1 h-px bg-zinc-800"></div></div>
+        <div class="space-y-3">`;
+    sec.groups.forEach(grp => {
+      const yes = grp.items.filter(i=>state.checks[i.id]==='yes').length;
+      const isC = state.collapsed[grp.id] !== false;
+      const vis = state.filter==='unanswered' ? grp.items.filter(i=>!state.checks[i.id]) : grp.items;
+      html += `<div class="rounded-sm border border-zinc-800 bg-zinc-950/80 overflow-hidden">`;
+      html += groupHeader(grp.id, grp.label, grp.sub, yes, grp.items.length, isC);
+      if (!isC) {
+        html += '<div>';
+        let idx = 0;
+        vis.forEach(item => {
+          if (state.filter==='unanswered' && state.checks[item.id]) return;
+          idx++;
+          html += checkItem(item, state.checks[item.id]||null, idx, 'checks');
+        });
+        html += '</div>';
+      }
+      html += '</div>';
+    });
+    html += '</div></div>';
+  });
+  html += '</div>';
+
+  // Drafts section
+  const doneCnt = state.drafts.filter(d=>d.done).length;
+  html += `
+    <div class="mt-5">
+      <div class="flex items-center gap-3 mb-3"><div class="flex-1 h-px bg-zinc-800"></div><div class="px-3 py-1 rounded-sm border border-zinc-700 bg-zinc-900"><span class="text-xs font-mono font-semibold text-zinc-300 tracking-widest">SECTION 2 — SAVED DRAFTS</span></div><div class="text-xs font-mono text-zinc-600">${doneCnt}/${state.drafts.length}</div><div class="flex-1 h-px bg-zinc-800"></div></div>
+      <div class="rounded-sm border border-zinc-800 bg-zinc-950/80 overflow-hidden">
+        <button class="w-full flex items-center justify-between px-4 py-3 hover:bg-zinc-900/50 transition-all border-b border-zinc-800/50" data-action="toggle-drafts">
+          <div class="flex items-center gap-3"><span class="text-xs font-mono font-semibold text-zinc-200 tracking-wide">CHART DRAFTS</span><a href="https://t.me/tesr56788/14817" target="_blank" onclick="event.stopPropagation()" class="flex items-center gap-1.5 px-2 py-0.5 rounded-sm border border-zinc-700 text-zinc-500 hover:border-sky-700 hover:text-sky-400 transition-all text-xs font-mono">↗ Telegram Drafts</a></div>
+          <div class="flex items-center gap-3 ml-3"><span class="text-xs font-mono text-emerald-500">${doneCnt}</span><span class="text-xs font-mono text-zinc-700">/</span><span class="text-xs font-mono text-zinc-500">${state.drafts.length}</span><span class="text-xs font-mono text-zinc-600">${state.draftsOpen?'▼':'▶'}</span></div>
+        </button>
+        ${state.draftsOpen ? `<div>
+          ${state.drafts.map((d,i)=>`
+            <div class="flex items-center gap-3 px-4 py-2.5 border-b border-zinc-800/40 last:border-0 transition-all ${d.done?'bg-emerald-950/10':''}">
+              <div class="w-5 h-5 rounded-sm border flex items-center justify-center text-xs font-mono flex-shrink-0 cursor-pointer transition-all ${d.done?'check-yes':'border-zinc-700 text-zinc-600'}" data-action="toggle-draft" data-draftid="${d.id}">${d.done?'✓':i+1}</div>
+              <input value="${d.text.replace(/"/g,'&quot;')}" placeholder="Draft ${i+1} — describe the chart setup..." class="flex-1 bg-transparent border-b border-zinc-800 text-xs font-mono px-0 py-0.5 focus:outline-none focus:border-zinc-600 placeholder-zinc-800 transition-all ${d.done?'text-zinc-600 line-through':'text-zinc-300'}" data-action="edit-draft" data-draftid="${d.id}"/>
+              <button class="text-xs font-mono text-zinc-800 hover:text-red-600 transition-all flex-shrink-0" data-action="remove-draft" data-draftid="${d.id}">✕</button>
+            </div>`).join('')}
+          <button class="w-full px-4 py-2.5 text-xs font-mono text-zinc-700 hover:text-zinc-400 hover:bg-zinc-900/40 transition-all text-left border-t border-zinc-800/40" data-action="add-draft">+ add draft</button>
+        </div>` : ''}
+      </div>
+    </div>`;
+  return html;
+}
+
+function buildBTCStrategy() {
+  return `
+    <div class="rounded-sm border border-zinc-800 bg-zinc-950 p-4 mb-5"><div class="text-xs font-mono text-zinc-600 mb-1 tracking-widest">BTC STRATEGY</div><div class="text-xs font-mono text-zinc-700">All BTC research and analysis tools in one place.</div></div>
+    ${BTC_STRATEGY_GROUPS.map(g=>linkDropdown(g.id,g.label,g.links)).join('')}`;
+}
+
+function buildAltResearch() {
+  const phases = [];
+  let cur = null;
+  ALT_LIST.forEach(i=>{if(i.phase){cur={...i,items:[]};phases.push(cur);}else if(cur)cur.items.push(i);});
+  const score = (() => {
+    let total=0,earned=0,answered=0;
+    ALT_LIST.forEach(i=>{if(i.phase)return;total+=i.weight||1;if(state.altChecks[i.id]==='yes'){earned+=i.weight||1;answered++;}else if(state.altChecks[i.id]==='no')answered++;});
+    return{total,earned,answered,pct:total?Math.round((earned/total)*100):0};
+  })();
+  let verdict = {label:'RESEARCHING...',color:'#52525b',sub:'Work through each phase.'};
+  if (score.answered>=5) {
+    if (score.pct>=80) verdict={label:'HIGH CONVICTION',color:'#10b981',sub:'Strong signal. Confirm BTC macro.'};
+    else if (score.pct>=65) verdict={label:'MODERATE SIGNAL',color:'#f59e0b',sub:'Wait for 1 more confirmation.'};
+    else if (score.pct>=45) verdict={label:'WEAK SIGNAL',color:'#f97316',sub:'Too many gaps.'};
+    else verdict={label:'PASS — NO TRADE',color:'#ef4444',sub:'Not enough confluence.'};
+  }
+
+  let html = `
+    ${ALT_RESEARCH_GROUPS.map(g=>linkDropdown(g.id,g.label,g.links)).join('')}
+    <div class="rounded-sm border border-zinc-800 bg-zinc-950 p-4 my-5">
+      <div class="text-xs font-mono text-zinc-600 mb-3 tracking-widest">TOKEN UNDER RESEARCH</div>
+      <div class="flex items-center gap-2">
+        <input value="${state.altToken}" placeholder="e.g. HBAR, SUI, TAO, INJ..." class="flex-1 bg-zinc-900 border border-zinc-700 text-zinc-100 text-sm font-mono px-3 py-2 rounded-sm focus:outline-none focus:border-zinc-500" data-action="set-token"/>
+        <button class="px-3 py-2 text-xs font-mono text-zinc-600 border border-zinc-800 rounded-sm hover:border-red-900 hover:text-red-500 transition-all" data-action="clear-token">CLEAR</button>
+      </div>
+      ${state.altToken ? `<div class="mt-3 flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></div><span class="text-xs font-mono text-amber-500 tracking-widest">RESEARCHING: ${state.altToken}</span></div>` : ''}
+    </div>
+    ${filterBar('altFilter','RESEARCH PHASES')}
+    <div class="space-y-3">`;
+
+  phases.forEach(ph => {
+    const yes = ph.items.filter(i=>state.altChecks[i.id]==='yes').length;
+    const isC = state.altCollapsed[ph.id] !== false;
+    const vis = state.altFilter==='unanswered' ? ph.items.filter(i=>!state.altChecks[i.id]) : ph.items;
+    html += `<div class="rounded-sm border border-zinc-800 bg-zinc-950/80 overflow-hidden">`;
+    html += groupHeader(ph.id, ph.label, ph.sub, yes, ph.items.length, isC);
+    if (!isC) {
+      html += '<div>';
+      let idx = 0;
+      vis.forEach(item => {
+        if (state.altFilter==='unanswered' && state.altChecks[item.id]) return;
+        idx++;
+        html += checkItem(item, state.altChecks[item.id]||null, idx, 'altChecks');
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+
+  if (score.answered >= 10) {
+    html += `
+      <div class="mt-5 rounded-sm border p-4" style="border-color:${verdict.color}40;background:${verdict.color}08">
+        <div class="flex items-start justify-between mb-2">
+          <div>
+            <div class="text-xs font-mono text-zinc-600 mb-1">${state.altToken ? state.altToken+' — ' : ''}VERDICT</div>
+            <div class="text-xl font-mono font-bold" style="color:${verdict.color}">${verdict.label}</div>
+            <div class="text-xs font-mono text-zinc-500 mt-1">${verdict.sub}</div>
+          </div>
+          <div class="text-right ml-4">
+            <div class="text-xs font-mono text-zinc-600">SCORE</div>
+            <div class="text-4xl font-mono font-bold" style="color:${verdict.color}">${score.pct}%</div>
+            <div class="text-xs font-mono text-zinc-600">${score.earned}/${score.total} pts</div>
+          </div>
+        </div>
+      </div>`;
+  }
+  return html;
+}
+
+function buildDrafting() {
+  const notes = [
+    {id:"dn_indicator",title:"Indicator setup",lines:["Object tree from HTF to LTF","Volatility (indicator + chart)","2x Volume + MA","MACD for range","moving avgs for trend","Stochastic/AO/cipher (accumulations vs distribution)","USDT.d vs BTC"]},
+    {id:"dn_alt",title:"Alt research",lines:["Use trading x account","Use Telegram/twitter/google search of the specific crypto tokens"," • Mexc % notification and on platform for change futures and spot","Coinmarketcap hot sectors","MEXC exchange Volume Change:","Futures % change"," • Spot % change"," • Gainers vs losers (find other sources)","Tradingview % change","Coinmarketcap trending tokens","TradingView Crypto Screener/heatmaps","Tools to use: Brave Browser bookmark"," -ETH ETF inflows"," -Top Futures Trader Positions And Accounts"," -Cryptocurrency Sectors by 24h Price Change"," -Cryptoalerts.ai"," -Cryptocurrency Correlation Tool"," -Better Crypto Scanner"," -Crypto Derivatives Visual Screener"," -Cryptopy"," -RSI Heatmap Bookmark","Supercharts","Rsi heat map bookmark","Trading tips","Order book","Moving avgs, osc, divergences, levels, waves, market structure, oversold/overbought, local tops/bottom, object tree, breakouts","Computer trading master bookmark","Super charts","cmc and bitget community","Command bot","Moondrop","BTC analysis shortcut","GPT TA agent","Telegram ta bot","Sharebot67","Templates","Trading focus","Trading shortcut folder","Trading notes folder","Volatility checker","Trading Aspects"," • Fundamental analysis"," • Technical analysis"," • Sentiment analysis"," • Qualitative analysis"," • Risk management"]},
+  ];
+  return `
+    <div class="rounded-sm border border-zinc-800 bg-zinc-950 p-4 mb-5"><div class="text-xs font-mono text-zinc-600 mb-1 tracking-widest">DRAFTING IDEAS</div><div class="text-xs font-mono text-zinc-700">Reference notes.</div></div>
+    <div class="space-y-2">
+      ${notes.map(note => {
+        const isC = state.collapsed[note.id] !== false;
+        return `<div class="rounded-sm border border-zinc-800 bg-zinc-950/80 overflow-hidden">
+          <button class="w-full flex items-center justify-between px-4 py-3 hover:bg-zinc-900/50 transition-all border-b border-zinc-800/50" data-action="toggle-group" data-group="${note.id}">
+            <span class="text-xs font-mono font-semibold text-zinc-200 tracking-wide">${note.title}</span>
+            <div class="flex items-center gap-2 ml-3"><span class="text-xs font-mono text-zinc-700">${note.lines.length} lines</span><span class="text-xs font-mono text-zinc-600">${isC?'▶':'▼'}</span></div>
+          </button>
+          ${!isC ? `<div class="px-4 py-3 space-y-1">${note.lines.map(l=>`<div class="text-xs font-mono text-zinc-400 leading-relaxed">${l}</div>`).join('')}</div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function buildTopDown() {
+  const s = state.td;
+  const step = state.tdStep;
+  const uc = parseFloat(s.usdt_change);
+  const ro = s.usdt_above_ema===true && uc>0.75;
+  const rn = s.usdt_above_ema===false && uc<-0.25;
+  const ms = s.blackout?'BLACKOUT':ro?'RISK_OFF':rn?'RISK_ON':'NEUTRAL';
+  const msc = s.blackout?0:rn?20:ro?0:10;
+  const mc = ({RISK_ON:'green',RISK_OFF:'red',NEUTRAL:'amber',BLACKOUT:'amber'})[ms];
+  const mv = ({RISK_OFF:'No longs. Shorts only. 50% size.',RISK_ON:'Longs preferred. Full size.',NEUTRAL:'Longs OK. 75% size.',BLACKOUT:'Stand aside.'})[ms];
+  const adx = parseFloat(s.adx);
+  let regime='UNCLASSIFIED', rc='gray';
+  if(s.atr_state==='high'){regime='VOLATILE EXPANSION';rc='amber';}
+  else if(s.atr_state==='low'){regime='COMPRESSION';rc='gray';}
+  else if(adx>25&&s.price_ema50==='above'&&s.ema50_ema200==='above'){regime='TREND UP';rc='green';}
+  else if(adx>25&&s.price_ema50==='below'&&s.ema50_ema200==='below'){regime='TREND DOWN';rc='red';}
+  else if(adx<20){regime='RANGE';rc='blue';}
+  const b3 = s.daily_ema200==='above'&&s.ema50_cross===true&&s.structure==='HL';
+  const be3 = s.daily_ema200==='below'&&s.ema50_cross===false&&s.structure==='LH';
+  const bl = b3?'BULLISH':be3?'BEARISH':'NEUTRAL';
+  const bsc = (b3||be3)?30:15;
+  const bc = ({BULLISH:'green',BEARISH:'red',NEUTRAL:'amber'})[bl];
+  const fired = [s.trend,s.momentum,s.reversal,s.participation,s.volatility].filter(v=>v===true).length;
+  const sigsc = fired>=3?20:fired===2?10:0;
+  const volsc = s.participation===true?15:s.participation===false?0:7;
+  const atsc = s.volatility===true?10:0;
+  const fsc = s.cipher==='accum'?5:0;
+  const conf = Math.min(100,bsc+msc+sigsc+volsc+atsc+fsc);
+  const sco = conf>=80?'#10b981':conf>=65?'#f59e0b':'#ef4444';
+  const sm = conf>=80?1:conf>=65?0.5:conf>=50?0.25:0;
+  const bal=parseFloat(s.balance), rf=parseFloat(s.risk)/100, av=parseFloat(s.atr_val), ep=parseFloat(s.entry);
+  const ev = !!(bal&&av&&ep&&s.dir&&sm>0);
+  const ra=ev?bal*rf*sm:0, sd=ev?1.5*av:0, ps=ev?ra/sd:0;
+  const sp=ev?(s.dir==='long'?ep-sd:ep+sd):0;
+  const t1=ev?(s.dir==='long'?ep+1.5*sd:ep-1.5*sd):0;
+  const t2=ev?(s.dir==='long'?ep+2.5*sd:ep-2.5*sd):0;
+  const cc = {green:'text-emerald-400',red:'text-red-400',amber:'text-amber-400',blue:'text-sky-400',gray:'text-zinc-500'};
+
+  const steps = [
+    {id:1,label:'Macro',dot:ms==='RISK_ON'?'#10b981':ms==='RISK_OFF'?'#ef4444':'#f59e0b'},
+    {id:2,label:'Regime',dot:rc==='green'?'#10b981':rc==='red'?'#ef4444':rc==='blue'?'#38bdf8':'#f59e0b'},
+    {id:3,label:'Bias',dot:bc==='green'?'#10b981':bc==='red'?'#ef4444':'#f59e0b'},
+    {id:4,label:'Signals',dot:fired>=3?'#10b981':fired>=2?'#f59e0b':'#ef4444'},
+    {id:5,label:'Score',dot:conf>=80?'#10b981':conf>=65?'#f59e0b':'#ef4444'},
+    {id:6,label:'Execute',dot:ev?'#10b981':'#52525b'},
+  ];
+
+  function ct(key, tl, fl) {
+    const val = key.includes('.') ? s[key.split('.')[1]] : s[key];
+    const yA = val===true?'bg-emerald-900/50 text-emerald-300 border-emerald-700':'bg-zinc-900 text-zinc-600 border-zinc-800 hover:border-zinc-600';
+    const nA = val===false?'bg-red-900/50 text-red-300 border-red-700':'bg-zinc-900 text-zinc-600 border-zinc-800 hover:border-zinc-600';
+    return `<div class="flex gap-1">
+      <button class="px-2.5 py-1 text-xs font-mono rounded-sm border transition-all ${yA}" data-action="set-td" data-key="${key}" data-value="true">${tl}</button>
+      <button class="px-2.5 py-1 text-xs font-mono rounded-sm border transition-all ${nA}" data-action="set-td" data-key="${key}" data-value="false">${fl}</button>
+    </div>`;
+  }
+  function mu(key, opts) {
+    const val = s[key];
+    return `<div class="flex flex-wrap gap-1">${opts.map(o=>`<button class="px-2.5 py-1 text-xs font-mono rounded-sm border transition-all ${val===o.v?'bg-zinc-700 text-zinc-100 border-zinc-500':'bg-zinc-900 text-zinc-600 border-zinc-800 hover:border-zinc-600'}" data-action="set-td" data-key="${key}" data-value="${o.v}">${o.l}</button>`).join('')}</div>`;
+  }
+  function fld(key, placeholder) {
+    return `<input value="${s[key]||''}" placeholder="${placeholder}" class="w-28 bg-zinc-900 border border-zinc-700 text-zinc-200 text-xs font-mono px-2 py-1.5 rounded-sm focus:outline-none focus:border-zinc-500 placeholder-zinc-800" data-action="set-td-input" data-key="${key}"/>`;
+  }
+  function row(label, hint, content) {
+    return `<div class="flex items-center justify-between gap-4 px-4 py-2.5 border-b border-zinc-800/40 last:border-0">
+      <div><div class="text-xs text-zinc-300 font-mono">${label}</div>${hint?`<div class="text-xs text-zinc-700 mt-0.5 leading-relaxed">${hint}</div>`:''}</div>
+      ${content}
+    </div>`;
+  }
+
+  let stepContent = '';
+  if (step===1) stepContent = `
+    <div class="text-xs font-mono text-zinc-600 mb-3 tracking-widest">STEP 01 / MACRO — Run first. Bad macro = no trade.</div>
+    <div class="rounded-sm border border-zinc-800 bg-zinc-950/80 mb-3">
+      <div class="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800/80"><span class="text-xs font-mono text-zinc-600 tracking-widest">USDT.D — PRIMARY RISK GAUGE</span>${pill(mc,ms)}</div>
+      ${row('USDT.D above 4H EMA20?','Rising = money leaving crypto = risk off',ct('usdt_above_ema','ABOVE','BELOW'))}
+      ${row('USDT.D 24H % change','>+0.75% = risk-off | <-0.25% = risk-on',fld('usdt_change','e.g. -0.8'))}
+    </div>
+    <div class="rounded-sm border border-zinc-800 bg-zinc-950/80 mb-3">
+      <div class="px-4 py-2.5 border-b border-zinc-800/80"><span class="text-xs font-mono text-zinc-600 tracking-widest">DOMINANCE + STRUCTURE</span></div>
+      ${row('BTC.D rising (above 4H EMA20)?','',ct('btc_d_rising','RISING','FALLING'))}
+      ${row('TOTAL above Daily EMA200?','',ct('total_bull','ABOVE (BULL)','BELOW (BEAR)'))}
+      ${row('DXY above Daily EMA50?','',ct('dxy_bull','YES (HEADWIND)','NO (TAILWIND)'))}
+      ${row('News blackout active?','',ct('blackout','BLACKOUT','CLEAR'))}
+    </div>
+    <div class="rounded-sm border p-3 text-xs font-mono mb-3" style="border-color:${ro?'#7f1d1d':rn?'#064e3b':'#3f3f46'};background:${ro?'#450a0a20':rn?'#022c2220':'#18181b50'}">
+      <span class="text-zinc-600">VERDICT — </span><span class="${cc[mc]} font-semibold">${ms}</span><span class="text-zinc-600 ml-3">${mv}</span>
+    </div>
+    <button class="w-full py-2.5 text-xs font-mono text-zinc-400 border border-zinc-800 rounded-sm hover:bg-zinc-900 transition-all" data-action="td-step" data-step="2">NEXT — CLASSIFY REGIME</button>`;
+
+  if (step===2) {
+    const am = {'TREND UP':'Pullback longs only','TREND DOWN':'Bounce shorts only',RANGE:'Mean reversion both sides','VOLATILE EXPANSION':'Breakout continuation',COMPRESSION:'No entries',UNCLASSIFIED:'Needs more data'};
+    const fm = {'TREND UP':'Shorts, mean reversion','TREND DOWN':'Longs, mean reversion',RANGE:'Breakout chasing','VOLATILE EXPANSION':'Scalps, mean reversion',COMPRESSION:'Everything',UNCLASSIFIED:'Trading without clarity'};
+    stepContent = `
+    <div class="text-xs font-mono text-zinc-600 mb-3 tracking-widest">STEP 02 / REGIME — Determines which strategies are allowed.</div>
+    <div class="rounded-sm border border-zinc-800 bg-zinc-950/80 mb-3">
+      <div class="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800/80"><span class="text-xs font-mono text-zinc-600 tracking-widest">4H STRUCTURE READ</span>${pill(rc,regime)}</div>
+      ${row('ADX(14) value','>25 trending | <20 ranging',fld('adx','e.g. 31'))}
+      ${row('Price vs 4H EMA50','',mu('price_ema50',[{l:'ABOVE',v:'above'},{l:'BELOW',v:'below'}]))}
+      ${row('EMA50 vs 4H EMA200','',mu('ema50_ema200',[{l:'50>200 BULL',v:'above'},{l:'50<200 BEAR',v:'below'}]))}
+      ${row('ATR vs 20-period avg','',mu('atr_state',[{l:'NORMAL',v:'normal'},{l:'>1.5x HIGH',v:'high'},{l:'<0.6x LOW',v:'low'}]))}
+    </div>
+    <div class="grid grid-cols-2 gap-2 mb-3">
+      <div class="rounded-sm border border-zinc-800 p-3"><div class="text-xs font-mono text-zinc-600 mb-1">ALLOWED</div><div class="text-xs font-mono text-emerald-400">${am[regime]||'—'}</div></div>
+      <div class="rounded-sm border border-zinc-800 p-3"><div class="text-xs font-mono text-zinc-600 mb-1">FORBIDDEN</div><div class="text-xs font-mono text-red-400">${fm[regime]||'—'}</div></div>
+    </div>
+    <div class="flex gap-2">
+      <button class="flex-1 py-2.5 text-xs font-mono text-zinc-600 border border-zinc-800 rounded-sm hover:bg-zinc-900" data-action="td-step" data-step="1">MACRO</button>
+      <button class="flex-1 py-2.5 text-xs font-mono text-zinc-400 border border-zinc-800 rounded-sm hover:bg-zinc-900" data-action="td-step" data-step="3">DAILY BIAS</button>
+    </div>`;
+  }
+
+  if (step===3) stepContent = `
+    <div class="text-xs font-mono text-zinc-600 mb-3 tracking-widest">STEP 03 / DAILY BIAS — All 3 must agree.</div>
+    <div class="rounded-sm border border-zinc-800 bg-zinc-950/80 mb-3">
+      <div class="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800/80"><span class="text-xs font-mono text-zinc-600 tracking-widest">3-CONDITION HTF FILTER</span>${pill(bc,bl)}</div>
+      ${row('Daily close above EMA200?','',mu('daily_ema200',[{l:'ABOVE',v:'above'},{l:'BELOW',v:'below'}]))}
+      ${row('Daily EMA50 above EMA200?','',ct('ema50_cross','YES (GOLDEN)','NO (DEATH)'))}
+      ${row('Last confirmed market structure','',mu('structure',[{l:'HL (BULL)',v:'HL'},{l:'LH (BEAR)',v:'LH'},{l:'UNCLEAR',v:'unclear'}]))}
+    </div>
+    <div class="p-3 rounded-sm border border-zinc-800 bg-zinc-950 text-xs font-mono mb-3">
+      <div class="text-zinc-600 mb-1">VERDICT</div>
+      <div class="${cc[bc]} font-semibold text-base">${bl}</div>
+      <div class="text-zinc-600 mt-1">${{NEUTRAL:'Scalp only. 50% max size.',BULLISH:'Full stack. Longs preferred.',BEARISH:'Short bias. Longs need 80+.'}[bl]}</div>
+    </div>
+    <div class="flex gap-2">
+      <button class="flex-1 py-2.5 text-xs font-mono text-zinc-600 border border-zinc-800 rounded-sm hover:bg-zinc-900" data-action="td-step" data-step="2">REGIME</button>
+      <button class="flex-1 py-2.5 text-xs font-mono text-zinc-400 border border-zinc-800 rounded-sm hover:bg-zinc-900" data-action="td-step" data-step="4">SIGNALS</button>
+    </div>`;
+
+  if (step===4) stepContent = `
+    <div class="text-xs font-mono text-zinc-600 mb-3 tracking-widest">STEP 04 / SIGNALS — 3 of 5 buckets from DIFFERENT categories.</div>
+    <div class="rounded-sm border border-zinc-800 bg-zinc-950/80 mb-3">
+      <div class="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800/80"><span class="text-xs font-mono text-zinc-600 tracking-widest">5-BUCKET CONFLUENCE</span>${pill(fired>=3?'green':fired>=2?'amber':'red',fired+'/5 FIRING')}</div>
+      ${[{k:'trend',n:'TREND',h:'EMA stack aligned'},{k:'momentum',n:'MOMENTUM',h:'MACD histogram direction'},{k:'reversal',n:'REVERSAL',h:'Stoch cross from extreme'},{k:'participation',n:'PARTICIPATION',h:'Volume > 1.5x MA'},{k:'volatility',n:'VOLATILITY',h:'ATR within normal range'}].map(b=>row(b.n,b.h,ct(b.k,'FIRES','DEAD'))).join('')}
+    </div>
+    <div class="rounded-sm border border-zinc-800 bg-zinc-950/80 mb-3">
+      <div class="px-4 py-2.5 border-b border-zinc-800/80"><span class="text-xs font-mono text-zinc-600 tracking-widest">CIPHER B / AO SUPPLEMENT</span></div>
+      ${row('Cipher B mode','Accumulation = smart money buying',mu('cipher',[{l:'ACCUMULATION',v:'accum'},{l:'DISTRIBUTION',v:'dist'},{l:'NEUTRAL',v:'neutral'}]))}
+    </div>
+    <div class="flex gap-2">
+      <button class="flex-1 py-2.5 text-xs font-mono text-zinc-600 border border-zinc-800 rounded-sm hover:bg-zinc-900" data-action="td-step" data-step="3">BIAS</button>
+      <button class="flex-1 py-2.5 text-xs font-mono text-zinc-400 border border-zinc-800 rounded-sm hover:bg-zinc-900" data-action="td-step" data-step="5">SCORE</button>
+    </div>`;
+
+  if (step===5) {
+    const scoreBreakdown = [{label:'HTF Trend Alignment',pts:bsc,max:30},{label:'Macro Filter',pts:msc,max:20},{label:'Signal Confluence',pts:sigsc,max:20},{label:'Volume Confirmation',pts:volsc,max:15},{label:'Volatility',pts:atsc,max:10},{label:'Funding / Cipher',pts:fsc,max:5}];
+    stepContent = `
+    <div class="text-xs font-mono text-zinc-600 mb-3 tracking-widest">STEP 05 / CONFIDENCE SCORE</div>
+    <div class="rounded-sm border border-zinc-800 bg-zinc-950/80 mb-3">
+      <div class="px-4 py-2.5 border-b border-zinc-800/80"><span class="text-xs font-mono text-zinc-600 tracking-widest">SCORE BREAKDOWN</span></div>
+      ${scoreBreakdown.map(item=>`
+        <div class="flex items-center justify-between gap-4 px-4 py-2.5 border-b border-zinc-800/40 last:border-0">
+          <div class="text-xs text-zinc-300 font-mono">${item.label}</div>
+          <div class="flex items-center gap-3">
+            <div class="w-20 h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${(item.pts/item.max)*100}%;background:${sco}"></div></div>
+            <span class="text-xs font-mono text-zinc-400 w-12 text-right">${item.pts}/${item.max}</span>
+          </div>
+        </div>`).join('')}
+    </div>
+    <div class="p-4 rounded-sm border border-zinc-800 bg-zinc-950 mb-3">
+      <div class="flex justify-between items-baseline mb-3"><span class="text-xs font-mono text-zinc-600">TOTAL</span><span class="text-xs font-mono" style="color:${sco}">${conf>=80?'FULL SIZE':conf>=65?'HALF SIZE':conf>=50?'25% SIZE':'NO TRADE'}</span></div>
+      <div class="text-5xl font-mono font-bold mb-3" style="color:${sco}">${conf}<span class="text-lg text-zinc-700 ml-1">/ 100</span></div>
+      <div class="h-1.5 bg-zinc-800 rounded-full overflow-hidden"><div class="h-full rounded-full" style="width:${conf}%;background:${sco}"></div></div>
+    </div>
+    <div class="flex gap-2">
+      <button class="flex-1 py-2.5 text-xs font-mono text-zinc-600 border border-zinc-800 rounded-sm hover:bg-zinc-900" data-action="td-step" data-step="4">SIGNALS</button>
+      <button class="flex-1 py-2.5 text-xs font-mono border rounded-sm transition-all ${conf>=65?'text-zinc-400 border-zinc-700 hover:bg-zinc-900':'text-zinc-700 border-zinc-800 cursor-not-allowed'}" ${conf<50?'disabled':''} data-action="td-step" data-step="6">${conf>=65?'EXECUTE':'SCORE TOO LOW'}</button>
+    </div>`;
+  }
+
+  if (step===6) stepContent = `
+    <div class="text-xs font-mono text-zinc-600 mb-3 tracking-widest">STEP 06 / EXECUTION</div>
+    <div class="rounded-sm border border-zinc-800 bg-zinc-950/80 mb-3">
+      <div class="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800/80"><span class="text-xs font-mono text-zinc-600 tracking-widest">TRADE PARAMETERS</span>${pill(conf>=80?'green':'amber','SCORE '+conf)}</div>
+      ${row('Direction','',mu('dir',[{l:'LONG',v:'long'},{l:'SHORT',v:'short'}]))}
+      ${row('Account balance','',fld('balance','e.g. 10000'))}
+      ${row('Risk %','',mu('risk',[{l:'1%',v:'1'},{l:'1.5%',v:'1.5'},{l:'2%',v:'2'}]))}
+      ${row('ATR(14) value','',fld('atr_val','e.g. 1250'))}
+      ${row('Entry price','',fld('entry','e.g. 87000'))}
+    </div>
+    ${ev ? `<div class="grid grid-cols-2 gap-px border border-zinc-800 rounded-sm overflow-hidden bg-zinc-800 mb-3">
+      ${[{l:'POSITION SIZE',v:ps.toFixed(5)+' BTC',c:'text-zinc-100'},{l:'RISK AMOUNT',v:'$'+fmt(ra,2),c:'text-zinc-100'},{l:'STOP LOSS',v:'$'+fmt(sp,0),c:'text-red-400'},{l:'STOP DIST',v:'$'+fmt(sd,0)+' (1.5x ATR)',c:'text-zinc-500'},{l:'TP1 1.5R (40%)',v:'$'+fmt(t1,0),c:'text-emerald-400'},{l:'TP2 2.5R (40%)',v:'$'+fmt(t2,0),c:'text-emerald-300'},{l:'RUNNER (20%)',v:'Trail 1x ATR after TP2',c:'text-sky-400'},{l:'SIZE MULT',v:(sm*100).toFixed(0)+'%',c:'text-amber-400'}].map(item=>`<div class="bg-zinc-950 px-3 py-3"><div class="text-xs font-mono text-zinc-700">${item.l}</div><div class="text-sm font-mono font-semibold mt-1 ${item.c}">${item.v}</div></div>`).join('')}
+    </div>` : ''}
+    <button class="w-full py-2.5 text-xs font-mono text-zinc-600 border border-zinc-800 rounded-sm hover:bg-zinc-900" data-action="td-reset">RESET — NEW ANALYSIS</button>`;
+
+  return `
+    <div class="flex gap-px mb-6 rounded-sm overflow-hidden border border-zinc-800/50">
+      ${steps.map(st=>`<button class="flex-1 px-2 py-3 text-left transition-all border-r border-zinc-800/50 last:border-0 ${step===st.id?'bg-zinc-800/80':'bg-zinc-950 hover:bg-zinc-900/60'}" data-action="td-step" data-step="${st.id}">
+        <div class="flex items-center gap-1.5 mb-1"><div class="w-1.5 h-1.5 rounded-full" style="background:${st.dot}"></div><span class="text-xs font-mono text-zinc-600">${String(st.id).padStart(2,'0')}</span></div>
+        <div class="text-xs font-mono font-medium text-zinc-300 truncate">${st.label}</div>
+      </button>`).join('')}
+    </div>
+    ${stepContent}`;
+}
+
+// ── MAIN APP ──────────────────────────────────────────────────────────────────
+
+function buildApp() {
+  const cur = VIEWS.find(v=>v.id===state.view)||VIEWS[0];
+  let content = '';
+  if (state.view==='home') content = buildHome();
+  else if (state.view==='markettd') content = buildMarketTopDown();
+  else if (state.view==='bottomup') content = buildBottomUp();
+  else if (state.view==='btcstrat') content = buildBTCStrategy();
+  else if (state.view==='altres') content = buildAltResearch();
+  else if (state.view==='drafting') content = buildDrafting();
+
+  const menuHtml = state.menuOpen ? `
+    <div class="border-t border-zinc-800/50" style="background:#09090b;">
+      <div class="max-w-2xl mx-auto px-4 py-2 flex flex-wrap gap-1">
+        ${VIEWS.map(v=>`<button class="px-3 py-1.5 text-xs font-mono rounded-sm border transition-all ${state.view===v.id?'bg-zinc-800 text-zinc-100 border-zinc-600':'border-zinc-800 text-zinc-600 hover:border-zinc-600 hover:text-zinc-400'}" data-action="nav" data-view="${v.id}">${v.label}</button>`).join('')}
+      </div>
+    </div>` : '';
+
+  return `
+    <div class="min-h-screen" style="background:#09090b;color:#e4e4e7;">
+      <div class="sticky top-0 z-50 border-b border-zinc-800/80" style="background:rgba(9,9,11,0.95);backdrop-filter:blur(8px);">
+        <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            ${state.view!=='home'?`<button class="text-xs font-mono text-zinc-600 hover:text-zinc-400 transition-all" data-action="nav" data-view="home">←</button>`:''}
+            <div>
+              <div class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full" style="background:${cur.dot}"></div><span class="text-xs font-mono font-semibold text-zinc-200 tracking-wide">${cur.label}</span></div>
+            </div>
+          </div>
+          <button class="text-xs font-mono text-zinc-600 hover:text-zinc-400 transition-all px-2 py-1 border border-zinc-800 rounded-sm" data-action="toggle-menu">MENU</button>
+        </div>
+        ${menuHtml}
+      </div>
+      <div class="max-w-2xl mx-auto px-4 py-6">${content}</div>
+    </div>`;
+}
+
+// ── EVENTS ────────────────────────────────────────────────────────────────────
+
+function attachEvents() {
+  document.addEventListener('click', handleClick, {once:true});
+  document.addEventListener('input', handleInput, {once:true});
+}
+
+function handleClick(e) {
+  const el = e.target.closest('[data-action]');
+  if (!el) { attachEvents(); return; }
+  const action = el.dataset.action;
+  if (action==='nav') { state.view=el.dataset.view; state.menuOpen=false; render(); return; }
+  if (action==='toggle-menu') { state.menuOpen=!state.menuOpen; render(); return; }
+  if (action==='toggle-group') {
+    const g = el.dataset.group;
+    state.collapsed[g] = state.collapsed[g]===false ? true : false;
+    render(); return;
+  }
+  if (action==='toggle-link') {
+    const g = el.dataset.linkgroup;
+    state.linkOpen[g] = !state.linkOpen[g];
+    render(); return;
+  }
+  if (action==='toggle-cu') { state.cuOpen=!state.cuOpen; render(); return; }
+  if (action==='toggle-drafts') { state.draftsOpen=!state.draftsOpen; render(); return; }
+  if (action==='add-draft') { state.drafts.push({id:Date.now(),text:'',done:false}); render(); return; }
+  if (action==='toggle-draft') {
+    const id=parseInt(el.dataset.draftid);
+    const d=state.drafts.find(x=>x.id===id);
+    if(d) d.done=!d.done;
+    render(); return;
+  }
+  if (action==='remove-draft') {
+    const id=parseInt(el.dataset.draftid);
+    state.drafts=state.drafts.filter(x=>x.id!==id);
+    render(); return;
+  }
+  if (action==='check') {
+    const {id,val,key} = el.dataset;
+    if (state[key][id]===val) state[key][id]=null; else state[key][id]=val;
+    render(); return;
+  }
+  if (action==='set-filter') { state[el.dataset.filterkey]=el.dataset.filterval; render(); return; }
+  if (action==='reset-checks') {
+    const k = el.dataset.filterkey;
+    if (k==='filter') state.checks={};
+    else if (k==='altFilter') state.altChecks={};
+    render(); return;
+  }
+  if (action==='set-td') {
+    const {key,value} = el.dataset;
+    state.td[key] = value==='true'?true:value==='false'?false:value;
+    render(); return;
+  }
+  if (action==='td-step') {
+    const s=parseInt(el.dataset.step);
+    if(!isNaN(s)) { state.tdStep=s; render(); return; }
+  }
+  if (action==='td-reset') {
+    state.td={usdt_above_ema:null,usdt_change:'',btc_d_rising:null,total_bull:null,dxy_bull:null,blackout:false,adx:'',price_ema50:null,ema50_ema200:null,atr_state:null,daily_ema200:null,ema50_cross:null,structure:null,trend:null,momentum:null,reversal:null,participation:null,volatility:null,cipher:null,balance:'',risk:'1',atr_val:'',entry:'',dir:null};
+    state.tdStep=1;
+    render(); return;
+  }
+  if (action==='clear-token') { state.altToken=''; state.altChecks={}; render(); return; }
+  attachEvents();
+}
+
+function handleInput(e) {
+  const el = e.target;
+  const action = el.dataset.action;
+  if (action==='set-td-input') {
+    state.td[el.dataset.key] = el.value;
+    // don't re-render on every keystroke, just update state
+    attachEvents(); return;
+  }
+  if (action==='edit-draft') {
+    const id=parseInt(el.dataset.draftid);
+    const d=state.drafts.find(x=>x.id===id);
+    if(d) d.text=el.value;
+    attachEvents(); return;
+  }
+  if (action==='set-token') {
+    state.altToken = el.value.toUpperCase();
+    attachEvents(); return;
+  }
+  attachEvents();
+}
+
+// Fire it up
+render();
+</script>
+</body>
+</html>
