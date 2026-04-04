@@ -84,12 +84,18 @@
     grid-template-columns: 180px 1fr 260px;
     flex: 1;
     overflow: hidden;
+    transition: grid-template-columns 0.25s ease;
   }
+  .layout.nav-collapsed { grid-template-columns: 0px 1fr 260px; }
+  .layout.feed-collapsed { grid-template-columns: 180px 1fr 0px; }
+  .layout.nav-collapsed.feed-collapsed { grid-template-columns: 0px 1fr 0px; }
 
   /* LEFT NAV */
   .nav {
     background: var(--panel);
     border-right: 1px solid var(--border);
+    overflow: hidden;
+    transition: width 0.25s ease;
     padding: 8px 0;
     overflow-y: auto;
   }
@@ -122,9 +128,9 @@
 
   .nav-items-wrap {
     overflow: hidden;
-    transition: max-height 0.2s ease;
+    transition: max-height 0.25s ease;
+    max-height: 9999px;
   }
-  .nav-items-wrap.collapsed { max-height: 0 !important; }
 
   .nav-item {
     display: flex;
@@ -352,6 +358,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    transition: width 0.25s ease;
   }
 
   .feed-header {
@@ -508,15 +515,116 @@
   .dot-active { background: var(--green); box-shadow: 0 0 5px var(--green); animation: pulse 2s infinite; }
   .dot-idle { background: var(--yellow); }
   .dot-offline { background: var(--muted); }
+
+  /* ── MOBILE RESPONSIVE ─────────────────────────────── */
+  @media (max-width: 768px) {
+    body { overflow: auto; }
+
+    .layout {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+      overflow: visible;
+    }
+
+    /* Hide left nav and activity feed on mobile by default */
+    .nav { display: none; }
+    .feed { display: none; }
+
+    /* Mobile topbar tweaks */
+    .topbar { padding: 0 12px; }
+    .topbar-meta { gap: 10px; font-size: 11px; }
+
+    /* Show a hamburger nav toggle */
+    .mobile-nav-toggle {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      width: 32px; height: 32px;
+      border-radius: 6px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      font-size: 16px;
+      color: var(--text);
+    }
+
+    /* Mobile nav drawer */
+    .nav.mobile-open {
+      display: block;
+      position: fixed;
+      top: 48px; left: 0; bottom: 0;
+      width: 220px;
+      z-index: 1000;
+      box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+    }
+
+    /* Views fill full width */
+    .view { width: 100%; min-height: calc(100vh - 48px); }
+
+    /* Canvas office — let it scroll */
+    #view-office { overflow: auto !important; }
+  }
+
+  .mobile-nav-toggle { display: none; }
+
+  /* DROPBOX */
+  .drop-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+  .drop-card:hover { border-color: rgba(255,255,255,0.14); }
+  .drop-card.done { opacity: 0.45; }
+  .drop-card.done .drop-content { text-decoration: line-through; }
+  .drop-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .drop-tag {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em;
+    padding: 3px 10px; border-radius: 20px; background: rgba(99,102,241,0.15); color: var(--accent);
+  }
+  .drop-priority-badge { font-size: 11px; }
+  .drop-date { font-size: 11px; color: var(--muted); margin-left: auto; }
+  .drop-content { font-size: 13px; color: var(--text); white-space: pre-wrap; line-height: 1.7; word-break: break-word; }
+  .drop-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .drop-btn {
+    font-size: 12px; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .drop-btn:hover, .drop-btn:active { color: var(--text); border-color: rgba(255,255,255,0.2); }
+  .drop-btn.done-btn:hover, .drop-btn.done-btn:active { color: var(--green); border-color: var(--green); }
+  .drop-btn.del-btn:hover, .drop-btn.del-btn:active { color: var(--red); border-color: var(--red); }
+  .drop-filter { transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
+  .drop-filter:hover { opacity: 0.8; }
+
+  /* Dropbox mobile tweaks */
+  @media (max-width: 768px) {
+    #view-dropbox > div { padding: 20px 16px 80px !important; }
+    .drop-form-grid { grid-template-columns: 1fr !important; }
+    .drop-header-row { flex-direction: column; align-items: flex-start !important; gap: 12px !important; }
+    .drop-new-btn { width: 100%; justify-content: center; }
+    .drop-card { padding: 16px; }
+    .drop-btn { padding: 10px 16px; font-size: 13px; }
+  }
 </style>
 </head>
 <body>
 
+<!-- Mobile nav overlay -->
+<div id="mobile-overlay" onclick="closeMobileNav()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999;"></div>
+
 <div class="topbar">
-  <div class="topbar-logo">⬡ AGENT OFFICE</div>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <div class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu">☰</div>
+    <div class="topbar-logo">⬡ AGENT OFFICE</div>
+  </div>
   <div class="topbar-meta">
     <span><span class="online-dot"></span><span id="onlineCount">9</span> agents online</span>
     <span id="clock">--:--:--</span>
+    <button id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode — hide panels" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">⛶ Focus</button>
   </div>
 </div>
 
@@ -533,6 +641,7 @@
         <div class="nav-item" onclick="switchView('org', this)"><span class="icon">🗂️</span> Org Chart</div>
         <div class="nav-item"><span class="icon">🧠</span> Memory</div>
         <div class="nav-item"><span class="icon">📅</span> Calendar</div>
+        <div class="nav-item" onclick="switchView('dropbox', this)"><span class="icon">📥</span> Dropbox</div>
       </div>
     </div>
 
@@ -910,6 +1019,59 @@
   <!-- LYRA / SORA STUDIO VIEW -->
   <div class="view" id="view-lyra" style="flex-direction:column; background:#06060a; overflow:hidden;">
     <div id="sora-app" style="flex:1; overflow:hidden; display:flex; flex-direction:column;"></div>
+  </div>
+
+  <!-- DROPBOX VIEW -->
+  <div class="view" id="view-dropbox" style="flex-direction:column; background:#0a0c11; overflow-y:auto;">
+    <div id="dropbox-app" style="max-width:860px; width:100%; margin:0 auto; padding:40px 28px 80px;">
+
+      <!-- Header -->
+      <div class="drop-header-row" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; gap:16px;">
+        <div>
+          <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">📥 DROPBOX</div>
+          <div style="font-size:13px; color:var(--muted);">Drop ideas, tasks, and reminders — tagged by subject.</div>
+        </div>
+        <button class="drop-new-btn" onclick="showDropForm()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 20px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap; -webkit-tap-highlight-color:transparent;">
+          <span>＋</span> New Drop
+        </button>
+      </div>
+
+      <!-- Add form (hidden by default) -->
+      <div id="drop-form" style="display:none; background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:28px;">
+        <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:16px;">New Drop</div>
+        <div class="drop-form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+          <div>
+            <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">Subject / Tag</label>
+            <input id="drop-subject" type="text" placeholder="e.g. Affirmations, Trading, Ideas..." style="width:100%; background:#0d0f14; border:1px solid var(--border); border-radius:8px; padding:11px 12px; font-size:16px; color:var(--text); outline:none;" />
+          </div>
+          <div>
+            <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">Priority</label>
+            <select id="drop-priority" style="width:100%; background:#0d0f14; border:1px solid var(--border); border-radius:8px; padding:11px 12px; font-size:16px; color:var(--text); outline:none;">
+              <option value="normal">🔵 Normal</option>
+              <option value="high">🟡 High</option>
+              <option value="urgent">🔴 Urgent</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">Content</label>
+          <textarea id="drop-content" rows="5" placeholder="Paste your note, ideas, task..." style="width:100%; background:#0d0f14; border:1px solid var(--border); border-radius:8px; padding:11px 12px; font-size:16px; color:var(--text); outline:none; resize:vertical; font-family:inherit;"></textarea>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
+          <button onclick="hideDropForm()" style="background:transparent; color:var(--muted); border:1px solid var(--border); border-radius:8px; padding:12px 20px; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;">Cancel</button>
+          <button onclick="saveDrop()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 22px; font-size:14px; font-weight:600; cursor:pointer; -webkit-tap-highlight-color:transparent;">Save Drop</button>
+        </div>
+      </div>
+
+      <!-- Filter bar -->
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px;" id="drop-filters">
+        <button class="drop-filter active" onclick="filterDrops('all', this)" style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid var(--accent); background:rgba(99,102,241,0.15); color:var(--accent); cursor:pointer;">All</button>
+      </div>
+
+      <!-- Drops list -->
+      <div id="drops-list"></div>
+
+    </div>
   </div>
 
   <!-- ACTIVITY FEED -->
@@ -1869,26 +2031,237 @@ function showAgentInfo(id) {
 }
 
 function toggleNav(labelEl) {
-  labelEl.classList.toggle('collapsed');
   const wrap = labelEl.nextElementSibling;
-  if (wrap && wrap.classList.contains('nav-items-wrap')) {
-    if (labelEl.classList.contains('collapsed')) {
-      wrap.style.maxHeight = wrap.scrollHeight + 'px';
-      requestAnimationFrame(() => { wrap.classList.add('collapsed'); });
-    } else {
-      wrap.classList.remove('collapsed');
-      wrap.style.maxHeight = wrap.scrollHeight + 'px';
-      wrap.addEventListener('transitionend', () => { wrap.style.maxHeight = 'none'; }, { once: true });
-    }
+  if (!wrap) return;
+  const isOpen = wrap.style.maxHeight && wrap.style.maxHeight !== '0px';
+  if (isOpen) {
+    wrap.style.maxHeight = wrap.scrollHeight + 'px';
+    requestAnimationFrame(() => { wrap.style.maxHeight = '0px'; });
+    labelEl.classList.add('collapsed');
+  } else {
+    wrap.style.maxHeight = wrap.scrollHeight + 'px';
+    wrap.addEventListener('transitionend', () => { if (!labelEl.classList.contains('collapsed')) wrap.style.maxHeight = 'none'; }, { once: true });
+    labelEl.classList.remove('collapsed');
   }
 }
 
-// Init nav wrap heights
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.nav-items-wrap').forEach(el => {
     el.style.maxHeight = 'none';
   });
 });
+
+// ─── PANEL COLLAPSE ───────────────────────────────────────────────────────────
+let focusMode = false;
+
+function toggleFocusMode() {
+  focusMode = !focusMode;
+  const layout = document.querySelector('.layout');
+  const btn = document.getElementById('focus-btn');
+  if (focusMode) {
+    layout.classList.add('nav-collapsed', 'feed-collapsed');
+    btn.style.color = 'var(--accent)';
+    btn.style.borderColor = 'var(--accent)';
+    btn.style.background = 'rgba(99,102,241,0.12)';
+    btn.textContent = '⛶ Focus';
+  } else {
+    layout.classList.remove('nav-collapsed', 'feed-collapsed');
+    btn.style.color = 'var(--muted)';
+    btn.style.borderColor = 'var(--border)';
+    btn.style.background = 'transparent';
+    btn.textContent = '⛶ Focus';
+  }
+}
+
+// ─── MOBILE NAV ───────────────────────────────────────────────────────────────
+function toggleMobileNav() {
+  const nav = document.querySelector('.nav');
+  const overlay = document.getElementById('mobile-overlay');
+  const isOpen = nav.classList.toggle('mobile-open');
+  overlay.style.display = isOpen ? 'block' : 'none';
+}
+function closeMobileNav() {
+  document.querySelector('.nav').classList.remove('mobile-open');
+  document.getElementById('mobile-overlay').style.display = 'none';
+}
+// Close nav when a nav-item is tapped on mobile
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.addEventListener('click', () => {
+    if (window.innerWidth <= 768) closeMobileNav();
+  });
+});
+
+// ─── DROPBOX ──────────────────────────────────────────────────────────────────
+const DROPS_KEY = 'agent-office-drops';
+
+const SEED_DROPS = [
+  {
+    id: 'seed-1',
+    subject: 'Affirmations',
+    priority: 'normal',
+    content: `Feature ideas for the Affirmations app — pick what resonates:
+
+PRACTICAL
+• Daily affirmation — one affirmation picked each day (same one all day, changes at midnight) — "word for the day"
+• Favorites — heart/bookmark affirmations you want to see more often
+• Loop mode — repeat the same affirmation X times before moving on (good for deep focus)
+
+CONTENT
+• More Danny affirmations — current deck is only 16
+• Visualization prompts — after each affirmation, a short 1-line instruction like "close your eyes and feel this as already true"
+• Affirmations by theme — filter by topic (abundance, love, purpose, confidence)
+
+EXPERIENCE
+• Sound — soft binaural beats or ambient music in the background
+• Speed control — set timer to 5s, 10s, 30s, or manual
+• Fullscreen mode — hide all controls, just show the affirmation for pure immersion
+• Morning/night mode — different colour palette at night (darker, warmer tones)
+
+QUESTION TO ANSWER FIRST: What's the vibe you use it for most?
+→ Quick daily practice, deep meditation sessions, or manifesting Danny?
+Knowing that narrows down what's actually worth building.`,
+    date: new Date().toISOString(),
+    done: false
+  }
+];
+
+function loadDrops() {
+  try {
+    const raw = localStorage.getItem(DROPS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  // First load — seed with initial drop
+  localStorage.setItem(DROPS_KEY, JSON.stringify(SEED_DROPS));
+  return SEED_DROPS;
+}
+
+function saveDrops(drops) {
+  localStorage.setItem(DROPS_KEY, JSON.stringify(drops));
+}
+
+function showDropForm() {
+  document.getElementById('drop-form').style.display = 'block';
+  document.getElementById('drop-subject').focus();
+}
+
+function hideDropForm() {
+  document.getElementById('drop-form').style.display = 'none';
+  document.getElementById('drop-subject').value = '';
+  document.getElementById('drop-content').value = '';
+  document.getElementById('drop-priority').value = 'normal';
+}
+
+function saveDrop() {
+  const subject = document.getElementById('drop-subject').value.trim() || 'General';
+  const content = document.getElementById('drop-content').value.trim();
+  const priority = document.getElementById('drop-priority').value;
+  if (!content) { alert('Add some content first!'); return; }
+  const drops = loadDrops();
+  drops.unshift({ id: 'drop-' + Date.now(), subject, priority, content, date: new Date().toISOString(), done: false });
+  saveDrops(drops);
+  hideDropForm();
+  renderDrops();
+}
+
+function toggleDone(id) {
+  const drops = loadDrops();
+  const d = drops.find(x => x.id === id);
+  if (d) d.done = !d.done;
+  saveDrops(drops);
+  renderDrops();
+}
+
+function deleteDrop(id) {
+  if (!confirm('Delete this drop?')) return;
+  const drops = loadDrops().filter(x => x.id !== id);
+  saveDrops(drops);
+  renderDrops();
+}
+
+let activeFilter = 'all';
+
+function filterDrops(subject, btn) {
+  activeFilter = subject;
+  document.querySelectorAll('.drop-filter').forEach(b => {
+    b.classList.remove('active');
+    b.style.background = 'transparent';
+    b.style.color = 'var(--muted)';
+    b.style.borderColor = 'var(--border)';
+  });
+  btn.classList.add('active');
+  btn.style.background = 'rgba(99,102,241,0.15)';
+  btn.style.color = 'var(--accent)';
+  btn.style.borderColor = 'var(--accent)';
+  renderDrops(false);
+}
+
+function renderDrops(rebuildFilters = true) {
+  const drops = loadDrops();
+  const list = document.getElementById('drops-list');
+  const filterBar = document.getElementById('drop-filters');
+  if (!list) return;
+
+  if (rebuildFilters) {
+    const subjects = ['all', ...new Set(drops.map(d => d.subject))];
+    filterBar.innerHTML = subjects.map(s => {
+      const isActive = s === activeFilter;
+      const label = s === 'all' ? 'All' : s;
+      return `<button class="drop-filter${isActive ? ' active' : ''}" onclick="filterDrops('${s}', this)"
+        style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid ${isActive ? 'var(--accent)' : 'var(--border)'}; background:${isActive ? 'rgba(99,102,241,0.15)' : 'transparent'}; color:${isActive ? 'var(--accent)' : 'var(--muted)'}; cursor:pointer;">${label}</button>`;
+    }).join('');
+  }
+
+  const filtered = activeFilter === 'all' ? drops : drops.filter(d => d.subject === activeFilter);
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div style="text-align:center; padding:60px 0; color:var(--muted); font-size:13px;">No drops yet. Hit <strong style="color:var(--text)">+ New Drop</strong> to add one.</div>`;
+    return;
+  }
+
+  const priorityLabel = { normal: '🔵', high: '🟡', urgent: '🔴' };
+
+  list.innerHTML = filtered.map(d => {
+    const date = new Date(d.date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
+    return `<div class="drop-card${d.done ? ' done' : ''}">
+      <div class="drop-header">
+        <span class="drop-tag">${d.subject}</span>
+        <span class="drop-priority-badge">${priorityLabel[d.priority] || '🔵'}</span>
+        <span class="drop-date">${date}</span>
+      </div>
+      <div class="drop-content">${escHTML(d.content)}</div>
+      <div class="drop-actions">
+        <button class="drop-btn done-btn" onclick="toggleDone('${d.id}')">${d.done ? '↩ Reopen' : '✓ Done'}</button>
+        <button class="drop-btn del-btn" onclick="deleteDrop('${d.id}')">🗑 Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escHTML(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Patch switchView to render Dropbox when opened + auto focus-mode
+(function() {
+  const _orig = window.switchView;
+  window.switchView = function(view, navEl) {
+    _orig(view, navEl);
+    if (view === 'dropbox') renderDrops();
+    // Auto focus mode for content views, off for office/org
+    const contentViews = ['dropbox', 'traderclaw', 'lyra'];
+    const layout = document.querySelector('.layout');
+    const btn = document.getElementById('focus-btn');
+    if (contentViews.includes(view)) {
+      layout.classList.add('nav-collapsed', 'feed-collapsed');
+      focusMode = true;
+      if (btn) { btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(99,102,241,0.12)'; }
+    } else if (view === 'office' || view === 'org') {
+      layout.classList.remove('nav-collapsed', 'feed-collapsed');
+      focusMode = false;
+      if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
+    }
+  };
+})();
 
 </script>
 </body>
