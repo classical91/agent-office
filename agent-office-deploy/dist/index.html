@@ -2092,51 +2092,15 @@ document.querySelectorAll('.nav-item').forEach(el => {
 });
 
 // ─── DROPBOX ──────────────────────────────────────────────────────────────────
-const DROPS_KEY = 'agent-office-drops';
+const DROPS_API = '/api/drops';
+let _dropsCache = null;
 
-const SEED_DROPS = [
-  {
-    id: 'seed-1',
-    subject: 'Affirmations',
-    priority: 'normal',
-    content: `Feature ideas for the Affirmations app — pick what resonates:
-
-PRACTICAL
-• Daily affirmation — one affirmation picked each day (same one all day, changes at midnight) — "word for the day"
-• Favorites — heart/bookmark affirmations you want to see more often
-• Loop mode — repeat the same affirmation X times before moving on (good for deep focus)
-
-CONTENT
-• More Danny affirmations — current deck is only 16
-• Visualization prompts — after each affirmation, a short 1-line instruction like "close your eyes and feel this as already true"
-• Affirmations by theme — filter by topic (abundance, love, purpose, confidence)
-
-EXPERIENCE
-• Sound — soft binaural beats or ambient music in the background
-• Speed control — set timer to 5s, 10s, 30s, or manual
-• Fullscreen mode — hide all controls, just show the affirmation for pure immersion
-• Morning/night mode — different colour palette at night (darker, warmer tones)
-
-QUESTION TO ANSWER FIRST: What's the vibe you use it for most?
-→ Quick daily practice, deep meditation sessions, or manifesting Danny?
-Knowing that narrows down what's actually worth building.`,
-    date: new Date().toISOString(),
-    done: false
-  }
-];
-
-function loadDrops() {
+async function loadDrops() {
   try {
-    const raw = localStorage.getItem(DROPS_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch(e) {}
-  // First load — seed with initial drop
-  localStorage.setItem(DROPS_KEY, JSON.stringify(SEED_DROPS));
-  return SEED_DROPS;
-}
-
-function saveDrops(drops) {
-  localStorage.setItem(DROPS_KEY, JSON.stringify(drops));
+    const r = await fetch(DROPS_API);
+    _dropsCache = await r.json();
+    return _dropsCache;
+  } catch(e) { return _dropsCache || []; }
 }
 
 function showDropForm() {
@@ -2151,30 +2115,35 @@ function hideDropForm() {
   document.getElementById('drop-priority').value = 'normal';
 }
 
-function saveDrop() {
+async function saveDrop() {
   const subject = document.getElementById('drop-subject').value.trim() || 'General';
   const content = document.getElementById('drop-content').value.trim();
   const priority = document.getElementById('drop-priority').value;
   if (!content) { alert('Add some content first!'); return; }
-  const drops = loadDrops();
-  drops.unshift({ id: 'drop-' + Date.now(), subject, priority, content, date: new Date().toISOString(), done: false });
-  saveDrops(drops);
+  await fetch(DROPS_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-API-Key': 'devin-key' },
+    body: JSON.stringify({ subject, priority, content })
+  });
   hideDropForm();
   renderDrops();
 }
 
-function toggleDone(id) {
-  const drops = loadDrops();
+async function toggleDone(id) {
+  const drops = _dropsCache || [];
   const d = drops.find(x => x.id === id);
-  if (d) d.done = !d.done;
-  saveDrops(drops);
+  if (!d) return;
+  await fetch(`${DROPS_API}/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'X-API-Key': 'devin-key' },
+    body: JSON.stringify({ done: !d.done })
+  });
   renderDrops();
 }
 
-function deleteDrop(id) {
+async function deleteDrop(id) {
   if (!confirm('Delete this drop?')) return;
-  const drops = loadDrops().filter(x => x.id !== id);
-  saveDrops(drops);
+  await fetch(`${DROPS_API}/${id}`, { method: 'DELETE', headers: { 'X-API-Key': 'devin-key' } });
   renderDrops();
 }
 
@@ -2195,11 +2164,13 @@ function filterDrops(subject, btn) {
   renderDrops(false);
 }
 
-function renderDrops(rebuildFilters = true) {
-  const drops = loadDrops();
+async function renderDrops(rebuildFilters = true) {
   const list = document.getElementById('drops-list');
   const filterBar = document.getElementById('drop-filters');
   if (!list) return;
+
+  list.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px;">Loading...</div>`;
+  const drops = await loadDrops();
 
   if (rebuildFilters) {
     const subjects = ['all', ...new Set(drops.map(d => d.subject))];
@@ -2224,7 +2195,7 @@ function renderDrops(rebuildFilters = true) {
     const date = new Date(d.date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
     return `<div class="drop-card${d.done ? ' done' : ''}">
       <div class="drop-header">
-        <span class="drop-tag">${d.subject}</span>
+        <span class="drop-tag">${escHTML(d.subject)}</span>
         <span class="drop-priority-badge">${priorityLabel[d.priority] || '🔵'}</span>
         <span class="drop-date">${date}</span>
       </div>
@@ -2238,7 +2209,7 @@ function renderDrops(rebuildFilters = true) {
 }
 
 function escHTML(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // Patch switchView to render Dropbox when opened + auto focus-mode
