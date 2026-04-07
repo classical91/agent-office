@@ -164,6 +164,21 @@
   .nav-link .link-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
   .nav-link .link-ext { font-size: 9px; margin-left: auto; color: #2d3748; }
 
+  /* PROJECT SUB-GROUPS */
+  .nav-proj-group { margin-bottom: 1px; }
+  .nav-proj-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 16px; font-size: 11px; font-weight: 600;
+    cursor: pointer; user-select: none; transition: all 0.15s;
+    border-left: 2px solid transparent; color: var(--muted);
+  }
+  .nav-proj-header:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+  .nav-proj-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .nav-proj-name { flex: 1; }
+  .nav-proj-chevron { font-size: 8px; color: var(--muted); transition: transform 0.2s; }
+  .nav-proj-header.collapsed .nav-proj-chevron { transform: rotate(-90deg); }
+  .nav-proj-links { overflow: hidden; transition: max-height 0.25s ease; max-height: 0px; }
+
   /* VIEW SWITCHER */
   .view { display: none; flex: 1; overflow: hidden; }
   .view.active { display: flex; }
@@ -255,12 +270,10 @@
   .org-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; max-width: 680px; }
   .org-row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; width: 100%; }
   .org-row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; width: 100%; }
-  .org-coders-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; width: 100%; }
   .org-card-wide { width: 100%; max-width: 520px; }
 
-  @media (max-width: 1200px) { .org-coders-row { grid-template-columns: repeat(3, 1fr); } }
-  @media (max-width: 900px) { .org-row-4 { grid-template-columns: repeat(2, 1fr); } .org-coders-row { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 600px) { .org-row-2, .org-row-4, .org-row-3, .org-coders-row { grid-template-columns: 1fr; } .org-card-wide { max-width: 100%; } }
+  @media (max-width: 900px) { .org-row-4 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .org-row-2, .org-row-4, .org-row-3 { grid-template-columns: 1fr; } .org-card-wide { max-width: 100%; } }
 
   /* OFFICE CANVAS AREA */
   .office {
@@ -570,384 +583,6 @@
   .mobile-nav-toggle { display: none; }
 
   /* DROPBOX */
-  .drop-section-kicker {
-    font-size: 10px;
-    color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: 0.16em;
-    margin-bottom: 10px;
-    font-weight: 700;
-  }
-  .drop-composer {
-    position: relative;
-    background: linear-gradient(180deg, rgba(19,22,29,0.98), rgba(11,13,18,0.98));
-    border: 1px solid rgba(99,102,241,0.22);
-    border-radius: 18px;
-    padding: 24px;
-    margin-bottom: 28px;
-    box-shadow: 0 20px 48px rgba(0,0,0,0.3);
-    overflow: hidden;
-  }
-  .drop-composer::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 22px;
-    right: 22px;
-    height: 1px;
-    background: linear-gradient(90deg, rgba(99,102,241,0), rgba(99,102,241,0.7), rgba(59,130,246,0));
-  }
-  .drop-composer-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 20px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
-  .drop-composer-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 8px;
-    line-height: 1.35;
-  }
-  .drop-composer-copy {
-    font-size: 13px;
-    color: var(--muted);
-    line-height: 1.7;
-    max-width: 540px;
-  }
-  .drop-composer-badges {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    align-items: flex-start;
-  }
-  .drop-composer-badge {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: #a5b4fc;
-    border: 1px solid rgba(99,102,241,0.22);
-    background: rgba(99,102,241,0.08);
-    border-radius: 999px;
-    padding: 6px 10px;
-    white-space: nowrap;
-  }
-  .drop-field-label {
-    font-size: 11px;
-    color: var(--muted);
-    display: block;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-  .drop-field-note {
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.55;
-    margin-top: 8px;
-  }
-  .drop-input,
-  .drop-textarea {
-    width: 100%;
-    background: #0d0f14;
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
-    padding: 12px 14px;
-    font-size: 15px;
-    color: var(--text);
-    outline: none;
-    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
-  }
-  .drop-input::placeholder,
-  .drop-textarea::placeholder { color: #475569; }
-  .drop-input:focus,
-  .drop-textarea:focus {
-    border-color: rgba(99,102,241,0.45);
-    box-shadow: 0 0 0 4px rgba(99,102,241,0.12);
-  }
-  .drop-textarea {
-    resize: vertical;
-    min-height: 136px;
-    font-family: inherit;
-    line-height: 1.7;
-  }
-  .drop-subject-field { position: relative; }
-  .drop-subject-shell { position: relative; }
-  .drop-subject-suggestions {
-    position: absolute;
-    top: calc(100% + 10px);
-    left: 0;
-    right: 0;
-    display: none;
-    background: #0d1017;
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 14px;
-    padding: 8px;
-    z-index: 20;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.38);
-  }
-  .drop-subject-suggestions.open { display: block; }
-  .drop-suggestion-row {
-    width: 100%;
-    border: none;
-    background: transparent;
-    border-radius: 10px;
-    padding: 10px 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    cursor: pointer;
-    color: var(--muted);
-    text-align: left;
-    transition: background 0.15s, color 0.15s, transform 0.15s;
-  }
-  .drop-suggestion-row:hover,
-  .drop-suggestion-row.active {
-    background: rgba(99,102,241,0.14);
-    color: var(--text);
-    transform: translateY(-1px);
-  }
-  .drop-suggestion-copy {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .drop-suggestion-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: inherit;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .drop-suggestion-meta {
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-  .drop-suggestion-arrow {
-    font-size: 12px;
-    color: inherit;
-    opacity: 0.7;
-  }
-  .drop-suggestion-empty {
-    font-size: 12px;
-    color: var(--muted);
-    padding: 12px;
-    line-height: 1.6;
-  }
-  .drop-quick-subjects {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 12px;
-  }
-  .drop-quick-pill {
-    border: 1px solid rgba(255,255,255,0.08);
-    background: rgba(255,255,255,0.02);
-    color: var(--muted);
-    border-radius: 999px;
-    padding: 8px 12px;
-    font-size: 11px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.15s;
-  }
-  .drop-quick-pill:hover,
-  .drop-quick-pill:focus-visible {
-    border-color: rgba(99,102,241,0.45);
-    background: rgba(99,102,241,0.1);
-    color: var(--text);
-    transform: translateY(-1px);
-  }
-  .drop-quick-pill-count {
-    font-size: 10px;
-    color: #a5b4fc;
-  }
-  .drop-quick-empty {
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.6;
-  }
-  .drop-priority-picker {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-  }
-  .drop-priority-option {
-    border: 1px solid rgba(255,255,255,0.08);
-    background: rgba(255,255,255,0.02);
-    border-radius: 14px;
-    padding: 12px;
-    min-height: 92px;
-    color: var(--muted);
-    text-align: left;
-    cursor: pointer;
-    transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
-  }
-  .drop-priority-option:hover,
-  .drop-priority-option:focus-visible {
-    border-color: rgba(255,255,255,0.18);
-    color: var(--text);
-    transform: translateY(-1px);
-  }
-  .drop-priority-option.active {
-    color: var(--text);
-    background: rgba(99,102,241,0.12);
-    border-color: rgba(99,102,241,0.45);
-    box-shadow: 0 14px 28px rgba(99,102,241,0.14);
-    transform: translateY(-1px);
-  }
-  .drop-priority-option.priority-normal { color: #93c5fd; }
-  .drop-priority-option.priority-high { color: #fcd34d; }
-  .drop-priority-option.priority-urgent { color: #fda4af; }
-  .drop-priority-option.priority-normal.active {
-    border-color: rgba(59,130,246,0.45);
-    box-shadow: 0 14px 28px rgba(59,130,246,0.16);
-  }
-  .drop-priority-option.priority-high.active {
-    border-color: rgba(234,179,8,0.45);
-    box-shadow: 0 14px 28px rgba(234,179,8,0.16);
-  }
-  .drop-priority-option.priority-urgent.active {
-    border-color: rgba(239,68,68,0.45);
-    box-shadow: 0 14px 28px rgba(239,68,68,0.16);
-  }
-  .drop-priority-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-  .drop-priority-name {
-    font-size: 13px;
-    font-weight: 700;
-  }
-  .drop-priority-note {
-    font-size: 11px;
-    line-height: 1.5;
-    color: inherit;
-    opacity: 0.9;
-  }
-  .drop-priority-dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 999px;
-    background: currentColor;
-    box-shadow: 0 0 0 5px rgba(255,255,255,0.03);
-  }
-  .drop-composer-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    flex-wrap: wrap;
-  }
-  .drop-composer-status {
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.6;
-    max-width: 440px;
-  }
-  .drop-composer-actions {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  .drop-secondary-action,
-  .drop-primary-action,
-  .drop-empty-action {
-    border-radius: 12px;
-    padding: 12px 18px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.15s, border-color 0.15s, color 0.15s, background 0.15s, box-shadow 0.15s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .drop-secondary-action,
-  .drop-empty-action {
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid rgba(255,255,255,0.1);
-  }
-  .drop-secondary-action:hover,
-  .drop-secondary-action:focus-visible,
-  .drop-empty-action:hover,
-  .drop-empty-action:focus-visible {
-    color: var(--text);
-    border-color: rgba(255,255,255,0.2);
-    transform: translateY(-1px);
-  }
-  .drop-primary-action {
-    background: linear-gradient(135deg, #4f46e5, #2563eb);
-    color: #fff;
-    border: none;
-    box-shadow: 0 16px 32px rgba(37,99,235,0.22);
-  }
-  .drop-primary-action:hover,
-  .drop-primary-action:focus-visible {
-    transform: translateY(-1px);
-    box-shadow: 0 18px 36px rgba(37,99,235,0.28);
-  }
-  .drop-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-bottom: 12px;
-  }
-  .drop-toolbar-copy {
-    font-size: 12px;
-    color: var(--muted);
-    line-height: 1.6;
-  }
-  .drop-filter-bar {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 24px;
-  }
-  .drop-filter {
-    font-size: 12px;
-    padding: 7px 12px;
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--muted);
-    cursor: pointer;
-    transition: all 0.15s;
-    -webkit-tap-highlight-color: transparent;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .drop-filter:hover {
-    color: var(--text);
-    border-color: rgba(255,255,255,0.18);
-  }
-  .drop-filter.active {
-    border-color: var(--accent);
-    background: rgba(99,102,241,0.15);
-    color: var(--accent);
-  }
-  .drop-filter-count {
-    font-size: 10px;
-    padding: 2px 7px;
-    border-radius: 999px;
-    background: rgba(255,255,255,0.06);
-    color: inherit;
-  }
   .drop-card {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -955,42 +590,17 @@
     padding: 20px 22px;
     margin-bottom: 16px;
     position: relative;
-    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    transition: border-color 0.2s;
   }
-  .drop-card:hover {
-    border-color: rgba(255,255,255,0.14);
-    transform: translateY(-1px);
-    box-shadow: 0 16px 30px rgba(0,0,0,0.16);
-  }
-  .drop-card.done { opacity: 0.55; }
+  .drop-card:hover { border-color: rgba(255,255,255,0.14); }
+  .drop-card.done { opacity: 0.45; }
   .drop-card.done .drop-content { text-decoration: line-through; }
   .drop-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
   .drop-tag {
     font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em;
     padding: 3px 10px; border-radius: 20px; background: rgba(99,102,241,0.15); color: var(--accent);
   }
-  .drop-priority-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 4px 10px;
-    border-radius: 999px;
-    border: 1px solid rgba(255,255,255,0.06);
-    background: rgba(255,255,255,0.03);
-  }
-  .drop-priority-badge.priority-normal { color: #60a5fa; }
-  .drop-priority-badge.priority-high { color: #facc15; }
-  .drop-priority-badge.priority-urgent { color: #f87171; }
-  .drop-priority-badge-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 999px;
-    background: currentColor;
-  }
+  .drop-priority-badge { font-size: 11px; }
   .drop-date { font-size: 11px; color: var(--muted); margin-left: auto; }
   .drop-content { font-size: 13px; color: var(--text); white-space: pre-wrap; line-height: 1.7; word-break: break-word; }
   .drop-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
@@ -1002,33 +612,8 @@
   .drop-btn:hover, .drop-btn:active { color: var(--text); border-color: rgba(255,255,255,0.2); }
   .drop-btn.done-btn:hover, .drop-btn.done-btn:active { color: var(--green); border-color: var(--green); }
   .drop-btn.del-btn:hover, .drop-btn.del-btn:active { color: var(--red); border-color: var(--red); }
-  .drop-empty {
-    background: linear-gradient(180deg, rgba(19,22,29,0.98), rgba(11,13,18,0.98));
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px;
-    padding: 32px 24px;
-    text-align: center;
-    color: var(--muted);
-  }
-  .drop-empty-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 8px;
-  }
-  .drop-empty-copy {
-    font-size: 13px;
-    line-height: 1.7;
-    max-width: 480px;
-    margin: 0 auto;
-  }
-  .drop-empty-actions {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-top: 18px;
-  }
+  .drop-filter { transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
+  .drop-filter:hover { opacity: 0.8; }
 
   /* Dropbox mobile tweaks */
   @media (max-width: 768px) {
@@ -1036,16 +621,11 @@
     .drop-form-grid { grid-template-columns: 1fr !important; }
     .drop-header-row { flex-direction: column; align-items: flex-start !important; gap: 12px !important; }
     .drop-new-btn { width: 100%; justify-content: center; }
-    .drop-composer { padding: 18px; }
-    .drop-composer-head { flex-direction: column; }
-    .drop-priority-picker { grid-template-columns: 1fr; }
-    .drop-composer-footer { flex-direction: column; align-items: stretch; }
-    .drop-composer-actions { width: 100%; }
-    .drop-composer-actions button { width: 100%; }
     .drop-card { padding: 16px; }
     .drop-btn { padding: 10px 16px; font-size: 13px; }
   }
 </style>
+<link rel="stylesheet" href="calendar-view.css"/>
 </head>
 <body>
 
@@ -1075,7 +655,8 @@
       <div class="nav-items-wrap">
         <div class="nav-item active" onclick="switchView('office', this)"><span class="icon">🏢</span> Office</div>
         <div class="nav-item" onclick="switchView('org', this)"><span class="icon">🗂️</span> Org Chart</div>
-        <div class="nav-item"><span class="icon">📅</span> Calendar</div>
+        <div class="nav-item"><span class="icon">🧠</span> Memory</div>
+        <div class="nav-item" onclick="switchView('calendar', this)"><span class="icon">📅</span> Calendar</div>
         <div class="nav-item" onclick="switchView('dropbox', this)"><span class="icon">📥</span> Dropbox</div>
       </div>
     </div>
@@ -1085,97 +666,51 @@
       <div class="nav-label" onclick="toggleNav(this)">Projects <span class="nav-chevron">▾</span></div>
       <div class="nav-items-wrap">
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--green);pointer-events:none;padding-bottom:2px;">📈 TraderClaw</div>
-        <a class="nav-link" href="https://traderclaw-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://railway.app/project/dc5c9acb-2c73-4a1c-b4c9-82a81e2efe9f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/trading-strategy" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">📈 TraderClaw</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://traderclaw-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/dc5c9acb-2c73-4a1c-b4c9-82a81e2efe9f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/trading-strategy" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--blue);pointer-events:none;padding-bottom:2px;margin-top:6px;">🌐 WebClaw</div>
-        <a class="nav-link" href="https://railway.app/project/3ac94b97-cca3-4550-9f53-2c8bdbc3f2ca" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/webclaw-service-hub" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#3b82f6;"></div><span class="nav-proj-name">🌐 WebClaw</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/3ac94b97-cca3-4550-9f53-2c8bdbc3f2ca" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/webclaw-service-hub" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--accent);pointer-events:none;padding-bottom:2px;margin-top:6px;">⬡ Agent Office</div>
-        <a class="nav-link" href="https://focused-creativity-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://railway.app/project/016e0c7d-696f-4bde-8461-17980bd04a7e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#6366f1;"></div><span class="nav-proj-name">⬡ Agent Office</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://focused-creativity-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/016e0c7d-696f-4bde-8461-17980bd04a7e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--accent);pointer-events:none;padding-bottom:2px;margin-top:6px;">⬡ Mission Control</div>
-        <a class="nav-link" href="https://railway.app/project/8da6b690-445e-4d54-832f-548c32cb8fad" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/mission-control" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#6366f1;"></div><span class="nav-proj-name">⬡ Mission Control</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/8da6b690-445e-4d54-832f-548c32cb8fad" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/mission-control" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--cyan);pointer-events:none;padding-bottom:2px;margin-top:6px;">🐦 XTrend Bot</div>
-        <a class="nav-link" href="https://railway.app/project/42dd6870-959a-4929-b462-e5e98c96dac6" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#06b6d4;"></div><span class="nav-proj-name">💀 Reaper · 🪙 Penny</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/42dd6870-959a-4929-b462-e5e98c96dac6" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--orange);pointer-events:none;padding-bottom:2px;margin-top:6px;">🔒 Cyber / Security</div>
-        <a class="nav-link" href="https://railway.app/project/241f80ab-f7a4-4a9f-bcf2-416928b07255" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (cyber-security) <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://railway.app/project/39cdade6-ffcb-4838-a276-9af11c7d3881" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (CyberClaw) <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://railway.app/project/3c344d7f-da58-402a-8bec-0f7b052fc388" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (security-app) <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/cyber-security" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub (cyber-security) <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/cyber-claw" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub (cyber-claw) <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#f97316;"></div><span class="nav-proj-name">🔒 Cyber / Security</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/241f80ab-f7a4-4a9f-bcf2-416928b07255" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> cyber-security <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/39cdade6-ffcb-4838-a276-9af11c7d3881" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> CyberClaw <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/cyber-security" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--purple);pointer-events:none;padding-bottom:2px;margin-top:6px;">✨ Innerverse</div>
-        <a class="nav-link" href="https://github.com/classical91/innerversebooks" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#a855f7;"></div><span class="nav-proj-name">✨ Innerverse</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://github.com/classical91/innerversebooks" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--yellow);pointer-events:none;padding-bottom:2px;margin-top:6px;">🧠 Decision Engine</div>
-        <a class="nav-link" href="https://railway.app/project/b1ffc05e-c74a-4b24-94a2-ef6239bc5bf5" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#eab308;"></div><span class="nav-proj-name">🧠 Decision Engine</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/b1ffc05e-c74a-4b24-94a2-ef6239bc5bf5" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--green);pointer-events:none;padding-bottom:2px;margin-top:6px;">💡 Idea Vault</div>
-        <a class="nav-link" href="https://railway.app/project/b4475c1e-b091-4446-ba91-48e57e639aa6" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">💡 Idea Vault</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/b4475c1e-b091-4446-ba91-48e57e639aa6" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--orange);pointer-events:none;padding-bottom:2px;margin-top:6px;">🏆 RankForge</div>
-        <a class="nav-link" href="https://railway.app/project/9dc553bb-f048-48af-981b-eaad9800471d" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#f97316;"></div><span class="nav-proj-name">🏆 RankForge</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/9dc553bb-f048-48af-981b-eaad9800471d" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--pink);pointer-events:none;padding-bottom:2px;margin-top:6px;">⚙️ n8n</div>
-        <a class="nav-link" href="https://railway.app/project/26a88079-68de-4932-b746-f83bddfcbc06" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#ec4899;"></div><span class="nav-proj-name">⚙️ n8n</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/26a88079-68de-4932-b746-f83bddfcbc06" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--cyan);pointer-events:none;padding-bottom:2px;margin-top:6px;">🌍 World Monitor</div>
-        <a class="nav-link" href="https://railway.app/project/754f5a3c-3fa2-402d-9b0b-704eea72f2d2" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/worldmonitor-Downloaded-" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#06b6d4;"></div><span class="nav-proj-name">🌍 World Monitor</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/754f5a3c-3fa2-402d-9b0b-704eea72f2d2" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/worldmonitor-Downloaded-" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--cyan);pointer-events:none;padding-bottom:2px;margin-top:6px;">🌍 Earth Watch</div>
-        <a class="nav-link" href="https://railway.app/project/d6d73954-7450-4273-8b8e-4eb40d8cea04" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/earth-watch" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#06b6d4;"></div><span class="nav-proj-name">🌏 Earth Watch</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/d6d73954-7450-4273-8b8e-4eb40d8cea04" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/earth-watch" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--green);pointer-events:none;padding-bottom:2px;margin-top:6px;">📈 Market Dashboard</div>
-        <a class="nav-link" href="https://railway.app/project/a2e18e5e-1e3f-4db2-9f44-42c517fb2590" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/market-dashboard" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">📈 Market Dashboard</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/a2e18e5e-1e3f-4db2-9f44-42c517fb2590" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/market-dashboard" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--muted);pointer-events:none;padding-bottom:2px;margin-top:6px;">💬 Comment Farm</div>
-        <a class="nav-link" href="https://railway.app/project/067b5254-82ba-476d-874f-d1dc40971999" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/commentfarm" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">💬 Comment Farm</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/067b5254-82ba-476d-874f-d1dc40971999" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/commentfarm" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--muted);pointer-events:none;padding-bottom:2px;margin-top:6px;">📡 Broadcast Sender</div>
-        <a class="nav-link" href="https://railway.app/project/9e18538c-a385-4a59-ba28-f806c66ebb69" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/broadcast-sender" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">📡 Broadcast Sender</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/9e18538c-a385-4a59-ba28-f806c66ebb69" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/broadcast-sender" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--red);pointer-events:none;padding-bottom:2px;margin-top:6px;">🎬 YT Summarizer</div>
-        <a class="nav-link" href="https://railway.app/project/a9662236-e548-4bab-8bd3-05dcb87193d0" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/youtube-video-summarizer" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#ef4444;"></div><span class="nav-proj-name">🎬 YT Summarizer</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/a9662236-e548-4bab-8bd3-05dcb87193d0" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/youtube-video-summarizer" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--muted);pointer-events:none;padding-bottom:2px;margin-top:6px;">🔮 Natal Affirmations</div>
-        <a class="nav-link" href="https://railway.app/project/9f5b6688-5aee-476b-b8f3-0a616cc839f1" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (v2) <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://railway.app/project/cede712b-3693-4a73-9ea1-d0cc92b95256" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (affirmations) <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/natal-affirmations" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🔮 Natal Affirmations</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/9f5b6688-5aee-476b-b8f3-0a616cc839f1" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (v2) <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/natal-affirmations" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--muted);pointer-events:none;padding-bottom:2px;margin-top:6px;">🔎 X Scraping</div>
-        <a class="nav-link" href="https://railway.app/project/d01ab81d-1b8c-4c22-93aa-ea9c46aec7e1" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🔎 X Scraping</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/d01ab81d-1b8c-4c22-93aa-ea9c46aec7e1" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--muted);pointer-events:none;padding-bottom:2px;margin-top:6px;">🔗 Interaction</div>
-        <a class="nav-link" href="https://railway.app/project/a23361f6-93d3-46a4-a45b-4c2b0411e1fd" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🔗 Interaction</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/a23361f6-93d3-46a4-a45b-4c2b0411e1fd" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--muted);pointer-events:none;padding-bottom:2px;margin-top:6px;">🃏 Misc</div>
-        <a class="nav-link" href="https://railway.app/project/3dd1f7ff-827f-4ddc-aa30-6837df85a3c3" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (flashcards) <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/flashcards" target="_blank"><div class="link-dot" style="background:#64748b;"></div> Flashcards <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://railway.app/project/95992860-8b8c-4469-b26f-1254adb2a96f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (workout-tracker) <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/workout-tracker" target="_blank"><div class="link-dot" style="background:#64748b;"></div> Workout Tracker <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://railway.app/project/330e335d-b7ed-49ad-bc59-6e277949e27e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (diet-plan) <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/diet-plan" target="_blank"><div class="link-dot" style="background:#64748b;"></div> Diet Plan <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/SEO" target="_blank"><div class="link-dot" style="background:#64748b;"></div> SEO <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🃏 Misc</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/3dd1f7ff-827f-4ddc-aa30-6837df85a3c3" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Flashcards <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/95992860-8b8c-4469-b26f-1254adb2a96f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Workout Tracker <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/330e335d-b7ed-49ad-bc59-6e277949e27e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Diet Plan <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/SEO" target="_blank"><div class="link-dot" style="background:#64748b;"></div> SEO <span class="link-ext">↗</span></a></div></div>
 
       </div>
     </div>
-
-    <!-- AGENTS -->
+<!-- AGENTS -->
     <div class="nav-section">
       <div class="nav-label" onclick="toggleNav(this)">Agents <span class="nav-chevron">▾</span></div>
       <div class="nav-items-wrap">
@@ -1203,10 +738,10 @@
       <div class="nav-label" onclick="toggleNav(this)">System <span class="nav-chevron">▾</span></div>
       <div class="nav-items-wrap">
         <div class="nav-item"><span class="icon">⚙️</span> Settings</div>
-        <a class="nav-link" data-dev-only="true" href="http://localhost:18789" target="_blank">
+        <a class="nav-link" href="http://localhost:18789" target="_blank">
           <div class="link-dot" style="background:#6366f1;"></div> Gateway (local) <span class="link-ext">↗</span>
         </a>
-        <a class="nav-link" data-dev-only="true" href="http://10.0.0.106:18789" target="_blank">
+        <a class="nav-link" href="http://10.0.0.106:18789" target="_blank">
           <div class="link-dot" style="background:#6366f1;"></div> Gateway (LAN) <span class="link-ext">↗</span>
         </a>
       </div>
@@ -1245,145 +780,6 @@
       </div>
 
       <div class="org-connector-v"></div>
-
-      <div class="org-row-center">
-        <div class="org-card org-card-wide" style="border-color:rgba(100,116,139,0.2);">
-          <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(100,116,139,0.15);border-color:rgba(100,116,139,0.25);">👑</div>
-            <div class="org-body">
-              <div class="org-name">FatherClaw</div>
-              <div class="org-title">Orchestrator</div>
-              <div class="org-desc">Routes tasks between all agents, monitors agent health, and manages cross-agent workflows. Jason's system-wide air traffic control.</div>
-              <div class="org-tags">
-                <span class="org-tag org-tag-indigo">Routing</span>
-                <span class="org-tag org-tag-teal">Health</span>
-                <span class="org-tag org-tag-indigo">Workflows</span>
-              </div>
-            </div>
-          </div>
-          <div class="org-cta">AGENT CARD →</div>
-        </div>
-      </div>
-
-      <div class="org-connector-v"></div>
-
-      <div class="org-section-label">
-        <div class="line"></div><div class="text">👨‍💻 OPENCLAW CODERS</div><div class="line"></div>
-      </div>
-
-      <div class="org-row-3">
-        <div class="org-card glow-orange">
-          <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(249,115,22,0.15);border-color:rgba(249,115,22,0.25);">⚙️</div>
-            <div class="org-body">
-              <div class="org-name">Coder</div>
-              <div class="org-title">General Dev Agent</div>
-              <div class="org-desc">OpenClaw <code>coder</code> agent. General-purpose coding, debugging, and feature work. Sonnet-powered.</div>
-              <div class="org-tags">
-                <span class="org-tag org-tag-orange">OpenClaw</span>
-                <span class="org-tag org-tag-teal">Sonnet</span>
-                <span class="org-tag org-tag-orange">Code</span>
-              </div>
-            </div>
-          </div>
-          <div class="org-cta">AGENT CARD →</div>
-        </div>
-        <div class="org-card glow-green">
-          <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.25);">🤖</div>
-            <div class="org-body">
-              <div class="org-name">Codex</div>
-              <div class="org-title">Lightweight Coder</div>
-              <div class="org-desc">OpenClaw <code>codex</code> agent on Qwen3.6-plus (free tier). Used for cheap parallel coding tasks and bulk refactors.</div>
-              <div class="org-tags">
-                <span class="org-tag org-tag-green">OpenClaw</span>
-                <span class="org-tag org-tag-teal">Qwen3.6</span>
-                <span class="org-tag org-tag-green">Free</span>
-              </div>
-            </div>
-          </div>
-          <div class="org-cta">AGENT CARD →</div>
-        </div>
-        <div class="org-card glow-pink">
-          <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(236,72,153,0.15);border-color:rgba(236,72,153,0.25);">🔨</div>
-            <div class="org-body">
-              <div class="org-name">Forge</div>
-              <div class="org-title">In-house Dev Agent</div>
-              <div class="org-desc">Custom dev agent for OpenClaw infra. Handles deploys, scripted builds, and routine fixes.</div>
-              <div class="org-tags">
-                <span class="org-tag org-tag-pink">In-house</span>
-                <span class="org-tag org-tag-teal">DevOps</span>
-                <span class="org-tag org-tag-pink">Build</span>
-              </div>
-            </div>
-          </div>
-          <div class="org-cta">AGENT CARD →</div>
-        </div>
-      </div>
-
-      <div class="org-section-label" style="margin-top:24px;">
-        <div class="line"></div><div class="text">⌘ EXTERNAL CODING TOOLS</div><div class="line"></div>
-      </div>
-
-      <div class="org-row-3">
-        <div class="org-card glow-orange">
-          <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(217,119,87,0.18);border-color:rgba(217,119,87,0.3);">🧠</div>
-            <div class="org-body">
-              <div class="org-name">Claude Code</div>
-              <div class="org-title">Anthropic CLI</div>
-              <div class="org-desc">Primary coding CLI. Long-context reasoning, full repo edits, runs in terminal and IDE.</div>
-              <div class="org-tags">
-                <span class="org-tag org-tag-orange">Anthropic</span>
-                <span class="org-tag org-tag-teal">CLI</span>
-                <span class="org-tag org-tag-orange">Sonnet 4.6</span>
-              </div>
-            </div>
-          </div>
-          <div class="org-cta">AGENT CARD →</div>
-        </div>
-        <div class="org-card glow-blue">
-          <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.25);">⌘</div>
-            <div class="org-body">
-              <div class="org-name">Cursor</div>
-              <div class="org-title">Agentic IDE</div>
-              <div class="org-desc">In-editor agent for inline edits, multi-file refactors, and quick UI iteration.</div>
-              <div class="org-tags">
-                <span class="org-tag org-tag-blue">IDE</span>
-                <span class="org-tag org-tag-teal">Inline</span>
-                <span class="org-tag org-tag-blue">Multi-file</span>
-              </div>
-            </div>
-          </div>
-          <div class="org-cta">AGENT CARD →</div>
-        </div>
-        <div class="org-card glow-purple">
-          <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.25);">🐙</div>
-            <div class="org-body">
-              <div class="org-name">GitHub Copilot</div>
-              <div class="org-title">Pair Programmer</div>
-              <div class="org-desc">Autocomplete and chat inside the editor. Fast completions for boilerplate and known patterns.</div>
-              <div class="org-tags">
-                <span class="org-tag org-tag-purple">GitHub</span>
-                <span class="org-tag org-tag-purple">Autocomplete</span>
-                <span class="org-tag org-tag-pink">Chat</span>
-              </div>
-            </div>
-          </div>
-          <div class="org-cta">AGENT CARD →</div>
-        </div>
-      </div>
-
-      <div class="org-flow-divider">
-        <div class="line"></div>
-        <div class="org-flow-label">↓ INPUT SIGNAL</div>
-        <div class="line"></div>
-        <div class="org-flow-label">OUTPUT ACTION ↓</div>
-        <div class="line"></div>
-      </div>
 
       <div class="org-section-label">
         <div class="line"></div><div class="text">💻 OPERATIONS</div><div class="line"></div>
@@ -1424,11 +820,19 @@
         </div>
       </div>
 
-      <div class="org-section-label" style="margin-top:32px;">
-        <div class="line"></div><div class="text">✨ SOCIAL & CREATIVE</div><div class="line"></div>
+      <div class="org-flow-divider">
+        <div class="line"></div>
+        <div class="org-flow-label">↓ INPUT SIGNAL</div>
+        <div class="line"></div>
+        <div class="org-flow-label">OUTPUT ACTION ↓</div>
+        <div class="line"></div>
       </div>
 
-      <div class="org-row-3">
+      <div class="org-section-label">
+        <div class="line"></div><div class="text">⚡ EXECUTION LAYER</div><div class="line"></div>
+      </div>
+
+      <div class="org-row-4">
         <div class="org-card glow-cyan">
           <div class="org-card-inner">
             <div class="org-avatar" style="background:rgba(6,182,212,0.15);border-color:rgba(6,182,212,0.25);">🐦</div>
@@ -1445,17 +849,17 @@
           </div>
           <div class="org-cta">AGENT CARD →</div>
         </div>
-        <div class="org-card glow-pink">
+        <div class="org-card glow-orange">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(236,72,153,0.15);border-color:rgba(236,72,153,0.25);">🤖</div>
+            <div class="org-avatar" style="background:rgba(249,115,22,0.15);border-color:rgba(249,115,22,0.25);">⚙️</div>
             <div class="org-body">
-              <div class="org-name">XBot</div>
-              <div class="org-title">X Publisher</div>
-              <div class="org-desc">Posts to @DiamondHands811, reposts content, engages with replies on X.</div>
+              <div class="org-name">Forge</div>
+              <div class="org-title">Dev Agent</div>
+              <div class="org-desc">Writes code, debugs, ships features. General-purpose developer.</div>
               <div class="org-tags">
-                <span class="org-tag org-tag-pink">Posting</span>
-                <span class="org-tag org-tag-orange">Reach</span>
-                <span class="org-tag org-tag-pink">Engage</span>
+                <span class="org-tag org-tag-orange">Coding</span>
+                <span class="org-tag org-tag-teal">DevOps</span>
+                <span class="org-tag org-tag-orange">Build</span>
               </div>
             </div>
           </div>
@@ -1477,56 +881,48 @@
           </div>
           <div class="org-cta">AGENT CARD →</div>
         </div>
-      </div>
-
-      <div class="org-section-label" style="margin-top:32px;">
-        <div class="line"></div><div class="text">🔬 RESEARCH & SUPPORT</div><div class="line"></div>
-      </div>
-
-      <div class="org-row-3">
-        <div class="org-card glow-indigo">
+        <div class="org-card" style="border-color:rgba(34,197,94,0.2);">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.25);">🔭</div>
+            <div class="org-avatar" style="background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.2);">💀</div>
             <div class="org-body">
-              <div class="org-name">Nova</div>
-              <div class="org-title">Product Researcher</div>
-              <div class="org-desc">OpenClaw <code>dev</code> agent. Hunts niche pain points, drafts positioning briefs, scopes new product ideas.</div>
+              <div class="org-name">Reaper</div>
+              <div class="org-title">Farm Operator</div>
+              <div class="org-desc">Runs the CommentFarm. Manages jobs, queue, and engagement stats. Cold, calculated, results only.</div>
               <div class="org-tags">
-                <span class="org-tag org-tag-indigo">Research</span>
-                <span class="org-tag org-tag-teal">Briefs</span>
-                <span class="org-tag org-tag-indigo">Discovery</span>
+                <span class="org-tag org-tag-green">CommentFarm</span>
+                <span class="org-tag org-tag-teal">Queue</span>
+                <span class="org-tag org-tag-green">Qwen/free</span>
               </div>
             </div>
           </div>
           <div class="org-cta">AGENT CARD →</div>
         </div>
-        <div class="org-card glow-orange">
+        <div class="org-card" style="border-color:rgba(234,179,8,0.2);">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(245,158,11,0.18);border-color:rgba(245,158,11,0.3);">🪙</div>
+            <div class="org-avatar" style="background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.2);">🪙</div>
             <div class="org-body">
               <div class="org-name">Penny</div>
-              <div class="org-title">OSS / Community</div>
-              <div class="org-desc">OpenClaw <code>oss</code> agent on Gemma 4-31B. Tracks open-source threads, drafts community replies, manages contributions.</div>
+              <div class="org-title">Utility Agent</div>
+              <div class="org-desc">Free-tier general purpose agent. Always available, practical, no-nonsense. Runs on Gemma 4.</div>
               <div class="org-tags">
-                <span class="org-tag org-tag-orange">OSS</span>
-                <span class="org-tag org-tag-teal">Gemma</span>
-                <span class="org-tag org-tag-orange">Community</span>
+                <span class="org-tag org-tag-orange">General</span>
+                <span class="org-tag org-tag-teal">Free Tier</span>
+                <span class="org-tag org-tag-blue">Gemma 4</span>
               </div>
             </div>
           </div>
           <div class="org-cta">AGENT CARD →</div>
-        </div>
-        <div class="org-card glow-green">
+        </div>        <div class="org-card glow-pink">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.25);">🌾</div>
+            <div class="org-avatar" style="background:rgba(236,72,153,0.15);border-color:rgba(236,72,153,0.25);">🤖</div>
             <div class="org-body">
-              <div class="org-name">FarmBot</div>
-              <div class="org-title">Comment Farming</div>
-              <div class="org-desc">OpenClaw <code>farmbot</code> agent on Qwen3.6. Mass-replies, engagement automation, low-cost reach building.</div>
+              <div class="org-name">XBot</div>
+              <div class="org-title">X Publisher</div>
+              <div class="org-desc">Posts to @DiamondHands811, reposts content, engages with replies on X.</div>
               <div class="org-tags">
-                <span class="org-tag org-tag-green">Engagement</span>
-                <span class="org-tag org-tag-teal">Qwen3.6</span>
-                <span class="org-tag org-tag-green">Reach</span>
+                <span class="org-tag org-tag-pink">Posting</span>
+                <span class="org-tag org-tag-orange">Reach</span>
+                <span class="org-tag org-tag-pink">Engage</span>
               </div>
             </div>
           </div>
@@ -1535,11 +931,27 @@
       </div>
 
       <div class="org-section-label" style="margin-top:32px;">
-        <div class="line"></div><div class="text">🛡 SECURITY</div><div class="line"></div>
+        <div class="line"></div><div class="text">🔒 SYSTEM LAYER</div><div class="line"></div>
       </div>
 
-      <div class="org-row-center">
-        <div class="org-card org-card-wide" style="border-color:rgba(239,68,68,0.15);">
+      <div class="org-row-2" style="max-width:680px; margin: 0 auto;">
+        <div class="org-card" style="border-color:rgba(100,116,139,0.2);">
+          <div class="org-card-inner">
+            <div class="org-avatar" style="background:rgba(100,116,139,0.15);border-color:rgba(100,116,139,0.25);">👑</div>
+            <div class="org-body">
+              <div class="org-name">FatherClaw</div>
+              <div class="org-title">Orchestrator</div>
+              <div class="org-desc">Routes tasks between all agents, monitors agent health, and manages cross-agent workflows. Jason's system-wide air traffic control.</div>
+              <div class="org-tags">
+                <span class="org-tag org-tag-indigo">Routing</span>
+                <span class="org-tag org-tag-teal">Health</span>
+                <span class="org-tag org-tag-indigo">Workflows</span>
+              </div>
+            </div>
+          </div>
+          <div class="org-cta">AGENT CARD →</div>
+        </div>
+        <div class="org-card" style="border-color:rgba(239,68,68,0.15);">
           <div class="org-card-inner">
             <div class="org-avatar" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.2);">🛡</div>
             <div class="org-body">
@@ -1561,7 +973,18 @@
         <div class="line"></div><div class="text">⬡ META LAYER - OPENCLAW GATEWAY</div><div class="line"></div>
       </div>
 
-      <div class="org-row-2" style="max-width:680px; margin: 0 auto;">
+      <div class="org-row-3">
+        <div class="org-card">
+          <div class="org-card-inner">
+            <div class="org-avatar" style="background:rgba(255,255,255,0.05);font-size:18px;">🧠</div>
+            <div class="org-body">
+              <div class="org-name" style="font-size:13px;">Memory</div>
+              <div class="org-title" style="font-size:11px;">Persistent Context</div>
+              <div class="org-desc">MEMORY.md + daily notes. Agents retain context across sessions.</div>
+              <div class="org-tags"><span class="org-tag org-tag-teal">MEMORY.md</span><span class="org-tag org-tag-indigo">Sessions</span></div>
+            </div>
+          </div>
+        </div>
         <div class="org-card">
           <div class="org-card-inner">
             <div class="org-avatar" style="background:rgba(255,255,255,0.05);font-size:18px;">📡</div>
@@ -1579,14 +1002,19 @@
             <div class="org-body">
               <div class="org-name" style="font-size:13px;">Models</div>
               <div class="org-title" style="font-size:11px;">AI Providers</div>
-              <div class="org-desc">Sonnet 4.6 (default) · GPT-5.4 (WebClaw) · Gemma 4-31B (Penny) · Qwen3.6 (Codex, FarmBot)</div>
-              <div class="org-tags"><span class="org-tag org-tag-indigo">Claude</span><span class="org-tag org-tag-green">GPT-5.4</span><span class="org-tag org-tag-orange">Gemma</span><span class="org-tag org-tag-teal">Qwen</span></div>
+              <div class="org-desc">Claude Sonnet (default) · GPT-5.4 (WebClaw)</div>
+              <div class="org-tags"><span class="org-tag org-tag-indigo">Claude</span><span class="org-tag org-tag-green">GPT-5.4</span></div>
             </div>
           </div>
         </div>
       </div>
 
     </div>
+  </div>
+
+  <!-- CALENDAR VIEW -->
+  <div class="view" id="view-calendar" style="flex-direction:column; overflow:hidden;">
+    <div id="calendar-app" style="flex:1; min-height:0;"></div>
   </div>
 
   <!-- TRADERCLAW VIEW -->
@@ -1609,79 +1037,14 @@
           <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">📥 DROPBOX</div>
           <div style="font-size:13px; color:var(--muted);">Drop ideas, tasks, and reminders — tagged by subject.</div>
         </div>
-        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;"><button id="drop-auth-btn" onclick="toggleDropboxAccess()" style="background:transparent; color:var(--muted); border:1px solid var(--border); border-radius:8px; padding:11px 16px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; -webkit-tap-highlight-color:transparent;">Unlock</button><button class="drop-new-btn" onclick="showDropForm()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 20px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap; -webkit-tap-highlight-color:transparent;">
+        <button class="drop-new-btn" onclick="showDropForm()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 20px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap; -webkit-tap-highlight-color:transparent;">
           <span>＋</span> New Drop
-        </button></div>
+        </button>
       </div>
 
-      <div id="drop-auth-note" style="font-size:12px; color:var(--muted); margin:-18px 0 24px;"></div>
-
       <!-- Add form (hidden by default) -->
-      <div id="drop-form" class="drop-composer" style="display:none;">
-        <div class="drop-composer-head">
-          <div>
-            <div class="drop-section-kicker">Dropbox v2 composer</div>
-            <div class="drop-composer-title">Capture a drop without changing the inbox.</div>
-            <div class="drop-composer-copy">Reuse saved subjects, set urgency with one tap, and keep the same <code>{ subject, priority, content }</code> payload behind the scenes.</div>
-          </div>
-          <div class="drop-composer-badges">
-            <span class="drop-composer-badge">Same API</span>
-            <span class="drop-composer-badge">Saved subject suggestions</span>
-            <span class="drop-composer-badge">Session lock aware</span>
-          </div>
-        </div>
-        <div class="drop-form-grid" style="display:grid; grid-template-columns:1.15fr 0.85fr; gap:16px; margin-bottom:16px;">
-          <div class="drop-field drop-subject-field">
-            <label class="drop-field-label" for="drop-subject">Subject / Tag</label>
-            <div class="drop-subject-shell">
-              <input id="drop-subject" class="drop-input" type="text" placeholder="Type a subject or pick from saved tags..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="drop-subject-suggestions" />
-              <div id="drop-subject-suggestions" class="drop-subject-suggestions" role="listbox"></div>
-            </div>
-            <div class="drop-field-note" id="drop-subject-note">Recent subjects from saved drops will show here while you type.</div>
-            <div id="drop-subject-pills" class="drop-quick-subjects" aria-label="Suggested subjects"></div>
-          </div>
-          <div class="drop-field">
-            <label class="drop-field-label" for="drop-priority">Priority</label>
-            <input id="drop-priority" type="hidden" value="normal" />
-            <div class="drop-priority-picker" id="drop-priority-picker" role="radiogroup" aria-label="Priority">
-              <button type="button" class="drop-priority-option priority-normal active" data-priority="normal" aria-pressed="true">
-                <div class="drop-priority-top">
-                  <span class="drop-priority-name">Normal</span>
-                  <span class="drop-priority-dot"></span>
-                </div>
-                <div class="drop-priority-note">Routine capture for notes that can wait.</div>
-              </button>
-              <button type="button" class="drop-priority-option priority-high" data-priority="high" aria-pressed="false">
-                <div class="drop-priority-top">
-                  <span class="drop-priority-name">High</span>
-                  <span class="drop-priority-dot"></span>
-                </div>
-                <div class="drop-priority-note">Needs attention soon, but not first in line.</div>
-              </button>
-              <button type="button" class="drop-priority-option priority-urgent" data-priority="urgent" aria-pressed="false">
-                <div class="drop-priority-top">
-                  <span class="drop-priority-name">Urgent</span>
-                  <span class="drop-priority-dot"></span>
-                </div>
-                <div class="drop-priority-note">Act on this first or it risks getting missed.</div>
-              </button>
-            </div>
-            <div class="drop-field-note">Pick the signal strength before you save it to the inbox.</div>
-          </div>
-        </div>
-        <div class="drop-field" style="margin-bottom:18px;">
-          <label class="drop-field-label" for="drop-content">Content</label>
-          <textarea id="drop-content" class="drop-textarea" rows="5" placeholder="Paste the note, task, reminder, or idea..."></textarea>
-          <div class="drop-field-note">This deployment keeps the same data contract and save flow, just with the server session lock in front of it.</div>
-        </div>
-        <div class="drop-composer-footer">
-          <div class="drop-composer-status">Unlock Dropbox for this browser session, then save to the same subject, priority, and content model.</div>
-          <div class="drop-composer-actions">
-            <button class="drop-secondary-action" onclick="hideDropForm()">Cancel</button>
-            <button class="drop-primary-action" onclick="saveDrop()">Save Drop</button>
-          </div>
-        </div>
-        <!-- Legacy Dropbox form kept disabled for deploy bundle sync
+      <div id="drop-form" style="display:none; background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:28px;">
+        <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:16px;">New Drop</div>
         <div class="drop-form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
           <div>
             <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">Subject / Tag</label>
@@ -1696,30 +1059,19 @@
             </select>
           </div>
         </div>
-        -->
-        <!-- Legacy Dropbox content/actions kept disabled for deploy bundle sync
         <div style="margin-bottom:12px;">
           <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">Content</label>
           <textarea id="drop-content" rows="5" placeholder="Paste your note, ideas, task..." style="width:100%; background:#0d0f14; border:1px solid var(--border); border-radius:8px; padding:11px 12px; font-size:16px; color:var(--text); outline:none; resize:vertical; font-family:inherit;"></textarea>
         </div>
-        -->
-        <!-- Legacy Dropbox action bar kept disabled for deploy bundle sync
         <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
           <button onclick="hideDropForm()" style="background:transparent; color:var(--muted); border:1px solid var(--border); border-radius:8px; padding:12px 20px; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;">Cancel</button>
           <button onclick="saveDrop()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 22px; font-size:14px; font-weight:600; cursor:pointer; -webkit-tap-highlight-color:transparent;">Save Drop</button>
         </div>
-        -->
       </div>
 
       <!-- Filter bar -->
-      <div class="drop-toolbar">
-        <div class="drop-toolbar-copy" id="drop-summary">Checking Dropbox access...</div>
-      </div>
-      <div class="drop-filter-bar" id="drop-filters">
-        <button class="drop-filter active" type="button" data-filter-subject="all">
-          <span>All</span>
-          <span class="drop-filter-count">0</span>
-        </button>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px;" id="drop-filters">
+        <button class="drop-filter active" onclick="filterDrops('all', this)" style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid var(--accent); background:rgba(99,102,241,0.15); color:var(--accent); cursor:pointer;">All</button>
       </div>
 
       <!-- Drops list -->
@@ -2128,7 +1480,6 @@ function addFeedItem(agent, msg) {
   // Keep max 30 items
   while (list.children.length > 30) list.removeChild(list.lastChild);
 
-  feedCount = list.children.length;
   document.getElementById('feedCount').textContent = feedCount;
 }
 
@@ -2148,7 +1499,7 @@ function updateAgentTask(agent) {
 
   // Update DOM element
   const el = document.getElementById('agent-' + agent.id);
-  if (el && currentView === 'office') {
+  if (el) {
     el.style.left = (agent.pos.x * officeArea.clientWidth) + 'px';
     el.style.top = (agent.pos.y * officeArea.clientHeight) + 'px';
     el.querySelector('.agent-label span').textContent = agent.currentTask;
@@ -2182,20 +1533,12 @@ function updateClock() {
 }
 
 // ─── VIEW SWITCHER ────────────────────────────────────────────
-const VIEW_HANDLERS = {
-  office: { enter: () => { resizeCanvas(); renderAgents(); }, focus: false },
-  org: { focus: false }
-};
-let currentView = 'office';
-
 function switchView(view, navEl) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('view-' + view).classList.add('active');
   if (navEl) navEl.classList.add('active');
-  const handler = VIEW_HANDLERS[view];
-  if (handler && typeof handler.enter === 'function') handler.enter();
-  currentView = view;
+  if (view === 'office') { resizeCanvas(); renderAgents(); }
 }
 
 // ─── INIT ─────────────────────────────────────────────────────
@@ -2208,24 +1551,17 @@ renderStatusBar();
 agentState.forEach(agent => addFeedItem(agent, randomFrom(agent.feed)));
 
 // Kick off loops
-let tickInterval = null;
-function startTickLoop() {
-  if (!tickInterval) tickInterval = setInterval(tick, 3500);
-}
-function stopTickLoop() {
-  if (!tickInterval) return;
-  clearInterval(tickInterval);
-  tickInterval = null;
-}
-
-startTickLoop();
+setInterval(tick, 3500);
 setInterval(updateClock, 1000);
 updateClock();
 
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) stopTickLoop();
-  else startTickLoop();
-});
+// Hook agent view inits
+const _origSwitch = switchView;
+window.switchView = function(view, navEl) {
+  _origSwitch(view, navEl);
+  if (view === 'traderclaw') DE.render();
+  if (view === 'lyra') SORA.render();
+};
 </script>
 
 <!-- ── DECISION ENGINE ─────────────────────────────────────── -->
@@ -2700,6 +2036,23 @@ function showAgentInfo(id) {
   panel.style.display = 'block';
 }
 
+
+function toggleProjGroup(headerEl) {
+  const links = headerEl.nextElementSibling;
+  if (!links) return;
+  const isOpen = links.style.maxHeight && links.style.maxHeight !== '0px';
+  if (isOpen) {
+    links.style.maxHeight = links.scrollHeight + 'px';
+    requestAnimationFrame(() => { links.style.maxHeight = '0px'; });
+    headerEl.classList.add('collapsed');
+  } else {
+    links.style.maxHeight = links.scrollHeight + 'px';
+    links.addEventListener('transitionend', () => {
+      if (!headerEl.classList.contains('collapsed')) links.style.maxHeight = 'none';
+    }, { once: true });
+    headerEl.classList.remove('collapsed');
+  }
+}
 function toggleNav(labelEl) {
   const wrap = labelEl.nextElementSibling;
   if (!wrap) return;
@@ -2719,17 +2072,17 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.nav-items-wrap').forEach(el => {
     el.style.maxHeight = 'none';
   });
-  const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-  if (!isLocalHost) {
-    document.querySelectorAll('[data-dev-only="true"]').forEach(el => el.remove());
-  }
+  document.querySelectorAll('.nav-proj-links').forEach(el => {
+    el.style.maxHeight = '0px';
+    el.style.overflow = 'hidden';
+  });
 });
 
 // ─── PANEL COLLAPSE ───────────────────────────────────────────────────────────
 let focusMode = false;
 
-function setFocusMode(enabled) {
-  focusMode = enabled;
+function toggleFocusMode() {
+  focusMode = !focusMode;
   const layout = document.querySelector('.layout');
   const btn = document.getElementById('focus-btn');
   if (focusMode) {
@@ -2748,24 +2101,6 @@ function setFocusMode(enabled) {
 }
 
 // ─── MOBILE NAV ───────────────────────────────────────────────────────────────
-function updateFocusButtonLabel() {
-  const btn = document.getElementById('focus-btn');
-  if (!btn) return;
-  btn.textContent = focusMode ? 'Exit Focus' : 'Focus';
-}
-
-const _baseSetFocusMode = setFocusMode;
-setFocusMode = function(enabled) {
-  _baseSetFocusMode(enabled);
-  updateFocusButtonLabel();
-};
-
-document.addEventListener('DOMContentLoaded', updateFocusButtonLabel);
-
-function toggleFocusMode() {
-  setFocusMode(!focusMode);
-}
-
 function toggleMobileNav() {
   const nav = document.querySelector('.nav');
   const overlay = document.getElementById('mobile-overlay');
@@ -2785,171 +2120,33 @@ document.querySelectorAll('.nav-item').forEach(el => {
 
 // ─── DROPBOX ──────────────────────────────────────────────────────────────────
 const DROPS_API = '/api/drops';
-const DROPS_SESSION_API = '/api/session';
 let _dropsCache = null;
-let dropsAuthState = { configured: false, authenticated: false, checked: false };
-
-VIEW_HANDLERS.traderclaw = { enter: () => DE.render(), focus: true };
-VIEW_HANDLERS.lyra = { enter: () => SORA.render(), focus: true };
-VIEW_HANDLERS.dropbox = { enter: () => renderDrops(), focus: true };
-
-async function requestJson(url, options = {}) {
-  const response = await fetch(url, {
-    credentials: 'same-origin',
-    ...options
-  });
-  const raw = await response.text();
-  let data = null;
-  try { data = raw ? JSON.parse(raw) : null; } catch (e) { data = null; }
-  if (!response.ok) {
-    const err = new Error((data && data.error) || `Request failed (${response.status})`);
-    err.status = response.status;
-    err.data = data;
-    throw err;
-  }
-  return data;
-}
-
-async function refreshDropboxAuthState() {
-  try {
-    const status = await requestJson(DROPS_SESSION_API);
-    dropsAuthState = { ...status, checked: true };
-  } catch (error) {
-    dropsAuthState = { configured: false, authenticated: false, checked: true };
-    throw error;
-  }
-  return dropsAuthState;
-}
-
-function updateDropboxAuthUI() {
-  const authBtn = document.getElementById('drop-auth-btn');
-  const authNote = document.getElementById('drop-auth-note');
-  const newBtn = document.querySelector('.drop-new-btn');
-  if (!authBtn || !authNote || !newBtn) return;
-
-  const canEdit = dropsAuthState.configured && dropsAuthState.authenticated;
-  newBtn.disabled = !canEdit;
-  newBtn.style.opacity = canEdit ? '1' : '0.55';
-  newBtn.style.cursor = canEdit ? 'pointer' : 'not-allowed';
-
-  if (!dropsAuthState.configured) {
-    authBtn.textContent = 'Auth Off';
-    authBtn.disabled = true;
-    authBtn.style.opacity = '0.55';
-    authBtn.style.cursor = 'not-allowed';
-    authBtn.style.color = 'var(--muted)';
-    authBtn.style.borderColor = 'var(--border)';
-    authBtn.style.background = 'transparent';
-    authNote.textContent = 'Server auth is not configured. Set DROPS_PASSPHRASE_HASH or DROPS_PASSPHRASE.';
-    return;
-  }
-
-  authBtn.disabled = false;
-  authBtn.style.opacity = '1';
-  authBtn.style.cursor = 'pointer';
-
-  if (dropsAuthState.authenticated) {
-    authBtn.textContent = 'Lock';
-    authBtn.style.color = 'var(--accent)';
-    authBtn.style.borderColor = 'var(--accent)';
-    authBtn.style.background = 'rgba(99,102,241,0.12)';
-    authNote.textContent = 'Unlocked for this browser session. Reads and writes now stay behind the server session cookie.';
-  } else {
-    authBtn.textContent = 'Unlock';
-    authBtn.style.color = 'var(--muted)';
-    authBtn.style.borderColor = 'var(--border)';
-    authBtn.style.background = 'transparent';
-    authNote.textContent = 'Dropbox is locked. Unlock it to load or edit drops.';
-  }
-}
-
-function renderDropsState(message, options = {}) {
-  const list = document.getElementById('drops-list');
-  const filterBar = document.getElementById('drop-filters');
-  if (!list || !filterBar) return;
-
-  filterBar.innerHTML = '';
-  const actionHtml = options.actionLabel
-    ? `<div style="margin-top:16px;"><button onclick="${options.actionOnClick}" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:10px 16px; font-size:13px; font-weight:600; cursor:pointer;">${options.actionLabel}</button></div>`
-    : '';
-  list.innerHTML = `<div style="text-align:center; padding:60px 0; color:var(--muted); font-size:13px;">${message}${actionHtml}</div>`;
-}
-
-async function ensureDropsSession(interactive = true) {
-  let status;
-  try {
-    status = dropsAuthState.checked ? dropsAuthState : await refreshDropboxAuthState();
-  } catch (error) {
-    if (interactive) alert(error.message || 'Could not reach the Dropbox auth endpoint.');
-    return false;
-  }
-  updateDropboxAuthUI();
-
-  if (!status.configured) {
-    if (interactive) alert('Dropbox auth is not configured on the server. Set DROPS_PASSPHRASE_HASH or DROPS_PASSPHRASE.');
-    return false;
-  }
-
-  if (status.authenticated) return true;
-  if (!interactive) return false;
-
-  const passphrase = window.prompt('Enter the Dropbox passphrase to unlock this view:');
-  if (passphrase == null) return false;
-
-  try {
-    await requestJson(DROPS_SESSION_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ passphrase })
-    });
-    dropsAuthState = { configured: true, authenticated: true, checked: true };
-    updateDropboxAuthUI();
-    return true;
-  } catch (error) {
-    alert(error.message || 'Unable to unlock Dropbox.');
-    return false;
-  }
-}
-
-async function toggleDropboxAccess() {
-  let status;
-  try {
-    status = dropsAuthState.checked ? dropsAuthState : await refreshDropboxAuthState();
-  } catch (error) {
-    alert(error.message || 'Could not reach the Dropbox auth endpoint.');
-    return;
-  }
-
-  if (status.authenticated) {
-    await requestJson(DROPS_SESSION_API, { method: 'DELETE' }).catch(() => null);
-    dropsAuthState = { configured: status.configured, authenticated: false, checked: true };
-    _dropsCache = null;
-    hideDropForm();
-    updateDropboxAuthUI();
-    renderDrops(false);
-    return;
-  }
-
-  if (await ensureDropsSession(true)) renderDrops();
-}
 
 async function loadDrops() {
   try {
-    const drops = await requestJson(DROPS_API);
-    _dropsCache = Array.isArray(drops) ? drops : [];
+    const r = await fetch(DROPS_API, {credentials:'include'});
+    if (r.status === 401) { showDropboxLock(); return _dropsCache || []; }
+    _dropsCache = await r.json();
     return _dropsCache;
-  } catch (error) {
-    if (error.status === 401) {
-      dropsAuthState = { ...dropsAuthState, authenticated: false, checked: true };
-      updateDropboxAuthUI();
-      return null;
-    }
-    throw error;
-  }
+  } catch(e) { return _dropsCache || []; }
+}
+function showDropboxLock() {
+  const app = document.getElementById('dropbox-app');
+  if (!app) return;
+  app.innerHTML = '<div style="padding:40px;text-align:center;">' +
+    '<div style="font-size:14px;color:var(--muted);margin-bottom:16px;">🔒 Dropbox is locked</div>' +
+    '<input id="drop-passphrase" type="password" placeholder="Enter passphrase" style="padding:10px;border-radius:6px;border:1px solid #333;background:#111;color:#fff;font-size:14px;width:220px;"/>' +
+    '<button onclick="unlockDropbox()" style="margin-left:8px;padding:10px 18px;border-radius:6px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:14px;">Unlock</button>' +
+    '<div id="drop-lock-msg" style="color:red;margin-top:10px;font-size:12px;"></div>' +
+    '</div>';
+}
+async function unlockDropbox() {
+  const pass = document.getElementById('drop-passphrase').value;
+  const r = await fetch('/api/auth/login', {method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({passphrase:pass})});
+  if (r.ok) { renderDrops(); } else { document.getElementById('drop-lock-msg').textContent = 'Wrong passphrase'; }
 }
 
-async function showDropForm() {
-  if (!await ensureDropsSession(true)) return;
+function showDropForm() {
   document.getElementById('drop-form').style.display = 'block';
   document.getElementById('drop-subject').focus();
 }
@@ -2961,79 +2158,36 @@ function hideDropForm() {
   document.getElementById('drop-priority').value = 'normal';
 }
 
-function handleDropboxRequestError(error, fallbackMessage) {
-  if (error.status === 401) {
-    dropsAuthState = { ...dropsAuthState, authenticated: false, checked: true };
-    _dropsCache = null;
-    hideDropForm();
-    updateDropboxAuthUI();
-    renderDrops(false);
-    alert('Dropbox session expired. Unlock it again to continue.');
-    return;
-  }
-
-  alert(error.message || fallbackMessage);
-}
-
 async function saveDrop() {
-  if (!await ensureDropsSession(true)) return;
-
-  const subject = document.getElementById('drop-subject').value.trim();
+  const subject = document.getElementById('drop-subject').value.trim() || 'General';
   const content = document.getElementById('drop-content').value.trim();
   const priority = document.getElementById('drop-priority').value;
-
-  if (!subject || subject.length > 100) {
-    alert('Subject is required and must be 100 characters or fewer.');
-    return;
-  }
-
-  if (!content || content.length > 10000) {
-    alert('Content is required and must be 10,000 characters or fewer.');
-    return;
-  }
-
-  try {
-    await requestJson(DROPS_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject, priority, content })
-    });
-    hideDropForm();
-    await renderDrops();
-  } catch (error) {
-    handleDropboxRequestError(error, 'Failed to save drop.');
-  }
+  if (!content) { alert('Add some content first!'); return; }
+  await fetch(DROPS_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-API-Key': 'devin-key' },
+    body: JSON.stringify({ subject, priority, content })
+  });
+  hideDropForm();
+  renderDrops();
 }
 
 async function toggleDone(id) {
-  if (!await ensureDropsSession(true)) return;
-
   const drops = _dropsCache || [];
-  const drop = drops.find(x => x.id === id);
-  if (!drop) return;
-
-  try {
-    await requestJson(`${DROPS_API}/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ done: !drop.done })
-    });
-    await renderDrops(false);
-  } catch (error) {
-    handleDropboxRequestError(error, 'Failed to update drop.');
-  }
+  const d = drops.find(x => x.id === id);
+  if (!d) return;
+  await fetch(`${DROPS_API}/${id}`, {credentials:'include',
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'X-API-Key': 'devin-key' },
+    body: JSON.stringify({ done: !d.done })
+  });
+  renderDrops();
 }
 
 async function deleteDrop(id) {
   if (!confirm('Delete this drop?')) return;
-  if (!await ensureDropsSession(true)) return;
-
-  try {
-    await requestJson(`${DROPS_API}/${id}`, { method: 'DELETE' });
-    await renderDrops(false);
-  } catch (error) {
-    handleDropboxRequestError(error, 'Failed to delete drop.');
-  }
+  await fetch(`${DROPS_API}/${id}`, {credentials:'include', method: 'DELETE', headers: { 'X-API-Key': 'devin-key' } });
+  renderDrops();
 }
 
 let activeFilter = 'all';
@@ -3056,67 +2210,25 @@ function filterDrops(subject, btn) {
 async function renderDrops(rebuildFilters = true) {
   const list = document.getElementById('drops-list');
   const filterBar = document.getElementById('drop-filters');
-  if (!list || !filterBar) return;
+  if (!list) return;
 
   list.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px;">Loading...</div>`;
-  try {
-    await refreshDropboxAuthState();
-  } catch (error) {
-    updateDropboxAuthUI();
-    hideDropForm();
-    renderDropsState('Could not reach the Dropbox auth endpoint.');
-    return;
-  }
-
-  updateDropboxAuthUI();
-
-  if (!dropsAuthState.configured) {
-    hideDropForm();
-    renderDropsState('Dropbox auth is not configured on the server.');
-    return;
-  }
-
-  if (!dropsAuthState.authenticated) {
-    hideDropForm();
-    renderDropsState('Dropbox is locked.', {
-      actionLabel: 'Unlock Dropbox',
-      actionOnClick: 'toggleDropboxAccess()'
-    });
-    return;
-  }
-
-  let drops;
-  try {
-    drops = await loadDrops();
-  } catch (error) {
-    renderDropsState(escHTML(error.message || 'Failed to load drops.'));
-    return;
-  }
-
-  if (drops === null) {
-    hideDropForm();
-    renderDropsState('Dropbox is locked.', {
-      actionLabel: 'Unlock Dropbox',
-      actionOnClick: 'toggleDropboxAccess()'
-    });
-    return;
-  }
+  const drops = await loadDrops();
 
   if (rebuildFilters) {
     const subjects = ['all', ...new Set(drops.map(d => d.subject))];
-    if (!subjects.includes(activeFilter)) activeFilter = 'all';
     filterBar.innerHTML = subjects.map(s => {
       const isActive = s === activeFilter;
       const label = s === 'all' ? 'All' : s;
-      return `<button class="drop-filter${isActive ? ' active' : ''}" onclick="filterDrops(decodeURIComponent('${encodeURIComponent(s)}'), this)"
-        style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid ${isActive ? 'var(--accent)' : 'var(--border)'}; background:${isActive ? 'rgba(99,102,241,0.15)' : 'transparent'}; color:${isActive ? 'var(--accent)' : 'var(--muted)'}; cursor:pointer;">${escHTML(label)}</button>`;
+      return `<button class="drop-filter${isActive ? ' active' : ''}" onclick="filterDrops('${s}', this)"
+        style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid ${isActive ? 'var(--accent)' : 'var(--border)'}; background:${isActive ? 'rgba(99,102,241,0.15)' : 'transparent'}; color:${isActive ? 'var(--accent)' : 'var(--muted)'}; cursor:pointer;">${label}</button>`;
     }).join('');
   }
 
   const filtered = activeFilter === 'all' ? drops : drops.filter(d => d.subject === activeFilter);
 
   if (filtered.length === 0) {
-    list.innerHTML = `<div style="text-align:center; padding:60px 0; color:var(--muted); font-size:13px;">No drops yet. Hit <strong style="color:var(--text)">New Drop</strong> to add one.</div>`;
+    list.innerHTML = `<div style="text-align:center; padding:60px 0; color:var(--muted); font-size:13px;">No drops yet. Hit <strong style="color:var(--text)">+ New Drop</strong> to add one.</div>`;
     return;
   }
 
@@ -3139,556 +2251,37 @@ async function renderDrops(rebuildFilters = true) {
   }).join('');
 }
 
-const DROP_PRIORITY_META = {
-  normal: { label: 'Normal', className: 'priority-normal' },
-  high: { label: 'High', className: 'priority-high' },
-  urgent: { label: 'Urgent', className: 'priority-urgent' }
-};
-const dropComposerState = {
-  subjectDirectory: [],
-  suggestions: [],
-  activeSuggestionIndex: -1
-};
-
-function normalizeDropSubject(value) {
-  return String(value || '').replace(/\s+/g, ' ').trim();
-}
-
-function getDropDefaultSubject() {
-  return activeFilter === 'all' ? '' : (normalizeDropSubject(activeFilter) || '');
-}
-
-function initDropboxUI() {
-  if (initDropboxUI.done) return;
-  initDropboxUI.done = true;
-
-  const subjectInput = document.getElementById('drop-subject');
-  const subjectSuggestions = document.getElementById('drop-subject-suggestions');
-  const subjectPills = document.getElementById('drop-subject-pills');
-  const priorityPicker = document.getElementById('drop-priority-picker');
-  const filterBar = document.getElementById('drop-filters');
-
-  if (priorityPicker) {
-    priorityPicker.addEventListener('click', (event) => {
-      const button = event.target.closest('[data-priority]');
-      if (!button) return;
-      setDropPriority(button.dataset.priority);
-    });
-  }
-
-  if (subjectInput) {
-    subjectInput.addEventListener('input', () => {
-      dropComposerState.activeSuggestionIndex = -1;
-      renderDropSubjectSuggestions(true);
-    });
-    subjectInput.addEventListener('focus', () => {
-      renderDropSubjectSuggestions(true);
-    });
-    subjectInput.addEventListener('keydown', handleDropSubjectKeydown);
-    subjectInput.addEventListener('blur', () => {
-      window.setTimeout(() => {
-        const activeEl = document.activeElement;
-        if (!activeEl || !activeEl.closest('#drop-form')) closeDropSubjectSuggestions();
-      }, 100);
-    });
-  }
-
-  if (subjectSuggestions) {
-    subjectSuggestions.addEventListener('mousedown', (event) => {
-      const button = event.target.closest('[data-subject-suggestion]');
-      if (!button) return;
-      event.preventDefault();
-      selectDropSubject(button.dataset.subjectSuggestion, true);
-    });
-  }
-
-  if (subjectPills) {
-    subjectPills.addEventListener('click', (event) => {
-      const button = event.target.closest('[data-drop-pill]');
-      if (!button) return;
-      selectDropSubject(button.dataset.dropPill, true);
-    });
-  }
-
-  if (filterBar) {
-    filterBar.addEventListener('click', (event) => {
-      const button = event.target.closest('[data-filter-subject]');
-      if (!button) return;
-      filterDrops(button.dataset.filterSubject);
-    });
-  }
-
-  document.addEventListener('click', (event) => {
-    if (!event.target.closest('#drop-form')) closeDropSubjectSuggestions();
-  });
-}
-
-function syncDropboxSubjects(drops) {
-  const bySubject = new Map();
-  (drops || []).forEach(drop => {
-    const subject = normalizeDropSubject(drop.subject) || 'General';
-    const existing = bySubject.get(subject) || { label: subject, count: 0, lastSeen: 0 };
-    existing.count += 1;
-    const stamp = Number(new Date(drop.date || 0)) || 0;
-    if (stamp > existing.lastSeen) existing.lastSeen = stamp;
-    bySubject.set(subject, existing);
-  });
-
-  dropComposerState.subjectDirectory = Array.from(bySubject.values()).sort((a, b) => {
-    if (b.lastSeen !== a.lastSeen) return b.lastSeen - a.lastSeen;
-    if (b.count !== a.count) return b.count - a.count;
-    return a.label.localeCompare(b.label);
-  });
-
-  updateDropSubjectNote();
-  renderDropQuickSubjects();
-  renderDropSubjectSuggestions(false);
-}
-
-function updateDropSubjectNote() {
-  const note = document.getElementById('drop-subject-note');
-  if (!note) return;
-
-  if (!dropComposerState.subjectDirectory.length) {
-    note.textContent = 'No saved subjects yet. Type any tag you want and it will become a future suggestion.';
-    return;
-  }
-
-  const recent = dropComposerState.subjectDirectory.slice(0, 2).map(entry => entry.label);
-  note.textContent = `Recent subjects stay one tap away. Try ${recent.map(label => `"${label}"`).join(' or ')} or type your own.`;
-}
-
-function renderDropQuickSubjects() {
-  const container = document.getElementById('drop-subject-pills');
-  if (!container) return;
-
-  const quickSubjects = dropComposerState.subjectDirectory.slice(0, 5);
-  if (!quickSubjects.length) {
-    container.innerHTML = `<span class="drop-quick-empty">Saved subjects will appear here after your first few drops.</span>`;
-    return;
-  }
-
-  container.innerHTML = quickSubjects.map(entry => `<button type="button" class="drop-quick-pill" data-drop-pill="${escAttr(entry.label)}">
-    <span>${escHTML(entry.label)}</span>
-    <span class="drop-quick-pill-count">${entry.count}</span>
-  </button>`).join('');
-}
-
-function getDropSubjectSuggestions(query) {
-  const normalizedQuery = normalizeDropSubject(query).toLowerCase();
-  return dropComposerState.subjectDirectory
-    .filter(entry => {
-      const label = entry.label.toLowerCase();
-      if (normalizedQuery && label === normalizedQuery) return false;
-      return !normalizedQuery || label.includes(normalizedQuery);
-    })
-    .slice(0, 6);
-}
-
-function renderDropSubjectSuggestions(openPanel = false) {
-  const input = document.getElementById('drop-subject');
-  const panel = document.getElementById('drop-subject-suggestions');
-  if (!input || !panel) return;
-
-  const suggestions = getDropSubjectSuggestions(input.value);
-  dropComposerState.suggestions = suggestions;
-
-  if (dropComposerState.activeSuggestionIndex >= suggestions.length) {
-    dropComposerState.activeSuggestionIndex = suggestions.length - 1;
-  }
-
-  const typedValue = normalizeDropSubject(input.value);
-  const shouldShowEmpty = openPanel && typedValue && suggestions.length === 0;
-  const shouldOpen = openPanel && (suggestions.length > 0 || shouldShowEmpty);
-
-  if (!shouldOpen) {
-    closeDropSubjectSuggestions();
-    return;
-  }
-
-  panel.classList.add('open');
-  input.setAttribute('aria-expanded', 'true');
-
-  if (!suggestions.length) {
-    input.removeAttribute('aria-activedescendant');
-    panel.innerHTML = `<div class="drop-suggestion-empty">No saved subjects match "${escHTML(typedValue)}" yet. Press Enter or keep typing to save it as a new tag.</div>`;
-    return;
-  }
-
-  panel.innerHTML = suggestions.map((entry, index) => {
-    const isActive = index === dropComposerState.activeSuggestionIndex;
-    return `<button type="button" id="drop-subject-option-${index}" class="drop-suggestion-row${isActive ? ' active' : ''}" data-subject-suggestion="${escAttr(entry.label)}" role="option" aria-selected="${isActive ? 'true' : 'false'}">
-      <span class="drop-suggestion-copy">
-        <span class="drop-suggestion-label">${escHTML(entry.label)}</span>
-        <span class="drop-suggestion-meta">${entry.count} drop${entry.count === 1 ? '' : 's'}</span>
-      </span>
-      <span class="drop-suggestion-arrow">Use</span>
-    </button>`;
-  }).join('');
-
-  if (dropComposerState.activeSuggestionIndex >= 0) {
-    input.setAttribute('aria-activedescendant', `drop-subject-option-${dropComposerState.activeSuggestionIndex}`);
-  } else {
-    input.removeAttribute('aria-activedescendant');
-  }
-}
-
-function closeDropSubjectSuggestions() {
-  const input = document.getElementById('drop-subject');
-  const panel = document.getElementById('drop-subject-suggestions');
-  dropComposerState.activeSuggestionIndex = -1;
-  dropComposerState.suggestions = [];
-  if (panel) {
-    panel.classList.remove('open');
-    panel.innerHTML = '';
-  }
-  if (input) {
-    input.setAttribute('aria-expanded', 'false');
-    input.removeAttribute('aria-activedescendant');
-  }
-}
-
-function selectDropSubject(subject, moveToContent = false) {
-  const input = document.getElementById('drop-subject');
-  if (!input) return;
-
-  input.value = normalizeDropSubject(subject);
-  closeDropSubjectSuggestions();
-  input.focus();
-  input.setSelectionRange(input.value.length, input.value.length);
-
-  if (moveToContent) {
-    const contentField = document.getElementById('drop-content');
-    if (contentField) contentField.focus();
-  }
-}
-
-function handleDropSubjectKeydown(event) {
-  const suggestions = dropComposerState.suggestions;
-  if (event.key === 'ArrowDown' && suggestions.length) {
-    event.preventDefault();
-    dropComposerState.activeSuggestionIndex = Math.min(dropComposerState.activeSuggestionIndex + 1, suggestions.length - 1);
-    renderDropSubjectSuggestions(true);
-    return;
-  }
-
-  if (event.key === 'ArrowUp' && suggestions.length) {
-    event.preventDefault();
-    dropComposerState.activeSuggestionIndex = Math.max(dropComposerState.activeSuggestionIndex - 1, 0);
-    renderDropSubjectSuggestions(true);
-    return;
-  }
-
-  if (event.key === 'Enter') {
-    if (dropComposerState.activeSuggestionIndex >= 0 && suggestions[dropComposerState.activeSuggestionIndex]) {
-      event.preventDefault();
-      selectDropSubject(suggestions[dropComposerState.activeSuggestionIndex].label, true);
-      return;
-    }
-    closeDropSubjectSuggestions();
-    return;
-  }
-
-  if (event.key === 'Escape') {
-    closeDropSubjectSuggestions();
-  }
-}
-
-function setDropPriority(priority) {
-  const safePriority = DROP_PRIORITY_META[priority] ? priority : 'normal';
-  const input = document.getElementById('drop-priority');
-  if (input) input.value = safePriority;
-
-  document.querySelectorAll('#drop-priority-picker [data-priority]').forEach(button => {
-    const isActive = button.dataset.priority === safePriority;
-    button.classList.toggle('active', isActive);
-    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-  });
-}
-
-function updateDropFilterButtons() {
-  document.querySelectorAll('.drop-filter').forEach(button => {
-    button.classList.toggle('active', button.dataset.filterSubject === activeFilter);
-  });
-}
-
-function updateDropboxAuthUI() {
-  const authBtn = document.getElementById('drop-auth-btn');
-  const authNote = document.getElementById('drop-auth-note');
-  const newBtn = document.querySelector('.drop-new-btn');
-  const summary = document.getElementById('drop-summary');
-  if (!authBtn || !authNote || !newBtn) return;
-
-  const canEdit = dropsAuthState.configured && dropsAuthState.authenticated;
-  newBtn.disabled = !canEdit;
-  newBtn.style.opacity = canEdit ? '1' : '0.55';
-  newBtn.style.cursor = canEdit ? 'pointer' : 'not-allowed';
-
-  if (!dropsAuthState.configured) {
-    authBtn.textContent = 'Auth Off';
-    authBtn.disabled = true;
-    authBtn.style.opacity = '0.55';
-    authBtn.style.cursor = 'not-allowed';
-    authBtn.style.color = 'var(--muted)';
-    authBtn.style.borderColor = 'var(--border)';
-    authBtn.style.background = 'transparent';
-    authNote.textContent = 'Server auth is not configured. Set DROPS_PASSPHRASE_HASH or DROPS_PASSPHRASE.';
-    if (summary) summary.textContent = 'Dropbox auth is not configured on the server.';
-    return;
-  }
-
-  authBtn.disabled = false;
-  authBtn.style.opacity = '1';
-  authBtn.style.cursor = 'pointer';
-
-  if (dropsAuthState.authenticated) {
-    authBtn.textContent = 'Lock';
-    authBtn.style.color = 'var(--accent)';
-    authBtn.style.borderColor = 'var(--accent)';
-    authBtn.style.background = 'rgba(99,102,241,0.12)';
-    authNote.textContent = 'Unlocked for this browser session. Reads and writes now stay behind the server session cookie.';
-  } else {
-    authBtn.textContent = 'Unlock';
-    authBtn.style.color = 'var(--muted)';
-    authBtn.style.borderColor = 'var(--border)';
-    authBtn.style.background = 'transparent';
-    authNote.textContent = 'Dropbox is locked. Unlock it to load or edit drops.';
-    if (summary) summary.textContent = 'Unlock Dropbox to load the subject filters and drop stream.';
-  }
-}
-
-function renderDropsState(message, options = {}) {
-  const list = document.getElementById('drops-list');
-  const filterBar = document.getElementById('drop-filters');
-  const summary = document.getElementById('drop-summary');
-  if (!list || !filterBar) return;
-
-  filterBar.innerHTML = '';
-  if (summary) summary.textContent = options.summary || message;
-
-  const actionHtml = options.actionLabel
-    ? `<div class="drop-empty-actions"><button type="button" class="drop-empty-action" onclick="${options.actionOnClick}">${options.actionLabel}</button></div>`
-    : '';
-
-  list.innerHTML = `<div class="drop-empty">
-    <div class="drop-empty-title">${options.title || 'Dropbox unavailable'}</div>
-    <div class="drop-empty-copy">${message}</div>
-    ${actionHtml}
-  </div>`;
-}
-
-async function showDropForm() {
-  if (!await ensureDropsSession(true)) return;
-  initDropboxUI();
-  const form = document.getElementById('drop-form');
-  const subjectInput = document.getElementById('drop-subject');
-
-  form.style.display = 'block';
-  subjectInput.value = getDropDefaultSubject();
-  syncDropboxSubjects(_dropsCache || []);
-  setDropPriority(document.getElementById('drop-priority').value || 'normal');
-  renderDropSubjectSuggestions(false);
-  subjectInput.focus();
-  subjectInput.setSelectionRange(subjectInput.value.length, subjectInput.value.length);
-}
-
-function hideDropForm() {
-  document.getElementById('drop-form').style.display = 'none';
-  document.getElementById('drop-subject').value = '';
-  document.getElementById('drop-content').value = '';
-  closeDropSubjectSuggestions();
-  setDropPriority('normal');
-}
-
-async function saveDrop() {
-  if (!await ensureDropsSession(true)) return;
-
-  const subject = normalizeDropSubject(document.getElementById('drop-subject').value) || 'General';
-  const content = document.getElementById('drop-content').value.trim();
-  const priority = document.getElementById('drop-priority').value;
-
-  if (!content || content.length > 10000) {
-    alert('Content is required and must be 10,000 characters or fewer.');
-    return;
-  }
-
-  try {
-    await requestJson(DROPS_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject, priority, content })
-    });
-    hideDropForm();
-    await renderDrops();
-  } catch (error) {
-    handleDropboxRequestError(error, 'Failed to save drop.');
-  }
-}
-
-function filterDrops(subject) {
-  activeFilter = subject;
-  updateDropFilterButtons();
-  renderDrops(false);
-}
-
-function clearDropFilter() {
-  activeFilter = 'all';
-  updateDropFilterButtons();
-  renderDrops(false);
-}
-
-async function renderDrops(rebuildFilters = true) {
-  const list = document.getElementById('drops-list');
-  const filterBar = document.getElementById('drop-filters');
-  const summary = document.getElementById('drop-summary');
-  if (!list || !filterBar) return;
-
-  initDropboxUI();
-  list.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px;">Loading...</div>`;
-  try {
-    await refreshDropboxAuthState();
-  } catch (error) {
-    updateDropboxAuthUI();
-    hideDropForm();
-    renderDropsState('Could not reach the Dropbox auth endpoint.', {
-      title: 'Auth endpoint unavailable'
-    });
-    return;
-  }
-
-  updateDropboxAuthUI();
-
-  if (!dropsAuthState.configured) {
-    hideDropForm();
-    renderDropsState('Dropbox auth is not configured on the server.', {
-      title: 'Dropbox auth is off'
-    });
-    return;
-  }
-
-  if (!dropsAuthState.authenticated) {
-    hideDropForm();
-    renderDropsState('Unlock Dropbox to view and edit the drop stream.', {
-      title: 'Dropbox is locked',
-      actionLabel: 'Unlock Dropbox',
-      actionOnClick: 'toggleDropboxAccess()'
-    });
-    return;
-  }
-
-  let drops;
-  try {
-    drops = await loadDrops();
-  } catch (error) {
-    renderDropsState(escHTML(error.message || 'Failed to load drops.'), {
-      title: 'Could not load drops'
-    });
-    return;
-  }
-
-  if (drops === null) {
-    hideDropForm();
-    renderDropsState('Dropbox is locked.', {
-      title: 'Dropbox is locked',
-      actionLabel: 'Unlock Dropbox',
-      actionOnClick: 'toggleDropboxAccess()'
-    });
-    return;
-  }
-
-  syncDropboxSubjects(drops);
-  const subjectDirectory = dropComposerState.subjectDirectory;
-  const availableSubjects = new Set(subjectDirectory.map(entry => entry.label));
-  if (activeFilter !== 'all' && !availableSubjects.has(activeFilter)) activeFilter = 'all';
-
-  if (rebuildFilters) {
-    const filterEntries = [{ subject: 'all', count: drops.length }, ...subjectDirectory.map(entry => ({ subject: entry.label, count: entry.count }))];
-    filterBar.innerHTML = filterEntries.map(entry => {
-      const label = entry.subject === 'all' ? 'All' : escHTML(entry.subject);
-      return `<button class="drop-filter" type="button" data-filter-subject="${escAttr(entry.subject)}">
-        <span>${label}</span>
-        <span class="drop-filter-count">${entry.count}</span>
-      </button>`;
-    }).join('');
-  }
-
-  updateDropFilterButtons();
-
-  const filtered = activeFilter === 'all'
-    ? drops
-    : drops.filter(d => (normalizeDropSubject(d.subject) || 'General') === activeFilter);
-
-  if (summary) {
-    if (!drops.length) {
-      summary.textContent = 'No drops yet. Your first saved item will seed future subject suggestions automatically.';
-    } else if (activeFilter === 'all') {
-      const subjectLabel = `${subjectDirectory.length} subject${subjectDirectory.length === 1 ? '' : 's'}`;
-      summary.textContent = `${drops.length} total drop${drops.length === 1 ? '' : 's'} across ${subjectLabel}.`;
-    } else {
-      summary.textContent = `${filtered.length} drop${filtered.length === 1 ? '' : 's'} filed under ${activeFilter}.`;
-    }
-  }
-
-  if (!drops.length) {
-    list.innerHTML = `<div class="drop-empty">
-      <div class="drop-empty-title">Dropbox is clear.</div>
-      <div class="drop-empty-copy">Start the stream with your first note, task, or reminder. New subjects will become quick suggestions here automatically.</div>
-      <div class="drop-empty-actions">
-        <button type="button" class="drop-empty-action" onclick="showDropForm()">Create the first drop</button>
-      </div>
-    </div>`;
-    return;
-  }
-
-  if (filtered.length === 0) {
-    list.innerHTML = `<div class="drop-empty">
-      <div class="drop-empty-title">No drops match this filter.</div>
-      <div class="drop-empty-copy">Try another subject, clear the filter, or add a fresh drop to ${escHTML(activeFilter)}.</div>
-      <div class="drop-empty-actions">
-        <button type="button" class="drop-empty-action" onclick="clearDropFilter()">Show all drops</button>
-        <button type="button" class="drop-empty-action" onclick="showDropForm()">New drop</button>
-      </div>
-    </div>`;
-    return;
-  }
-
-  list.innerHTML = filtered.map(d => {
-    const dropSubject = normalizeDropSubject(d.subject) || 'General';
-    const priorityMeta = DROP_PRIORITY_META[d.priority] || DROP_PRIORITY_META.normal;
-    const dateValue = d.date ? new Date(d.date) : null;
-    const date = dateValue && !Number.isNaN(dateValue.valueOf())
-      ? dateValue.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })
-      : 'Unknown date';
-    return `<div class="drop-card${d.done ? ' done' : ''}">
-      <div class="drop-header">
-        <span class="drop-tag">${escHTML(dropSubject)}</span>
-        <span class="drop-priority-badge ${priorityMeta.className}"><span class="drop-priority-badge-dot"></span>${priorityMeta.label}</span>
-        <span class="drop-date">${date}</span>
-      </div>
-      <div class="drop-content">${escHTML(d.content)}</div>
-      <div class="drop-actions">
-        <button class="drop-btn done-btn" onclick="toggleDone('${d.id}')">${d.done ? 'Reopen' : 'Done'}</button>
-        <button class="drop-btn del-btn" onclick="deleteDrop('${d.id}')">Delete</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function escAttr(str) {
-  return String(str)
-    .replace(/&/g,'&amp;')
-    .replace(/"/g,'&quot;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;');
-}
-
-initDropboxUI();
-
 function escHTML(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// Patch switchView to render Dropbox when opened + auto focus-mode
+(function() {
+  const _orig = window.switchView;
+  window.switchView = function(view, navEl) {
+    _orig(view, navEl);
+    if (view === 'dropbox') renderDrops();
+    const layout = document.querySelector('.layout');
+    const btn = document.getElementById('focus-btn');
+    if (view === 'calendar') {
+      if (window.CAL) CAL.render();
+      layout.classList.remove('nav-collapsed');
+      layout.classList.add('feed-collapsed');
+      focusMode = false;
+      if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
+    } else if (['dropbox', 'traderclaw', 'lyra'].includes(view)) {
+      layout.classList.add('nav-collapsed', 'feed-collapsed');
+      focusMode = true;
+      if (btn) { btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(99,102,241,0.12)'; }
+    } else if (view === 'office' || view === 'org') {
+      layout.classList.remove('nav-collapsed', 'feed-collapsed');
+      focusMode = false;
+      if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
+    }
+  };
+})();
 
 </script>
+<script src="calendar-view.js"></script>
 </body>
 </html>
