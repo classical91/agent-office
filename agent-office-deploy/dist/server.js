@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 3000;
-const DROPS_FILE = path.join(__dirname, 'drops.json');
+const DROPS_FILE = process.env.DROPS_FILE || path.join('/data', 'drops.json');
 const API_KEY = process.env.DROPS_API_KEY || 'devin-key';
 
 function loadDrops() {
