@@ -1076,7 +1076,7 @@
       <div class="nav-items-wrap">
         <div class="nav-item active" onclick="switchView('office', this)"><span class="icon">🏢</span> Office</div>
         <div class="nav-item" onclick="switchView('org', this)"><span class="icon">🗂️</span> Org Chart</div>
-        
+        <div class="nav-item"><span class="icon">📅</span> Calendar</div>
         <div class="nav-item" onclick="switchView('dropbox', this)"><span class="icon">📥</span> Dropbox</div>
         <div class="nav-item" onclick="switchView('calendar', this)"><span class="icon">📅</span> Calendar</div>
       </div>
@@ -1728,6 +1728,11 @@
       <div id="drops-list"></div>
 
     </div>
+  </div>
+
+  <!-- CALENDAR VIEW -->
+  <div class="view" id="view-calendar" style="flex-direction:column; overflow:hidden;">
+    <div id="calendar-app" style="flex:1; min-height:0;"></div>
   </div>
 
   <!-- ACTIVITY FEED -->
@@ -2454,13 +2459,6 @@ return{render};
 </script>
 
 <!-- ── SORA STUDIO ─────────────────────────────────────────── -->
-
-
-  <!-- CALENDAR VIEW -->
-  <div class="view" id="view-calendar" style="flex-direction:column; overflow:hidden;">
-    <div id="calendar-app" style="flex:1; min-height:0;"></div>
-  </div>
-
 <script>
 const SORA = (() => {
 const STAGES=[{id:"idea",label:"Idea",color:"#a78bfa"},{id:"queued",label:"Queued",color:"#fbbf24"},{id:"generating",label:"Generating",color:"#34d399"},{id:"review",label:"Review",color:"#60a5fa"},{id:"done",label:"Archive",color:"#94a3b8"}];
