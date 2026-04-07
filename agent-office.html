@@ -625,6 +625,7 @@
     .drop-btn { padding: 10px 16px; font-size: 13px; }
   }
 </style>
+<link rel="stylesheet" href="calendar-view.css"/>
 </head>
 <body>
 
@@ -655,7 +656,7 @@
         <div class="nav-item active" onclick="switchView('office', this)"><span class="icon">🏢</span> Office</div>
         <div class="nav-item" onclick="switchView('org', this)"><span class="icon">🗂️</span> Org Chart</div>
         <div class="nav-item"><span class="icon">🧠</span> Memory</div>
-        <div class="nav-item"><span class="icon">📅</span> Calendar</div>
+        <div class="nav-item" onclick="switchView('calendar', this)"><span class="icon">📅</span> Calendar</div>
         <div class="nav-item" onclick="switchView('dropbox', this)"><span class="icon">📥</span> Dropbox</div>
       </div>
     </div>
@@ -1009,6 +1010,11 @@
       </div>
 
     </div>
+  </div>
+
+  <!-- CALENDAR VIEW -->
+  <div class="view" id="view-calendar" style="flex-direction:column; overflow:hidden;">
+    <div id="calendar-app" style="flex:1; min-height:0;"></div>
   </div>
 
   <!-- TRADERCLAW VIEW -->
@@ -2239,11 +2245,15 @@ function escHTML(str) {
   window.switchView = function(view, navEl) {
     _orig(view, navEl);
     if (view === 'dropbox') renderDrops();
-    // Auto focus mode for content views, off for office/org
-    const contentViews = ['dropbox', 'traderclaw', 'lyra'];
     const layout = document.querySelector('.layout');
     const btn = document.getElementById('focus-btn');
-    if (contentViews.includes(view)) {
+    if (view === 'calendar') {
+      if (window.CAL) CAL.render();
+      layout.classList.remove('nav-collapsed');
+      layout.classList.add('feed-collapsed');
+      focusMode = false;
+      if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
+    } else if (['dropbox', 'traderclaw', 'lyra'].includes(view)) {
       layout.classList.add('nav-collapsed', 'feed-collapsed');
       focusMode = true;
       if (btn) { btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(99,102,241,0.12)'; }
@@ -2256,5 +2266,6 @@ function escHTML(str) {
 })();
 
 </script>
+<script src="calendar-view.js"></script>
 </body>
 </html>
