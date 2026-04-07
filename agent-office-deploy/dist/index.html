@@ -2193,6 +2193,7 @@ const VIEW_HANDLERS = {
   office: { enter: () => { resizeCanvas(); renderAgents(); }, focus: false },
   org: { focus: false }
 };
+VIEW_HANDLERS.calendar = { enter: () => { if (window.CAL) window.CAL.render(); }, focus: false };
 let currentView = 'office';
 
 function switchView(view, navEl) {
