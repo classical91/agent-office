@@ -2599,11 +2599,16 @@ async function loadDrops() {
 
 function showDropForm() {
   initDropboxUI();
-  document.getElementById('drop-form').style.display = 'block';
+  const form = document.getElementById('drop-form');
+  const subjectInput = document.getElementById('drop-subject');
+
+  form.style.display = 'block';
+  subjectInput.value = getDropDefaultSubject();
   syncDropboxSubjects(_dropsCache || []);
   setDropPriority(document.getElementById('drop-priority').value || 'normal');
   renderDropSubjectSuggestions(false);
-  document.getElementById('drop-subject').focus();
+  subjectInput.focus();
+  subjectInput.setSelectionRange(subjectInput.value.length, subjectInput.value.length);
 }
 
 function hideDropForm() {
@@ -2737,8 +2742,8 @@ async function renderDrops(rebuildFilters = true) {
       </div>
       <div class="drop-content">${escHTML(d.content)}</div>
       <div class="drop-actions">
-        <button class="drop-btn done-btn" onclick="toggleDone('${d.id}')">${d.done ? 'â†© Reopen' : 'âœ“ Done'}</button>
-        <button class="drop-btn del-btn" onclick="deleteDrop('${d.id}')">ðŸ—‘ Delete</button>
+        <button class="drop-btn done-btn" onclick="toggleDone('${d.id}')">${d.done ? 'Reopen' : 'Done'}</button>
+        <button class="drop-btn del-btn" onclick="deleteDrop('${d.id}')">Delete</button>
       </div>
     </div>`;
   }).join('');
@@ -2811,6 +2816,10 @@ function initDropboxUI() {
 
 function normalizeDropSubject(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function getDropDefaultSubject() {
+  return activeFilter === 'all' ? '' : (normalizeDropSubject(activeFilter) || '');
 }
 
 function syncDropboxSubjects(drops) {
