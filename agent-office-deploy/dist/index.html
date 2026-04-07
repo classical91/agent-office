@@ -2131,19 +2131,29 @@ async function loadDrops() {
   } catch(e) { return _dropsCache || []; }
 }
 function showDropboxLock() {
-  const app = document.getElementById('dropbox-app');
-  if (!app) return;
-  app.innerHTML = '<div style="padding:40px;text-align:center;">' +
-    '<div style="font-size:14px;color:var(--muted);margin-bottom:16px;">🔒 Dropbox is locked</div>' +
+  // Remove existing lock overlay if any
+  const existing = document.getElementById('drop-lock-overlay');
+  if (existing) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'drop-lock-overlay';
+  overlay.style.cssText = 'position:absolute;inset:0;background:#0a0c11;display:flex;align-items:center;justify-content:center;z-index:100;flex-direction:column;gap:12px;';
+  overlay.innerHTML = '<div style="font-size:14px;color:var(--muted);margin-bottom:4px;">🔒 Dropbox is locked</div>' +
     '<input id="drop-passphrase" type="password" placeholder="Enter passphrase" style="padding:10px;border-radius:6px;border:1px solid #333;background:#111;color:#fff;font-size:14px;width:220px;"/>' +
-    '<button onclick="unlockDropbox()" style="margin-left:8px;padding:10px 18px;border-radius:6px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:14px;">Unlock</button>' +
-    '<div id="drop-lock-msg" style="color:red;margin-top:10px;font-size:12px;"></div>' +
-    '</div>';
+    '<button onclick="unlockDropbox()" style="padding:10px 18px;border-radius:6px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:14px;width:244px;">Unlock</button>' +
+    '<div id="drop-lock-msg" style="color:red;font-size:12px;"></div>';
+  const app = document.getElementById('dropbox-app');
+  if (app) { app.style.position='relative'; app.appendChild(overlay); }
 }
 async function unlockDropbox() {
   const pass = document.getElementById('drop-passphrase').value;
   const r = await fetch('/api/session', {method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({passphrase:pass})});
-  if (r.ok) { renderDrops(); } else { document.getElementById('drop-lock-msg').textContent = 'Wrong passphrase'; }
+  if (r.ok) {
+    const overlay = document.getElementById('drop-lock-overlay');
+    if (overlay) overlay.remove();
+    renderDrops();
+  } else {
+    document.getElementById('drop-lock-msg').textContent = 'Wrong passphrase';
+  }
 }
 
 function showDropForm() {
