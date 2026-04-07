@@ -531,7 +531,7 @@
   .dot-idle { background: var(--yellow); }
   .dot-offline { background: var(--muted); }
 
-  /* â”€â”€ MOBILE RESPONSIVE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ── MOBILE RESPONSIVE ─────────────────────────────── */
   @media (max-width: 768px) {
     body { overflow: auto; }
 
@@ -576,7 +576,7 @@
     /* Views fill full width */
     .view { width: 100%; min-height: calc(100vh - 48px); }
 
-    /* Canvas office â€” let it scroll */
+    /* Canvas office — let it scroll */
     #view-office { overflow: auto !important; }
   }
 
@@ -633,13 +633,13 @@
 
 <div class="topbar">
   <div style="display:flex; align-items:center; gap:12px;">
-    <div class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu">â˜°</div>
-    <div class="topbar-logo">â¬¡ AGENT OFFICE</div>
+    <div class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu">☰</div>
+    <div class="topbar-logo">⬡ AGENT OFFICE</div>
   </div>
   <div class="topbar-meta">
     <span><span class="online-dot"></span><span id="onlineCount">9</span> agents online</span>
     <span id="clock">--:--:--</span>
-    <button id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode â€” hide panels" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">â›¶ Focus</button>
+    <button id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode — hide panels" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">⛶ Focus</button>
   </div>
 </div>
 
@@ -650,13 +650,13 @@
 
     <!-- WORKSPACE -->
     <div class="nav-section">
-      <div class="nav-label" onclick="toggleNav(this)">Workspace <span class="nav-chevron">â–¾</span></div>
+      <div class="nav-label" onclick="toggleNav(this)">Workspace <span class="nav-chevron">▾</span></div>
       <div class="nav-items-wrap">
-        <div class="nav-item active" onclick="switchView('office', this)"><span class="icon">ðŸ¢</span> Office</div>
-        <div class="nav-item" onclick="switchView('org', this)"><span class="icon">ðŸ—‚ï¸</span> Org Chart</div>
-        <div class="nav-item"><span class="icon">ðŸ§ </span> Memory</div>
-        <div class="nav-item"><span class="icon">ðŸ“…</span> Calendar</div>
-        <div class="nav-item" onclick="switchView('dropbox', this)"><span class="icon">ðŸ“¥</span> Dropbox</div>
+        <div class="nav-item active" onclick="switchView('office', this)"><span class="icon">🏢</span> Office</div>
+        <div class="nav-item" onclick="switchView('org', this)"><span class="icon">🗂️</span> Org Chart</div>
+        <div class="nav-item"><span class="icon">🧠</span> Memory</div>
+        <div class="nav-item"><span class="icon">📅</span> Calendar</div>
+        <div class="nav-item" onclick="switchView('dropbox', this)"><span class="icon">📥</span> Dropbox</div>
       </div>
     </div>
 
@@ -665,297 +665,63 @@
       <div class="nav-label" onclick="toggleNav(this)">Projects <span class="nav-chevron">▾</span></div>
       <div class="nav-items-wrap">
 
-        <!-- TraderClaw -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#22c55e;"></div>
-            <span class="nav-proj-name">📈 TraderClaw</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://traderclaw-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://railway.app/project/dc5c9acb-2c73-4a1c-b4c9-82a81e2efe9f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://github.com/classical91/trading-strategy" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">📈 TraderClaw</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://traderclaw-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/dc5c9acb-2c73-4a1c-b4c9-82a81e2efe9f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/trading-strategy" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <!-- WebClaw -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#3b82f6;"></div>
-            <span class="nav-proj-name">🌐 WebClaw</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://railway.app/project/3ac94b97-cca3-4550-9f53-2c8bdbc3f2ca" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://github.com/classical91/webclaw-service-hub" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#3b82f6;"></div><span class="nav-proj-name">🌐 WebClaw</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/3ac94b97-cca3-4550-9f53-2c8bdbc3f2ca" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/webclaw-service-hub" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <!-- Agent Office -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#6366f1;"></div>
-            <span class="nav-proj-name">⬡ Agent Office</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://focused-creativity-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://railway.app/project/016e0c7d-696f-4bde-8461-17980bd04a7e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#6366f1;"></div><span class="nav-proj-name">⬡ Agent Office</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://focused-creativity-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/016e0c7d-696f-4bde-8461-17980bd04a7e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <!-- Mission Control -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#6366f1;"></div>
-            <span class="nav-proj-name">⬡ Mission Control</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://railway.app/project/8da6b690-445e-4d54-832f-548c32cb8fad" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://github.com/classical91/mission-control" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#6366f1;"></div><span class="nav-proj-name">⬡ Mission Control</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/8da6b690-445e-4d54-832f-548c32cb8fad" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/mission-control" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <!-- Reaper + Penny -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#06b6d4;"></div>
-            <span class="nav-proj-name">💀 Reaper · 🪙 Penny</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://railway.app/project/42dd6870-959a-4929-b462-e5e98c96dac6" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#06b6d4;"></div><span class="nav-proj-name">💀 Reaper · 🪙 Penny</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/42dd6870-959a-4929-b462-e5e98c96dac6" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <!-- Cyber / Security -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#f97316;"></div>
-            <span class="nav-proj-name">🔒 Cyber / Security</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://railway.app/project/241f80ab-f7a4-4a9f-bcf2-416928b07255" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (cyber-security) <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://railway.app/project/39cdade6-ffcb-4838-a276-9af11c7d3881" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (CyberClaw) <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://railway.app/project/3c344d7f-da58-402a-8bec-0f7b052fc388" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (security-app) <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://github.com/classical91/cyber-security" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub (cyber-security) <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://github.com/classical91/cyber-claw" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub (cyber-claw) <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#f97316;"></div><span class="nav-proj-name">🔒 Cyber / Security</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/241f80ab-f7a4-4a9f-bcf2-416928b07255" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> cyber-security <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/39cdade6-ffcb-4838-a276-9af11c7d3881" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> CyberClaw <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/cyber-security" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <!-- Innerverse -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#a855f7;"></div>
-            <span class="nav-proj-name">✨ Innerverse</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://github.com/classical91/innerversebooks" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#a855f7;"></div><span class="nav-proj-name">✨ Innerverse</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://github.com/classical91/innerversebooks" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <!-- Decision Engine -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#eab308;"></div>
-            <span class="nav-proj-name">🧠 Decision Engine</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://railway.app/project/b1ffc05e-c74a-4b24-94a2-ef6239bc5bf5" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#eab308;"></div><span class="nav-proj-name">🧠 Decision Engine</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/b1ffc05e-c74a-4b24-94a2-ef6239bc5bf5" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <!-- Idea Vault -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#22c55e;"></div>
-            <span class="nav-proj-name">💡 Idea Vault</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://railway.app/project/b4475c1e-b091-4446-ba91-48e57e639aa6" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">💡 Idea Vault</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/b4475c1e-b091-4446-ba91-48e57e639aa6" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <!-- RankForge -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#f97316;"></div>
-            <span class="nav-proj-name">🏆 RankForge</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://railway.app/project/9dc553bb-f048-48af-981b-eaad9800471d" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#f97316;"></div><span class="nav-proj-name">🏆 RankForge</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/9dc553bb-f048-48af-981b-eaad9800471d" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <!-- n8n -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#ec4899;"></div>
-            <span class="nav-proj-name">⚙️ n8n</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://railway.app/project/26a88079-68de-4932-b746-f83bddfcbc06" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#ec4899;"></div><span class="nav-proj-name">⚙️ n8n</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/26a88079-68de-4932-b746-f83bddfcbc06" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <!-- World Monitor -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#06b6d4;"></div>
-            <span class="nav-proj-name">🌍 World Monitor</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://railway.app/project/754f5a3c-3fa2-402d-9b0b-704eea72f2d2" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://github.com/classical91/worldmonitor-Downloaded-" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#06b6d4;"></div><span class="nav-proj-name">🌍 World Monitor</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/754f5a3c-3fa2-402d-9b0b-704eea72f2d2" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/worldmonitor-Downloaded-" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <!-- Earth Watch -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#06b6d4;"></div>
-            <span class="nav-proj-name">🌏 Earth Watch</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://railway.app/project/d6d73954-7450-4273-8b8e-4eb40d8cea04" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://github.com/classical91/earth-watch" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#06b6d4;"></div><span class="nav-proj-name">🌏 Earth Watch</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/d6d73954-7450-4273-8b8e-4eb40d8cea04" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/earth-watch" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <!-- Market Dashboard -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#22c55e;"></div>
-            <span class="nav-proj-name">📈 Market Dashboard</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://railway.app/project/a2e18e5e-1e3f-4db2-9f44-42c517fb2590" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://github.com/classical91/market-dashboard" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">📈 Market Dashboard</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/a2e18e5e-1e3f-4db2-9f44-42c517fb2590" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/market-dashboard" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <!-- Comment Farm -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#64748b;"></div>
-            <span class="nav-proj-name">💬 Comment Farm</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://railway.app/project/067b5254-82ba-476d-874f-d1dc40971999" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://github.com/classical91/commentfarm" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">💬 Comment Farm</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/067b5254-82ba-476d-874f-d1dc40971999" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/commentfarm" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <!-- Broadcast Sender -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#64748b;"></div>
-            <span class="nav-proj-name">📡 Broadcast Sender</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://railway.app/project/9e18538c-a385-4a59-ba28-f806c66ebb69" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://github.com/classical91/broadcast-sender" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">📡 Broadcast Sender</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/9e18538c-a385-4a59-ba28-f806c66ebb69" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/broadcast-sender" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <!-- YT Summarizer -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#ef4444;"></div>
-            <span class="nav-proj-name">🎬 YT Summarizer</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://railway.app/project/a9662236-e548-4bab-8bd3-05dcb87193d0" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://github.com/classical91/youtube-video-summarizer" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#ef4444;"></div><span class="nav-proj-name">🎬 YT Summarizer</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/a9662236-e548-4bab-8bd3-05dcb87193d0" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/youtube-video-summarizer" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <!-- Natal Affirmations -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#64748b;"></div>
-            <span class="nav-proj-name">🔮 Natal Affirmations</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://railway.app/project/9f5b6688-5aee-476b-b8f3-0a616cc839f1" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (v2) <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://railway.app/project/cede712b-3693-4a73-9ea1-d0cc92b95256" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (affirmations) <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://github.com/classical91/natal-affirmations" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🔮 Natal Affirmations</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/9f5b6688-5aee-476b-b8f3-0a616cc839f1" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (v2) <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/natal-affirmations" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <!-- X Scraping -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#64748b;"></div>
-            <span class="nav-proj-name">🔎 X Scraping</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://railway.app/project/d01ab81d-1b8c-4c22-93aa-ea9c46aec7e1" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🔎 X Scraping</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/d01ab81d-1b8c-4c22-93aa-ea9c46aec7e1" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <!-- Interaction -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#64748b;"></div>
-            <span class="nav-proj-name">🔗 Interaction</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://railway.app/project/a23361f6-93d3-46a4-a45b-4c2b0411e1fd" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🔗 Interaction</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/a23361f6-93d3-46a4-a45b-4c2b0411e1fd" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <!-- Misc -->
-        <div class="nav-proj-group">
-          <div class="nav-proj-header" onclick="toggleProjGroup(this)">
-            <div class="nav-proj-dot" style="background:#64748b;"></div>
-            <span class="nav-proj-name">🃏 Misc</span>
-            <span class="nav-proj-chevron">▾</span>
-          </div>
-          <div class="nav-proj-links">
-            <a class="nav-link" href="https://railway.app/project/3dd1f7ff-827f-4ddc-aa30-6837df85a3c3" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (flashcards) <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://github.com/classical91/flashcards" target="_blank"><div class="link-dot" style="background:#64748b;"></div> Flashcards <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://railway.app/project/95992860-8b8c-4469-b26f-1254adb2a96f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (workout-tracker) <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://github.com/classical91/workout-tracker" target="_blank"><div class="link-dot" style="background:#64748b;"></div> Workout Tracker <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://railway.app/project/330e335d-b7ed-49ad-bc59-6e277949e27e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (diet-plan) <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://github.com/classical91/diet-plan" target="_blank"><div class="link-dot" style="background:#64748b;"></div> Diet Plan <span class="link-ext">↗</span></a>
-            <a class="nav-link" href="https://github.com/classical91/SEO" target="_blank"><div class="link-dot" style="background:#64748b;"></div> SEO <span class="link-ext">↗</span></a>
-          </div>
-        </div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🃏 Misc</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/3dd1f7ff-827f-4ddc-aa30-6837df85a3c3" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Flashcards <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/95992860-8b8c-4469-b26f-1254adb2a96f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Workout Tracker <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/330e335d-b7ed-49ad-bc59-6e277949e27e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Diet Plan <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/SEO" target="_blank"><div class="link-dot" style="background:#64748b;"></div> SEO <span class="link-ext">↗</span></a></div></div>
 
       </div>
     </div>
-    <!-- AGENTS -->
+<!-- AGENTS -->
     <div class="nav-section">
-      <div class="nav-label" onclick="toggleNav(this)">Agents <span class="nav-chevron">â–¾</span></div>
+      <div class="nav-label" onclick="toggleNav(this)">Agents <span class="nav-chevron">▾</span></div>
       <div class="nav-items-wrap">
-        <div class="nav-item" onclick="showAgentInfo('devin')"><span class="icon">ðŸ› ï¸</span> Devin</div>
-        <div class="nav-item" onclick="switchView('traderclaw', this); showAgentInfo('traderclaw')"><span class="icon">ðŸ“ˆ</span> TraderClaw</div>
-        <div class="nav-item" onclick="showAgentInfo('webclaw')"><span class="icon">ðŸŒ</span> WebClaw</div>
-        <div class="nav-item" onclick="showAgentInfo('xhunter')"><span class="icon">ðŸ¦</span> X-Hunter</div>
-        <div class="nav-item" onclick="showAgentInfo('forge')"><span class="icon">âš™ï¸</span> Forge</div>
-        <div class="nav-item" onclick="switchView('lyra', this); showAgentInfo('lyra')"><span class="icon">âœ¨</span> Lyra</div>
-        <div class="nav-item" onclick="showAgentInfo('xbot')"><span class="icon">ðŸ¤–</span> XBot</div>
-        <div class="nav-item" onclick="showAgentInfo('guardian')"><span class="icon">ðŸ›¡</span> Guardian</div>
-        <div class="nav-item" onclick="showAgentInfo('fatherclaw')"><span class="icon">ðŸ‘‘</span> FatherClaw</div>
+        <div class="nav-item" onclick="showAgentInfo('devin')"><span class="icon">🛠️</span> Devin</div>
+        <div class="nav-item" onclick="switchView('traderclaw', this); showAgentInfo('traderclaw')"><span class="icon">📈</span> TraderClaw</div>
+        <div class="nav-item" onclick="showAgentInfo('webclaw')"><span class="icon">🌐</span> WebClaw</div>
+        <div class="nav-item" onclick="showAgentInfo('xhunter')"><span class="icon">🐦</span> X-Hunter</div>
+        <div class="nav-item" onclick="showAgentInfo('forge')"><span class="icon">⚙️</span> Forge</div>
+        <div class="nav-item" onclick="switchView('lyra', this); showAgentInfo('lyra')"><span class="icon">✨</span> Lyra</div>
+        <div class="nav-item" onclick="showAgentInfo('xbot')"><span class="icon">🤖</span> XBot</div>
+        <div class="nav-item" onclick="showAgentInfo('guardian')"><span class="icon">🛡</span> Guardian</div>
+        <div class="nav-item" onclick="showAgentInfo('fatherclaw')"><span class="icon">👑</span> FatherClaw</div>
       </div>
     </div>
 
@@ -968,14 +734,14 @@
 
     <!-- SYSTEM -->
     <div class="nav-section">
-      <div class="nav-label" onclick="toggleNav(this)">System <span class="nav-chevron">â–¾</span></div>
+      <div class="nav-label" onclick="toggleNav(this)">System <span class="nav-chevron">▾</span></div>
       <div class="nav-items-wrap">
-        <div class="nav-item"><span class="icon">âš™ï¸</span> Settings</div>
+        <div class="nav-item"><span class="icon">⚙️</span> Settings</div>
         <a class="nav-link" href="http://localhost:18789" target="_blank">
-          <div class="link-dot" style="background:#6366f1;"></div> Gateway (local) <span class="link-ext">â†—</span>
+          <div class="link-dot" style="background:#6366f1;"></div> Gateway (local) <span class="link-ext">↗</span>
         </a>
         <a class="nav-link" href="http://10.0.0.106:18789" target="_blank">
-          <div class="link-dot" style="background:#6366f1;"></div> Gateway (LAN) <span class="link-ext">â†—</span>
+          <div class="link-dot" style="background:#6366f1;"></div> Gateway (LAN) <span class="link-ext">↗</span>
         </a>
       </div>
     </div>
@@ -996,7 +762,7 @@
       <div class="org-row-center">
         <div class="org-card glow-indigo org-card-wide">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.25);">ðŸ› ï¸</div>
+            <div class="org-avatar" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.25);">🛠️</div>
             <div class="org-body">
               <div class="org-name">Devin</div>
               <div class="org-title">Project Overseer</div>
@@ -1008,20 +774,20 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD â†’</div>
+          <div class="org-cta">AGENT CARD →</div>
         </div>
       </div>
 
       <div class="org-connector-v"></div>
 
       <div class="org-section-label">
-        <div class="line"></div><div class="text">ðŸ’» OPERATIONS</div><div class="line"></div>
+        <div class="line"></div><div class="text">💻 OPERATIONS</div><div class="line"></div>
       </div>
 
       <div class="org-row-2" style="max-width:680px; margin: 0 auto;">
         <div class="org-card glow-green">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.25);">ðŸ“ˆ</div>
+            <div class="org-avatar" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.25);">📈</div>
             <div class="org-body">
               <div class="org-name">TraderClaw</div>
               <div class="org-title">Trading Bot</div>
@@ -1033,11 +799,11 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD â†’</div>
+          <div class="org-cta">AGENT CARD →</div>
         </div>
         <div class="org-card glow-blue">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.25);">ðŸŒ</div>
+            <div class="org-avatar" style="background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.25);">🌐</div>
             <div class="org-body">
               <div class="org-name">WebClaw</div>
               <div class="org-title">Web Developer</div>
@@ -1049,26 +815,26 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD â†’</div>
+          <div class="org-cta">AGENT CARD →</div>
         </div>
       </div>
 
       <div class="org-flow-divider">
         <div class="line"></div>
-        <div class="org-flow-label">â†“ INPUT SIGNAL</div>
+        <div class="org-flow-label">↓ INPUT SIGNAL</div>
         <div class="line"></div>
-        <div class="org-flow-label">OUTPUT ACTION â†“</div>
+        <div class="org-flow-label">OUTPUT ACTION ↓</div>
         <div class="line"></div>
       </div>
 
       <div class="org-section-label">
-        <div class="line"></div><div class="text">âš¡ EXECUTION LAYER</div><div class="line"></div>
+        <div class="line"></div><div class="text">⚡ EXECUTION LAYER</div><div class="line"></div>
       </div>
 
       <div class="org-row-4">
         <div class="org-card glow-cyan">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(6,182,212,0.15);border-color:rgba(6,182,212,0.25);">ðŸ¦</div>
+            <div class="org-avatar" style="background:rgba(6,182,212,0.15);border-color:rgba(6,182,212,0.25);">🐦</div>
             <div class="org-body">
               <div class="org-name">X-Hunter</div>
               <div class="org-title">Social Scout</div>
@@ -1080,11 +846,11 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD â†’</div>
+          <div class="org-cta">AGENT CARD →</div>
         </div>
         <div class="org-card glow-orange">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(249,115,22,0.15);border-color:rgba(249,115,22,0.25);">âš™ï¸</div>
+            <div class="org-avatar" style="background:rgba(249,115,22,0.15);border-color:rgba(249,115,22,0.25);">⚙️</div>
             <div class="org-body">
               <div class="org-name">Forge</div>
               <div class="org-title">Dev Agent</div>
@@ -1096,11 +862,11 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD â†’</div>
+          <div class="org-cta">AGENT CARD →</div>
         </div>
         <div class="org-card glow-purple">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.25);">âœ¨</div>
+            <div class="org-avatar" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.25);">✨</div>
             <div class="org-body">
               <div class="org-name">Lyra</div>
               <div class="org-title">Innerverse</div>
@@ -1112,11 +878,11 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD â†’</div>
+          <div class="org-cta">AGENT CARD →</div>
         </div>
         <div class="org-card glow-pink">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(236,72,153,0.15);border-color:rgba(236,72,153,0.25);">ðŸ¤–</div>
+            <div class="org-avatar" style="background:rgba(236,72,153,0.15);border-color:rgba(236,72,153,0.25);">🤖</div>
             <div class="org-body">
               <div class="org-name">XBot</div>
               <div class="org-title">X Publisher</div>
@@ -1128,50 +894,18 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD â†’</div>
-        </div>
-        <div class="org-card" style="border-color:rgba(34,197,94,0.2);">
-          <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.2);">ðŸ’€</div>
-            <div class="org-body">
-              <div class="org-name">Reaper</div>
-              <div class="org-title">Farm Operator</div>
-              <div class="org-desc">Runs the CommentFarm. Manages jobs, queue, and engagement stats. Cold, calculated, results only.</div>
-              <div class="org-tags">
-                <span class="org-tag org-tag-green">CommentFarm</span>
-                <span class="org-tag org-tag-teal">Queue</span>
-                <span class="org-tag org-tag-green">Qwen/free</span>
-              </div>
-            </div>
-          </div>
-          <div class="org-cta">AGENT CARD â†’</div>
-        </div>
-        <div class="org-card" style="border-color:rgba(234,179,8,0.2);">
-          <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.2);">ðŸª™</div>
-            <div class="org-body">
-              <div class="org-name">Penny</div>
-              <div class="org-title">Utility Agent</div>
-              <div class="org-desc">Free-tier general purpose agent. Always available, practical, no-nonsense. Runs on Gemma 4.</div>
-              <div class="org-tags">
-                <span class="org-tag org-tag-orange">General</span>
-                <span class="org-tag org-tag-teal">Free Tier</span>
-                <span class="org-tag org-tag-blue">Gemma 4</span>
-              </div>
-            </div>
-          </div>
-          <div class="org-cta">AGENT CARD â†’</div>
+          <div class="org-cta">AGENT CARD →</div>
         </div>
       </div>
 
       <div class="org-section-label" style="margin-top:32px;">
-        <div class="line"></div><div class="text">ðŸ”’ SYSTEM LAYER</div><div class="line"></div>
+        <div class="line"></div><div class="text">🔒 SYSTEM LAYER</div><div class="line"></div>
       </div>
 
       <div class="org-row-2" style="max-width:680px; margin: 0 auto;">
         <div class="org-card" style="border-color:rgba(100,116,139,0.2);">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(100,116,139,0.15);border-color:rgba(100,116,139,0.25);">ðŸ‘‘</div>
+            <div class="org-avatar" style="background:rgba(100,116,139,0.15);border-color:rgba(100,116,139,0.25);">👑</div>
             <div class="org-body">
               <div class="org-name">FatherClaw</div>
               <div class="org-title">Orchestrator</div>
@@ -1183,11 +917,11 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD â†’</div>
+          <div class="org-cta">AGENT CARD →</div>
         </div>
         <div class="org-card" style="border-color:rgba(239,68,68,0.15);">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.2);">ðŸ›¡</div>
+            <div class="org-avatar" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.2);">🛡</div>
             <div class="org-body">
               <div class="org-name">Guardian</div>
               <div class="org-title">Security</div>
@@ -1199,18 +933,18 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD â†’</div>
+          <div class="org-cta">AGENT CARD →</div>
         </div>
       </div>
 
       <div class="org-section-label" style="margin-top:32px;">
-        <div class="line"></div><div class="text">â¬¡ META LAYER - OPENCLAW GATEWAY</div><div class="line"></div>
+        <div class="line"></div><div class="text">⬡ META LAYER - OPENCLAW GATEWAY</div><div class="line"></div>
       </div>
 
       <div class="org-row-3">
         <div class="org-card">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(255,255,255,0.05);font-size:18px;">ðŸ§ </div>
+            <div class="org-avatar" style="background:rgba(255,255,255,0.05);font-size:18px;">🧠</div>
             <div class="org-body">
               <div class="org-name" style="font-size:13px;">Memory</div>
               <div class="org-title" style="font-size:11px;">Persistent Context</div>
@@ -1221,7 +955,7 @@
         </div>
         <div class="org-card">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(255,255,255,0.05);font-size:18px;">ðŸ“¡</div>
+            <div class="org-avatar" style="background:rgba(255,255,255,0.05);font-size:18px;">📡</div>
             <div class="org-body">
               <div class="org-name" style="font-size:13px;">Gateway</div>
               <div class="org-title" style="font-size:11px;">localhost:18789</div>
@@ -1232,12 +966,12 @@
         </div>
         <div class="org-card">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(255,255,255,0.05);font-size:18px;">âš¡</div>
+            <div class="org-avatar" style="background:rgba(255,255,255,0.05);font-size:18px;">⚡</div>
             <div class="org-body">
               <div class="org-name" style="font-size:13px;">Models</div>
               <div class="org-title" style="font-size:11px;">AI Providers</div>
-              <div class="org-desc">Claude Sonnet (default) Â· GPT-5.4 (WebClaw, XBot) Â· Qwen (Reaper) · Gemma 4 (Penny)</div>
-              <div class="org-tags"><span class="org-tag org-tag-indigo">Claude</span><span class="org-tag org-tag-green">GPT-5.4</span><span class="org-tag org-tag-orange">Qwen</span><span class="org-tag org-tag-blue">Gemma 4</span></div>
+              <div class="org-desc">Claude Sonnet (default) · GPT-5.4 (WebClaw)</div>
+              <div class="org-tags"><span class="org-tag org-tag-indigo">Claude</span><span class="org-tag org-tag-green">GPT-5.4</span></div>
             </div>
           </div>
         </div>
@@ -1263,11 +997,11 @@
       <!-- Header -->
       <div class="drop-header-row" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; gap:16px;">
         <div>
-          <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">ðŸ“¥ DROPBOX</div>
-          <div style="font-size:13px; color:var(--muted);">Drop ideas, tasks, and reminders â€” tagged by subject.</div>
+          <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">📥 DROPBOX</div>
+          <div style="font-size:13px; color:var(--muted);">Drop ideas, tasks, and reminders — tagged by subject.</div>
         </div>
         <button class="drop-new-btn" onclick="showDropForm()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 20px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap; -webkit-tap-highlight-color:transparent;">
-          <span>ï¼‹</span> New Drop
+          <span>＋</span> New Drop
         </button>
       </div>
 
@@ -1282,9 +1016,9 @@
           <div>
             <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">Priority</label>
             <select id="drop-priority" style="width:100%; background:#0d0f14; border:1px solid var(--border); border-radius:8px; padding:11px 12px; font-size:16px; color:var(--text); outline:none;">
-              <option value="normal">ðŸ”µ Normal</option>
-              <option value="high">ðŸŸ¡ High</option>
-              <option value="urgent">ðŸ”´ Urgent</option>
+              <option value="normal">🔵 Normal</option>
+              <option value="high">🟡 High</option>
+              <option value="urgent">🔴 Urgent</option>
             </select>
           </div>
         </div>
@@ -1323,12 +1057,12 @@
 <div class="statusbar" id="statusbar"></div>
 
 <script>
-// â”€â”€â”€ AGENT DATA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── AGENT DATA ───────────────────────────────────────────────
 const AGENTS = [
   {
     id: 'devin',
     name: 'Devin',
-    emoji: 'ðŸ› ï¸',
+    emoji: '🛠️',
     color: '#6366f1',
     role: 'Project Overseer',
     tasks: [
@@ -1350,7 +1084,7 @@ const AGENTS = [
   {
     id: 'traderclaw',
     name: 'TraderClaw',
-    emoji: 'ðŸ“ˆ',
+    emoji: '📈',
     color: '#22c55e',
     role: 'Trading Bot',
     tasks: [
@@ -1372,7 +1106,7 @@ const AGENTS = [
   {
     id: 'webclaw',
     name: 'WebClaw',
-    emoji: 'ðŸŒ',
+    emoji: '🌐',
     color: '#3b82f6',
     role: 'Web Developer',
     tasks: [
@@ -1394,7 +1128,7 @@ const AGENTS = [
   {
     id: 'xhunter',
     name: 'X-Hunter',
-    emoji: 'ðŸ¦',
+    emoji: '🐦',
     color: '#06b6d4',
     role: 'Social / X Agent',
     tasks: [
@@ -1416,7 +1150,7 @@ const AGENTS = [
   {
     id: 'nova',
     name: 'Nova',
-    emoji: 'ðŸ”­',
+    emoji: '🔭',
     color: '#f97316',
     role: 'Product Researcher',
     tasks: [
@@ -1437,7 +1171,7 @@ const AGENTS = [
   {
     id: 'lyra',
     name: 'Lyra',
-    emoji: 'âœ¨',
+    emoji: '✨',
     color: '#a855f7',
     role: 'Innerverse',
     tasks: [
@@ -1458,7 +1192,7 @@ const AGENTS = [
   {
     id: 'xbot',
     name: 'XBot',
-    emoji: 'ðŸ¤–',
+    emoji: '🤖',
     color: '#ec4899',
     role: 'X Bot',
     tasks: [
@@ -1479,7 +1213,7 @@ const AGENTS = [
   {
     id: 'guardian',
     name: 'Guardian',
-    emoji: 'ðŸ›¡',
+    emoji: '🛡',
     color: '#ef4444',
     role: 'Security',
     tasks: [
@@ -1500,7 +1234,7 @@ const AGENTS = [
   {
     id: 'fatherclaw',
     name: 'FatherClaw',
-    emoji: 'ðŸ‘‘',
+    emoji: '👑',
     color: '#64748b',
     role: 'Orchestrator',
     tasks: [
@@ -1520,7 +1254,7 @@ const AGENTS = [
   }
 ];;
 
-// â”€â”€â”€ POSITIONS (grid slots in office) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── POSITIONS (grid slots in office) ─────────────────────────
 const POSITIONS = [
   { x: 0.18, y: 0.25 },
   { x: 0.45, y: 0.20 },
@@ -1533,7 +1267,7 @@ const POSITIONS = [
   { x: 0.30, y: 0.35 },
 ];
 
-// â”€â”€â”€ STATE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── STATE ────────────────────────────────────────────────────
 let agentState = AGENTS.map((a, i) => ({
   ...a,
   pos: { ...POSITIONS[i] },
@@ -1545,7 +1279,7 @@ let agentState = AGENTS.map((a, i) => ({
 let feedItems = [];
 let feedCount = 0;
 
-// â”€â”€â”€ CANVAS SETUP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── CANVAS SETUP ─────────────────────────────────────────────
 const canvas = document.getElementById('officeCanvas');
 const ctx = canvas.getContext('2d');
 const officeArea = document.getElementById('officeArea');
@@ -1630,7 +1364,7 @@ function drawOffice() {
     ctx.font = '20px serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('ðŸŒ¿', p.x, p.y);
+    ctx.fillText('🌿', p.x, p.y);
   });
 
   // Room label
@@ -1640,7 +1374,7 @@ function drawOffice() {
   ctx.fillText('OPERATIONS FLOOR', W / 2, H - 16);
 }
 
-// â”€â”€â”€ AGENT CHARACTERS (DOM overlays) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── AGENT CHARACTERS (DOM overlays) ──────────────────────────
 function renderAgents() {
   document.querySelectorAll('.agent-char').forEach(el => el.remove());
 
@@ -1666,7 +1400,7 @@ function renderAgents() {
   });
 }
 
-// â”€â”€â”€ STATUS BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── STATUS BAR ───────────────────────────────────────────────
 function renderStatusBar() {
   const bar = document.getElementById('statusbar');
   bar.innerHTML = agentState.map(agent => `
@@ -1683,7 +1417,7 @@ function renderStatusBar() {
   `).join('');
 }
 
-// â”€â”€â”€ ACTIVITY FEED â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── ACTIVITY FEED ────────────────────────────────────────────
 function addFeedItem(agent, msg) {
   feedCount++;
   const now = new Date();
@@ -1712,7 +1446,7 @@ function addFeedItem(agent, msg) {
   document.getElementById('feedCount').textContent = feedCount;
 }
 
-// â”€â”€â”€ AUTO-UPDATE LOOP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── AUTO-UPDATE LOOP ─────────────────────────────────────────
 function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 function updateAgentTask(agent) {
@@ -1754,14 +1488,14 @@ function tick() {
   document.getElementById('onlineCount').textContent = activeCount;
 }
 
-// â”€â”€â”€ CLOCK â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── CLOCK ────────────────────────────────────────────────────
 function updateClock() {
   document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-CA', {
     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
   });
 }
 
-// â”€â”€â”€ VIEW SWITCHER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── VIEW SWITCHER ────────────────────────────────────────────
 function switchView(view, navEl) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -1770,7 +1504,7 @@ function switchView(view, navEl) {
   if (view === 'office') { resizeCanvas(); renderAgents(); }
 }
 
-// â”€â”€â”€ INIT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── INIT ─────────────────────────────────────────────────────
 window.addEventListener('resize', () => { resizeCanvas(); renderAgents(); });
 resizeCanvas();
 renderAgents();
@@ -1793,11 +1527,11 @@ window.switchView = function(view, navEl) {
 };
 </script>
 
-<!-- â”€â”€ DECISION ENGINE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── DECISION ENGINE ─────────────────────────────────────── -->
 <script>
 const DE = (() => {
 const TAG_STYLE={X:{bg:"#1d4ed820",border:"#3b82f6",text:"#93c5fd"},TG:{bg:"#0369a120",border:"#0ea5e9",text:"#7dd3fc"},GOOGLE:{bg:"#15803d20",border:"#22c55e",text:"#86efac"},CMC:{bg:"#c2410c20",border:"#f97316",text:"#fdba74"},MEXC:{bg:"#7c3aed20",border:"#a78bfa",text:"#c4b5fd"},TV:{bg:"#0f766e20",border:"#14b8a6",text:"#5eead4"},RSI:{bg:"#b4520920",border:"#d97706",text:"#fcd34d"},SC:{bg:"#4338ca20",border:"#818cf8",text:"#a5b4fc"},TA:{bg:"#05966920",border:"#10b981",text:"#6ee7b7"},ETF:{bg:"#0e749020",border:"#06b6d4",text:"#67e8f9"},FUTURES:{bg:"#be123c20",border:"#f43f5e",text:"#fda4af"},SECTORS:{bg:"#92400e20",border:"#f59e0b",text:"#fbbf24"},ALERTS:{bg:"#6b21a820",border:"#a855f7",text:"#d8b4fe"},CORR:{bg:"#1e3a5f20",border:"#3b82f6",text:"#93c5fd"},SCAN:{bg:"#064e3b20",border:"#059669",text:"#34d399"},DERIV:{bg:"#7f1d1d20",border:"#ef4444",text:"#fca5a5"},CRYPTOPY:{bg:"#1c191720",border:"#78716c",text:"#a8a29e"},SENT:{bg:"#1e293b20",border:"#64748b",text:"#94a3b8"}};
-const OT_TEMPLATE=[{id:"fib_618",label:".618 - Fib level plotted",hint:"Most common reversal zone.",weight:3},{id:"fib_65",label:".65 - Fib level plotted",hint:"Upper edge of the golden pocket.",weight:3},{id:"fib_gp",label:"Golden Pocket (.618 to .65) identified",hint:"Highest probability long entry.",weight:4},{id:"fib_5",label:".5 - Mid level plotted",hint:"Equilibrium.",weight:2},{id:"fib_786",label:".786 - Deep retrace plotted",hint:"Trend strength weakening.",weight:2},{id:"vp_os",label:"Oversold zone identified (low vol node)",hint:"Price below VAL = discount.",weight:3},{id:"vp_poc",label:"POC (Point of Control) marked",hint:"Highest volume node.",weight:4},{id:"vp_ob",label:"Overbought zone identified (high vol node)",hint:"Price above VAH = premium.",weight:3},{id:"vp_pos",label:"Price position vs VP noted",hint:"Discount / Fair Value / Premium.",weight:3},{id:"sr_key",label:"Key support level identified",hint:"Where will buyers step in?",weight:3},{id:"sr_res",label:"Key resistance level identified",hint:"Where will sellers push back?",weight:3},{id:"sr_flip",label:"Flip zone identified (Sâ†’R or Râ†’S)",hint:"High-conviction levels.",weight:4},{id:"sr_clear",label:"Clear path to next resistance",hint:"No major clusters to first TP.",weight:3},{id:"ms_trend",label:"Trend confirmed (HH/HL or LH/LL)",hint:"HH+HL = uptrend.",weight:4},{id:"ms_bos",label:"BOS (Break of Structure) identified",hint:"Confirmed BOS = trend continuation.",weight:4},{id:"ms_bo",label:"Breakout setup visible on chart",hint:"Price coiling at resistance.",weight:3},{id:"ms_choch",label:"No CHoCH against your position",hint:"CHoCH opposite = potential reversal.",weight:4},{id:"ms_range",label:"Range / consolidation zone mapped",hint:"Mark the high and low.",weight:2}];
+const OT_TEMPLATE=[{id:"fib_618",label:".618 - Fib level plotted",hint:"Most common reversal zone.",weight:3},{id:"fib_65",label:".65 - Fib level plotted",hint:"Upper edge of the golden pocket.",weight:3},{id:"fib_gp",label:"Golden Pocket (.618 to .65) identified",hint:"Highest probability long entry.",weight:4},{id:"fib_5",label:".5 - Mid level plotted",hint:"Equilibrium.",weight:2},{id:"fib_786",label:".786 - Deep retrace plotted",hint:"Trend strength weakening.",weight:2},{id:"vp_os",label:"Oversold zone identified (low vol node)",hint:"Price below VAL = discount.",weight:3},{id:"vp_poc",label:"POC (Point of Control) marked",hint:"Highest volume node.",weight:4},{id:"vp_ob",label:"Overbought zone identified (high vol node)",hint:"Price above VAH = premium.",weight:3},{id:"vp_pos",label:"Price position vs VP noted",hint:"Discount / Fair Value / Premium.",weight:3},{id:"sr_key",label:"Key support level identified",hint:"Where will buyers step in?",weight:3},{id:"sr_res",label:"Key resistance level identified",hint:"Where will sellers push back?",weight:3},{id:"sr_flip",label:"Flip zone identified (S→R or R→S)",hint:"High-conviction levels.",weight:4},{id:"sr_clear",label:"Clear path to next resistance",hint:"No major clusters to first TP.",weight:3},{id:"ms_trend",label:"Trend confirmed (HH/HL or LH/LL)",hint:"HH+HL = uptrend.",weight:4},{id:"ms_bos",label:"BOS (Break of Structure) identified",hint:"Confirmed BOS = trend continuation.",weight:4},{id:"ms_bo",label:"Breakout setup visible on chart",hint:"Price coiling at resistance.",weight:3},{id:"ms_choch",label:"No CHoCH against your position",hint:"CHoCH opposite = potential reversal.",weight:4},{id:"ms_range",label:"Range / consolidation zone mapped",hint:"Mark the high and low.",weight:2}];
 const OT_TOKENS=[{prefix:"btc",label:"BITCOIN",sub:"Review BTC drawings on TradingView."},{prefix:"usdtd",label:"USDT.D",sub:"Review USDT.D drawings on TradingView."},{prefix:"total",label:"TOTAL",sub:"Review TOTAL drawings on TradingView."},{prefix:"btcd",label:"BTC.D",sub:"Review BTC.D drawings on TradingView."}];
 const CU_GROUPS=[{id:"cu_tv",label:"TRADINGVIEW CHARTS",links:[{id:"a",label:"Market Dominance",url:"https://www.tradingview.com/chart/uwHQFIja/"},{id:"b",label:"All Market Spectrum",url:"https://www.tradingview.com/chart/tDSfdLfo/"},{id:"c",label:"Global OI Layout",url:"https://www.tradingview.com/chart/UBsUirLO/"},{id:"d",label:"Market Summary",url:"https://www.tradingview.com/#main-market-summary"}]},{id:"cu_cmc",label:"COINMARKETCAP",links:[{id:"e",label:"Crypto Market Overview",url:"https://coinmarketcap.com/charts/"},{id:"f",label:"Leaderboards",url:"https://coinmarketcap.com/best-cryptos/"}]},{id:"cu_macro",label:"MACRO & MARKETS",links:[{id:"g",label:"CNBC",url:"https://www.cnbc.com/"},{id:"h",label:"Futures Overview",url:"https://www.barchart.com/futures"},{id:"i",label:"Indexes",url:"https://tradingeconomics.com/stocks"},{id:"j",label:"Currencies",url:"https://tradingeconomics.com/currencies"}]},{id:"cu_moon",label:"MOON PHASES",links:[{id:"k",label:"Moon Phases",url:"https://www.timeanddate.com/moon/phases/"}]}];
 const MTD_GROUPS=[{id:"mtd_news",label:"NEWS & ANALYSIS",sub:"Run bots and agents first.",items:[{id:"n_gpt",label:"GPT TA Agent - Screenshot BTC, USDT.D, TOTAL, BTC.D",hint:"Run your GPT TA agent.",weight:4},{id:"n_4h",label:"4H Chart-IMG Bot - Check latest output",hint:"Pull the latest 4H chart image.",weight:3},{id:"n_auto",label:"Automation for Cryptocurrency - Check latest",hint:"Run or check the automation.",weight:3},{id:"n_news",label:"CoinTrendsZBot - Run /news",hint:"Read the latest crypto news.",weight:3}]},{id:"mtd_vol",label:"VOLUME ANALYSIS",sub:"ETF inflows, CVD vs OI, funding rates.",items:[{id:"etf_pos",label:"ETF inflows positive in last 24H",hint:"Positive = institutional demand.",weight:4},{id:"etf_size",label:"ETF inflow size is meaningful",hint:"$200M+ = strong conviction.",weight:2},{id:"cvd_oi",label:"CVD vs OI checked on CoinAnk",hint:"Diverging or converging?",weight:4},{id:"cvd_read",label:"CVD and OI relationship noted",hint:"Converging = confirms the move.",weight:3},{id:"vol_tmpl",label:"Volume template reviewed on TradingView",hint:"Does volume support price action?",weight:3},{id:"vol_spike",label:"Volume spike on the key candle",hint:"High volume on breakout = real participation.",weight:3},{id:"vol_dry",label:"Volume dried up on the pullback",hint:"Low volume retrace = weak selling.",weight:3},{id:"fund_chk",label:"Funding rate checked on Coinglass",hint:"Check before entering.",weight:4,link:"https://www.coinglass.com/FundingRate/BTC"},{id:"fund_ok",label:"Funding rate not extreme (<0.05%/8H)",hint:"High positive funding = overcrowded.",weight:3}]},{id:"mtd_qual",label:"QUALITATIVE ANALYSIS",sub:"Check X, TradingView Ideas, Telegram bot.",items:[{id:"q_x",label:"X - Check sentiment and narrative",hint:"What are traders saying?",weight:3},{id:"q_tv",label:"TradingView Ideas - Check published ideas",hint:"Read recent TV ideas on BTC.",weight:3},{id:"q_bot",label:"Telegram Bot - Run /ideas",hint:"Compare against your analysis.",weight:3}]}];
@@ -1816,7 +1550,7 @@ function checkItem(item,value,index,checkKey){
   const isY=value==="yes",isN=value==="no",isS=value==="skip";
   const rowBg=isY?"background:rgba(5,46,22,0.15)":isN?"background:rgba(69,10,10,0.15)":"";
   const boxStyle=isY?"background:#10b981;border-color:#10b981;color:#000":isN?"background:#ef4444;border-color:#ef4444;color:#fff":isS?"background:#3f3f46;border-color:#52525b;color:#a1a1aa":"border:1px solid #3f3f46;color:#52525b";
-  const boxTxt=isY?"âœ“":isN?"âœ•":isS?"-":index;
+  const boxTxt=isY?"✓":isN?"✕":isS?"-":index;
   const yS=isY?"background:rgba(6,78,59,0.6);color:#6ee7b7;border-color:#10b981":"border:1px solid #27272a;color:#52525b";
   const nS=isN?"background:rgba(127,29,29,0.6);color:#fca5a5;border-color:#ef4444":"border:1px solid #27272a;color:#52525b";
   const sS=isS?"background:#3f3f46;color:#d4d4d8;border-color:#52525b":"border:1px solid #27272a;color:#52525b";
@@ -1825,12 +1559,12 @@ function checkItem(item,value,index,checkKey){
 }
 
 function grpHdr(id,label,sub,yes,total,collapsed){
-  return`<button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;border-bottom:1px solid #1c1c1e;cursor:pointer;text-align:left;" data-deaction="toggle-group" data-group="${id}"><div style="flex:1;min-width:0;"><div style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;letter-spacing:.05em;">${label}</div>${sub?`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-top:2px;">${sub}</div>`:""}</div><div style="display:flex;align-items:center;gap:8px;margin-left:10px;flex-shrink:0;"><span style="font-size:11px;font-family:monospace;color:#10b981;">${yes}</span><span style="font-size:11px;font-family:monospace;color:#3f3f46;">/</span><span style="font-size:11px;font-family:monospace;color:#71717a;">${total}</span><span style="font-size:11px;font-family:monospace;color:#52525b;">${collapsed?"â–¶":"â–¼"}</span></div></button>`;
+  return`<button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;border-bottom:1px solid #1c1c1e;cursor:pointer;text-align:left;" data-deaction="toggle-group" data-group="${id}"><div style="flex:1;min-width:0;"><div style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;letter-spacing:.05em;">${label}</div>${sub?`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-top:2px;">${sub}</div>`:""}</div><div style="display:flex;align-items:center;gap:8px;margin-left:10px;flex-shrink:0;"><span style="font-size:11px;font-family:monospace;color:#10b981;">${yes}</span><span style="font-size:11px;font-family:monospace;color:#3f3f46;">/</span><span style="font-size:11px;font-family:monospace;color:#71717a;">${total}</span><span style="font-size:11px;font-family:monospace;color:#52525b;">${collapsed?"▶":"▼"}</span></div></button>`;
 }
 
 function linkDrop(gid,label,links){
   const open=st.linkOpen[gid];
-  return`<div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;margin-bottom:4px;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-link" data-linkgroup="${gid}"><span style="font-size:11px;font-family:monospace;color:#a1a1aa;">${label}</span><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:10px;font-family:monospace;color:#52525b;">${links.length}</span><span style="font-size:10px;font-family:monospace;color:#52525b;">${open?"â–¼":"â–¶"}</span></div></button>${open?`<div style="border-top:1px solid #1c1c1e;">${links.map(l=>`<a href="${l.url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid rgba(28,28,30,0.5);text-decoration:none;" onmouseover="this.style.background='#1c1c1e'" onmouseout="this.style.background='transparent'"><span style="font-size:10px;font-family:monospace;color:#3f3f46;">â†—</span><span style="font-size:11px;font-family:monospace;color:#71717a;">${l.label}</span></a>`).join("")}</div>`:""}</div>`;
+  return`<div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;margin-bottom:4px;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-link" data-linkgroup="${gid}"><span style="font-size:11px;font-family:monospace;color:#a1a1aa;">${label}</span><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:10px;font-family:monospace;color:#52525b;">${links.length}</span><span style="font-size:10px;font-family:monospace;color:#52525b;">${open?"▼":"▶"}</span></div></button>${open?`<div style="border-top:1px solid #1c1c1e;">${links.map(l=>`<a href="${l.url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid rgba(28,28,30,0.5);text-decoration:none;" onmouseover="this.style.background='#1c1c1e'" onmouseout="this.style.background='transparent'"><span style="font-size:10px;font-family:monospace;color:#3f3f46;">↗</span><span style="font-size:11px;font-family:monospace;color:#71717a;">${l.label}</span></a>`).join("")}</div>`:""}</div>`;
 }
 
 function row(label,hint,content){
@@ -1863,15 +1597,15 @@ function buildHome(){
   const t=now.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:true});
   const d=now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
   const wf=[{id:"markettd",n:"01",label:"MARKET TOP-DOWN",desc:"Get the macro picture first.",dot:"#a78bfa"},{id:"bottomup",n:"02",label:"CRYPTO BOTTOM-UP",desc:"Review all object trees.",dot:"#38bdf8"},{id:"btcstrat",n:"03",label:"BTC STRATEGY",desc:"Deep dive into BTC.",dot:"#f97316"},{id:"altres",n:"04",label:"ALT RESEARCH",desc:"Scan for alt opportunities.",dot:"#f59e0b"}];
-  return`<div style="margin-bottom:28px;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;margin-bottom:4px;">${d}</div><div style="font-size:24px;font-family:monospace;font-weight:700;color:#e4e4e7;margin-bottom:4px;">Decision Engine</div><div style="font-size:10px;font-family:monospace;color:#52525b;">@DiamondHands811 Â· ${t}</div></div><div style="margin-bottom:20px;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;letter-spacing:.1em;margin-bottom:8px;">SESSION WORKFLOW</div>${wf.map(w=>`<button style="width:100%;display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid #1c1c1e;border-radius:3px;background:#0d0d0f;margin-bottom:4px;cursor:pointer;text-align:left;" data-deaction="nav" data-view="${w.id}" onmouseover="this.style.background='#1c1c1e'" onmouseout="this.style.background='#0d0d0f'"><span style="font-size:10px;font-family:monospace;color:#3f3f46;width:20px;">${w.n}</span><div style="width:8px;height:8px;border-radius:50%;background:${w.dot};flex-shrink:0;"></div><div style="flex:1;"><div style="font-size:11px;font-family:monospace;font-weight:600;color:#d4d4d8;">${w.label}</div><div style="font-size:10px;font-family:monospace;color:#3f3f46;margin-top:2px;">${w.desc}</div></div><span style="font-size:11px;font-family:monospace;color:#27272a;">â†’</span></button>`).join("")}</div><div style="margin-bottom:16px;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;letter-spacing:.1em;margin-bottom:8px;">ALL SECTIONS</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">${VIEWS.filter(v=>v.id!=="home").map(v=>`<button style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;text-align:left;" data-deaction="nav" data-view="${v.id}"><div style="width:6px;height:6px;border-radius:50%;background:${v.dot};flex-shrink:0;"></div><span style="font-size:10px;font-family:monospace;color:#52525b;">${v.label}</span></button>`).join("")}</div></div><div style="border:1px solid rgba(28,28,30,0.5);border-radius:3px;padding:14px;text-align:center;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;font-style:italic;">"Process over prediction. System over impulse."</div></div>`;
+  return`<div style="margin-bottom:28px;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;margin-bottom:4px;">${d}</div><div style="font-size:24px;font-family:monospace;font-weight:700;color:#e4e4e7;margin-bottom:4px;">Decision Engine</div><div style="font-size:10px;font-family:monospace;color:#52525b;">@DiamondHands811 · ${t}</div></div><div style="margin-bottom:20px;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;letter-spacing:.1em;margin-bottom:8px;">SESSION WORKFLOW</div>${wf.map(w=>`<button style="width:100%;display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid #1c1c1e;border-radius:3px;background:#0d0d0f;margin-bottom:4px;cursor:pointer;text-align:left;" data-deaction="nav" data-view="${w.id}" onmouseover="this.style.background='#1c1c1e'" onmouseout="this.style.background='#0d0d0f'"><span style="font-size:10px;font-family:monospace;color:#3f3f46;width:20px;">${w.n}</span><div style="width:8px;height:8px;border-radius:50%;background:${w.dot};flex-shrink:0;"></div><div style="flex:1;"><div style="font-size:11px;font-family:monospace;font-weight:600;color:#d4d4d8;">${w.label}</div><div style="font-size:10px;font-family:monospace;color:#3f3f46;margin-top:2px;">${w.desc}</div></div><span style="font-size:11px;font-family:monospace;color:#27272a;">→</span></button>`).join("")}</div><div style="margin-bottom:16px;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;letter-spacing:.1em;margin-bottom:8px;">ALL SECTIONS</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">${VIEWS.filter(v=>v.id!=="home").map(v=>`<button style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;text-align:left;" data-deaction="nav" data-view="${v.id}"><div style="width:6px;height:6px;border-radius:50%;background:${v.dot};flex-shrink:0;"></div><span style="font-size:10px;font-family:monospace;color:#52525b;">${v.label}</span></button>`).join("")}</div></div><div style="border:1px solid rgba(28,28,30,0.5);border-radius:3px;padding:14px;text-align:center;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;font-style:italic;">"Process over prediction. System over impulse."</div></div>`;
 }
 
 function buildMTD(){
-  let h=`<div style="border:1px solid #1c1c1e;border-radius:3px;margin-bottom:16px;overflow:hidden;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-cu"><div><div style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">DASHBOARD - QUICK LINKS</div></div><span style="font-size:10px;font-family:monospace;color:#52525b;">${st.cuOpen?"â–¼":"â–¶"}</span></button>${st.cuOpen?`<div style="padding:8px;border-top:1px solid #1c1c1e;">${CU_GROUPS.map(g=>linkDrop(g.id,g.label,g.links)).join("")}</div>`:""}</div><div style="display:flex;flex-direction:column;gap:8px;">`;
+  let h=`<div style="border:1px solid #1c1c1e;border-radius:3px;margin-bottom:16px;overflow:hidden;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-cu"><div><div style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">DASHBOARD - QUICK LINKS</div></div><span style="font-size:10px;font-family:monospace;color:#52525b;">${st.cuOpen?"▼":"▶"}</span></button>${st.cuOpen?`<div style="padding:8px;border-top:1px solid #1c1c1e;">${CU_GROUPS.map(g=>linkDrop(g.id,g.label,g.links)).join("")}</div>`:""}</div><div style="display:flex;flex-direction:column;gap:8px;">`;
   MTD_GROUPS.forEach(grp=>{
     const yes=grp.items.filter(i=>st.checks[i.id]==="yes").length,isC=st.mtdCollapsed[grp.id]!==false;
     h+=`<div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;">${grpHdr(grp.id,grp.label,grp.sub,yes,grp.items.length,isC)}`;
-    if(!isC){h+="<div>";grp.items.forEach((item,idx)=>{h+=checkItem(item,st.checks[item.id]||null,idx+1,"checks");if(item.link)h+=`<div style="padding:0 16px 10px;"><a href="${item.link}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;font-size:10px;font-family:monospace;border:1px solid #3f3f46;color:#a1a1aa;border-radius:3px;text-decoration:none;">â†— Coinglass Funding</a></div>`;});h+="</div>";}
+    if(!isC){h+="<div>";grp.items.forEach((item,idx)=>{h+=checkItem(item,st.checks[item.id]||null,idx+1,"checks");if(item.link)h+=`<div style="padding:0 16px 10px;"><a href="${item.link}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;font-size:10px;font-family:monospace;border:1px solid #3f3f46;color:#a1a1aa;border-radius:3px;text-decoration:none;">↗ Coinglass Funding</a></div>`;});h+="</div>";}
     h+="</div>";
   });
   return h+"</div>";
@@ -1881,7 +1615,7 @@ function buildBU(){
   const sections=[];let curSec=null,curGrp=null;
   const buList=[{id:"sec1",sectionDiv:true,label:"SECTION 1 - OBJECT TREE",sub:"Open TradingView. Review each chart."},...OT_TOKENS.flatMap(t=>[{id:`g_${t.prefix}`,group:true,label:`${t.label} - OBJECT TREE`,sub:t.sub},...OT_TEMPLATE.map(i=>({...i,id:`${t.prefix}_${i.id}`}))])];
   buList.forEach(i=>{if(i.sectionDiv){curSec={...i,groups:[]};sections.push(curSec);curGrp=null;}else if(i.group){curGrp={...i,items:[]};if(curSec)curSec.groups.push(curGrp);}else if(curGrp)curGrp.items.push(i);});
-  let h=fbar("filter","S1: OBJECT TREE Â· S2: SAVED DRAFTS");
+  let h=fbar("filter","S1: OBJECT TREE · S2: SAVED DRAFTS");
   sections.forEach(sec=>{
     const all=sec.groups.flatMap(g=>g.items),secY=all.filter(i=>st.checks[i.id]==="yes").length;
     h+=`<div style="display:flex;align-items:center;gap:10px;margin:16px 0 10px;"><div style="flex:1;height:1px;background:#1c1c1e;"></div><div style="padding:4px 10px;border:1px solid #27272a;border-radius:3px;background:#0d0d0f;font-size:10px;font-family:monospace;font-weight:600;color:#a1a1aa;letter-spacing:.1em;">${sec.label}</div><div style="font-size:10px;font-family:monospace;color:#52525b;">${secY}/${all.length}</div><div style="flex:1;height:1px;background:#1c1c1e;"></div></div>`;
@@ -1893,8 +1627,8 @@ function buildBU(){
     });
   });
   const done=st.drafts.filter(d=>d.done).length;
-  h+=`<div style="display:flex;align-items:center;gap:10px;margin:16px 0 10px;"><div style="flex:1;height:1px;background:#1c1c1e;"></div><div style="padding:4px 10px;border:1px solid #27272a;border-radius:3px;background:#0d0d0f;font-size:10px;font-family:monospace;font-weight:600;color:#a1a1aa;letter-spacing:.1em;">SECTION 2 - SAVED DRAFTS</div><div style="font-size:10px;font-family:monospace;color:#52525b;">${done}/${st.drafts.length}</div><div style="flex:1;height:1px;background:#1c1c1e;"></div></div><div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-drafts"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">CHART DRAFTS</span><a href="https://t.me/tesr56788/14817" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;font-family:monospace;padding:2px 8px;border:1px solid #27272a;color:#71717a;border-radius:3px;text-decoration:none;">â†— Telegram Drafts</a></div><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;font-family:monospace;color:#10b981;">${done}</span><span style="font-size:10px;font-family:monospace;color:#3f3f46;">/</span><span style="font-size:11px;font-family:monospace;color:#71717a;">${st.drafts.length}</span><span style="font-size:10px;font-family:monospace;color:#52525b;">${st.draftsOpen?"â–¼":"â–¶"}</span></div></button>`;
-  if(st.draftsOpen){h+="<div>";st.drafts.forEach((d,i)=>{h+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid rgba(28,28,30,0.4);${d.done?"background:rgba(5,46,22,0.1)":""}"><div style="width:20px;height:20px;border-radius:3px;border:1px solid ${d.done?"#10b981":"#3f3f46"};display:flex;align-items:center;justify-content:center;font-size:11px;font-family:monospace;cursor:pointer;${d.done?"background:#10b981;color:#000":"color:#52525b"}" data-deaction="toggle-draft" data-draftid="${d.id}">${d.done?"âœ“":i+1}</div><input value="${d.text.replace(/"/g,"&quot;")}" placeholder="Draft ${i+1} - describe the setup..." style="flex:1;background:transparent;border:none;border-bottom:1px solid #1c1c1e;color:${d.done?"#52525b":"#d4d4d8"};font-size:11px;font-family:monospace;padding:2px 0;${d.done?"text-decoration:line-through":""}" data-deaction="edit-draft" data-draftid="${d.id}"/><button style="font-size:10px;font-family:monospace;color:#27272a;background:transparent;border:none;cursor:pointer;" data-deaction="remove-draft" data-draftid="${d.id}">âœ•</button></div>`;});h+=`<button style="width:100%;padding:8px 16px;font-size:10px;font-family:monospace;color:#3f3f46;background:transparent;border:none;border-top:1px solid #1c1c1e;cursor:pointer;text-align:left;" data-deaction="add-draft">+ add draft</button></div>`;}
+  h+=`<div style="display:flex;align-items:center;gap:10px;margin:16px 0 10px;"><div style="flex:1;height:1px;background:#1c1c1e;"></div><div style="padding:4px 10px;border:1px solid #27272a;border-radius:3px;background:#0d0d0f;font-size:10px;font-family:monospace;font-weight:600;color:#a1a1aa;letter-spacing:.1em;">SECTION 2 - SAVED DRAFTS</div><div style="font-size:10px;font-family:monospace;color:#52525b;">${done}/${st.drafts.length}</div><div style="flex:1;height:1px;background:#1c1c1e;"></div></div><div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-drafts"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">CHART DRAFTS</span><a href="https://t.me/tesr56788/14817" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;font-family:monospace;padding:2px 8px;border:1px solid #27272a;color:#71717a;border-radius:3px;text-decoration:none;">↗ Telegram Drafts</a></div><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;font-family:monospace;color:#10b981;">${done}</span><span style="font-size:10px;font-family:monospace;color:#3f3f46;">/</span><span style="font-size:11px;font-family:monospace;color:#71717a;">${st.drafts.length}</span><span style="font-size:10px;font-family:monospace;color:#52525b;">${st.draftsOpen?"▼":"▶"}</span></div></button>`;
+  if(st.draftsOpen){h+="<div>";st.drafts.forEach((d,i)=>{h+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid rgba(28,28,30,0.4);${d.done?"background:rgba(5,46,22,0.1)":""}"><div style="width:20px;height:20px;border-radius:3px;border:1px solid ${d.done?"#10b981":"#3f3f46"};display:flex;align-items:center;justify-content:center;font-size:11px;font-family:monospace;cursor:pointer;${d.done?"background:#10b981;color:#000":"color:#52525b"}" data-deaction="toggle-draft" data-draftid="${d.id}">${d.done?"✓":i+1}</div><input value="${d.text.replace(/"/g,"&quot;")}" placeholder="Draft ${i+1} - describe the setup..." style="flex:1;background:transparent;border:none;border-bottom:1px solid #1c1c1e;color:${d.done?"#52525b":"#d4d4d8"};font-size:11px;font-family:monospace;padding:2px 0;${d.done?"text-decoration:line-through":""}" data-deaction="edit-draft" data-draftid="${d.id}"/><button style="font-size:10px;font-family:monospace;color:#27272a;background:transparent;border:none;cursor:pointer;" data-deaction="remove-draft" data-draftid="${d.id}">✕</button></div>`;});h+=`<button style="width:100%;padding:8px 16px;font-size:10px;font-family:monospace;color:#3f3f46;background:transparent;border:none;border-top:1px solid #1c1c1e;cursor:pointer;text-align:left;" data-deaction="add-draft">+ add draft</button></div>`;}
   return h+"</div>";
 }
 
@@ -1920,7 +1654,7 @@ function buildAlt(){
 
 function buildDrafting(){
   const notes=[{id:"dn_ind",title:"Indicator setup",lines:["Object tree from HTF to LTF","Volatility (indicator + chart)","2x Volume + MA","MACD for range","Moving avgs for trend","Stochastic/AO/Cipher (accumulation vs distribution)","USDT.D vs BTC"]},{id:"dn_alt",title:"Alt research",lines:["Use trading X account","Telegram/Twitter/Google search of the specific crypto token","Mexc % notification - futures and spot % change","Coinmarketcap hot sectors","TradingView % change + screener/heatmaps","ETH ETF inflows, Top Futures Positions, Sectors 24H","Cryptoalerts.ai, Correlation Tool, Better Crypto Scanner","Crypto Derivatives Visual Screener, Cryptopy, RSI Heatmap","Supercharts, order book, moving avgs, oscillators, divergences","Market structure, oversold/overbought, local tops/bottoms","GPT TA agent, Telegram TA bot, Sharebot67","Templates, Trading focus, Volatility checker","Fundamental analysis, Technical analysis, Sentiment analysis","Qualitative analysis, Risk management"]}];
-  return`<div style="border:1px solid #1c1c1e;border-radius:3px;padding:14px;margin-bottom:16px;"><div style="font-size:10px;font-family:monospace;color:#52525b;letter-spacing:.1em;margin-bottom:4px;">DRAFTING IDEAS</div><div style="font-size:10px;font-family:monospace;color:#3f3f46;">Reference notes.</div></div><div style="display:flex;flex-direction:column;gap:8px;">${notes.map(n=>{const isC=st.collapsed[n.id]!==false;return`<div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-group" data-group="${n.id}"><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">${n.title}</span><span style="font-size:10px;font-family:monospace;color:#52525b;">${isC?"â–¶":"â–¼"}</span></button>${!isC?`<div style="padding:10px 16px;border-top:1px solid #1c1c1e;">${n.lines.map(l=>`<div style="font-size:10px;font-family:monospace;color:#71717a;line-height:1.8;">${l}</div>`).join("")}</div>`:""}</div>`;}).join("")}</div>`;
+  return`<div style="border:1px solid #1c1c1e;border-radius:3px;padding:14px;margin-bottom:16px;"><div style="font-size:10px;font-family:monospace;color:#52525b;letter-spacing:.1em;margin-bottom:4px;">DRAFTING IDEAS</div><div style="font-size:10px;font-family:monospace;color:#3f3f46;">Reference notes.</div></div><div style="display:flex;flex-direction:column;gap:8px;">${notes.map(n=>{const isC=st.collapsed[n.id]!==false;return`<div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-group" data-group="${n.id}"><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">${n.title}</span><span style="font-size:10px;font-family:monospace;color:#52525b;">${isC?"▶":"▼"}</span></button>${!isC?`<div style="padding:10px 16px;border-top:1px solid #1c1c1e;">${n.lines.map(l=>`<div style="font-size:10px;font-family:monospace;color:#71717a;line-height:1.8;">${l}</div>`).join("")}</div>`:""}</div>`;}).join("")}</div>`;
 }
 
 function buildTD(){
@@ -1943,15 +1677,15 @@ function buildTD(){
   const steps=[{id:1,label:"Macro",dot:ms==="RISK_ON"?"#10b981":ms==="RISK_OFF"?"#ef4444":"#f59e0b"},{id:2,label:"Regime",dot:rc==="green"?"#10b981":rc==="red"?"#ef4444":rc==="blue"?"#38bdf8":"#f59e0b"},{id:3,label:"Bias",dot:bc==="green"?"#10b981":bc==="red"?"#ef4444":"#f59e0b"},{id:4,label:"Signals",dot:fired>=3?"#10b981":fired>=2?"#f59e0b":"#ef4444"},{id:5,label:"Score",dot:conf>=80?"#10b981":conf>=65?"#f59e0b":"#ef4444"},{id:6,label:"Execute",dot:ev?"#10b981":"#27272a"}];
   let h=`<div style="display:flex;gap:2px;margin-bottom:20px;border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;">${steps.map(st2=>`<button style="flex:1;padding:10px 6px;text-align:left;background:${step===st2.id?"#1c1c1e":"transparent"};border:none;border-right:1px solid #1c1c1e;cursor:pointer;last-child{border-right:none}" data-deaction="td-step" data-step="${st2.id}"><div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;"><div style="width:6px;height:6px;border-radius:50%;background:${st2.dot};"></div><span style="font-size:9px;font-family:monospace;color:#52525b;">${String(st2.id).padStart(2,"0")}</span></div><div style="font-size:10px;font-family:monospace;font-weight:600;color:#d4d4d8;">${st2.label}</div></button>`).join("")}</div>`;
 
-  if(step===1){h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 01 / MACRO - Bad macro = no trade.</div>${panel(ph("USDT.D - PRIMARY RISK GAUGE",pill(mc,ms))+row("USDT.D above 4H EMA20?","Rising = money leaving crypto = risk off",ct("usdt_above_ema","ABOVE","BELOW"))+row("USDT.D 24H % change",">+0.75% = risk-off | <-0.25% = risk-on",fld("usdt_change","e.g. -0.8")))}${panel(ph("DOMINANCE + STRUCTURE","")+row("BTC.D rising (above 4H EMA20)?","",ct("btc_d_rising","RISING","FALLING"))+row("TOTAL above Daily EMA200?","",ct("total_bull","ABOVE (BULL)","BELOW (BEAR)"))+row("DXY above Daily EMA50?","",ct("dxy_bull","YES (HEADWIND)","NO (TAILWIND)"))+row("News blackout active?","",ct("blackout","BLACKOUT","CLEAR")))}<div style="border:1px solid ${ro?"#7f1d1d":rn?"#064e3b":"#3f3f46"};border-radius:3px;padding:10px;font-size:11px;font-family:monospace;background:${ro?"#450a0a15":rn?"#022c2215":"#0d0d0f"};margin-bottom:12px;"><span style="color:#52525b;">VERDICT - </span><span style="${cc[mc]};font-weight:600;">${ms}</span><span style="color:#52525b;margin-left:12px;">${{RISK_OFF:"No longs. Shorts only. 50% size.",RISK_ON:"Longs preferred. Full size.",NEUTRAL:"Longs OK. 75% size.",BLACKOUT:"Stand aside."}[ms]}</span></div><button style="width:100%;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="2">NEXT - CLASSIFY REGIME â†’</button>`;}
+  if(step===1){h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 01 / MACRO - Bad macro = no trade.</div>${panel(ph("USDT.D - PRIMARY RISK GAUGE",pill(mc,ms))+row("USDT.D above 4H EMA20?","Rising = money leaving crypto = risk off",ct("usdt_above_ema","ABOVE","BELOW"))+row("USDT.D 24H % change",">+0.75% = risk-off | <-0.25% = risk-on",fld("usdt_change","e.g. -0.8")))}${panel(ph("DOMINANCE + STRUCTURE","")+row("BTC.D rising (above 4H EMA20)?","",ct("btc_d_rising","RISING","FALLING"))+row("TOTAL above Daily EMA200?","",ct("total_bull","ABOVE (BULL)","BELOW (BEAR)"))+row("DXY above Daily EMA50?","",ct("dxy_bull","YES (HEADWIND)","NO (TAILWIND)"))+row("News blackout active?","",ct("blackout","BLACKOUT","CLEAR")))}<div style="border:1px solid ${ro?"#7f1d1d":rn?"#064e3b":"#3f3f46"};border-radius:3px;padding:10px;font-size:11px;font-family:monospace;background:${ro?"#450a0a15":rn?"#022c2215":"#0d0d0f"};margin-bottom:12px;"><span style="color:#52525b;">VERDICT - </span><span style="${cc[mc]};font-weight:600;">${ms}</span><span style="color:#52525b;margin-left:12px;">${{RISK_OFF:"No longs. Shorts only. 50% size.",RISK_ON:"Longs preferred. Full size.",NEUTRAL:"Longs OK. 75% size.",BLACKOUT:"Stand aside."}[ms]}</span></div><button style="width:100%;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="2">NEXT - CLASSIFY REGIME →</button>`;}
 
-  if(step===2){const am={"TREND UP":"Pullback longs only","TREND DOWN":"Bounce shorts only",RANGE:"Mean reversion both sides","VOLATILE EXP":"Breakout continuation",COMPRESSION:"No entries",UNCLASSIFIED:"Needs more data"};const fm={"TREND UP":"Shorts, mean reversion","TREND DOWN":"Longs, mean reversion",RANGE:"Breakout chasing","VOLATILE EXP":"Scalps, mean reversion",COMPRESSION:"Everything",UNCLASSIFIED:"Trading without clarity"};h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 02 / REGIME</div>${panel(ph("4H STRUCTURE READ",pill(rc,regime))+row("ADX(14) value",">25 trending | <20 ranging",fld("adx","e.g. 31"))+row("Price vs 4H EMA50","",mu("price_ema50",[{l:"ABOVE",v:"above"},{l:"BELOW",v:"below"}]))+row("EMA50 vs 4H EMA200","",mu("ema50_ema200",[{l:"50>200 BULL",v:"above"},{l:"50<200 BEAR",v:"below"}]))+row("ATR vs 20-period avg","",mu("atr_state",[{l:"NORMAL",v:"normal"},{l:">1.5x HIGH",v:"high"},{l:"<0.6x LOW",v:"low"}])))}<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;"><div style="border:1px solid #1c1c1e;border-radius:3px;padding:10px;"><div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:4px;">ALLOWED</div><div style="font-size:11px;font-family:monospace;color:#10b981;">${am[regime]||"-"}</div></div><div style="border:1px solid #1c1c1e;border-radius:3px;padding:10px;"><div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:4px;">FORBIDDEN</div><div style="font-size:11px;font-family:monospace;color:#ef4444;">${fm[regime]||"-"}</div></div></div><div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="1">â† MACRO</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="3">DAILY BIAS â†’</button></div>`;}
+  if(step===2){const am={"TREND UP":"Pullback longs only","TREND DOWN":"Bounce shorts only",RANGE:"Mean reversion both sides","VOLATILE EXP":"Breakout continuation",COMPRESSION:"No entries",UNCLASSIFIED:"Needs more data"};const fm={"TREND UP":"Shorts, mean reversion","TREND DOWN":"Longs, mean reversion",RANGE:"Breakout chasing","VOLATILE EXP":"Scalps, mean reversion",COMPRESSION:"Everything",UNCLASSIFIED:"Trading without clarity"};h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 02 / REGIME</div>${panel(ph("4H STRUCTURE READ",pill(rc,regime))+row("ADX(14) value",">25 trending | <20 ranging",fld("adx","e.g. 31"))+row("Price vs 4H EMA50","",mu("price_ema50",[{l:"ABOVE",v:"above"},{l:"BELOW",v:"below"}]))+row("EMA50 vs 4H EMA200","",mu("ema50_ema200",[{l:"50>200 BULL",v:"above"},{l:"50<200 BEAR",v:"below"}]))+row("ATR vs 20-period avg","",mu("atr_state",[{l:"NORMAL",v:"normal"},{l:">1.5x HIGH",v:"high"},{l:"<0.6x LOW",v:"low"}])))}<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;"><div style="border:1px solid #1c1c1e;border-radius:3px;padding:10px;"><div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:4px;">ALLOWED</div><div style="font-size:11px;font-family:monospace;color:#10b981;">${am[regime]||"-"}</div></div><div style="border:1px solid #1c1c1e;border-radius:3px;padding:10px;"><div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:4px;">FORBIDDEN</div><div style="font-size:11px;font-family:monospace;color:#ef4444;">${fm[regime]||"-"}</div></div></div><div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="1">← MACRO</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="3">DAILY BIAS →</button></div>`;}
 
-  if(step===3){h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 03 / DAILY BIAS - All 3 must agree.</div>${panel(ph("3-CONDITION HTF FILTER",pill(bc,bl))+row("Daily close above EMA200?","",mu("daily_ema200",[{l:"ABOVE",v:"above"},{l:"BELOW",v:"below"}]))+row("Daily EMA50 above EMA200?","",ct("ema50_cross","YES (GOLDEN)","NO (DEATH)"))+row("Last confirmed market structure","",mu("structure",[{l:"HL (BULL)",v:"HL"},{l:"LH (BEAR)",v:"LH"},{l:"UNCLEAR",v:"unclear"}])))}<div style="border:1px solid #1c1c1e;border-radius:3px;padding:10px;margin-bottom:12px;"><div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:4px;">VERDICT</div><div style="font-size:16px;font-family:monospace;font-weight:700;${cc[bc]}">${bl}</div><div style="font-size:10px;font-family:monospace;color:#52525b;margin-top:4px;">${{NEUTRAL:"Scalp only. 50% max.",BULLISH:"Full stack. Longs preferred.",BEARISH:"Short bias. Longs need 80+."}[bl]}</div></div><div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="2">â† REGIME</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="4">SIGNALS â†’</button></div>`;}
+  if(step===3){h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 03 / DAILY BIAS - All 3 must agree.</div>${panel(ph("3-CONDITION HTF FILTER",pill(bc,bl))+row("Daily close above EMA200?","",mu("daily_ema200",[{l:"ABOVE",v:"above"},{l:"BELOW",v:"below"}]))+row("Daily EMA50 above EMA200?","",ct("ema50_cross","YES (GOLDEN)","NO (DEATH)"))+row("Last confirmed market structure","",mu("structure",[{l:"HL (BULL)",v:"HL"},{l:"LH (BEAR)",v:"LH"},{l:"UNCLEAR",v:"unclear"}])))}<div style="border:1px solid #1c1c1e;border-radius:3px;padding:10px;margin-bottom:12px;"><div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:4px;">VERDICT</div><div style="font-size:16px;font-family:monospace;font-weight:700;${cc[bc]}">${bl}</div><div style="font-size:10px;font-family:monospace;color:#52525b;margin-top:4px;">${{NEUTRAL:"Scalp only. 50% max.",BULLISH:"Full stack. Longs preferred.",BEARISH:"Short bias. Longs need 80+."}[bl]}</div></div><div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="2">← REGIME</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="4">SIGNALS →</button></div>`;}
 
-  if(step===4){h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 04 / SIGNALS - 3 of 5 buckets required.</div>${panel(ph("5-BUCKET CONFLUENCE",pill(fired>=3?"green":fired>=2?"amber":"red",fired+"/5 FIRING"))+[{k:"trend",n:"TREND",h:"EMA stack aligned"},{k:"momentum",n:"MOMENTUM",h:"MACD histogram direction"},{k:"reversal",n:"REVERSAL",h:"Stoch cross from extreme"},{k:"participation",n:"PARTICIPATION",h:"Volume > 1.5x MA"},{k:"volatility",n:"VOLATILITY",h:"ATR within normal range"}].map(b=>row(b.n,b.h,ct(b.k,"FIRES","DEAD"))).join(""))}${panel(ph("CIPHER B / AO","")+row("Cipher B mode","Accumulation = smart money buying",mu("cipher",[{l:"ACCUMULATION",v:"accum"},{l:"DISTRIBUTION",v:"dist"},{l:"NEUTRAL",v:"neutral"}])))}<div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="3">â† BIAS</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="5">SCORE â†’</button></div>`;}
+  if(step===4){h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 04 / SIGNALS - 3 of 5 buckets required.</div>${panel(ph("5-BUCKET CONFLUENCE",pill(fired>=3?"green":fired>=2?"amber":"red",fired+"/5 FIRING"))+[{k:"trend",n:"TREND",h:"EMA stack aligned"},{k:"momentum",n:"MOMENTUM",h:"MACD histogram direction"},{k:"reversal",n:"REVERSAL",h:"Stoch cross from extreme"},{k:"participation",n:"PARTICIPATION",h:"Volume > 1.5x MA"},{k:"volatility",n:"VOLATILITY",h:"ATR within normal range"}].map(b=>row(b.n,b.h,ct(b.k,"FIRES","DEAD"))).join(""))}${panel(ph("CIPHER B / AO","")+row("Cipher B mode","Accumulation = smart money buying",mu("cipher",[{l:"ACCUMULATION",v:"accum"},{l:"DISTRIBUTION",v:"dist"},{l:"NEUTRAL",v:"neutral"}])))}<div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="3">← BIAS</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="5">SCORE →</button></div>`;}
 
-  if(step===5){const sb=[{label:"HTF Trend Alignment",pts:bsc,max:30},{label:"Macro Filter",pts:msc,max:20},{label:"Signal Confluence",pts:sigsc,max:20},{label:"Volume Confirmation",pts:volsc,max:15},{label:"Volatility",pts:atsc,max:10},{label:"Funding / Cipher",pts:fsc,max:5}];h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 05 / CONFIDENCE SCORE</div>${panel(ph("SCORE BREAKDOWN","")+sb.map(item=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;border-bottom:1px solid rgba(28,28,30,0.4);"><div style="font-size:11px;font-family:monospace;color:#d4d4d8;">${item.label}</div><div style="display:flex;align-items:center;gap:10px;"><div style="width:80px;height:4px;background:#1c1c1e;border-radius:2px;overflow:hidden;"><div style="height:100%;border-radius:2px;background:${sco};width:${(item.pts/item.max)*100}%"></div></div><span style="font-size:10px;font-family:monospace;color:#a1a1aa;width:40px;text-align:right;">${item.pts}/${item.max}</span></div></div>`).join(""))}<div style="border:1px solid #1c1c1e;border-radius:3px;padding:16px;margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;"><span style="font-size:10px;font-family:monospace;color:#52525b;">TOTAL</span><span style="font-size:10px;font-family:monospace;color:${sco};">${conf>=80?"FULL SIZE":conf>=65?"HALF SIZE":conf>=50?"25% SIZE":"NO TRADE"}</span></div><div style="font-size:48px;font-family:monospace;font-weight:700;color:${sco};margin-bottom:10px;">${conf}<span style="font-size:14px;color:#27272a;margin-left:4px;">/ 100</span></div><div style="height:4px;background:#1c1c1e;border-radius:2px;overflow:hidden;"><div style="height:100%;border-radius:2px;background:${sco};width:${conf}%;"></div></div></div><div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="4">â† SIGNALS</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;border:1px solid #1c1c1e;border-radius:3px;cursor:pointer;${conf>=65?"color:#a1a1aa;background:transparent":"color:#27272a;background:transparent;cursor:not-allowed"}" ${conf<50?"disabled":""} data-deaction="td-step" data-step="6">${conf>=65?"EXECUTE â†’":"SCORE TOO LOW"}</button></div>`;}
+  if(step===5){const sb=[{label:"HTF Trend Alignment",pts:bsc,max:30},{label:"Macro Filter",pts:msc,max:20},{label:"Signal Confluence",pts:sigsc,max:20},{label:"Volume Confirmation",pts:volsc,max:15},{label:"Volatility",pts:atsc,max:10},{label:"Funding / Cipher",pts:fsc,max:5}];h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 05 / CONFIDENCE SCORE</div>${panel(ph("SCORE BREAKDOWN","")+sb.map(item=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;border-bottom:1px solid rgba(28,28,30,0.4);"><div style="font-size:11px;font-family:monospace;color:#d4d4d8;">${item.label}</div><div style="display:flex;align-items:center;gap:10px;"><div style="width:80px;height:4px;background:#1c1c1e;border-radius:2px;overflow:hidden;"><div style="height:100%;border-radius:2px;background:${sco};width:${(item.pts/item.max)*100}%"></div></div><span style="font-size:10px;font-family:monospace;color:#a1a1aa;width:40px;text-align:right;">${item.pts}/${item.max}</span></div></div>`).join(""))}<div style="border:1px solid #1c1c1e;border-radius:3px;padding:16px;margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;"><span style="font-size:10px;font-family:monospace;color:#52525b;">TOTAL</span><span style="font-size:10px;font-family:monospace;color:${sco};">${conf>=80?"FULL SIZE":conf>=65?"HALF SIZE":conf>=50?"25% SIZE":"NO TRADE"}</span></div><div style="font-size:48px;font-family:monospace;font-weight:700;color:${sco};margin-bottom:10px;">${conf}<span style="font-size:14px;color:#27272a;margin-left:4px;">/ 100</span></div><div style="height:4px;background:#1c1c1e;border-radius:2px;overflow:hidden;"><div style="height:100%;border-radius:2px;background:${sco};width:${conf}%;"></div></div></div><div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="4">← SIGNALS</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;border:1px solid #1c1c1e;border-radius:3px;cursor:pointer;${conf>=65?"color:#a1a1aa;background:transparent":"color:#27272a;background:transparent;cursor:not-allowed"}" ${conf<50?"disabled":""} data-deaction="td-step" data-step="6">${conf>=65?"EXECUTE →":"SCORE TOO LOW"}</button></div>`;}
 
   if(step===6){h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 06 / EXECUTION</div>${panel(ph("TRADE PARAMETERS",pill(conf>=80?"green":"amber","SCORE "+conf))+row("Direction","",mu("dir",[{l:"LONG",v:"long"},{l:"SHORT",v:"short"}]))+row("Account balance","",fld("balance","e.g. 10000"))+row("Risk %","",mu("risk",[{l:"1%",v:"1"},{l:"1.5%",v:"1.5"},{l:"2%",v:"2"}]))+row("ATR(14) value","",fld("atr_val","e.g. 1250"))+row("Entry price","",fld("entry","e.g. 87000")))}${ev?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;margin-bottom:12px;">${[{l:"POSITION SIZE",v:ps.toFixed(5)+" BTC",c:"color:#e4e4e7"},{l:"RISK AMOUNT",v:"$"+fmt(ra,2),c:"color:#e4e4e7"},{l:"STOP LOSS",v:"$"+fmt(sp,0),c:"color:#ef4444"},{l:"STOP DIST",v:"$"+fmt(sd,0)+" (1.5x ATR)",c:"color:#52525b"},{l:"TP1 1.5R (40%)",v:"$"+fmt(t1,0),c:"color:#10b981"},{l:"TP2 2.5R (40%)",v:"$"+fmt(t2,0),c:"color:#6ee7b7"},{l:"RUNNER (20%)",v:"Trail 1x ATR after TP2",c:"color:#38bdf8"},{l:"SIZE MULT",v:(sm*100).toFixed(0)+"%",c:"color:#f59e0b"}].map(item=>`<div style="background:#0d0d0f;padding:10px 12px;"><div style="font-size:9px;font-family:monospace;color:#3f3f46;">${item.l}</div><div style="font-size:12px;font-family:monospace;font-weight:600;margin-top:4px;${item.c}">${item.v}</div></div>`).join("")}</div>`:""}  <button style="width:100%;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-reset">RESET - NEW ANALYSIS</button>`;}
   return h;
@@ -1970,7 +1704,7 @@ function buildApp(){
 
   const menuHtml=st.menuOpen?`<div style="border-top:1px solid #1c1c1e;padding:8px 16px;display:flex;flex-wrap:wrap;gap:4px;">${VIEWS.map(v=>`<button style="padding:4px 10px;font-size:10px;font-family:monospace;border-radius:3px;cursor:pointer;border:1px solid ${st.view===v.id?"#52525b":"#1c1c1e"};background:${st.view===v.id?"#27272a":"transparent"};color:${st.view===v.id?"#e4e4e7":"#52525b"};" data-deaction="nav" data-view="${v.id}">${v.label}</button>`).join("")}<button style="padding:4px 10px;font-size:10px;font-family:monospace;border-radius:3px;cursor:pointer;border:1px solid #1c1c1e;background:transparent;color:#52525b;" data-deaction="nav" data-view="topdown">TOP-DOWN WIZARD</button></div>`:"";
 
-  return`<div style="min-height:100%;background:#09090b;color:#e4e4e7;"><div style="position:sticky;top:0;z-index:100;border-bottom:1px solid #1c1c1e;background:rgba(9,9,11,0.97);">${menuHtml?`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;"><div style="display:flex;align-items:center;gap:10px;">${st.view!=="home"?`<button style="font-size:11px;font-family:monospace;color:#52525b;background:transparent;border:none;cursor:pointer;" data-deaction="nav" data-view="home">â†</button>`:""}  <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:50%;background:${cur.dot};"></div><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">${cur.label}</span></div></div><button style="font-size:10px;font-family:monospace;color:#52525b;background:transparent;border:1px solid #1c1c1e;border-radius:3px;padding:4px 10px;cursor:pointer;" data-deaction="toggle-menu">MENU</button></div>${menuHtml}`:`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;"><div style="display:flex;align-items:center;gap:10px;">${st.view!=="home"?`<button style="font-size:11px;font-family:monospace;color:#52525b;background:transparent;border:none;cursor:pointer;" data-deaction="nav" data-view="home">â†</button>`:""}  <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:50%;background:${cur.dot};"></div><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">${cur.label}</span></div></div><button style="font-size:10px;font-family:monospace;color:#52525b;background:transparent;border:1px solid #1c1c1e;border-radius:3px;padding:4px 10px;cursor:pointer;" data-deaction="toggle-menu">MENU</button></div>`}</div><div style="padding:16px;max-width:640px;margin:0 auto;">${content}</div></div>`;
+  return`<div style="min-height:100%;background:#09090b;color:#e4e4e7;"><div style="position:sticky;top:0;z-index:100;border-bottom:1px solid #1c1c1e;background:rgba(9,9,11,0.97);">${menuHtml?`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;"><div style="display:flex;align-items:center;gap:10px;">${st.view!=="home"?`<button style="font-size:11px;font-family:monospace;color:#52525b;background:transparent;border:none;cursor:pointer;" data-deaction="nav" data-view="home">←</button>`:""}  <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:50%;background:${cur.dot};"></div><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">${cur.label}</span></div></div><button style="font-size:10px;font-family:monospace;color:#52525b;background:transparent;border:1px solid #1c1c1e;border-radius:3px;padding:4px 10px;cursor:pointer;" data-deaction="toggle-menu">MENU</button></div>${menuHtml}`:`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;"><div style="display:flex;align-items:center;gap:10px;">${st.view!=="home"?`<button style="font-size:11px;font-family:monospace;color:#52525b;background:transparent;border:none;cursor:pointer;" data-deaction="nav" data-view="home">←</button>`:""}  <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:50%;background:${cur.dot};"></div><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">${cur.label}</span></div></div><button style="font-size:10px;font-family:monospace;color:#52525b;background:transparent;border:1px solid #1c1c1e;border-radius:3px;padding:4px 10px;cursor:pointer;" data-deaction="toggle-menu">MENU</button></div>`}</div><div style="padding:16px;max-width:640px;margin:0 auto;">${content}</div></div>`;
 }
 
 function render(){
@@ -2016,7 +1750,7 @@ return{render};
 })();
 </script>
 
-<!-- â”€â”€ SORA STUDIO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+<!-- ── SORA STUDIO ─────────────────────────────────────────── -->
 <script>
 const SORA = (() => {
 const STAGES=[{id:"idea",label:"Idea",color:"#a78bfa"},{id:"queued",label:"Queued",color:"#fbbf24"},{id:"generating",label:"Generating",color:"#34d399"},{id:"review",label:"Review",color:"#60a5fa"},{id:"done",label:"Archive",color:"#94a3b8"}];
@@ -2060,7 +1794,7 @@ function buildList(){
   return`<div style="width:260px;border-right:1px solid #14141f;display:flex;flex-direction:column;background:#08080e;flex-shrink:0;overflow:hidden;">
     <div style="padding:10px;border-bottom:1px solid #14141f;flex-shrink:0;">
       <div style="position:relative;margin-bottom:8px;">
-        <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#28283a;font-size:10px;">ðŸ”</span>
+        <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#28283a;font-size:10px;">🔍</span>
         <input value="${search.replace(/"/g,"&quot;")}" placeholder="Search..." style="width:100%;background:#0e0e18;border:1px solid #14141f;border-radius:5px;padding:6px 8px 6px 26px;color:#ddd8cc;font-size:11px;outline:none;box-sizing:border-box;font-family:inherit;" data-soraaction="search"/>
       </div>
       <button style="width:100%;background:linear-gradient(135deg,#6d28d9,#4f46e5);border:none;border-radius:5px;padding:7px 10px;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:5px;justify-content:center;font-family:inherit;letter-spacing:.04em;" data-soraaction="add-idea">+ New Sequence</button>
@@ -2098,12 +1832,12 @@ function buildDetail(){
             const isCur=s.id===sel.stage,isPast=i<activeIdx;
             return`<div style="display:flex;align-items:center;gap:4px;">
               <button style="background:${isCur?s.color+"18":"transparent"};border:1px solid ${isCur?s.color:isPast?"#22222e":"#14141f"};border-radius:4px;padding:3px 9px;color:${isCur?s.color:isPast?"#2e2e44":"#1c1c2a"};font-size:9px;cursor:pointer;font-family:inherit;text-transform:uppercase;letter-spacing:.08em;" data-soraaction="set-stage" data-stage="${s.id}">${s.label}</button>
-              ${i<STAGES.length-1?`<span style="color:#1c1c2a;font-size:9px;">â€º</span>`:""}
+              ${i<STAGES.length-1?`<span style="color:#1c1c2a;font-size:9px;">›</span>`:""}
             </div>`;
           }).join("")}
         </div>
       </div>
-      <button style="background:transparent;border:1px solid #14141f;border-radius:5px;padding:7px 10px;cursor:pointer;color:#28283a;margin-top:4px;" data-soraaction="delete-idea" data-id="${sel.id}" title="Delete">ðŸ—‘</button>
+      <button style="background:transparent;border:1px solid #14141f;border-radius:5px;padding:7px 10px;cursor:pointer;color:#28283a;margin-top:4px;" data-soraaction="delete-idea" data-id="${sel.id}" title="Delete">🗑</button>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
@@ -2115,8 +1849,8 @@ function buildDetail(){
       <div style="grid-column:1/-1;">
         <div style="font-size:9px;color:#32324a;text-transform:uppercase;letter-spacing:.12em;margin-bottom:7px;font-weight:600;">Reference Image</div>
         ${sel.referenceImage
-          ?`<div style="position:relative;display:inline-block;"><img src="${sel.referenceImage}" style="max-width:100%;max-height:220px;border-radius:8px;border:1px solid #1a1a28;display:block;"/><button style="position:absolute;top:8px;right:8px;background:#06060acc;border:1px solid #1a1a28;border-radius:4px;padding:4px 6px;cursor:pointer;color:#8888a0;font-size:10px;" data-soraaction="clear-image">âœ•</button></div>`
-          :`<div style="background:#0c0c14;border:1px dashed #1c1c2a;border-radius:8px;padding:28px 20px;text-align:center;cursor:pointer;color:#28283a;font-size:11px;" data-soraaction="upload-trigger"><div style="font-size:20px;margin-bottom:8px;opacity:.3;">â¬†</div>Click to upload reference image<div style="font-size:9px;margin-top:4px;color:#1c1c2a;">PNG Â· JPG Â· WEBP</div></div>`}
+          ?`<div style="position:relative;display:inline-block;"><img src="${sel.referenceImage}" style="max-width:100%;max-height:220px;border-radius:8px;border:1px solid #1a1a28;display:block;"/><button style="position:absolute;top:8px;right:8px;background:#06060acc;border:1px solid #1a1a28;border-radius:4px;padding:4px 6px;cursor:pointer;color:#8888a0;font-size:10px;" data-soraaction="clear-image">✕</button></div>`
+          :`<div style="background:#0c0c14;border:1px dashed #1c1c2a;border-radius:8px;padding:28px 20px;text-align:center;cursor:pointer;color:#28283a;font-size:11px;" data-soraaction="upload-trigger"><div style="font-size:20px;margin-bottom:8px;opacity:.3;">⬆</div>Click to upload reference image<div style="font-size:9px;margin-top:4px;color:#1c1c2a;">PNG · JPG · WEBP</div></div>`}
         <input type="file" accept="image/*" id="sora-file-input" style="display:none;" data-soraaction="file-input"/>
       </div>
 
@@ -2137,7 +1871,7 @@ function buildDetail(){
       <div style="grid-column:1/-1;">
         <div style="font-size:9px;color:#32324a;text-transform:uppercase;letter-spacing:.12em;margin-bottom:7px;font-weight:600;">Tags</div>
         <div style="background:#0c0c14;border:1px solid #14141f;border-radius:7px;padding:8px 10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-height:38px;">
-          ${sel.tags.map(tag=>`<span style="background:#14141f;border:1px solid #1c1c2a;border-radius:3px;padding:2px 7px;font-size:10px;color:#5a5a78;display:inline-flex;align-items:center;gap:5px;">#${tag}<span style="cursor:pointer;opacity:.6;font-size:9px;" data-soraaction="remove-tag" data-tag="${tag}">âœ•</span></span>`).join("")}
+          ${sel.tags.map(tag=>`<span style="background:#14141f;border:1px solid #1c1c2a;border-radius:3px;padding:2px 7px;font-size:10px;color:#5a5a78;display:inline-flex;align-items:center;gap:5px;">#${tag}<span style="cursor:pointer;opacity:.6;font-size:9px;" data-soraaction="remove-tag" data-tag="${tag}">✕</span></span>`).join("")}
           <input value="${newTag.replace(/"/g,"&quot;")}" placeholder="${sel.tags.length===0?"Type a tag and press Enter...":"+"}" style="background:transparent;border:none;outline:none;font-size:10px;color:#5a5a78;font-family:inherit;flex:1;min-width:80px;" data-soraaction="tag-input"/>
         </div>
       </div>
@@ -2149,8 +1883,8 @@ function buildDetail(){
 
       <div style="grid-column:1/-1;">
         ${sel.stage!=="done"
-          ?`<button style="background:linear-gradient(135deg,#6d28d9,#4f46e5);border:none;border-radius:6px;padding:9px 18px;color:#fff;font-size:11px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;letter-spacing:.04em;" data-soraaction="advance-stage">Move to ${STAGES[activeIdx+1]?.label||""} â€º</button>`
-          :`<div style="background:#94a3b818;border:1px solid #94a3b830;border-radius:6px;padding:9px 16px;font-size:11px;color:#94a3b8;">âœ“ Archived - this sequence is complete</div>`}
+          ?`<button style="background:linear-gradient(135deg,#6d28d9,#4f46e5);border:none;border-radius:6px;padding:9px 18px;color:#fff;font-size:11px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;letter-spacing:.04em;" data-soraaction="advance-stage">Move to ${STAGES[activeIdx+1]?.label||""} ›</button>`
+          :`<div style="background:#94a3b818;border:1px solid #94a3b830;border-radius:6px;padding:9px 16px;font-size:11px;color:#94a3b8;">✓ Archived - this sequence is complete</div>`}
       </div>
     </div>
 
@@ -2164,7 +1898,7 @@ function buildApp(){
   return`<div style="height:100%;display:flex;flex-direction:column;background:#06060a;color:#ddd8cc;font-family:'DM Mono','Fira Code','Courier New',monospace;overflow:hidden;">
     <div style="border-bottom:1px solid #14141f;padding:0 20px;height:46px;display:flex;align-items:center;gap:12px;background:#08080e;flex-shrink:0;">
       <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:14px;">ðŸŽ¬</span>
+        <span style="font-size:14px;">🎬</span>
         <span style="font-size:12px;font-weight:700;color:#ddd8cc;letter-spacing:.14em;text-transform:uppercase;">Sora Studio</span>
         <span style="font-size:10px;color:#28283a;margin-left:2px;">/ sequences</span>
       </div>
@@ -2265,6 +1999,7 @@ function showAgentInfo(id) {
   panel.style.display = 'block';
 }
 
+
 function toggleProjGroup(headerEl) {
   const links = headerEl.nextElementSibling;
   if (!links) return;
@@ -2300,9 +2035,13 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.nav-items-wrap').forEach(el => {
     el.style.maxHeight = 'none';
   });
+  document.querySelectorAll('.nav-proj-links').forEach(el => {
+    el.style.maxHeight = '0px';
+    el.style.overflow = 'hidden';
+  });
 });
 
-// â”€â”€â”€ PANEL COLLAPSE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── PANEL COLLAPSE ───────────────────────────────────────────────────────────
 let focusMode = false;
 
 function toggleFocusMode() {
@@ -2314,17 +2053,17 @@ function toggleFocusMode() {
     btn.style.color = 'var(--accent)';
     btn.style.borderColor = 'var(--accent)';
     btn.style.background = 'rgba(99,102,241,0.12)';
-    btn.textContent = 'â›¶ Focus';
+    btn.textContent = '⛶ Focus';
   } else {
     layout.classList.remove('nav-collapsed', 'feed-collapsed');
     btn.style.color = 'var(--muted)';
     btn.style.borderColor = 'var(--border)';
     btn.style.background = 'transparent';
-    btn.textContent = 'â›¶ Focus';
+    btn.textContent = '⛶ Focus';
   }
 }
 
-// â”€â”€â”€ MOBILE NAV â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── MOBILE NAV ───────────────────────────────────────────────────────────────
 function toggleMobileNav() {
   const nav = document.querySelector('.nav');
   const overlay = document.getElementById('mobile-overlay');
@@ -2342,7 +2081,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
   });
 });
 
-// â”€â”€â”€ DROPBOX â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── DROPBOX ──────────────────────────────────────────────────────────────────
 const DROPS_API = '/api/drops';
 let _dropsCache = null;
 
@@ -2440,20 +2179,20 @@ async function renderDrops(rebuildFilters = true) {
     return;
   }
 
-  const priorityLabel = { normal: 'ðŸ”µ', high: 'ðŸŸ¡', urgent: 'ðŸ”´' };
+  const priorityLabel = { normal: '🔵', high: '🟡', urgent: '🔴' };
 
   list.innerHTML = filtered.map(d => {
     const date = new Date(d.date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
     return `<div class="drop-card${d.done ? ' done' : ''}">
       <div class="drop-header">
         <span class="drop-tag">${escHTML(d.subject)}</span>
-        <span class="drop-priority-badge">${priorityLabel[d.priority] || 'ðŸ”µ'}</span>
+        <span class="drop-priority-badge">${priorityLabel[d.priority] || '🔵'}</span>
         <span class="drop-date">${date}</span>
       </div>
       <div class="drop-content">${escHTML(d.content)}</div>
       <div class="drop-actions">
-        <button class="drop-btn done-btn" onclick="toggleDone('${d.id}')">${d.done ? 'â†© Reopen' : 'âœ“ Done'}</button>
-        <button class="drop-btn del-btn" onclick="deleteDrop('${d.id}')">ðŸ—‘ Delete</button>
+        <button class="drop-btn done-btn" onclick="toggleDone('${d.id}')">${d.done ? '↩ Reopen' : '✓ Done'}</button>
+        <button class="drop-btn del-btn" onclick="deleteDrop('${d.id}')">🗑 Delete</button>
       </div>
     </div>`;
   }).join('');
@@ -2488,4 +2227,3 @@ function escHTML(str) {
 </script>
 </body>
 </html>
-
