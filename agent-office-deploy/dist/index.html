@@ -255,10 +255,12 @@
   .org-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; max-width: 680px; }
   .org-row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; width: 100%; }
   .org-row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; width: 100%; }
+  .org-coders-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; width: 100%; }
   .org-card-wide { width: 100%; max-width: 520px; }
 
-  @media (max-width: 900px) { .org-row-4 { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 600px) { .org-row-2, .org-row-4, .org-row-3 { grid-template-columns: 1fr; } .org-card-wide { max-width: 100%; } }
+  @media (max-width: 1200px) { .org-coders-row { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 900px) { .org-row-4 { grid-template-columns: repeat(2, 1fr); } .org-coders-row { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .org-row-2, .org-row-4, .org-row-3, .org-coders-row { grid-template-columns: 1fr; } .org-card-wide { max-width: 100%; } }
 
   /* OFFICE CANVAS AREA */
   .office {
@@ -1073,7 +1075,6 @@
       <div class="nav-items-wrap">
         <div class="nav-item active" onclick="switchView('office', this)"><span class="icon">🏢</span> Office</div>
         <div class="nav-item" onclick="switchView('org', this)"><span class="icon">🗂️</span> Org Chart</div>
-        <div class="nav-item"><span class="icon">🧠</span> Memory</div>
         <div class="nav-item"><span class="icon">📅</span> Calendar</div>
         <div class="nav-item" onclick="switchView('dropbox', this)"><span class="icon">📥</span> Dropbox</div>
       </div>
@@ -1245,6 +1246,145 @@
 
       <div class="org-connector-v"></div>
 
+      <div class="org-row-center">
+        <div class="org-card org-card-wide" style="border-color:rgba(100,116,139,0.2);">
+          <div class="org-card-inner">
+            <div class="org-avatar" style="background:rgba(100,116,139,0.15);border-color:rgba(100,116,139,0.25);">👑</div>
+            <div class="org-body">
+              <div class="org-name">FatherClaw</div>
+              <div class="org-title">Orchestrator</div>
+              <div class="org-desc">Routes tasks between all agents, monitors agent health, and manages cross-agent workflows. Jason's system-wide air traffic control.</div>
+              <div class="org-tags">
+                <span class="org-tag org-tag-indigo">Routing</span>
+                <span class="org-tag org-tag-teal">Health</span>
+                <span class="org-tag org-tag-indigo">Workflows</span>
+              </div>
+            </div>
+          </div>
+          <div class="org-cta">AGENT CARD →</div>
+        </div>
+      </div>
+
+      <div class="org-connector-v"></div>
+
+      <div class="org-section-label">
+        <div class="line"></div><div class="text">👨‍💻 OPENCLAW CODERS</div><div class="line"></div>
+      </div>
+
+      <div class="org-row-3">
+        <div class="org-card glow-orange">
+          <div class="org-card-inner">
+            <div class="org-avatar" style="background:rgba(249,115,22,0.15);border-color:rgba(249,115,22,0.25);">⚙️</div>
+            <div class="org-body">
+              <div class="org-name">Coder</div>
+              <div class="org-title">General Dev Agent</div>
+              <div class="org-desc">OpenClaw <code>coder</code> agent. General-purpose coding, debugging, and feature work. Sonnet-powered.</div>
+              <div class="org-tags">
+                <span class="org-tag org-tag-orange">OpenClaw</span>
+                <span class="org-tag org-tag-teal">Sonnet</span>
+                <span class="org-tag org-tag-orange">Code</span>
+              </div>
+            </div>
+          </div>
+          <div class="org-cta">AGENT CARD →</div>
+        </div>
+        <div class="org-card glow-green">
+          <div class="org-card-inner">
+            <div class="org-avatar" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.25);">🤖</div>
+            <div class="org-body">
+              <div class="org-name">Codex</div>
+              <div class="org-title">Lightweight Coder</div>
+              <div class="org-desc">OpenClaw <code>codex</code> agent on Qwen3.6-plus (free tier). Used for cheap parallel coding tasks and bulk refactors.</div>
+              <div class="org-tags">
+                <span class="org-tag org-tag-green">OpenClaw</span>
+                <span class="org-tag org-tag-teal">Qwen3.6</span>
+                <span class="org-tag org-tag-green">Free</span>
+              </div>
+            </div>
+          </div>
+          <div class="org-cta">AGENT CARD →</div>
+        </div>
+        <div class="org-card glow-pink">
+          <div class="org-card-inner">
+            <div class="org-avatar" style="background:rgba(236,72,153,0.15);border-color:rgba(236,72,153,0.25);">🔨</div>
+            <div class="org-body">
+              <div class="org-name">Forge</div>
+              <div class="org-title">In-house Dev Agent</div>
+              <div class="org-desc">Custom dev agent for OpenClaw infra. Handles deploys, scripted builds, and routine fixes.</div>
+              <div class="org-tags">
+                <span class="org-tag org-tag-pink">In-house</span>
+                <span class="org-tag org-tag-teal">DevOps</span>
+                <span class="org-tag org-tag-pink">Build</span>
+              </div>
+            </div>
+          </div>
+          <div class="org-cta">AGENT CARD →</div>
+        </div>
+      </div>
+
+      <div class="org-section-label" style="margin-top:24px;">
+        <div class="line"></div><div class="text">⌘ EXTERNAL CODING TOOLS</div><div class="line"></div>
+      </div>
+
+      <div class="org-row-3">
+        <div class="org-card glow-orange">
+          <div class="org-card-inner">
+            <div class="org-avatar" style="background:rgba(217,119,87,0.18);border-color:rgba(217,119,87,0.3);">🧠</div>
+            <div class="org-body">
+              <div class="org-name">Claude Code</div>
+              <div class="org-title">Anthropic CLI</div>
+              <div class="org-desc">Primary coding CLI. Long-context reasoning, full repo edits, runs in terminal and IDE.</div>
+              <div class="org-tags">
+                <span class="org-tag org-tag-orange">Anthropic</span>
+                <span class="org-tag org-tag-teal">CLI</span>
+                <span class="org-tag org-tag-orange">Sonnet 4.6</span>
+              </div>
+            </div>
+          </div>
+          <div class="org-cta">AGENT CARD →</div>
+        </div>
+        <div class="org-card glow-blue">
+          <div class="org-card-inner">
+            <div class="org-avatar" style="background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.25);">⌘</div>
+            <div class="org-body">
+              <div class="org-name">Cursor</div>
+              <div class="org-title">Agentic IDE</div>
+              <div class="org-desc">In-editor agent for inline edits, multi-file refactors, and quick UI iteration.</div>
+              <div class="org-tags">
+                <span class="org-tag org-tag-blue">IDE</span>
+                <span class="org-tag org-tag-teal">Inline</span>
+                <span class="org-tag org-tag-blue">Multi-file</span>
+              </div>
+            </div>
+          </div>
+          <div class="org-cta">AGENT CARD →</div>
+        </div>
+        <div class="org-card glow-purple">
+          <div class="org-card-inner">
+            <div class="org-avatar" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.25);">🐙</div>
+            <div class="org-body">
+              <div class="org-name">GitHub Copilot</div>
+              <div class="org-title">Pair Programmer</div>
+              <div class="org-desc">Autocomplete and chat inside the editor. Fast completions for boilerplate and known patterns.</div>
+              <div class="org-tags">
+                <span class="org-tag org-tag-purple">GitHub</span>
+                <span class="org-tag org-tag-purple">Autocomplete</span>
+                <span class="org-tag org-tag-pink">Chat</span>
+              </div>
+            </div>
+          </div>
+          <div class="org-cta">AGENT CARD →</div>
+        </div>
+      </div>
+
+      <div class="org-flow-divider">
+        <div class="line"></div>
+        <div class="org-flow-label">↓ INPUT SIGNAL</div>
+        <div class="line"></div>
+        <div class="org-flow-label">OUTPUT ACTION ↓</div>
+        <div class="line"></div>
+      </div>
+
       <div class="org-section-label">
         <div class="line"></div><div class="text">💻 OPERATIONS</div><div class="line"></div>
       </div>
@@ -1284,19 +1424,11 @@
         </div>
       </div>
 
-      <div class="org-flow-divider">
-        <div class="line"></div>
-        <div class="org-flow-label">↓ INPUT SIGNAL</div>
-        <div class="line"></div>
-        <div class="org-flow-label">OUTPUT ACTION ↓</div>
-        <div class="line"></div>
+      <div class="org-section-label" style="margin-top:32px;">
+        <div class="line"></div><div class="text">✨ SOCIAL & CREATIVE</div><div class="line"></div>
       </div>
 
-      <div class="org-section-label">
-        <div class="line"></div><div class="text">⚡ EXECUTION LAYER</div><div class="line"></div>
-      </div>
-
-      <div class="org-row-4">
+      <div class="org-row-3">
         <div class="org-card glow-cyan">
           <div class="org-card-inner">
             <div class="org-avatar" style="background:rgba(6,182,212,0.15);border-color:rgba(6,182,212,0.25);">🐦</div>
@@ -1308,38 +1440,6 @@
                 <span class="org-tag org-tag-teal">Trends</span>
                 <span class="org-tag org-tag-orange">Radar</span>
                 <span class="org-tag org-tag-teal">Signals</span>
-              </div>
-            </div>
-          </div>
-          <div class="org-cta">AGENT CARD →</div>
-        </div>
-        <div class="org-card glow-orange">
-          <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(249,115,22,0.15);border-color:rgba(249,115,22,0.25);">⚙️</div>
-            <div class="org-body">
-              <div class="org-name">Forge</div>
-              <div class="org-title">Dev Agent</div>
-              <div class="org-desc">Writes code, debugs, ships features. General-purpose developer.</div>
-              <div class="org-tags">
-                <span class="org-tag org-tag-orange">Coding</span>
-                <span class="org-tag org-tag-teal">DevOps</span>
-                <span class="org-tag org-tag-orange">Build</span>
-              </div>
-            </div>
-          </div>
-          <div class="org-cta">AGENT CARD →</div>
-        </div>
-        <div class="org-card glow-purple">
-          <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.25);">✨</div>
-            <div class="org-body">
-              <div class="org-name">Lyra</div>
-              <div class="org-title">Innerverse</div>
-              <div class="org-desc">Crafts narrative, builds world lore, writes chapters for the Innerverse project.</div>
-              <div class="org-tags">
-                <span class="org-tag org-tag-purple">Creative</span>
-                <span class="org-tag org-tag-purple">Lore</span>
-                <span class="org-tag org-tag-pink">Voice</span>
               </div>
             </div>
           </div>
@@ -1361,30 +1461,85 @@
           </div>
           <div class="org-cta">AGENT CARD →</div>
         </div>
-      </div>
-
-      <div class="org-section-label" style="margin-top:32px;">
-        <div class="line"></div><div class="text">🔒 SYSTEM LAYER</div><div class="line"></div>
-      </div>
-
-      <div class="org-row-2" style="max-width:680px; margin: 0 auto;">
-        <div class="org-card" style="border-color:rgba(100,116,139,0.2);">
+        <div class="org-card glow-purple">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(100,116,139,0.15);border-color:rgba(100,116,139,0.25);">👑</div>
+            <div class="org-avatar" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.25);">✨</div>
             <div class="org-body">
-              <div class="org-name">FatherClaw</div>
-              <div class="org-title">Orchestrator</div>
-              <div class="org-desc">Routes tasks between all agents, monitors agent health, and manages cross-agent workflows. Jason's system-wide air traffic control.</div>
+              <div class="org-name">Lyra</div>
+              <div class="org-title">Innerverse</div>
+              <div class="org-desc">Crafts narrative, builds world lore, writes chapters for the Innerverse project.</div>
               <div class="org-tags">
-                <span class="org-tag org-tag-indigo">Routing</span>
-                <span class="org-tag org-tag-teal">Health</span>
-                <span class="org-tag org-tag-indigo">Workflows</span>
+                <span class="org-tag org-tag-purple">Creative</span>
+                <span class="org-tag org-tag-purple">Lore</span>
+                <span class="org-tag org-tag-pink">Voice</span>
               </div>
             </div>
           </div>
           <div class="org-cta">AGENT CARD →</div>
         </div>
-        <div class="org-card" style="border-color:rgba(239,68,68,0.15);">
+      </div>
+
+      <div class="org-section-label" style="margin-top:32px;">
+        <div class="line"></div><div class="text">🔬 RESEARCH & SUPPORT</div><div class="line"></div>
+      </div>
+
+      <div class="org-row-3">
+        <div class="org-card glow-indigo">
+          <div class="org-card-inner">
+            <div class="org-avatar" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.25);">🔭</div>
+            <div class="org-body">
+              <div class="org-name">Nova</div>
+              <div class="org-title">Product Researcher</div>
+              <div class="org-desc">OpenClaw <code>dev</code> agent. Hunts niche pain points, drafts positioning briefs, scopes new product ideas.</div>
+              <div class="org-tags">
+                <span class="org-tag org-tag-indigo">Research</span>
+                <span class="org-tag org-tag-teal">Briefs</span>
+                <span class="org-tag org-tag-indigo">Discovery</span>
+              </div>
+            </div>
+          </div>
+          <div class="org-cta">AGENT CARD →</div>
+        </div>
+        <div class="org-card glow-orange">
+          <div class="org-card-inner">
+            <div class="org-avatar" style="background:rgba(245,158,11,0.18);border-color:rgba(245,158,11,0.3);">🪙</div>
+            <div class="org-body">
+              <div class="org-name">Penny</div>
+              <div class="org-title">OSS / Community</div>
+              <div class="org-desc">OpenClaw <code>oss</code> agent on Gemma 4-31B. Tracks open-source threads, drafts community replies, manages contributions.</div>
+              <div class="org-tags">
+                <span class="org-tag org-tag-orange">OSS</span>
+                <span class="org-tag org-tag-teal">Gemma</span>
+                <span class="org-tag org-tag-orange">Community</span>
+              </div>
+            </div>
+          </div>
+          <div class="org-cta">AGENT CARD →</div>
+        </div>
+        <div class="org-card glow-green">
+          <div class="org-card-inner">
+            <div class="org-avatar" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.25);">🌾</div>
+            <div class="org-body">
+              <div class="org-name">FarmBot</div>
+              <div class="org-title">Comment Farming</div>
+              <div class="org-desc">OpenClaw <code>farmbot</code> agent on Qwen3.6. Mass-replies, engagement automation, low-cost reach building.</div>
+              <div class="org-tags">
+                <span class="org-tag org-tag-green">Engagement</span>
+                <span class="org-tag org-tag-teal">Qwen3.6</span>
+                <span class="org-tag org-tag-green">Reach</span>
+              </div>
+            </div>
+          </div>
+          <div class="org-cta">AGENT CARD →</div>
+        </div>
+      </div>
+
+      <div class="org-section-label" style="margin-top:32px;">
+        <div class="line"></div><div class="text">🛡 SECURITY</div><div class="line"></div>
+      </div>
+
+      <div class="org-row-center">
+        <div class="org-card org-card-wide" style="border-color:rgba(239,68,68,0.15);">
           <div class="org-card-inner">
             <div class="org-avatar" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.2);">🛡</div>
             <div class="org-body">
@@ -1406,18 +1561,7 @@
         <div class="line"></div><div class="text">⬡ META LAYER - OPENCLAW GATEWAY</div><div class="line"></div>
       </div>
 
-      <div class="org-row-3">
-        <div class="org-card">
-          <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(255,255,255,0.05);font-size:18px;">🧠</div>
-            <div class="org-body">
-              <div class="org-name" style="font-size:13px;">Memory</div>
-              <div class="org-title" style="font-size:11px;">Persistent Context</div>
-              <div class="org-desc">MEMORY.md + daily notes. Agents retain context across sessions.</div>
-              <div class="org-tags"><span class="org-tag org-tag-teal">MEMORY.md</span><span class="org-tag org-tag-indigo">Sessions</span></div>
-            </div>
-          </div>
-        </div>
+      <div class="org-row-2" style="max-width:680px; margin: 0 auto;">
         <div class="org-card">
           <div class="org-card-inner">
             <div class="org-avatar" style="background:rgba(255,255,255,0.05);font-size:18px;">📡</div>
@@ -1435,8 +1579,8 @@
             <div class="org-body">
               <div class="org-name" style="font-size:13px;">Models</div>
               <div class="org-title" style="font-size:11px;">AI Providers</div>
-              <div class="org-desc">Claude Sonnet (default) · GPT-5.4 (WebClaw)</div>
-              <div class="org-tags"><span class="org-tag org-tag-indigo">Claude</span><span class="org-tag org-tag-green">GPT-5.4</span></div>
+              <div class="org-desc">Sonnet 4.6 (default) · GPT-5.4 (WebClaw) · Gemma 4-31B (Penny) · Qwen3.6 (Codex, FarmBot)</div>
+              <div class="org-tags"><span class="org-tag org-tag-indigo">Claude</span><span class="org-tag org-tag-green">GPT-5.4</span><span class="org-tag org-tag-orange">Gemma</span><span class="org-tag org-tag-teal">Qwen</span></div>
             </div>
           </div>
         </div>
