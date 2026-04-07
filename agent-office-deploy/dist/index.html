@@ -2142,7 +2142,7 @@ function showDropboxLock() {
 }
 async function unlockDropbox() {
   const pass = document.getElementById('drop-passphrase').value;
-  const r = await fetch('/api/auth/login', {method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({passphrase:pass})});
+  const r = await fetch('/api/session', {method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({passphrase:pass})});
   if (r.ok) { renderDrops(); } else { document.getElementById('drop-lock-msg').textContent = 'Wrong passphrase'; }
 }
 
