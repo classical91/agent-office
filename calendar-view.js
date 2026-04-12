@@ -396,7 +396,9 @@
         return acc;
       }, {}),
       events,
-      tasks
+      tasks,
+      gcalFetchStarted: false,
+      gcalConfigured: false
     };
   }
 
@@ -1021,6 +1023,10 @@
     const root = document.getElementById('calendar-app');
     if (!root) return;
     ensureSelection();
+    if (!state.gcalFetchStarted) {
+      state.gcalFetchStarted = true;
+      loadGoogleEvents();
+    }
     root.innerHTML = '<div class="calendar-shell">'
       + '<div class="calendar-top">' + renderTop() + '</div>'
       + '<div class="calendar-workspace">'
@@ -1199,12 +1205,123 @@
     state.selectedEventId = event.id;
     state.selectedDate = parseDateKey(dateKey(event.start));
     state.cursorDate = state.selectedDate;
+    // Sync to Google Calendar if configured (skip events already from gcal)
+    if (state.gcalConfigured && !data.gcalId) {
+      fetch('/api/calendar/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: event.title, start: event.start, end: event.end, notes: event.notes || '' })
+      }).catch(function () {});
+    }
     return event;
   }
 
-  function scheduleWithAI() {
+  // ── GOOGLE CALENDAR SYNC ───────────────────────────────────────
+
+  function googleEventToInternal(gEvent) {
+    const startRaw = gEvent.start.dateTime || (gEvent.start.date + 'T00:00');
+    const endRaw = gEvent.end.dateTime || (gEvent.end.date + 'T23:59');
+    const start = formatLocalIso(new Date(startRaw));
+    const end = formatLocalIso(new Date(endRaw));
+    const summary = (gEvent.summary || '').toLowerCase();
+    let type = 'meeting';
+    if (summary.includes('focus') || summary.includes('deep work')) type = 'focus';
+    else if (summary.includes('deadline') || summary.includes('due')) type = 'deadline';
+    else if (summary.includes('remind') || summary.includes('reminder')) type = 'reminder';
+    else if (summary.includes('task') || summary.includes('todo')) type = 'task';
+    return {
+      id: 'gcal_' + gEvent.id,
+      title: gEvent.summary || '(No title)',
+      type,
+      start,
+      end,
+      notes: gEvent.description || '',
+      attachments: [],
+      location: gEvent.location || null,
+      gcalId: gEvent.id
+    };
+  }
+
+  async function loadGoogleEvents() {
+    try {
+      const statusResp = await fetch('/api/calendar/status');
+      if (!statusResp.ok) return;
+      const status = await statusResp.json();
+      if (!status.configured) return;
+      state.gcalConfigured = true;
+
+      const resp = await fetch('/api/calendar/events');
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const gEvents = (data.events || []).filter(e => e.start);
+      if (gEvents.length === 0) return;
+
+      const converted = gEvents.map(googleEventToInternal).sort(compareEvents);
+      state.events = converted;
+
+      const now = new Date();
+      const upcoming = state.events.find(e => parseLocalIso(e.end) >= now);
+      if (upcoming) {
+        state.selectedEventId = upcoming.id;
+        state.selectedDate = parseDateKey(dateKey(upcoming.start));
+        state.cursorDate = state.selectedDate;
+      }
+      render();
+    } catch (_) {
+      // Keep seed data on any error
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────
+
+  async function scheduleWithAI() {
     const input = state.command.trim();
     if (!input) return;
+
+    if (state.gcalConfigured) {
+      try {
+        const resp = await fetch('/api/calendar/quick-add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: input })
+        });
+        if (resp.ok) {
+          const gEvent = await resp.json();
+          const startRaw = gEvent.start && (gEvent.start.dateTime || gEvent.start.date + 'T00:00');
+          const endRaw = gEvent.end && (gEvent.end.dateTime || gEvent.end.date + 'T23:59');
+          if (startRaw) {
+            const startDate = new Date(startRaw);
+            const endDate = new Date(endRaw || startRaw);
+            const event = Object.assign({
+              id: uid('gcal'),
+              attachments: [],
+              notes: 'Created from natural language command. Synced to Google Calendar.'
+            }, {
+              title: gEvent.summary || input,
+              type: 'meeting',
+              start: formatLocalIso(startDate),
+              end: formatLocalIso(endDate),
+              gcalId: gEvent.id
+            });
+            state.events.push(event);
+            state.events.sort(compareEvents);
+            state.selectedEventId = event.id;
+            state.selectedDate = parseDateKey(dateKey(event.start));
+            state.cursorDate = state.selectedDate;
+            const exactDate = new Intl.DateTimeFormat('en-CA', {
+              weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit'
+            }).format(startDate);
+            setFlash('Scheduled "' + event.title + '" on Google Calendar for ' + exactDate + '.', 'info');
+            render();
+            return;
+          }
+        }
+      } catch (_) {
+        // Fall through to local parse
+      }
+    }
+
+    // Local parse fallback (no Google Calendar configured or API error)
     const parsed = parseNaturalText(input);
     const created = createEvent({
       title: parsed.title,
@@ -1470,6 +1587,7 @@
     convertSelectedToTask,
     prepareBrief,
     createRecapFor,
-    shiftEvent
+    shiftEvent,
+    loadGoogleEvents
   };
 })();

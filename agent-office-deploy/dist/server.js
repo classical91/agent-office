@@ -1,4 +1,5 @@
 const http = require('http');
+const https = require('https');
 const fs = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
@@ -575,6 +576,79 @@ async function handleStatic(req, res, pathname) {
   }
 }
 
+// ── GOOGLE CALENDAR INTEGRATION ────────────────────────────────
+
+let gcalToken = null; // { access_token, expires_at }
+
+function isGcalConfigured() {
+  return Boolean(
+    process.env.GOOGLE_CLIENT_ID &&
+    process.env.GOOGLE_CLIENT_SECRET &&
+    process.env.GOOGLE_REFRESH_TOKEN
+  );
+}
+
+function gcalHttpsRequest(options, body) {
+  return new Promise((resolve, reject) => {
+    const bodyBuf = body ? Buffer.from(body) : null;
+    const reqOptions = {
+      ...options,
+      headers: {
+        ...options.headers,
+        ...(bodyBuf ? { 'Content-Length': bodyBuf.length } : {})
+      }
+    };
+    const req = https.request(reqOptions, res => {
+      let data = '';
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          if (res.statusCode >= 400) {
+            const err = new Error(
+              (parsed.error && (parsed.error.message || parsed.error)) ||
+              `Google API HTTP ${res.statusCode}`
+            );
+            err.statusCode = res.statusCode;
+            reject(err);
+          } else {
+            resolve(parsed);
+          }
+        } catch (e) { reject(e); }
+      });
+    });
+    req.on('error', reject);
+    if (bodyBuf) req.write(bodyBuf);
+    req.end();
+  });
+}
+
+async function getGcalToken() {
+  if (gcalToken && gcalToken.expires_at > Date.now() + 60000) {
+    return gcalToken.access_token;
+  }
+  const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN } = process.env;
+  const body = new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID,
+    client_secret: GOOGLE_CLIENT_SECRET,
+    refresh_token: GOOGLE_REFRESH_TOKEN,
+    grant_type: 'refresh_token'
+  }).toString();
+  const data = await gcalHttpsRequest({
+    host: 'oauth2.googleapis.com',
+    path: '/token',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+  }, body);
+  gcalToken = {
+    access_token: data.access_token,
+    expires_at: Date.now() + ((data.expires_in || 3600) - 60) * 1000
+  };
+  return gcalToken.access_token;
+}
+
+// ───────────────────────────────────────────────────────────────
+
 const server = http.createServer(async (req, res) => {
   const pathname = req.url.split('?')[0];
   applyCorsHeaders(req, res);
@@ -763,6 +837,91 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 200, { ok: true });
       return;
     }
+
+    // ── GOOGLE CALENDAR API ─────────────────────────────────────
+
+    if (req.method === 'GET' && pathname === '/api/calendar/status') {
+      sendJson(res, 200, { configured: isGcalConfigured() });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/api/calendar/events') {
+      if (!isGcalConfigured()) {
+        sendJson(res, 503, { error: 'Google Calendar not configured.' });
+        return;
+      }
+      const token = await getGcalToken();
+      const now = new Date().toISOString();
+      const maxTime = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+      const qs = new URLSearchParams({
+        timeMin: now,
+        timeMax: maxTime,
+        singleEvents: 'true',
+        orderBy: 'startTime',
+        maxResults: '50'
+      });
+      const data = await gcalHttpsRequest({
+        host: 'www.googleapis.com',
+        path: `/calendar/v3/calendars/primary/events?${qs}`,
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      sendJson(res, 200, { events: data.items || [] });
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/calendar/events') {
+      if (!isGcalConfigured()) {
+        sendJson(res, 503, { error: 'Google Calendar not configured.' });
+        return;
+      }
+      const body = await readJsonBody(req);
+      if (!body.title || !body.start || !body.end) {
+        sendJson(res, 400, { error: 'title, start, and end are required.' });
+        return;
+      }
+      const token = await getGcalToken();
+      const tz = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Toronto';
+      const gEvent = {
+        summary: String(body.title),
+        description: body.notes ? String(body.notes) : undefined,
+        start: { dateTime: body.start, timeZone: tz },
+        end: { dateTime: body.end, timeZone: tz }
+      };
+      const created = await gcalHttpsRequest({
+        host: 'www.googleapis.com',
+        path: '/calendar/v3/calendars/primary/events',
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+      }, JSON.stringify(gEvent));
+      sendJson(res, 201, created);
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/calendar/quick-add') {
+      if (!isGcalConfigured()) {
+        sendJson(res, 503, { error: 'Google Calendar not configured.' });
+        return;
+      }
+      const body = await readJsonBody(req);
+      const text = typeof body.text === 'string' ? body.text.trim() : '';
+      if (!text) {
+        sendJson(res, 400, { error: 'text is required.' });
+        return;
+      }
+      const token = await getGcalToken();
+      const qs = new URLSearchParams({ text });
+      const created = await gcalHttpsRequest({
+        host: 'www.googleapis.com',
+        path: `/calendar/v3/calendars/primary/events/quickAdd?${qs}`,
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Length': '0' }
+      });
+      sendJson(res, 201, created);
+      return;
+    }
+
+    // ────────────────────────────────────────────────────────────
 
     await handleStatic(req, res, pathname);
   } catch (error) {
