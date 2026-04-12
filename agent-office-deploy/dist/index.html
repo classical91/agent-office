@@ -2630,16 +2630,21 @@ function updateClock() {
 }
 
 // ─── VIEW SWITCHER ────────────────────────────────────────────
+const VIEW_HANDLERS = {
+  office: { enter: () => { resizeCanvas(); renderAgents(); centerOfficeView(); }, focus: false },
+  org: { focus: false }
+};
+VIEW_HANDLERS.calendar = { enter: () => { if (window.CAL) window.CAL.render(); }, focus: false };
+let currentView = 'office';
+
 function switchView(view, navEl) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('view-' + view).classList.add('active');
   if (navEl) navEl.classList.add('active');
-  if (view === 'office') {
-    resizeCanvas();
-    renderAgents();
-    centerOfficeView();
-  }
+  const handler = VIEW_HANDLERS[view];
+  if (handler && typeof handler.enter === 'function') handler.enter();
+  currentView = view;
 }
 
 // ─── INIT ─────────────────────────────────────────────────────
