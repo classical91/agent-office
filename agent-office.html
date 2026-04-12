@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -279,13 +279,47 @@
   .office {
     position: relative;
     overflow: hidden;
-    background: #0a0c11;
+    background:
+      radial-gradient(circle at 50% 16%, rgba(255,255,255,0.05), transparent 20%),
+      radial-gradient(circle at 22% 18%, rgba(239,68,68,0.14), transparent 24%),
+      radial-gradient(circle at 78% 20%, rgba(245,158,11,0.10), transparent 20%),
+      linear-gradient(180deg, #111111 0%, #090909 46%, #040404 100%);
+    isolation: isolate;
+  }
+
+  .office::before,
+  .office::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .office::before {
+    background:
+      radial-gradient(circle at 50% 10%, rgba(255,255,255,0.10), transparent 18%),
+      linear-gradient(180deg, rgba(255,255,255,0.04), transparent 26%),
+      linear-gradient(135deg, rgba(239,68,68,0.08), transparent 46%, rgba(245,158,11,0.06) 100%);
+    opacity: 0.8;
+  }
+
+  .office::after {
+    background:
+      radial-gradient(ellipse at center, rgba(239,68,68,0.10), transparent 34%),
+      radial-gradient(ellipse at 50% 82%, rgba(0,0,0,0.35), transparent 45%),
+      linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.28) 100%);
+    opacity: 0.95;
   }
 
   #officeCanvas {
     position: absolute;
-    top: 0; left: 0;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     image-rendering: pixelated;
+    z-index: 1;
+    filter: saturate(1.04) contrast(1.05);
   }
 
   /* AGENT CHARACTERS */
@@ -295,76 +329,295 @@
     flex-direction: column;
     align-items: center;
     transform: translate(-50%, -100%);
+    transform-style: preserve-3d;
     pointer-events: none;
-    transition: left 3s ease-in-out, top 3s ease-in-out;
+    transition: left 3s ease-in-out, top 3s ease-in-out, filter 0.35s ease;
+    z-index: var(--agent-z, 10);
   }
 
   .agent-label {
-    background: rgba(0,0,0,0.85);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 6px;
-    padding: 3px 8px;
+    background: linear-gradient(180deg, rgba(17,24,39,0.95), rgba(7,10,18,0.88));
+    border: 1px solid rgba(148,163,184,0.22);
+    border-radius: 11px;
+    padding: 6px 10px;
     font-size: 9px;
-    color: #e2e8f0;
+    color: #dbe6f4;
     white-space: nowrap;
-    margin-bottom: 4px;
-    backdrop-filter: blur(4px);
-    max-width: 140px;
+    margin-bottom: 8px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+    max-width: 170px;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: center;
   }
 
   .agent-label strong {
     color: white;
     display: block;
     font-size: 8px;
-    margin-bottom: 1px;
+    margin-bottom: 2px;
+    letter-spacing: 0.04em;
   }
 
   .agent-label span {
-    color: #94a3b8;
+    color: #a5b4fc;
     font-size: 8px;
   }
 
-  .agent-sprite {
-    width: 32px; height: 32px;
-    border-radius: 50% 50% 40% 40%;
+  .agent-avatar {
+    position: relative;
+    width: 68px;
+    height: 96px;
+    transform-origin: 50% 100%;
+    transform: scale(var(--agent-scale, 1));
+    animation: bob 2s ease-in-out infinite;
+  }
+
+  .agent-shadow {
+    position: absolute;
+    left: 50%;
+    bottom: 2px;
+    width: 38px;
+    height: 12px;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse at center, rgba(2,6,23,0.60), rgba(2,6,23,0));
+    border-radius: 50%;
+    filter: blur(3px);
+  }
+
+  .agent-chair {
+    position: absolute;
+    left: 50%;
+    bottom: 14px;
+    width: 36px;
+    height: 18px;
+    transform: translateX(-50%);
+    border-radius: 10px 10px 7px 7px;
+    background: linear-gradient(180deg, var(--chair, rgba(71,85,105,0.9)), rgba(15,23,42,0.95));
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+    opacity: 0;
+  }
+
+  .agent-chair::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -12px;
+    width: 4px;
+    height: 14px;
+    transform: translateX(-50%);
+    background: rgba(30,41,59,0.92);
+  }
+
+  .agent-avatar.seated .agent-chair { opacity: 1; }
+
+  .agent-pixel {
+    position: absolute;
+    left: 50%;
+    bottom: 8px;
+    width: 52px;
+    height: 72px;
+    transform: translateX(-50%);
+    image-rendering: pixelated;
+    z-index: 3;
+  }
+
+  .agent-avatar.seated .agent-pixel { bottom: 10px; }
+
+  .agent-person {
+    position: absolute;
+    left: 50%;
+    bottom: 8px;
+    width: 54px;
+    height: 86px;
+    transform: translateX(-50%);
+  }
+
+  .agent-avatar.seated .agent-person { bottom: 10px; }
+
+  .agent-leg {
+    position: absolute;
+    bottom: 10px;
+    width: 10px;
+    height: 28px;
+    background: linear-gradient(180deg, var(--pants-light), var(--pants));
+    border-radius: 8px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  .agent-leg.left { left: 16px; transform: skewX(-5deg); }
+  .agent-leg.right { right: 16px; transform: skewX(5deg); }
+  .agent-avatar.seated .agent-leg { height: 18px; bottom: 14px; }
+
+  .agent-shoe {
+    position: absolute;
+    bottom: 8px;
+    width: 12px;
+    height: 5px;
+    background: #111827;
+    border-radius: 5px;
+  }
+
+  .agent-shoe.left { left: 15px; }
+  .agent-shoe.right { right: 15px; }
+  .agent-avatar.seated .agent-shoe { bottom: 12px; }
+
+  .agent-body {
+    position: absolute;
+    left: 50%;
+    bottom: 30px;
+    width: 32px;
+    height: 34px;
+    transform: translateX(-50%);
+    border-radius: 9px 9px 8px 8px;
+    clip-path: polygon(14% 0%, 86% 0%, 100% 100%, 0% 100%);
+    background: linear-gradient(180deg, var(--shirt-light), var(--shirt));
+    border: 1px solid rgba(15,23,42,0.5);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -6px 12px rgba(0,0,0,0.16);
+  }
+
+  .agent-body::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 5px;
+    width: 12px;
+    height: 22px;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.20), rgba(255,255,255,0));
+    opacity: 0.65;
+  }
+
+  .agent-arm {
+    position: absolute;
+    top: 35px;
+    width: 10px;
+    height: 24px;
+    background: linear-gradient(180deg, var(--sleeve, var(--shirt-light)), var(--shirt));
+    border-radius: 999px;
+  }
+
+  .agent-arm.left { left: 8px; transform: rotate(16deg); }
+  .agent-arm.right { right: 8px; transform: rotate(-16deg); }
+  .agent-avatar.seated .agent-arm.left { top: 38px; transform: rotate(36deg); }
+  .agent-avatar.seated .agent-arm.right { top: 38px; transform: rotate(-36deg); }
+
+  .agent-head {
+    position: absolute;
+    left: 50%;
+    top: 4px;
+    width: 30px;
+    height: 31px;
+    transform: translateX(-50%);
+    border-radius: 10px 10px 12px 12px;
+    background: linear-gradient(180deg, var(--skin-light), var(--skin));
+    border: 1px solid rgba(15,23,42,0.55);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 0 0 1px rgba(255,255,255,0.04);
+    overflow: hidden;
+  }
+
+  .agent-hair {
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    top: -3px;
+    height: 15px;
+    background: linear-gradient(180deg, var(--hair-light), var(--hair));
+    border-radius: 55% 55% 30% 30%;
+  }
+
+  .agent-avatar.hair-bob .agent-hair {
+    height: 18px;
+    border-radius: 52% 52% 42% 42%;
+  }
+
+  .agent-avatar.hair-spike .agent-hair::before,
+  .agent-avatar.hair-part .agent-hair::before {
+    content: '';
+    position: absolute;
+    top: 1px;
+    width: 9px;
+    height: 6px;
+    background: var(--hair-light);
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  }
+
+  .agent-avatar.hair-spike .agent-hair::before { left: 9px; }
+  .agent-avatar.hair-part .agent-hair::before { right: 4px; width: 7px; }
+
+  .agent-face {
+    position: absolute;
+    left: 50%;
+    top: 11px;
+    width: 16px;
+    height: 11px;
+    transform: translateX(-50%);
+  }
+
+  .agent-eye {
+    position: absolute;
+    top: 1px;
+    width: 3px;
+    height: 3px;
+    background: #111827;
+    border-radius: 50%;
+  }
+
+  .agent-eye:first-child { left: 2px; }
+  .agent-eye:last-child { right: 2px; }
+
+  .agent-mouth {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 8px;
+    height: 3px;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: rgba(127,29,29,0.38);
+  }
+
+  .agent-badge {
+    position: absolute;
+    left: 50%;
+    top: 43px;
+    transform: translateX(-50%);
+    width: 10px;
+    height: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-    animation: bob 1.8s ease-in-out infinite;
-    border: 2px solid rgba(255,255,255,0.15);
-    position: relative;
+    font-size: 7px;
+    font-weight: 700;
+    border-radius: 3px;
+    color: #0f172a;
+    background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(226,232,240,0.9));
+    border: 1px solid rgba(15,23,42,0.18);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.16);
   }
 
-  .agent-sprite::after {
-    content: '';
+  .agent-avatar.seated .agent-badge { top: 42px; }
+
+  .status-ring {
     position: absolute;
-    bottom: -6px;
-    left: 50%; transform: translateX(-50%);
-    width: 20px; height: 6px;
-    background: rgba(0,0,0,0.3);
+    right: 7px;
+    top: 42px;
+    width: 11px;
+    height: 11px;
     border-radius: 50%;
-    filter: blur(2px);
+    border: 2px solid rgba(10,12,17,0.95);
+    box-shadow: 0 0 0 3px rgba(15,23,42,0.55), 0 0 10px rgba(255,255,255,0.15);
   }
 
   @keyframes bob {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-4px); }
+    0%, 100% { transform: translateY(0) scale(var(--agent-scale, 1)); }
+    50% { transform: translateY(-4px) scale(var(--agent-scale, 1)); }
   }
 
-  .agent-char:nth-child(odd) .agent-sprite { animation-delay: -0.9s; }
-
-  /* STATUS INDICATOR */
-  .status-ring {
-    position: absolute;
-    bottom: -2px; right: -2px;
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    border: 2px solid var(--bg);
-  }
+  .agent-char:nth-child(odd) .agent-avatar { animation-delay: -0.9s; }
 
   /* RIGHT FEED */
   .feed {
@@ -655,7 +908,7 @@
       <div class="nav-items-wrap">
         <div class="nav-item active" onclick="switchView('office', this)"><span class="icon">🏢</span> Office</div>
         <div class="nav-item" onclick="switchView('org', this)"><span class="icon">🗂️</span> Org Chart</div>
-        <div class="nav-item"><span class="icon">🧠</span> Memory</div>
+        <div class="nav-item" onclick="switchView('memory', this)"><span class="icon">🧠</span> Memory</div>
         <div class="nav-item" onclick="switchView('calendar', this)"><span class="icon">📅</span> Calendar</div>
         <div class="nav-item" onclick="switchView('dropbox', this)"><span class="icon">📥</span> Dropbox</div>
       </div>
@@ -1080,6 +1333,46 @@
     </div>
   </div>
 
+  <!-- MEMORY VIEW -->
+  <div class="view" id="view-memory" style="flex-direction:column; background:#0a0c11; overflow-y:auto;">
+    <div id="memory-app" style="max-width:900px; width:100%; margin:0 auto; padding:40px 28px 80px;">
+
+      <!-- Header -->
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; gap:16px;">
+        <div>
+          <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">🧠 MEMORY</div>
+          <div style="font-size:13px; color:var(--muted);">Agent memory banks — notes, learnings, and context per bot.</div>
+        </div>
+        <button onclick="MEM.showForm()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 20px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap; -webkit-tap-highlight-color:transparent;">
+          <span>＋</span> New Memory
+        </button>
+      </div>
+
+      <!-- Add form (hidden by default) -->
+      <div id="mem-form" style="display:none; background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:28px;">
+        <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:16px;">New Memory Entry</div>
+        <!-- Agent tabs -->
+        <div id="mem-agent-tabs" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px;"></div>
+        <input type="hidden" id="mem-agent" value="">
+        <div style="margin-bottom:12px;">
+          <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">Memory</label>
+          <textarea id="mem-content" rows="6" placeholder="Paste agent memory here..." style="width:100%; background:#0d0f14; border:1px solid var(--border); border-radius:8px; padding:11px 12px; font-size:16px; color:var(--text); outline:none; resize:vertical; font-family:inherit;"></textarea>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
+          <button onclick="MEM.hideForm()" style="background:transparent; color:var(--muted); border:1px solid var(--border); border-radius:8px; padding:12px 20px; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;">Cancel</button>
+          <button onclick="MEM.save()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 22px; font-size:14px; font-weight:600; cursor:pointer; -webkit-tap-highlight-color:transparent;">Save Memory</button>
+        </div>
+      </div>
+
+      <!-- Agent filter tabs -->
+      <div id="mem-filters" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px;"></div>
+
+      <!-- Memory list -->
+      <div id="mem-list"></div>
+
+    </div>
+  </div>
+
   <!-- ACTIVITY FEED -->
   <aside class="feed">
     <div class="feed-header">
@@ -1293,15 +1586,15 @@ const AGENTS = [
 
 // ─── POSITIONS (grid slots in office) ─────────────────────────
 const POSITIONS = [
-  { x: 0.18, y: 0.25 },
-  { x: 0.45, y: 0.20 },
-  { x: 0.72, y: 0.28 },
-  { x: 0.25, y: 0.60 },
-  { x: 0.55, y: 0.65 },
-  { x: 0.80, y: 0.55 },
-  { x: 0.40, y: 0.42 },
-  { x: 0.62, y: 0.38 },
-  { x: 0.30, y: 0.35 },
+  { x: 0.49, y: 0.36 },
+  { x: 0.27, y: 0.59 },
+  { x: 0.70, y: 0.58 },
+  { x: 0.77, y: 0.41 },
+  { x: 0.20, y: 0.39 },
+  { x: 0.18, y: 0.71 },
+  { x: 0.86, y: 0.24 },
+  { x: 0.54, y: 0.23 },
+  { x: 0.78, y: 0.71 },
 ];
 
 // ─── STATE ────────────────────────────────────────────────────
@@ -1331,91 +1624,556 @@ function drawOffice() {
   const W = canvas.width, H = canvas.height;
   ctx.clearRect(0, 0, W, H);
 
-  // Floor - dark checkerboard
-  const TILE = 40;
-  for (let x = 0; x < W; x += TILE) {
-    for (let y = 0; y < H; y += TILE) {
-      const isDark = ((x / TILE + y / TILE) % 2 === 0);
-      ctx.fillStyle = isDark ? '#0d0f14' : '#0f1118';
-      ctx.fillRect(x, y, TILE, TILE);
+  const tileW = Math.min(W * 0.088, 92);
+  const tileH = tileW * 0.5;
+  const originX = W * 0.5;
+  const originY = H * 0.16;
+  const gridW = 10;
+  const gridH = 9;
+  const platformLift = tileH * 1.55;
+
+  const iso = (gx, gy, z = 0) => ({
+    x: originX + (gx - gy) * tileW / 2,
+    y: originY + (gx + gy) * tileH / 2 - z,
+  });
+
+  const poly = (points, fill, stroke = null, lineWidth = 1) => {
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+    ctx.closePath();
+    if (fill) {
+      ctx.fillStyle = fill;
+      ctx.fill();
+    }
+    if (stroke) {
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = lineWidth;
+      ctx.stroke();
+    }
+  };
+
+  const flat = (gx, gy, w, d, fill, stroke = 'rgba(0,0,0,0.14)') => {
+    poly([
+      iso(gx, gy, platformLift + 1),
+      iso(gx + w, gy, platformLift + 1),
+      iso(gx + w, gy + d, platformLift + 1),
+      iso(gx, gy + d, platformLift + 1),
+    ], fill, stroke, 1);
+  };
+
+  const box = (gx, gy, w, d, h, colors, stroke = 'rgba(0,0,0,0.18)') => {
+    const A = iso(gx, gy, platformLift + h);
+    const B = iso(gx + w, gy, platformLift + h);
+    const C = iso(gx + w, gy + d, platformLift + h);
+    const D = iso(gx, gy + d, platformLift + h);
+    const Ab = iso(gx, gy, platformLift);
+    const Bb = iso(gx + w, gy, platformLift);
+    const Cb = iso(gx + w, gy + d, platformLift);
+    const Db = iso(gx, gy + d, platformLift);
+    if (colors.east) poly([B, C, Cb, Bb], colors.east, stroke, 1);
+    if (colors.west) poly([D, C, Cb, Db], colors.west, stroke, 1);
+    if (colors.south) poly([A, D, Db, Ab], colors.south, stroke, 1);
+    poly([A, B, C, D], colors.top, 'rgba(255,255,255,0.08)', 1);
+  };
+
+  const desk = (gx, gy, accent = '#3b82f6') => {
+    box(gx, gy, 1.35, 0.85, 16, { top: '#f4efe7', west: '#cbb89c', east: '#d9c7ad', south: '#b59e82' });
+    box(gx + 0.1, gy + 0.12, 0.44, 0.56, 18, { top: '#d2b48c', west: '#ad875d', east: '#bf9569', south: '#8f6b46' });
+    box(gx + 0.7, gy + 0.14, 0.38, 0.24, 13, { top: '#0f172a', west: '#1e293b', east: '#111827', south: '#020617' });
+    box(gx + 0.75, gy + 0.18, 0.28, 0.12, 15, { top: accent, west: accent, east: accent, south: '#0f172a' });
+    box(gx + 0.8, gy + 0.48, 0.24, 0.18, 8, { top: '#e2e8f0', west: '#94a3b8', east: '#cbd5e1', south: '#94a3b8' });
+  };
+
+  const chair = (gx, gy, accent = '#ef4444') => {
+    box(gx, gy, 0.34, 0.34, 12, { top: accent, west: '#991b1b', east: '#b91c1c', south: '#7f1d1d' });
+    box(gx + 0.08, gy + 0.08, 0.18, 0.18, 18, { top: accent, west: '#991b1b', east: '#dc2626', south: '#7f1d1d' });
+  };
+
+  const plant = (gx, gy, size = 13) => {
+    box(gx, gy, 0.34, 0.34, 14, { top: '#52525b', west: '#3f3f46', east: '#52525b', south: '#27272a' });
+    const p = iso(gx + 0.17, gy + 0.17, platformLift + 28);
+    ctx.fillStyle = '#16a34a';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.beginPath();
+    ctx.arc(p.x - 4, p.y - 3, Math.max(4, size * 0.3), 0, Math.PI * 2);
+    ctx.fill();
+  };
+
+  const dk = (h, f = 0.25) => shadeHex(h, -f);
+  const lt = (h, f = 0.25) => shadeHex(h, f);
+
+  const drawSofa = (gx, gy) => {
+    const sd = '#7a1c22', sm = '#b4232e', sl = '#d73c45', ssh = '#f87171';
+    box(gx, gy, 2.0, 0.38, 44, { top: sl, west: sm, east: sd, south: sm });
+    box(gx, gy, 0.36, 1.85, 34, { top: sl, west: sm, east: sd, south: sm });
+    box(gx + 1.64, gy, 0.36, 1.85, 34, { top: sl, west: sm, east: sd, south: sm });
+    box(gx + 0.36, gy + 0.38, 1.28, 1.47, 17, { top: lt(ssh, 0.05), west: sm, east: sd, south: sm });
+    box(gx + 0.36, gy + 0.45, 0.62, 1.33, 23, { top: ssh, west: lt(sm, 0.05), east: sm, south: sm });
+    box(gx + 1.02, gy + 0.45, 0.62, 1.33, 23, { top: ssh, west: lt(sm, 0.05), east: sm, south: sm });
+    const ca = iso(gx + 1.0, gy + 0.45, platformLift + 23);
+    const cb = iso(gx + 1.0, gy + 1.78, platformLift + 23);
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(ca.x, ca.y);
+    ctx.lineTo(cb.x, cb.y);
+    ctx.stroke();
+    box(gx + 1.1, gy + 0.5, 0.45, 0.4, 34, { top: lt(ssh, 0.2), west: lt(sm, 0.12), east: sm, south: sm });
+  };
+
+  const drawCoffeeTable = (gx, gy) => {
+    const wo = '#7a4c14', wod = dk('#7a4c14', 0.3), wol = lt('#7a4c14', 0.28);
+    [[gx + 0.12, gy + 0.1, 0.32, 0.32], [gx + 1.58, gy + 0.1, 0.32, 0.32], [gx + 0.12, gy + 1.38, 0.32, 0.32], [gx + 1.58, gy + 1.38, 0.32, 0.32]].forEach(([x, y, w, d]) => {
+      box(x, y, w, d, 22, { top: wol, west: wo, east: wod, south: wo });
+    });
+    box(gx, gy, 2.04, 1.8, 24, { top: wol, west: wo, east: wod, south: wo });
+    const g1 = iso(gx + 0.3, gy + 0.3, platformLift + 24);
+    const g2 = iso(gx + 1.7, gy + 0.3, platformLift + 24);
+    const g3 = iso(gx + 0.2, gy + 1.1, platformLift + 24);
+    const g4 = iso(gx + 1.8, gy + 1.1, platformLift + 24);
+    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+    ctx.lineWidth = 0.7;
+    [[g1, g2], [g3, g4]].forEach(([a, b]) => {
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    });
+    box(gx + 0.62, gy + 0.52, 0.35, 0.4, 18, { top: '#d0c0a0', west: '#a09070', east: '#c0b080', south: '#a09070' });
+    box(gx + 0.64, gy + 0.54, 0.31, 0.36, 22, { top: '#f8ece0', west: '#d0c0a8', east: '#e8d8c8', south: '#d0c0a8' });
+  };
+
+  const drawTVStand = (gx, gy) => {
+    const dd = '#14142a', dm = '#1e1e38', dl = '#282845';
+    box(gx, gy, 1.9, 0.55, 26, { top: dl, west: dm, east: dd, south: dm });
+    const d1 = iso(gx + 0.4, gy + 0.16, platformLift + 26);
+    const d2 = iso(gx + 1.45, gy + 0.16, platformLift + 26);
+    const d3 = iso(gx + 1.45, gy + 0.45, platformLift + 26);
+    const d4 = iso(gx + 0.4, gy + 0.45, platformLift + 26);
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(d1.x, d1.y); ctx.lineTo(d2.x, d2.y); ctx.lineTo(d3.x, d3.y); ctx.lineTo(d4.x, d4.y); ctx.closePath(); ctx.stroke();
+    box(gx + 0.6, gy + 0.12, 0.8, 0.18, 44, { top: '#101020', west: '#080812', east: '#141428', south: '#080812' });
+    box(gx + 0.1, gy - 0.18, 1.8, 0.33, 64, { top: '#0c0c20', west: '#06060e', east: '#101022', south: '#06060e' });
+    box(gx + 0.18, gy - 0.13, 1.64, 0.22, 62, { top: '#0a3ab8', west: '#051888', east: '#0826a0', south: '#051888' });
+    const sc = iso(gx + 1.0, gy - 0.02, platformLift + 62);
+    [[0, 'rgba(40,120,255,0.6)'], [1, 'rgba(80,180,255,0.4)'], [2, 'rgba(40,120,255,0.5)']].forEach(([i, color]) => {
+      const row = sc.y + i * 5;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(sc.x - 20, row);
+      ctx.lineTo(sc.x + 20, row);
+      ctx.stroke();
+    });
+    const grd = ctx.createRadialGradient(sc.x, sc.y, 4, sc.x, sc.y + 12, tileW);
+    grd.addColorStop(0, 'rgba(20,90,255,0.2)');
+    grd.addColorStop(1, 'rgba(20,90,255,0)');
+    ctx.fillStyle = grd;
+    ctx.beginPath();
+    ctx.ellipse(sc.x, sc.y + 6, tileW * 0.9, tileH * 1.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+  };
+
+  const drawRoomPlant = (gx, gy) => {
+    const pt = '#b84e28', ptd = dk('#b84e28', 0.3), ptl = lt('#b84e28', 0.2);
+    const gn = '#1a7a30', gnd = dk('#1a7a30', 0.25), gnl = lt('#1a7a30', 0.22);
+    box(gx + 0.25, gy + 0.18, 0.5, 0.44, 18, { top: ptl, west: pt, east: ptd, south: pt });
+    box(gx + 0.22, gy + 0.15, 0.56, 0.5, 20, { top: lt(ptl, 0.15), west: lt(pt, 0.1), east: pt, south: lt(pt, 0.1) });
+    box(gx + 0.4, gy + 0.26, 0.2, 0.28, 36, { top: '#7a3e12', west: '#4e2808', east: '#9a5218', south: '#4e2808' });
+    box(gx + 0.05, gy + 0.08, 0.9, 0.64, 54, { top: gnl, west: gn, east: gnd, south: gn });
+    box(gx - 0.02, gy + 0.02, 1.04, 0.76, 62, { top: gnl, west: gn, east: gnd, south: gn });
+    box(gx + 0.1, gy + 0.12, 0.8, 0.56, 70, { top: lt(gn, 0.1), west: gn, east: gnd, south: gn });
+    const tp = iso(gx + 0.5, gy + 0.4, platformLift + 70);
+    ctx.fillStyle = lt(gn, 0.18); ctx.beginPath(); ctx.ellipse(tp.x, tp.y, 8, 4, -0.4, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = lt(gn, 0.18); ctx.beginPath(); ctx.ellipse(tp.x - 10, tp.y + 2, 5, 3, -0.2, 0, Math.PI * 2); ctx.fill();
+  };
+
+  const drawBookshelf = () => {
+    const b = '#5a3010', bd = dk('#5a3010', 0.32), bl = lt('#5a3010', 0.22);
+    box(0, 3, 1, 3, 60, { top: bl, west: b, east: bd, south: b });
+    box(0.04, 3.04, 0.92, 2.92, 61, { top: lt(bl, 0.04), west: lt(b, 0.04), east: lt(bd, 0.04), south: lt(b, 0.04) });
+    [['#d83030',0],['#2888e0',1],['#28b040',2],['#e0c010',3]].forEach(([c,i]) => box(0.08 + i * 0.22, 3.08, 0.18, 2.8, 60 - i, { top: lt(c, 0.18), west: c, east: dk(c, 0.28), south: c }));
+    [['#d0b010',0],['#b028d0',1],['#d06020',2],['#18a8b0',3]].forEach(([c,i]) => box(0.08 + i * 0.22, 5.1, 0.18, 0.82, 48 - i, { top: lt(c, 0.18), west: c, east: dk(c, 0.28), south: c }));
+    box(0.35, 3.4, 0.3, 0.2, 68, { top: '#a07850', west: '#785830', east: '#907040', south: '#785830' });
+    box(0.38, 3.42, 0.24, 0.16, 76, { top: '#d0a870', west: '#a88050', east: '#c09060', south: '#a88050' });
+  };
+
+  const drawLamp = () => {
+    const ms = '#c0a030', msd = dk('#c0a030', 0.3), msl = lt('#c0a030', 0.2);
+    box(9.3, 7.3, 0.4, 0.4, 8, { top: msl, west: ms, east: msd, south: ms });
+    box(9.44, 7.44, 0.12, 0.12, 44, { top: '#d0b040', west: '#a88030', east: '#c0a038', south: '#a88030' });
+    box(9.15, 7.25, 0.7, 0.5, 52, { top: lt('#f8e880', 0.2), west: '#f0d860', east: '#e0c840', south: '#f0d860' });
+    box(9.22, 7.32, 0.56, 0.36, 56, { top: lt('#ffe890', 0.15), west: '#f8e068', east: '#e8cf48', south: '#f8e068' });
+    const lp = iso(9.5, 7.5, platformLift + 56);
+    const lg = ctx.createRadialGradient(lp.x, lp.y, 2, lp.x, lp.y + 20, tileW * 0.7);
+    lg.addColorStop(0, 'rgba(255,230,80,0.18)'); lg.addColorStop(1, 'rgba(255,230,80,0)');
+    ctx.fillStyle = lg; ctx.beginPath(); ctx.ellipse(lp.x, lp.y + 10, tileW * 0.6, tileH * 1.2, 0, 0, Math.PI * 2); ctx.fill();
+  };
+
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0d1320');
+  bg.addColorStop(0.32, '#0b1020');
+  bg.addColorStop(0.6, '#09090b');
+  bg.addColorStop(1, '#020202');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  const topGlow = ctx.createRadialGradient(originX, H * 0.08, 0, originX, H * 0.08, W * 0.5);
+  topGlow.addColorStop(0, 'rgba(255,246,214,0.18)');
+  topGlow.addColorStop(0.5, 'rgba(191,219,254,0.06)');
+  topGlow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = topGlow;
+  ctx.fillRect(0, 0, W, H);
+
+  poly([iso(0, gridH, 0), iso(gridW, gridH, 0), iso(gridW, gridH + 0.75, 0), iso(0, gridH + 0.75, 0)], 'rgba(0,0,0,0.34)');
+
+  for (let gy = gridH - 1; gy >= 0; gy--) {
+    for (let gx = gridW - 1; gx >= 0; gx--) {
+      const warm = (gx + gy) % 2 === 0;
+      flat(gx, gy, 1, 1, warm ? '#bdb7ae' : '#aaa399', 'rgba(17,24,39,0.14)');
     }
   }
 
-  // Grid lines
-  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-  ctx.lineWidth = 1;
-  for (let x = 0; x <= W; x += TILE) {
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  for (let gx = 0; gx < gridW; gx++) {
+    poly([iso(gx, gridH, platformLift), iso(gx + 1, gridH, platformLift), iso(gx + 1, gridH, 0), iso(gx, gridH, 0)], gx % 2 === 0 ? '#4b5563' : '#52525b', 'rgba(0,0,0,0.22)');
   }
-  for (let y = 0; y <= H; y += TILE) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  for (let gy = 0; gy < gridH; gy++) {
+    poly([iso(gridW, gy, platformLift), iso(gridW, gy + 1, platformLift), iso(gridW, gy + 1, 0), iso(gridW, gy, 0)], gy % 2 === 0 ? '#475569' : '#52525b', 'rgba(0,0,0,0.22)');
   }
 
-  // Desks
-  const desks = POSITIONS.map(p => ({ x: p.x * W, y: p.y * H }));
-  desks.forEach(d => {
-    // Desk shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fillRect(d.x - 36, d.y + 18, 72, 8);
+  box(0.08, 0.08, 9.84, 0.24, 84, { top: '#ece7df', west: '#cec5bb', east: '#ddd5cb', south: '#c8bbb0' });
+  box(0.08, 0.08, 0.24, 8.84, 84, { top: '#ece7df', west: '#cec5bb', east: '#ddd5cb', south: '#c8bbb0' });
 
-    // Desk body
-    ctx.fillStyle = '#1a1f2e';
-    ctx.strokeStyle = '#2a3048';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(d.x - 32, d.y - 8, 64, 28, 4);
-    ctx.fill(); ctx.stroke();
+  box(1.0, 0.12, 2.3, 0.08, 58, { top: 'rgba(191,219,254,0.88)', west: 'rgba(96,165,250,0.42)', east: 'rgba(147,197,253,0.48)', south: 'rgba(191,219,254,0.22)' }, 'rgba(255,255,255,0.12)');
+  box(3.7, 0.12, 2.15, 0.08, 58, { top: 'rgba(191,219,254,0.88)', west: 'rgba(96,165,250,0.42)', east: 'rgba(147,197,253,0.48)', south: 'rgba(191,219,254,0.22)' }, 'rgba(255,255,255,0.12)');
+  box(6.35, 0.12, 2.25, 0.08, 58, { top: 'rgba(191,219,254,0.88)', west: 'rgba(96,165,250,0.42)', east: 'rgba(147,197,253,0.48)', south: 'rgba(191,219,254,0.22)' }, 'rgba(255,255,255,0.12)');
 
-    // Monitor
-    ctx.fillStyle = '#0d1117';
-    ctx.strokeStyle = '#334155';
-    ctx.beginPath();
-    ctx.roundRect(d.x - 14, d.y - 22, 28, 18, 3);
-    ctx.fill(); ctx.stroke();
+  flat(1.0, 1.2, 2.0, 2.3, 'rgba(59,130,246,0.10)', 'rgba(96,165,250,0.16)');
+  flat(6.2, 1.1, 2.1, 2.6, 'rgba(34,197,94,0.10)', 'rgba(134,239,172,0.14)');
+  flat(2.8, 5.2, 2.6, 2.1, 'rgba(234,179,8,0.12)', 'rgba(253,224,71,0.14)');
 
-    // Screen glow
-    ctx.fillStyle = 'rgba(99,102,241,0.15)';
+  for (let y = 1; y <= 5; y++) {
+    for (let x = 3; x <= 7; x++) {
+      const rug = (x + y) % 2 === 0 ? 'rgba(164,28,45,0.18)' : 'rgba(127,29,29,0.10)';
+      flat(x, y, 1, 1, rug, null);
+    }
+  }
+  [[3,1],[3,2],[3,3],[3,4],[3,5],[7,1],[7,2],[7,3],[7,4],[7,5],[4,1],[5,1],[6,1],[4,5],[5,5],[6,5]].forEach(([x, y]) => {
+    flat(x, y, 1, 1, 'rgba(239,68,68,0.16)', null);
+  });
+
+  desk(1.15, 1.45, '#22c55e');
+  chair(1.45, 2.28, '#22c55e');
+  desk(1.18, 4.2, '#f97316');
+  chair(1.48, 5.03, '#f97316');
+  desk(6.28, 1.45, '#3b82f6');
+  chair(7.05, 2.28, '#3b82f6');
+  desk(6.2, 4.18, '#06b6d4');
+  chair(6.98, 5.02, '#06b6d4');
+
+  box(3.55, 1.2, 2.5, 1.25, 18, { top: '#d6b694', west: '#b58d63', east: '#c69d71', south: '#976f48' });
+  chair(3.72, 0.76, '#475569');
+  chair(4.45, 0.62, '#475569');
+  chair(5.22, 0.76, '#475569');
+  chair(4.05, 2.42, '#475569');
+  chair(5.08, 2.44, '#475569');
+
+  drawSofa(2.85, 5.2);
+  drawCoffeeTable(4.55, 5.55);
+
+  drawBookshelf();
+
+  drawTVStand(8.0, 0.55);
+
+  box(8.35, 5.95, 0.7, 0.7, 24, { top: '#e5e7eb', west: '#9ca3af', east: '#cbd5e1', south: '#94a3b8' });
+  box(8.46, 6.12, 0.46, 0.28, 34, { top: '#bfdbfe', west: '#60a5fa', east: '#93c5fd', south: '#3b82f6' });
+
+  plant(0.7, 0.82, 12);
+  plant(8.95, 0.8, 12);
+  plant(0.72, 7.3, 12);
+  drawRoomPlant(10.0, 6.6);
+  drawLamp();
+
+  const lamps = [iso(2.2, 2.2, platformLift + 2), iso(7.0, 2.2, platformLift + 2), iso(4.1, 6.2, platformLift + 2)];
+  lamps.forEach(p => {
+    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 66);
+    g.addColorStop(0, 'rgba(255,228,180,0.20)');
+    g.addColorStop(1, 'rgba(255,244,214,0)');
+    ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.roundRect(d.x - 12, d.y - 20, 24, 14, 2);
+    ctx.arc(p.x, p.y, 66, 0, Math.PI * 2);
     ctx.fill();
-
-    // Screen content lines
-    ctx.fillStyle = 'rgba(99,102,241,0.5)';
-    ctx.fillRect(d.x - 9, d.y - 18, 18, 2);
-    ctx.fillStyle = 'rgba(99,102,241,0.25)';
-    ctx.fillRect(d.x - 9, d.y - 14, 12, 2);
-    ctx.fillRect(d.x - 9, d.y - 10, 15, 2);
   });
 
-  // Plants / decorations
-  const plants = [
-    { x: 0.05 * W, y: 0.08 * H },
-    { x: 0.92 * W, y: 0.12 * H },
-    { x: 0.08 * W, y: 0.88 * H },
-    { x: 0.88 * W, y: 0.85 * H },
-  ];
-  plants.forEach(p => {
-    ctx.fillStyle = '#1a2e1a';
-    ctx.beginPath(); ctx.arc(p.x, p.y, 14, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#22c55e';
-    ctx.font = '20px serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('🌿', p.x, p.y);
-  });
+  const vignette = ctx.createRadialGradient(W / 2, H / 2, H * 0.24, W / 2, H / 2, H * 0.82);
+  vignette.addColorStop(0, 'rgba(0,0,0,0)');
+  vignette.addColorStop(1, 'rgba(0,0,0,0.45)');
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, W, H);
 
-  // Room label
-  ctx.font = '10px Inter, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  ctx.fillStyle = 'rgba(255,241,220,0.84)';
+  ctx.font = '700 11px Inter, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('OPERATIONS FLOOR', W / 2, H - 16);
+  ctx.fillText('AGENT OFFICE / COKE ROOM PASS', W / 2, H - 18);
 }
 
-// ─── AGENT CHARACTERS (DOM overlays) ──────────────────────────
+function depthScale(yNorm) {
+  return 0.82 + (yNorm * 0.42);
+}
+
+function applyAgentDepth(el, yNorm) {
+  const scale = depthScale(yNorm);
+  el.style.setProperty('--agent-scale', scale.toFixed(2));
+  el.style.setProperty('--agent-z', String(100 + Math.round(yNorm * 100)));
+  el.style.filter = `drop-shadow(0 ${Math.round(14 * scale)}px ${Math.round(24 * scale)}px rgba(0,0,0,0.42))`;
+  const label = el.querySelector('.agent-label');
+  if (label) label.style.opacity = (0.84 + yNorm * 0.18).toFixed(2);
+}
+
+function getAgentLook(agent) {
+  const looks = {
+    devin: {
+      skin: '#f1c8a1', hair: '#47311f', shirt: '#2563eb', pants: '#111827', chair: '#475569', pose: 'stand', facing: 'S'
+    },
+    traderclaw: {
+      skin: '#9f6a43', hair: '#151515', shirt: '#16a34a', pants: '#14532d', chair: '#166534', pose: 'seated', facing: 'SE'
+    },
+    webclaw: {
+      skin: '#e4b78f', hair: '#2a2a2a', shirt: '#3b82f6', pants: '#1e293b', chair: '#2563eb', pose: 'seated', facing: 'SW'
+    },
+    xhunter: {
+      skin: '#8e5c3b', hair: '#111827', shirt: '#14b8a6', pants: '#111827', chair: '#0891b2', pose: 'stand', facing: 'W'
+    },
+    nova: {
+      skin: '#dba77d', hair: '#9a3412', shirt: '#f97316', pants: '#431407', chair: '#ea580c', pose: 'stand', facing: 'E'
+    },
+    lyra: {
+      skin: '#f0c2ab', hair: '#7c3aed', shirt: '#a855f7', pants: '#312e81', chair: '#7c3aed', pose: 'stand', facing: 'SE'
+    },
+    xbot: {
+      skin: '#d8ab8b', hair: '#ec4899', shirt: '#ec4899', pants: '#4a044e', chair: '#db2777', pose: 'stand', facing: 'S'
+    },
+    guardian: {
+      skin: '#9c6b49', hair: '#334155', shirt: '#475569', pants: '#020617', chair: '#334155', pose: 'stand', facing: 'W'
+    },
+    fatherclaw: {
+      skin: '#b88564', hair: '#e2e8f0', shirt: '#6366f1', pants: '#111827', chair: '#4338ca', pose: 'seated', facing: 'S'
+    },
+  };
+  return looks[agent.id] || {
+    skin: '#d9ab89', hair: '#334155', shirt: agent.color, pants: '#1f2937', chair: agent.color, pose: 'stand', facing: 'S'
+  };
+}
+
+function hexToRgb(hex) {
+  const clean = hex.replace('#', '');
+  return [0, 2, 4].map(i => parseInt(clean.slice(i, i + 2), 16));
+}
+
+function shadeHex(hex, amount = 0) {
+  const [r, g, b] = hexToRgb(hex);
+  const mix = (v) => amount >= 0 ? v + (255 - v) * amount : v * (1 + amount);
+  return `rgb(${Math.max(0, Math.min(255, Math.round(mix(r))))}, ${Math.max(0, Math.min(255, Math.round(mix(g))))}, ${Math.max(0, Math.min(255, Math.round(mix(b))))})`;
+}
+
+function drawPixelAgent(canvasEl, look, agent) {
+  if (!canvasEl) return;
+  const c = canvasEl.getContext('2d');
+  c.imageSmoothingEnabled = false;
+  c.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+  const dot = (x, y, color) => {
+    c.fillStyle = color;
+    c.fillRect(x, y, 1, 1);
+  };
+  const bx = (x, y, w, h, color) => {
+    c.fillStyle = color;
+    c.fillRect(x, y, w, h);
+  };
+
+  const outlinePass = () => {
+    const img = c.getImageData(0, 0, canvasEl.width, canvasEl.height);
+    const d = img.data;
+    const out = new Uint8ClampedArray(d);
+    const idx = (x, y) => (y * canvasEl.width + x) * 4;
+    const empty = (x, y) => x < 0 || y < 0 || x >= canvasEl.width || y >= canvasEl.height || d[idx(x, y) + 3] < 5;
+    for (let y = 0; y < canvasEl.height; y++) {
+      for (let x = 0; x < canvasEl.width; x++) {
+        const i = idx(x, y);
+        if (d[i + 3] > 5) {
+          for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+            const nx = x + dx, ny = y + dy;
+            if (empty(nx, ny) && nx >= 0 && ny >= 0 && nx < canvasEl.width && ny < canvasEl.height) {
+              const ni = idx(nx, ny);
+              out[ni] = 8; out[ni + 1] = 9; out[ni + 2] = 18; out[ni + 3] = 255;
+            }
+          }
+        }
+      }
+    }
+    img.data.set(out);
+    c.putImageData(img, 0, 0);
+  };
+
+  const sk = look.skin;
+  const sk2 = shadeHex(look.skin, -0.10);
+  const sk3 = shadeHex(look.skin, -0.18);
+  const hr = look.hair;
+  const sh = look.shirt;
+  const sh2 = shadeHex(look.shirt, -0.15);
+  const sh3 = shadeHex(look.shirt, -0.28);
+  const pnt = look.pants;
+  const shoe = '#e8dece';
+  const ew = '#f8f8ff';
+  const ep = '#080816';
+  const eb = look.hair === '#151515' || look.hair === '#111827' ? '#28180a' : shadeHex(look.hair, -0.2);
+  const mth = '#9e2c2c';
+
+  const isFront = ['S', 'SE', 'SW'].includes(look.facing);
+  const isBack = ['N', 'NE', 'NW'].includes(look.facing);
+  const isE = ['E', 'SE', 'NE'].includes(look.facing);
+  const isW = ['W', 'SW', 'NW'].includes(look.facing);
+
+  if (isFront) {
+    bx(5,0,16,3,hr);
+    bx(4,1,18,5,hr);
+    bx(3,4,3,6,shadeHex(hr,-0.15));
+    bx(20,4,3,6,shadeHex(hr,-0.15));
+    bx(4,3,2,3,shadeHex(hr,0.08));
+
+    bx(7,3,12,12,sk);
+    bx(17,4,2,10,sk2);
+    bx(6,7,2,5,sk);
+    bx(18,7,2,5,sk);
+    dot(6,8,sk2); dot(6,10,sk2);
+    dot(19,8,sk2); dot(19,10,sk2);
+
+    bx(9,5,4,1,eb);
+    bx(14,5,4,1,eb);
+    bx(9,6,4,4,ew);
+    bx(14,6,4,4,ew);
+    bx(10,7,2,2,'#3878e8');
+    bx(15,7,2,2,'#3878e8');
+    dot(10,7,ep); dot(15,7,ep);
+    dot(9,6,'#ffffff'); dot(14,6,'#ffffff');
+    bx(9,9,4,1,shadeHex(eb,-0.05));
+    bx(14,9,4,1,shadeHex(eb,-0.05));
+    bx(9,6,4,1,shadeHex(eb,-0.1));
+    bx(14,6,4,1,shadeHex(eb,-0.1));
+
+    dot(13,11,sk3);
+    dot(12,12,sk3);
+
+    dot(10,13,mth); dot(11,14,mth); dot(12,14,mth);
+    dot(13,14,mth); dot(14,13,mth);
+    dot(11,13,'#f8b0b0'); dot(12,13,'#f8b0b0'); dot(13,13,'#f8b0b0');
+
+    bx(8,11,2,2,'rgba(240,140,140,0.35)');
+    bx(17,11,2,2,'rgba(240,140,140,0.35)');
+
+    bx(11,15,4,3,sk); bx(13,15,1,3,sk2);
+
+    bx(7,18,12,9,sh);
+    bx(15,19,4,8,sh2);
+    dot(11,18,sk); dot(12,18,sk); dot(10,19,sk); dot(13,19,sk);
+    bx(8,18,3,1,shadeHex(sh,0.15)); bx(15,18,3,1,shadeHex(sh,0.15));
+    bx(11,21,4,3,sh3);
+    dot(13,21,sh2); dot(11,22,sh2); dot(14,22,sh2);
+    bx(7,26,12,1,sh3);
+
+    bx(3,18,5,8,sh2);
+    bx(18,18,5,8,sh2);
+    bx(4,19,3,6,shadeHex(sh2,0.08));
+    bx(3,26,5,2,sk); bx(18,26,5,2,sk);
+    bx(3,27,5,1,sk2); bx(18,27,5,1,sk2);
+
+    bx(7,27,12,2,'#0c0e1e');
+    bx(12,27,2,2,'#c09030');
+    dot(12,27,'#e8c050'); dot(13,27,'#e8c050');
+
+    if (look.pose === 'seated') {
+      bx(8,29,5,4,pnt); bx(13,29,5,4,pnt);
+      bx(7,33,7,2,shoe); bx(12,33,7,2,shoe);
+      bx(7,34,8,1,shadeHex(shoe,-0.2)); bx(12,34,8,1,shadeHex(shoe,-0.2));
+    } else {
+      bx(8,29,5,5,pnt); bx(13,29,5,5,pnt);
+      bx(12,29,1,5,shadeHex(pnt,-0.25));
+      bx(8,29,1,5,shadeHex(pnt,-0.18));
+      bx(17,29,1,5,shadeHex(pnt,-0.18));
+      bx(7,34,7,2,shoe); bx(12,34,7,2,shoe);
+      bx(7,35,8,1,shadeHex(shoe,-0.2)); bx(12,35,8,1,shadeHex(shoe,-0.2));
+      bx(7,34,2,1,shadeHex(shoe,0.15)); bx(12,34,2,1,shadeHex(shoe,0.15));
+    }
+  } else if (isBack) {
+    bx(4,0,18,6,hr);
+    bx(7,3,12,12,sk2);
+    bx(6,7,2,5,sk); bx(18,7,2,5,sk);
+    bx(11,15,4,3,sk);
+    bx(7,18,12,9,sh); bx(15,19,4,8,sh2);
+    bx(3,18,5,8,sh2); bx(18,18,5,8,sh2);
+    bx(3,26,5,2,sk); bx(18,26,5,2,sk);
+    bx(7,27,12,2,'#0c0e1e');
+    bx(8,29,5,5,pnt); bx(13,29,5,5,pnt);
+    bx(7,34,7,2,shoe); bx(12,34,7,2,shoe);
+    bx(7,35,8,1,shadeHex(shoe,-0.2)); bx(12,35,8,1,shadeHex(shoe,-0.2));
+  } else {
+    const fl = isW;
+
+    bx(4,0,16,5,hr);
+    bx(fl ? 16 : 4, 3, 5, 6,shadeHex(hr,-0.18));
+    bx(5,3,14,12,sk);
+    bx(fl ? 5 : 17,4,3,10,sk2);
+    bx(fl ? 17 : 4,7,2,4,sk);
+    const nx2 = fl ? 7 : 19;
+    dot(nx2,10,sk3); dot(nx2,11,sk3);
+    const ex = fl ? 8 : 15;
+    bx(ex,6,3,3,ew);
+    dot(fl ? 9 : 16,7,ep);
+    bx(ex,6,3,1,shadeHex(eb,-0.1));
+    dot(fl ? 10 : 17,7,'#3878e8');
+    dot(ex,6,'#fff');
+    bx(fl ? 8 : 13,5,4,1,eb);
+    dot(fl ? 9 : 17,13,mth);
+
+    bx(10,15,5,3,sk); bx(13,15,2,3,sk2);
+    bx(7,18,12,9,sh);
+    bx(fl ? 7 : 15,19,4,8,sh2);
+    bx(fl ? 17 : 2,18,5,9,sh);
+    bx(fl ? 18 : 3,18,3,7,shadeHex(sh2,0.06));
+    bx(fl ? 17 : 2,27,5,2,sk);
+    bx(fl ? 2 : 18,18,4,8,sh2);
+    bx(fl ? 2 : 18,26,4,2,sk2);
+    bx(7,27,12,2,'#0c0e1e');
+    bx(fl ? 17 : 2,27,5,2,'#0c0e1e');
+
+    if (look.pose === 'seated') {
+      bx(8,29,10,4,pnt);
+      bx(fl ? 4 : 8,33,14,2,shoe);
+      bx(fl ? 4 : 8,34,14,1,shadeHex(shoe,-0.2));
+      bx(fl ? 4 : 8,33,3,1,shadeHex(shoe,0.15));
+    } else {
+      bx(8,29,10,5,pnt);
+      bx(fl ? 8 : 16,29,2,5,shadeHex(pnt,-0.25));
+      bx(fl ? 4 : 8,34,14,2,shoe);
+      bx(fl ? 4 : 8,35,14,1,shadeHex(shoe,-0.2));
+      bx(fl ? 4 : 8,34,3,1,shadeHex(shoe,0.15));
+    }
+  }
+
+  outlinePass();
+}
+
 function renderAgents() {
   document.querySelectorAll('.agent-char').forEach(el => el.remove());
 
   agentState.forEach(agent => {
+    const look = getAgentLook(agent);
     const el = document.createElement('div');
     el.className = 'agent-char';
     el.id = 'agent-' + agent.id;
@@ -1427,13 +2185,17 @@ function renderAgents() {
         <strong>${agent.name}</strong>
         <span>${agent.currentTask}</span>
       </div>
-      <div class="agent-sprite" style="background: linear-gradient(135deg, ${agent.color}cc, ${agent.color}66);">
-        ${agent.emoji}
+      <div class="agent-avatar ${look.pose === 'seated' ? 'seated' : ''}" style="--chair:${look.chair};">
+        <div class="agent-shadow"></div>
+        <div class="agent-chair"></div>
+        <canvas class="agent-pixel" width="26" height="36"></canvas>
         <div class="status-ring" style="background: ${agent.status === 'active' ? 'var(--green)' : agent.status === 'idle' ? 'var(--yellow)' : 'var(--muted)'}"></div>
       </div>
     `;
 
+    applyAgentDepth(el, agent.pos.y);
     officeArea.appendChild(el);
+    drawPixelAgent(el.querySelector('.agent-pixel'), look, agent);
   });
 }
 
@@ -1493,8 +2255,8 @@ function updateAgentTask(agent) {
   // Slightly wander position
   const base = POSITIONS[agentState.indexOf(agent)];
   agent.pos = {
-    x: Math.max(0.05, Math.min(0.95, base.x + (Math.random() - 0.5) * 0.08)),
-    y: Math.max(0.08, Math.min(0.88, base.y + (Math.random() - 0.5) * 0.06)),
+    x: Math.max(0.05, Math.min(0.95, base.x + (Math.random() - 0.5) * 0.04)),
+    y: Math.max(0.24, Math.min(0.66, base.y + (Math.random() - 0.5) * 0.035)),
   };
 
   // Update DOM element
@@ -1505,6 +2267,7 @@ function updateAgentTask(agent) {
     el.querySelector('.agent-label span').textContent = agent.currentTask;
     el.querySelector('.status-ring').style.background =
       agent.status === 'active' ? 'var(--green)' : 'var(--yellow)';
+    applyAgentDepth(el, agent.pos.y);
   }
 }
 
@@ -2253,7 +3016,8 @@ function escHTML(str) {
       layout.classList.add('feed-collapsed');
       focusMode = false;
       if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
-    } else if (['dropbox', 'traderclaw', 'lyra'].includes(view)) {
+    if (view === 'memory') MEM.render();
+    if (['dropbox', 'traderclaw', 'lyra', 'memory'].includes(view)) {
       layout.classList.add('nav-collapsed', 'feed-collapsed');
       focusMode = true;
       if (btn) { btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(99,102,241,0.12)'; }
@@ -2263,6 +3027,166 @@ function escHTML(str) {
       if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
     }
   };
+})();
+
+// ─── MEMORY MODULE ───────────────────────────────────────────────────────────
+const MEM = (() => {
+  const API = '/api/memories';
+  let activeAgent = 'all';
+  let _cache = null;
+  let _editingId = null;
+
+  async function load() {
+    try {
+      const r = await fetch(API);
+      if (!r.ok) return _cache || [];
+      const data = await r.json();
+      _cache = Array.isArray(data) ? data : [];
+      return _cache;
+    } catch { return _cache || []; }
+  }
+
+  function selectFormAgent(id) {
+    document.getElementById('mem-agent').value = id;
+    document.querySelectorAll('#mem-agent-tabs .mem-tab').forEach(b => {
+      const a = AGENTS.find(x => x.id === b.dataset.agent);
+      if (!a) return;
+      const sel = b.dataset.agent === id;
+      b.style.background = sel ? a.color + '25' : 'transparent';
+      b.style.borderColor = sel ? a.color : 'var(--border)';
+      b.style.color = sel ? a.color : 'var(--muted)';
+    });
+  }
+
+  function showForm() {
+    _editingId = null;
+    const tabs = document.getElementById('mem-agent-tabs');
+    tabs.innerHTML = AGENTS.map(a =>
+      `<button class="mem-tab" data-agent="${a.id}" onclick="MEM.selectFormAgent('${a.id}')"
+        style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; white-space:nowrap;">${a.emoji} ${a.name}</button>`
+    ).join('');
+    const preselect = activeAgent !== 'all' ? activeAgent : AGENTS[0].id;
+    selectFormAgent(preselect);
+    document.getElementById('mem-content').value = '';
+    document.getElementById('mem-form').style.display = 'block';
+    document.getElementById('mem-content').focus();
+  }
+
+  function hideForm() {
+    _editingId = null;
+    document.getElementById('mem-form').style.display = 'none';
+    document.getElementById('mem-content').value = '';
+  }
+
+  function edit(id) {
+    const entry = (_cache || []).find(e => e.id === id);
+    if (!entry) return;
+    _editingId = id;
+    const tabs = document.getElementById('mem-agent-tabs');
+    const agent = AGENTS.find(a => a.id === entry.agent) || { emoji: '?', name: entry.agent, color: '#64748b' };
+    tabs.innerHTML = `<span style="font-size:13px; color:${agent.color}; font-weight:600;">${agent.emoji} ${escHTML(agent.name)}</span>`;
+    document.getElementById('mem-agent').value = entry.agent;
+    document.getElementById('mem-content').value = entry.content;
+    document.getElementById('mem-form').style.display = 'block';
+    document.getElementById('mem-content').focus();
+  }
+
+  async function save() {
+    const agent = document.getElementById('mem-agent').value;
+    const content = document.getElementById('mem-content').value.trim();
+    if (!agent) { alert('Select an agent first!'); return; }
+    if (!content) { alert('Add some content first!'); return; }
+
+    if (_editingId) {
+      await fetch(`${API}/${_editingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      });
+    } else {
+      await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent, content })
+      });
+    }
+    hideForm();
+    render();
+  }
+
+  async function remove(id) {
+    if (!confirm('Delete this memory?')) return;
+    await fetch(`${API}/${id}`, { method: 'DELETE' });
+    render();
+  }
+
+  function setFilter(agentId, btn) {
+    activeAgent = agentId;
+    document.querySelectorAll('#mem-filters .mem-filter').forEach(b => {
+      b.classList.remove('active');
+      b.style.background = 'transparent';
+      b.style.borderColor = 'var(--border)';
+      b.style.color = 'var(--muted)';
+    });
+    btn.classList.add('active');
+    const agent = AGENTS.find(a => a.id === agentId);
+    const color = agent ? agent.color : 'var(--accent)';
+    btn.style.background = (agentId === 'all') ? 'rgba(99,102,241,0.15)' : color + '20';
+    btn.style.borderColor = (agentId === 'all') ? 'var(--accent)' : color;
+    btn.style.color = (agentId === 'all') ? 'var(--accent)' : color;
+    renderList();
+  }
+
+  function renderFilters() {
+    const bar = document.getElementById('mem-filters');
+    const isAll = activeAgent === 'all';
+    let html = `<button class="mem-filter${isAll ? ' active' : ''}" onclick="MEM.setFilter('all', this)"
+      style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid ${isAll ? 'var(--accent)' : 'var(--border)'}; background:${isAll ? 'rgba(99,102,241,0.15)' : 'transparent'}; color:${isAll ? 'var(--accent)' : 'var(--muted)'}; cursor:pointer;">All</button>`;
+    AGENTS.forEach(a => {
+      const isActive = activeAgent === a.id;
+      html += `<button class="mem-filter${isActive ? ' active' : ''}" onclick="MEM.setFilter('${a.id}', this)"
+        style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid ${isActive ? a.color : 'var(--border)'}; background:${isActive ? a.color + '20' : 'transparent'}; color:${isActive ? a.color : 'var(--muted)'}; cursor:pointer;">${a.emoji} ${a.name}</button>`;
+    });
+    bar.innerHTML = html;
+  }
+
+  async function renderList() {
+    const list = document.getElementById('mem-list');
+    list.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px;">Loading...</div>`;
+    const entries = await load();
+    const filtered = activeAgent === 'all' ? entries : entries.filter(e => e.agent === activeAgent);
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div style="text-align:center; padding:60px 0; color:var(--muted); font-size:13px;">No memories yet. Hit <strong style="color:var(--text)">+ New Memory</strong> to add one.</div>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map(e => {
+      const agent = AGENTS.find(a => a.id === e.agent) || { emoji: '?', name: e.agent, color: '#64748b' };
+      const date = new Date(e.date || e.created_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      return `<div style="background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px 20px; margin-bottom:12px; border-left:3px solid ${agent.color};">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:12px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:16px;">${agent.emoji}</span>
+            <span style="font-size:13px; font-weight:600; color:${agent.color};">${escHTML(agent.name)}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:11px; color:var(--muted);">${date}</span>
+            <button onclick="MEM.edit('${e.id}')" style="background:transparent; border:1px solid rgba(99,102,241,0.3); color:var(--accent); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; opacity:0.6; transition:opacity 0.15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">edit</button>
+            <button onclick="MEM.remove('${e.id}')" style="background:transparent; border:1px solid rgba(239,68,68,0.3); color:#ef4444; border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; opacity:0.6; transition:opacity 0.15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">delete</button>
+          </div>
+        </div>
+        <div style="font-size:13px; color:var(--text); line-height:1.6; white-space:pre-wrap;">${escHTML(e.content)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  async function render() {
+    renderFilters();
+    await renderList();
+  }
+
+  return { render, showForm, hideForm, save, remove, edit, setFilter, selectFormAgent };
 })();
 
 </script>

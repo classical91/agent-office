@@ -164,6 +164,21 @@
   .nav-link .link-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
   .nav-link .link-ext { font-size: 9px; margin-left: auto; color: #2d3748; }
 
+  /* PROJECT SUB-GROUPS */
+  .nav-proj-group { margin-bottom: 1px; }
+  .nav-proj-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 16px; font-size: 11px; font-weight: 600;
+    cursor: pointer; user-select: none; transition: all 0.15s;
+    border-left: 2px solid transparent; color: var(--muted);
+  }
+  .nav-proj-header:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+  .nav-proj-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .nav-proj-name { flex: 1; }
+  .nav-proj-chevron { font-size: 8px; color: var(--muted); transition: transform 0.2s; }
+  .nav-proj-header.collapsed .nav-proj-chevron { transform: rotate(-90deg); }
+  .nav-proj-links { overflow: hidden; transition: max-height 0.25s ease; max-height: 0px; }
+
   /* VIEW SWITCHER */
   .view { display: none; flex: 1; overflow: hidden; }
   .view.active { display: flex; }
@@ -255,24 +270,61 @@
   .org-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; max-width: 680px; }
   .org-row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; width: 100%; }
   .org-row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; width: 100%; }
-  .org-coders-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; width: 100%; }
   .org-card-wide { width: 100%; max-width: 520px; }
 
-  @media (max-width: 1200px) { .org-coders-row { grid-template-columns: repeat(3, 1fr); } }
-  @media (max-width: 900px) { .org-row-4 { grid-template-columns: repeat(2, 1fr); } .org-coders-row { grid-template-columns: repeat(2, 1fr); } }
-  @media (max-width: 600px) { .org-row-2, .org-row-4, .org-row-3, .org-coders-row { grid-template-columns: 1fr; } .org-card-wide { max-width: 100%; } }
+  @media (max-width: 900px) { .org-row-4 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .org-row-2, .org-row-4, .org-row-3 { grid-template-columns: 1fr; } .org-card-wide { max-width: 100%; } }
 
   /* OFFICE CANVAS AREA */
   .office {
     position: relative;
     overflow: hidden;
-    background: #0a0c11;
+    min-width: 1560px;
+    min-height: 1020px;
+    width: 100%;
+    height: 100%;
+    flex: 0 0 auto;
+    background:
+      radial-gradient(circle at 50% 16%, rgba(255,255,255,0.05), transparent 20%),
+      radial-gradient(circle at 22% 18%, rgba(239,68,68,0.14), transparent 24%),
+      radial-gradient(circle at 78% 20%, rgba(245,158,11,0.10), transparent 20%),
+      linear-gradient(180deg, #111111 0%, #090909 46%, #040404 100%);
+    isolation: isolate;
+  }
+
+  .office::before,
+  .office::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .office::before {
+    background:
+      radial-gradient(circle at 50% 10%, rgba(255,255,255,0.10), transparent 18%),
+      linear-gradient(180deg, rgba(255,255,255,0.04), transparent 26%),
+      linear-gradient(135deg, rgba(239,68,68,0.08), transparent 46%, rgba(245,158,11,0.06) 100%);
+    opacity: 0.8;
+  }
+
+  .office::after {
+    background:
+      radial-gradient(ellipse at center, rgba(239,68,68,0.10), transparent 34%),
+      radial-gradient(ellipse at 50% 82%, rgba(0,0,0,0.35), transparent 45%),
+      linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.28) 100%);
+    opacity: 0.95;
   }
 
   #officeCanvas {
     position: absolute;
-    top: 0; left: 0;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     image-rendering: pixelated;
+    z-index: 1;
+    filter: saturate(1.04) contrast(1.05);
   }
 
   /* AGENT CHARACTERS */
@@ -282,76 +334,342 @@
     flex-direction: column;
     align-items: center;
     transform: translate(-50%, -100%);
+    transform-style: preserve-3d;
     pointer-events: none;
-    transition: left 3s ease-in-out, top 3s ease-in-out;
+    transition:
+      left var(--travel-ms, 2200ms) cubic-bezier(0.22, 0.9, 0.24, 1),
+      top var(--travel-ms, 2200ms) cubic-bezier(0.22, 0.9, 0.24, 1),
+      filter 0.35s ease;
+    z-index: var(--agent-z, 10);
+    will-change: left, top, filter;
   }
 
   .agent-label {
-    background: rgba(0,0,0,0.85);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 6px;
-    padding: 3px 8px;
+    background: linear-gradient(180deg, rgba(17,24,39,0.95), rgba(7,10,18,0.88));
+    border: 1px solid rgba(148,163,184,0.22);
+    border-radius: 11px;
+    padding: 6px 10px;
     font-size: 9px;
-    color: #e2e8f0;
+    color: #dbe6f4;
     white-space: nowrap;
-    margin-bottom: 4px;
-    backdrop-filter: blur(4px);
-    max-width: 140px;
+    margin-bottom: 8px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
+    max-width: 170px;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: center;
+    transition: opacity 0.2s ease, transform 0.2s ease;
   }
 
   .agent-label strong {
     color: white;
     display: block;
     font-size: 8px;
-    margin-bottom: 1px;
+    margin-bottom: 2px;
+    letter-spacing: 0.04em;
   }
 
   .agent-label span {
-    color: #94a3b8;
+    color: #a5b4fc;
     font-size: 8px;
   }
 
-  .agent-sprite {
-    width: 32px; height: 32px;
-    border-radius: 50% 50% 40% 40%;
+  .agent-avatar {
+    position: relative;
+    width: 72px;
+    height: 102px;
+    transform-origin: 50% 100%;
+    transform: scale(var(--agent-scale, 1));
+    animation: officeBob 2.15s ease-in-out infinite;
+  }
+
+  .agent-char.agent-moving .agent-label {
+    opacity: 0.72;
+    transform: translateY(-3px);
+  }
+
+  .agent-avatar.motion-typing {
+    animation: typingBob 0.96s ease-in-out infinite;
+  }
+
+  .agent-avatar.motion-reading {
+    animation: readingLean 2.4s ease-in-out infinite;
+  }
+
+  .agent-avatar.motion-monitoring {
+    animation: monitorShift 1.8s ease-in-out infinite;
+  }
+
+  .agent-avatar.motion-walking {
+    animation: walkBob 0.66s steps(2, end) infinite;
+  }
+
+  .agent-shadow {
+    position: absolute;
+    left: 50%;
+    bottom: 2px;
+    width: 38px;
+    height: 12px;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse at center, rgba(2,6,23,0.60), rgba(2,6,23,0));
+    border-radius: 50%;
+    filter: blur(3px);
+  }
+
+  .agent-chair {
+    position: absolute;
+    left: 50%;
+    bottom: 14px;
+    width: 36px;
+    height: 18px;
+    transform: translateX(-50%);
+    border-radius: 10px 10px 7px 7px;
+    background: linear-gradient(180deg, var(--chair, rgba(71,85,105,0.9)), rgba(15,23,42,0.95));
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+    opacity: 0;
+  }
+
+  .agent-chair::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -12px;
+    width: 4px;
+    height: 14px;
+    transform: translateX(-50%);
+    background: rgba(30,41,59,0.92);
+  }
+
+  .agent-avatar.seated .agent-chair { opacity: 1; }
+
+  .agent-pixel {
+    position: absolute;
+    left: 50%;
+    bottom: 8px;
+    width: 52px;
+    height: 72px;
+    transform: translateX(-50%);
+    image-rendering: pixelated;
+    z-index: 3;
+  }
+
+  .agent-avatar.seated .agent-pixel { bottom: 10px; }
+
+  .agent-person {
+    position: absolute;
+    left: 50%;
+    bottom: 8px;
+    width: 54px;
+    height: 86px;
+    transform: translateX(-50%);
+  }
+
+  .agent-avatar.seated .agent-person { bottom: 10px; }
+
+  .agent-leg {
+    position: absolute;
+    bottom: 10px;
+    width: 10px;
+    height: 28px;
+    background: linear-gradient(180deg, var(--pants-light), var(--pants));
+    border-radius: 8px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  .agent-leg.left { left: 16px; transform: skewX(-5deg); }
+  .agent-leg.right { right: 16px; transform: skewX(5deg); }
+  .agent-avatar.seated .agent-leg { height: 18px; bottom: 14px; }
+
+  .agent-shoe {
+    position: absolute;
+    bottom: 8px;
+    width: 12px;
+    height: 5px;
+    background: #111827;
+    border-radius: 5px;
+  }
+
+  .agent-shoe.left { left: 15px; }
+  .agent-shoe.right { right: 15px; }
+  .agent-avatar.seated .agent-shoe { bottom: 12px; }
+
+  .agent-body {
+    position: absolute;
+    left: 50%;
+    bottom: 30px;
+    width: 32px;
+    height: 34px;
+    transform: translateX(-50%);
+    border-radius: 9px 9px 8px 8px;
+    clip-path: polygon(14% 0%, 86% 0%, 100% 100%, 0% 100%);
+    background: linear-gradient(180deg, var(--shirt-light), var(--shirt));
+    border: 1px solid rgba(15,23,42,0.5);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -6px 12px rgba(0,0,0,0.16);
+  }
+
+  .agent-body::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 5px;
+    width: 12px;
+    height: 22px;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.20), rgba(255,255,255,0));
+    opacity: 0.65;
+  }
+
+  .agent-arm {
+    position: absolute;
+    top: 35px;
+    width: 10px;
+    height: 24px;
+    background: linear-gradient(180deg, var(--sleeve, var(--shirt-light)), var(--shirt));
+    border-radius: 999px;
+  }
+
+  .agent-arm.left { left: 8px; transform: rotate(16deg); }
+  .agent-arm.right { right: 8px; transform: rotate(-16deg); }
+  .agent-avatar.seated .agent-arm.left { top: 38px; transform: rotate(36deg); }
+  .agent-avatar.seated .agent-arm.right { top: 38px; transform: rotate(-36deg); }
+
+  .agent-head {
+    position: absolute;
+    left: 50%;
+    top: 4px;
+    width: 30px;
+    height: 31px;
+    transform: translateX(-50%);
+    border-radius: 10px 10px 12px 12px;
+    background: linear-gradient(180deg, var(--skin-light), var(--skin));
+    border: 1px solid rgba(15,23,42,0.55);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 0 0 1px rgba(255,255,255,0.04);
+    overflow: hidden;
+  }
+
+  .agent-hair {
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    top: -3px;
+    height: 15px;
+    background: linear-gradient(180deg, var(--hair-light), var(--hair));
+    border-radius: 55% 55% 30% 30%;
+  }
+
+  .agent-avatar.hair-bob .agent-hair {
+    height: 18px;
+    border-radius: 52% 52% 42% 42%;
+  }
+
+  .agent-avatar.hair-spike .agent-hair::before,
+  .agent-avatar.hair-part .agent-hair::before {
+    content: '';
+    position: absolute;
+    top: 1px;
+    width: 9px;
+    height: 6px;
+    background: var(--hair-light);
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  }
+
+  .agent-avatar.hair-spike .agent-hair::before { left: 9px; }
+  .agent-avatar.hair-part .agent-hair::before { right: 4px; width: 7px; }
+
+  .agent-face {
+    position: absolute;
+    left: 50%;
+    top: 11px;
+    width: 16px;
+    height: 11px;
+    transform: translateX(-50%);
+  }
+
+  .agent-eye {
+    position: absolute;
+    top: 1px;
+    width: 3px;
+    height: 3px;
+    background: #111827;
+    border-radius: 50%;
+  }
+
+  .agent-eye:first-child { left: 2px; }
+  .agent-eye:last-child { right: 2px; }
+
+  .agent-mouth {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 8px;
+    height: 3px;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: rgba(127,29,29,0.38);
+  }
+
+  .agent-badge {
+    position: absolute;
+    left: 50%;
+    top: 43px;
+    transform: translateX(-50%);
+    width: 10px;
+    height: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-    animation: bob 1.8s ease-in-out infinite;
-    border: 2px solid rgba(255,255,255,0.15);
-    position: relative;
+    font-size: 7px;
+    font-weight: 700;
+    border-radius: 3px;
+    color: #0f172a;
+    background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(226,232,240,0.9));
+    border: 1px solid rgba(15,23,42,0.18);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.16);
   }
 
-  .agent-sprite::after {
-    content: '';
-    position: absolute;
-    bottom: -6px;
-    left: 50%; transform: translateX(-50%);
-    width: 20px; height: 6px;
-    background: rgba(0,0,0,0.3);
-    border-radius: 50%;
-    filter: blur(2px);
-  }
+  .agent-avatar.seated .agent-badge { top: 42px; }
 
-  @keyframes bob {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-4px); }
-  }
-
-  .agent-char:nth-child(odd) .agent-sprite { animation-delay: -0.9s; }
-
-  /* STATUS INDICATOR */
   .status-ring {
     position: absolute;
-    bottom: -2px; right: -2px;
-    width: 10px; height: 10px;
+    right: 7px;
+    top: 42px;
+    width: 11px;
+    height: 11px;
     border-radius: 50%;
-    border: 2px solid var(--bg);
+    border: 2px solid rgba(10,12,17,0.95);
+    box-shadow: 0 0 0 3px rgba(15,23,42,0.55), 0 0 10px rgba(255,255,255,0.15);
   }
+
+  @keyframes officeBob {
+    0%, 100% { transform: translateY(0) scale(var(--agent-scale, 1)); }
+    50% { transform: translateY(-4px) scale(var(--agent-scale, 1)); }
+  }
+
+  @keyframes typingBob {
+    0%, 100% { transform: translateY(0) scale(var(--agent-scale, 1)) rotate(0deg); }
+    35% { transform: translateY(-2px) scale(var(--agent-scale, 1)) rotate(-1.4deg); }
+    68% { transform: translateY(-4px) scale(var(--agent-scale, 1)) rotate(1.25deg); }
+  }
+
+  @keyframes readingLean {
+    0%, 100% { transform: translateY(0) scale(var(--agent-scale, 1)) rotate(0deg); }
+    50% { transform: translateY(-2px) scale(var(--agent-scale, 1)) rotate(-2.4deg); }
+  }
+
+  @keyframes monitorShift {
+    0%, 100% { transform: translateY(0) scale(var(--agent-scale, 1)) rotate(0deg); }
+    50% { transform: translateY(-2px) scale(var(--agent-scale, 1)) rotate(1.6deg); }
+  }
+
+  @keyframes walkBob {
+    0%, 100% { transform: translateY(0) scale(var(--agent-scale, 1)); }
+    50% { transform: translateY(-6px) scale(var(--agent-scale, 1)); }
+  }
+
+  .agent-char:nth-child(odd) .agent-avatar { animation-delay: -0.9s; }
 
   /* RIGHT FEED */
   .feed {
@@ -570,384 +888,6 @@
   .mobile-nav-toggle { display: none; }
 
   /* DROPBOX */
-  .drop-section-kicker {
-    font-size: 10px;
-    color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: 0.16em;
-    margin-bottom: 10px;
-    font-weight: 700;
-  }
-  .drop-composer {
-    position: relative;
-    background: linear-gradient(180deg, rgba(19,22,29,0.98), rgba(11,13,18,0.98));
-    border: 1px solid rgba(99,102,241,0.22);
-    border-radius: 18px;
-    padding: 24px;
-    margin-bottom: 28px;
-    box-shadow: 0 20px 48px rgba(0,0,0,0.3);
-    overflow: hidden;
-  }
-  .drop-composer::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 22px;
-    right: 22px;
-    height: 1px;
-    background: linear-gradient(90deg, rgba(99,102,241,0), rgba(99,102,241,0.7), rgba(59,130,246,0));
-  }
-  .drop-composer-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 20px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
-  .drop-composer-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 8px;
-    line-height: 1.35;
-  }
-  .drop-composer-copy {
-    font-size: 13px;
-    color: var(--muted);
-    line-height: 1.7;
-    max-width: 540px;
-  }
-  .drop-composer-badges {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    align-items: flex-start;
-  }
-  .drop-composer-badge {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: #a5b4fc;
-    border: 1px solid rgba(99,102,241,0.22);
-    background: rgba(99,102,241,0.08);
-    border-radius: 999px;
-    padding: 6px 10px;
-    white-space: nowrap;
-  }
-  .drop-field-label {
-    font-size: 11px;
-    color: var(--muted);
-    display: block;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-  .drop-field-note {
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.55;
-    margin-top: 8px;
-  }
-  .drop-input,
-  .drop-textarea {
-    width: 100%;
-    background: #0d0f14;
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
-    padding: 12px 14px;
-    font-size: 15px;
-    color: var(--text);
-    outline: none;
-    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
-  }
-  .drop-input::placeholder,
-  .drop-textarea::placeholder { color: #475569; }
-  .drop-input:focus,
-  .drop-textarea:focus {
-    border-color: rgba(99,102,241,0.45);
-    box-shadow: 0 0 0 4px rgba(99,102,241,0.12);
-  }
-  .drop-textarea {
-    resize: vertical;
-    min-height: 136px;
-    font-family: inherit;
-    line-height: 1.7;
-  }
-  .drop-subject-field { position: relative; }
-  .drop-subject-shell { position: relative; }
-  .drop-subject-suggestions {
-    position: absolute;
-    top: calc(100% + 10px);
-    left: 0;
-    right: 0;
-    display: none;
-    background: #0d1017;
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 14px;
-    padding: 8px;
-    z-index: 20;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.38);
-  }
-  .drop-subject-suggestions.open { display: block; }
-  .drop-suggestion-row {
-    width: 100%;
-    border: none;
-    background: transparent;
-    border-radius: 10px;
-    padding: 10px 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    cursor: pointer;
-    color: var(--muted);
-    text-align: left;
-    transition: background 0.15s, color 0.15s, transform 0.15s;
-  }
-  .drop-suggestion-row:hover,
-  .drop-suggestion-row.active {
-    background: rgba(99,102,241,0.14);
-    color: var(--text);
-    transform: translateY(-1px);
-  }
-  .drop-suggestion-copy {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-  .drop-suggestion-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: inherit;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .drop-suggestion-meta {
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-  .drop-suggestion-arrow {
-    font-size: 12px;
-    color: inherit;
-    opacity: 0.7;
-  }
-  .drop-suggestion-empty {
-    font-size: 12px;
-    color: var(--muted);
-    padding: 12px;
-    line-height: 1.6;
-  }
-  .drop-quick-subjects {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 12px;
-  }
-  .drop-quick-pill {
-    border: 1px solid rgba(255,255,255,0.08);
-    background: rgba(255,255,255,0.02);
-    color: var(--muted);
-    border-radius: 999px;
-    padding: 8px 12px;
-    font-size: 11px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.15s;
-  }
-  .drop-quick-pill:hover,
-  .drop-quick-pill:focus-visible {
-    border-color: rgba(99,102,241,0.45);
-    background: rgba(99,102,241,0.1);
-    color: var(--text);
-    transform: translateY(-1px);
-  }
-  .drop-quick-pill-count {
-    font-size: 10px;
-    color: #a5b4fc;
-  }
-  .drop-quick-empty {
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.6;
-  }
-  .drop-priority-picker {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-  }
-  .drop-priority-option {
-    border: 1px solid rgba(255,255,255,0.08);
-    background: rgba(255,255,255,0.02);
-    border-radius: 14px;
-    padding: 12px;
-    min-height: 92px;
-    color: var(--muted);
-    text-align: left;
-    cursor: pointer;
-    transition: border-color 0.15s, background 0.15s, color 0.15s, transform 0.15s, box-shadow 0.15s;
-  }
-  .drop-priority-option:hover,
-  .drop-priority-option:focus-visible {
-    border-color: rgba(255,255,255,0.18);
-    color: var(--text);
-    transform: translateY(-1px);
-  }
-  .drop-priority-option.active {
-    color: var(--text);
-    background: rgba(99,102,241,0.12);
-    border-color: rgba(99,102,241,0.45);
-    box-shadow: 0 14px 28px rgba(99,102,241,0.14);
-    transform: translateY(-1px);
-  }
-  .drop-priority-option.priority-normal { color: #93c5fd; }
-  .drop-priority-option.priority-high { color: #fcd34d; }
-  .drop-priority-option.priority-urgent { color: #fda4af; }
-  .drop-priority-option.priority-normal.active {
-    border-color: rgba(59,130,246,0.45);
-    box-shadow: 0 14px 28px rgba(59,130,246,0.16);
-  }
-  .drop-priority-option.priority-high.active {
-    border-color: rgba(234,179,8,0.45);
-    box-shadow: 0 14px 28px rgba(234,179,8,0.16);
-  }
-  .drop-priority-option.priority-urgent.active {
-    border-color: rgba(239,68,68,0.45);
-    box-shadow: 0 14px 28px rgba(239,68,68,0.16);
-  }
-  .drop-priority-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-  .drop-priority-name {
-    font-size: 13px;
-    font-weight: 700;
-  }
-  .drop-priority-note {
-    font-size: 11px;
-    line-height: 1.5;
-    color: inherit;
-    opacity: 0.9;
-  }
-  .drop-priority-dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 999px;
-    background: currentColor;
-    box-shadow: 0 0 0 5px rgba(255,255,255,0.03);
-  }
-  .drop-composer-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    flex-wrap: wrap;
-  }
-  .drop-composer-status {
-    font-size: 11px;
-    color: var(--muted);
-    line-height: 1.6;
-    max-width: 440px;
-  }
-  .drop-composer-actions {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  .drop-secondary-action,
-  .drop-primary-action,
-  .drop-empty-action {
-    border-radius: 12px;
-    padding: 12px 18px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.15s, border-color 0.15s, color 0.15s, background 0.15s, box-shadow 0.15s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .drop-secondary-action,
-  .drop-empty-action {
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid rgba(255,255,255,0.1);
-  }
-  .drop-secondary-action:hover,
-  .drop-secondary-action:focus-visible,
-  .drop-empty-action:hover,
-  .drop-empty-action:focus-visible {
-    color: var(--text);
-    border-color: rgba(255,255,255,0.2);
-    transform: translateY(-1px);
-  }
-  .drop-primary-action {
-    background: linear-gradient(135deg, #4f46e5, #2563eb);
-    color: #fff;
-    border: none;
-    box-shadow: 0 16px 32px rgba(37,99,235,0.22);
-  }
-  .drop-primary-action:hover,
-  .drop-primary-action:focus-visible {
-    transform: translateY(-1px);
-    box-shadow: 0 18px 36px rgba(37,99,235,0.28);
-  }
-  .drop-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-bottom: 12px;
-  }
-  .drop-toolbar-copy {
-    font-size: 12px;
-    color: var(--muted);
-    line-height: 1.6;
-  }
-  .drop-filter-bar {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 24px;
-  }
-  .drop-filter {
-    font-size: 12px;
-    padding: 7px 12px;
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    background: transparent;
-    color: var(--muted);
-    cursor: pointer;
-    transition: all 0.15s;
-    -webkit-tap-highlight-color: transparent;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .drop-filter:hover {
-    color: var(--text);
-    border-color: rgba(255,255,255,0.18);
-  }
-  .drop-filter.active {
-    border-color: var(--accent);
-    background: rgba(99,102,241,0.15);
-    color: var(--accent);
-  }
-  .drop-filter-count {
-    font-size: 10px;
-    padding: 2px 7px;
-    border-radius: 999px;
-    background: rgba(255,255,255,0.06);
-    color: inherit;
-  }
   .drop-card {
     background: var(--panel);
     border: 1px solid var(--border);
@@ -955,42 +895,17 @@
     padding: 20px 22px;
     margin-bottom: 16px;
     position: relative;
-    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    transition: border-color 0.2s;
   }
-  .drop-card:hover {
-    border-color: rgba(255,255,255,0.14);
-    transform: translateY(-1px);
-    box-shadow: 0 16px 30px rgba(0,0,0,0.16);
-  }
-  .drop-card.done { opacity: 0.55; }
+  .drop-card:hover { border-color: rgba(255,255,255,0.14); }
+  .drop-card.done { opacity: 0.45; }
   .drop-card.done .drop-content { text-decoration: line-through; }
   .drop-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
   .drop-tag {
     font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em;
     padding: 3px 10px; border-radius: 20px; background: rgba(99,102,241,0.15); color: var(--accent);
   }
-  .drop-priority-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 4px 10px;
-    border-radius: 999px;
-    border: 1px solid rgba(255,255,255,0.06);
-    background: rgba(255,255,255,0.03);
-  }
-  .drop-priority-badge.priority-normal { color: #60a5fa; }
-  .drop-priority-badge.priority-high { color: #facc15; }
-  .drop-priority-badge.priority-urgent { color: #f87171; }
-  .drop-priority-badge-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 999px;
-    background: currentColor;
-  }
+  .drop-priority-badge { font-size: 11px; }
   .drop-date { font-size: 11px; color: var(--muted); margin-left: auto; }
   .drop-content { font-size: 13px; color: var(--text); white-space: pre-wrap; line-height: 1.7; word-break: break-word; }
   .drop-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
@@ -1002,33 +917,8 @@
   .drop-btn:hover, .drop-btn:active { color: var(--text); border-color: rgba(255,255,255,0.2); }
   .drop-btn.done-btn:hover, .drop-btn.done-btn:active { color: var(--green); border-color: var(--green); }
   .drop-btn.del-btn:hover, .drop-btn.del-btn:active { color: var(--red); border-color: var(--red); }
-  .drop-empty {
-    background: linear-gradient(180deg, rgba(19,22,29,0.98), rgba(11,13,18,0.98));
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px;
-    padding: 32px 24px;
-    text-align: center;
-    color: var(--muted);
-  }
-  .drop-empty-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 8px;
-  }
-  .drop-empty-copy {
-    font-size: 13px;
-    line-height: 1.7;
-    max-width: 480px;
-    margin: 0 auto;
-  }
-  .drop-empty-actions {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-top: 18px;
-  }
+  .drop-filter { transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
+  .drop-filter:hover { opacity: 0.8; }
 
   /* Dropbox mobile tweaks */
   @media (max-width: 768px) {
@@ -1036,17 +926,11 @@
     .drop-form-grid { grid-template-columns: 1fr !important; }
     .drop-header-row { flex-direction: column; align-items: flex-start !important; gap: 12px !important; }
     .drop-new-btn { width: 100%; justify-content: center; }
-    .drop-composer { padding: 18px; }
-    .drop-composer-head { flex-direction: column; }
-    .drop-priority-picker { grid-template-columns: 1fr; }
-    .drop-composer-footer { flex-direction: column; align-items: stretch; }
-    .drop-composer-actions { width: 100%; }
-    .drop-composer-actions button { width: 100%; }
     .drop-card { padding: 16px; }
     .drop-btn { padding: 10px 16px; font-size: 13px; }
   }
 </style>
-  <link rel="stylesheet" href="calendar-view.css"/>
+<link rel="stylesheet" href="calendar-view.css"/>
 </head>
 <body>
 
@@ -1076,9 +960,9 @@
       <div class="nav-items-wrap">
         <div class="nav-item active" onclick="switchView('office', this)"><span class="icon">🏢</span> Office</div>
         <div class="nav-item" onclick="switchView('org', this)"><span class="icon">🗂️</span> Org Chart</div>
-        <div class="nav-item"><span class="icon">📅</span> Calendar</div>
-        <div class="nav-item" onclick="switchView('dropbox', this)"><span class="icon">📥</span> Dropbox</div>
+        <div class="nav-item" onclick="switchView('memory', this)"><span class="icon">🧠</span> Memory</div>
         <div class="nav-item" onclick="switchView('calendar', this)"><span class="icon">📅</span> Calendar</div>
+        <div class="nav-item" onclick="switchView('dropbox', this)"><span class="icon">📥</span> Dropbox</div>
       </div>
     </div>
 
@@ -1087,97 +971,51 @@
       <div class="nav-label" onclick="toggleNav(this)">Projects <span class="nav-chevron">▾</span></div>
       <div class="nav-items-wrap">
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--green);pointer-events:none;padding-bottom:2px;">📈 TraderClaw</div>
-        <a class="nav-link" href="https://traderclaw-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://railway.app/project/dc5c9acb-2c73-4a1c-b4c9-82a81e2efe9f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/trading-strategy" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">📈 TraderClaw</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://traderclaw-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/dc5c9acb-2c73-4a1c-b4c9-82a81e2efe9f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/trading-strategy" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--blue);pointer-events:none;padding-bottom:2px;margin-top:6px;">🌐 WebClaw</div>
-        <a class="nav-link" href="https://railway.app/project/3ac94b97-cca3-4550-9f53-2c8bdbc3f2ca" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/webclaw-service-hub" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#3b82f6;"></div><span class="nav-proj-name">🌐 WebClaw</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/3ac94b97-cca3-4550-9f53-2c8bdbc3f2ca" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/webclaw-service-hub" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--accent);pointer-events:none;padding-bottom:2px;margin-top:6px;">⬡ Agent Office</div>
-        <a class="nav-link" href="https://focused-creativity-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://railway.app/project/016e0c7d-696f-4bde-8461-17980bd04a7e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#6366f1;"></div><span class="nav-proj-name">⬡ Agent Office</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://focused-creativity-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/016e0c7d-696f-4bde-8461-17980bd04a7e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--accent);pointer-events:none;padding-bottom:2px;margin-top:6px;">⬡ Mission Control</div>
-        <a class="nav-link" href="https://railway.app/project/8da6b690-445e-4d54-832f-548c32cb8fad" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/mission-control" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#6366f1;"></div><span class="nav-proj-name">⬡ Mission Control</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/8da6b690-445e-4d54-832f-548c32cb8fad" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/mission-control" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--cyan);pointer-events:none;padding-bottom:2px;margin-top:6px;">🐦 XTrend Bot</div>
-        <a class="nav-link" href="https://railway.app/project/42dd6870-959a-4929-b462-e5e98c96dac6" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#06b6d4;"></div><span class="nav-proj-name">💀 Reaper · 🪙 Penny</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/42dd6870-959a-4929-b462-e5e98c96dac6" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--orange);pointer-events:none;padding-bottom:2px;margin-top:6px;">🔒 Cyber / Security</div>
-        <a class="nav-link" href="https://railway.app/project/241f80ab-f7a4-4a9f-bcf2-416928b07255" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (cyber-security) <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://railway.app/project/39cdade6-ffcb-4838-a276-9af11c7d3881" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (CyberClaw) <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://railway.app/project/3c344d7f-da58-402a-8bec-0f7b052fc388" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (security-app) <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/cyber-security" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub (cyber-security) <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/cyber-claw" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub (cyber-claw) <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#f97316;"></div><span class="nav-proj-name">🔒 Cyber / Security</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/241f80ab-f7a4-4a9f-bcf2-416928b07255" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> cyber-security <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/39cdade6-ffcb-4838-a276-9af11c7d3881" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> CyberClaw <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/cyber-security" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--purple);pointer-events:none;padding-bottom:2px;margin-top:6px;">✨ Innerverse</div>
-        <a class="nav-link" href="https://github.com/classical91/innerversebooks" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#a855f7;"></div><span class="nav-proj-name">✨ Innerverse</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://github.com/classical91/innerversebooks" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--yellow);pointer-events:none;padding-bottom:2px;margin-top:6px;">🧠 Decision Engine</div>
-        <a class="nav-link" href="https://railway.app/project/b1ffc05e-c74a-4b24-94a2-ef6239bc5bf5" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#eab308;"></div><span class="nav-proj-name">🧠 Decision Engine</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/b1ffc05e-c74a-4b24-94a2-ef6239bc5bf5" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--green);pointer-events:none;padding-bottom:2px;margin-top:6px;">💡 Idea Vault</div>
-        <a class="nav-link" href="https://railway.app/project/b4475c1e-b091-4446-ba91-48e57e639aa6" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">💡 Idea Vault</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/b4475c1e-b091-4446-ba91-48e57e639aa6" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--orange);pointer-events:none;padding-bottom:2px;margin-top:6px;">🏆 RankForge</div>
-        <a class="nav-link" href="https://railway.app/project/9dc553bb-f048-48af-981b-eaad9800471d" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#f97316;"></div><span class="nav-proj-name">🏆 RankForge</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/9dc553bb-f048-48af-981b-eaad9800471d" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--pink);pointer-events:none;padding-bottom:2px;margin-top:6px;">⚙️ n8n</div>
-        <a class="nav-link" href="https://railway.app/project/26a88079-68de-4932-b746-f83bddfcbc06" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#ec4899;"></div><span class="nav-proj-name">⚙️ n8n</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/26a88079-68de-4932-b746-f83bddfcbc06" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--cyan);pointer-events:none;padding-bottom:2px;margin-top:6px;">🌍 World Monitor</div>
-        <a class="nav-link" href="https://railway.app/project/754f5a3c-3fa2-402d-9b0b-704eea72f2d2" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/worldmonitor-Downloaded-" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#06b6d4;"></div><span class="nav-proj-name">🌍 World Monitor</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/754f5a3c-3fa2-402d-9b0b-704eea72f2d2" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/worldmonitor-Downloaded-" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--cyan);pointer-events:none;padding-bottom:2px;margin-top:6px;">🌍 Earth Watch</div>
-        <a class="nav-link" href="https://railway.app/project/d6d73954-7450-4273-8b8e-4eb40d8cea04" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/earth-watch" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#06b6d4;"></div><span class="nav-proj-name">🌏 Earth Watch</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/d6d73954-7450-4273-8b8e-4eb40d8cea04" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/earth-watch" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--green);pointer-events:none;padding-bottom:2px;margin-top:6px;">📈 Market Dashboard</div>
-        <a class="nav-link" href="https://railway.app/project/a2e18e5e-1e3f-4db2-9f44-42c517fb2590" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/market-dashboard" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">📈 Market Dashboard</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/a2e18e5e-1e3f-4db2-9f44-42c517fb2590" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/market-dashboard" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--muted);pointer-events:none;padding-bottom:2px;margin-top:6px;">💬 Comment Farm</div>
-        <a class="nav-link" href="https://railway.app/project/067b5254-82ba-476d-874f-d1dc40971999" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/commentfarm" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">💬 Comment Farm</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/067b5254-82ba-476d-874f-d1dc40971999" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/commentfarm" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--muted);pointer-events:none;padding-bottom:2px;margin-top:6px;">📡 Broadcast Sender</div>
-        <a class="nav-link" href="https://railway.app/project/9e18538c-a385-4a59-ba28-f806c66ebb69" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/broadcast-sender" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">📡 Broadcast Sender</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/9e18538c-a385-4a59-ba28-f806c66ebb69" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/broadcast-sender" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--red);pointer-events:none;padding-bottom:2px;margin-top:6px;">🎬 YT Summarizer</div>
-        <a class="nav-link" href="https://railway.app/project/a9662236-e548-4bab-8bd3-05dcb87193d0" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/youtube-video-summarizer" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#ef4444;"></div><span class="nav-proj-name">🎬 YT Summarizer</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/a9662236-e548-4bab-8bd3-05dcb87193d0" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/youtube-video-summarizer" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--muted);pointer-events:none;padding-bottom:2px;margin-top:6px;">🔮 Natal Affirmations</div>
-        <a class="nav-link" href="https://railway.app/project/9f5b6688-5aee-476b-b8f3-0a616cc839f1" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (v2) <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://railway.app/project/cede712b-3693-4a73-9ea1-d0cc92b95256" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (affirmations) <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/natal-affirmations" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🔮 Natal Affirmations</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/9f5b6688-5aee-476b-b8f3-0a616cc839f1" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (v2) <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/natal-affirmations" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--muted);pointer-events:none;padding-bottom:2px;margin-top:6px;">🔎 X Scraping</div>
-        <a class="nav-link" href="https://railway.app/project/d01ab81d-1b8c-4c22-93aa-ea9c46aec7e1" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🔎 X Scraping</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/d01ab81d-1b8c-4c22-93aa-ea9c46aec7e1" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--muted);pointer-events:none;padding-bottom:2px;margin-top:6px;">🔗 Interaction</div>
-        <a class="nav-link" href="https://railway.app/project/a23361f6-93d3-46a4-a45b-4c2b0411e1fd" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🔗 Interaction</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/a23361f6-93d3-46a4-a45b-4c2b0411e1fd" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
 
-        <div class="nav-item" style="font-size:11px;font-weight:600;color:var(--muted);pointer-events:none;padding-bottom:2px;margin-top:6px;">🃏 Misc</div>
-        <a class="nav-link" href="https://railway.app/project/3dd1f7ff-827f-4ddc-aa30-6837df85a3c3" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (flashcards) <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/flashcards" target="_blank"><div class="link-dot" style="background:#64748b;"></div> Flashcards <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://railway.app/project/95992860-8b8c-4469-b26f-1254adb2a96f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (workout-tracker) <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/workout-tracker" target="_blank"><div class="link-dot" style="background:#64748b;"></div> Workout Tracker <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://railway.app/project/330e335d-b7ed-49ad-bc59-6e277949e27e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway (diet-plan) <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/diet-plan" target="_blank"><div class="link-dot" style="background:#64748b;"></div> Diet Plan <span class="link-ext">↗</span></a>
-        <a class="nav-link" href="https://github.com/classical91/SEO" target="_blank"><div class="link-dot" style="background:#64748b;"></div> SEO <span class="link-ext">↗</span></a>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🃏 Misc</span><span class="nav-proj-chevron">▾</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/3dd1f7ff-827f-4ddc-aa30-6837df85a3c3" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Flashcards <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/95992860-8b8c-4469-b26f-1254adb2a96f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Workout Tracker <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/330e335d-b7ed-49ad-bc59-6e277949e27e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Diet Plan <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/SEO" target="_blank"><div class="link-dot" style="background:#64748b;"></div> SEO <span class="link-ext">↗</span></a></div></div>
 
       </div>
     </div>
-
-    <!-- AGENTS -->
+<!-- AGENTS -->
     <div class="nav-section">
       <div class="nav-label" onclick="toggleNav(this)">Agents <span class="nav-chevron">▾</span></div>
       <div class="nav-items-wrap">
@@ -1205,10 +1043,10 @@
       <div class="nav-label" onclick="toggleNav(this)">System <span class="nav-chevron">▾</span></div>
       <div class="nav-items-wrap">
         <div class="nav-item"><span class="icon">⚙️</span> Settings</div>
-        <a class="nav-link" data-dev-only="true" href="http://localhost:18789" target="_blank">
+        <a class="nav-link" href="http://localhost:18789" target="_blank">
           <div class="link-dot" style="background:#6366f1;"></div> Gateway (local) <span class="link-ext">↗</span>
         </a>
-        <a class="nav-link" data-dev-only="true" href="http://10.0.0.106:18789" target="_blank">
+        <a class="nav-link" href="http://10.0.0.106:18789" target="_blank">
           <div class="link-dot" style="background:#6366f1;"></div> Gateway (LAN) <span class="link-ext">↗</span>
         </a>
       </div>
@@ -1217,8 +1055,8 @@
   </nav>
 
   <!-- OFFICE VIEW -->
-  <div class="view active" id="view-office" style="position:relative; overflow:hidden; background:#0a0c11;">
-    <div class="office" id="officeArea" style="position:absolute;inset:0;">
+  <div class="view active" id="view-office" style="position:relative; overflow:auto; background:#0a0c11; align-items:flex-start; justify-content:flex-start;">
+    <div class="office" id="officeArea" style="position:relative; width:100%; height:100%; min-width:1560px; min-height:1020px;">
       <canvas id="officeCanvas"></canvas>
     </div>
   </div>
@@ -1247,145 +1085,6 @@
       </div>
 
       <div class="org-connector-v"></div>
-
-      <div class="org-row-center">
-        <div class="org-card org-card-wide" style="border-color:rgba(100,116,139,0.2);">
-          <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(100,116,139,0.15);border-color:rgba(100,116,139,0.25);">👑</div>
-            <div class="org-body">
-              <div class="org-name">FatherClaw</div>
-              <div class="org-title">Orchestrator</div>
-              <div class="org-desc">Routes tasks between all agents, monitors agent health, and manages cross-agent workflows. Jason's system-wide air traffic control.</div>
-              <div class="org-tags">
-                <span class="org-tag org-tag-indigo">Routing</span>
-                <span class="org-tag org-tag-teal">Health</span>
-                <span class="org-tag org-tag-indigo">Workflows</span>
-              </div>
-            </div>
-          </div>
-          <div class="org-cta">AGENT CARD →</div>
-        </div>
-      </div>
-
-      <div class="org-connector-v"></div>
-
-      <div class="org-section-label">
-        <div class="line"></div><div class="text">👨‍💻 OPENCLAW CODERS</div><div class="line"></div>
-      </div>
-
-      <div class="org-row-3">
-        <div class="org-card glow-orange">
-          <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(249,115,22,0.15);border-color:rgba(249,115,22,0.25);">⚙️</div>
-            <div class="org-body">
-              <div class="org-name">Coder</div>
-              <div class="org-title">General Dev Agent</div>
-              <div class="org-desc">OpenClaw <code>coder</code> agent. General-purpose coding, debugging, and feature work. Sonnet-powered.</div>
-              <div class="org-tags">
-                <span class="org-tag org-tag-orange">OpenClaw</span>
-                <span class="org-tag org-tag-teal">Sonnet</span>
-                <span class="org-tag org-tag-orange">Code</span>
-              </div>
-            </div>
-          </div>
-          <div class="org-cta">AGENT CARD →</div>
-        </div>
-        <div class="org-card glow-green">
-          <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.25);">🤖</div>
-            <div class="org-body">
-              <div class="org-name">Codex</div>
-              <div class="org-title">Lightweight Coder</div>
-              <div class="org-desc">OpenClaw <code>codex</code> agent on Qwen3.6-plus (free tier). Used for cheap parallel coding tasks and bulk refactors.</div>
-              <div class="org-tags">
-                <span class="org-tag org-tag-green">OpenClaw</span>
-                <span class="org-tag org-tag-teal">Qwen3.6</span>
-                <span class="org-tag org-tag-green">Free</span>
-              </div>
-            </div>
-          </div>
-          <div class="org-cta">AGENT CARD →</div>
-        </div>
-        <div class="org-card glow-pink">
-          <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(236,72,153,0.15);border-color:rgba(236,72,153,0.25);">🔨</div>
-            <div class="org-body">
-              <div class="org-name">Forge</div>
-              <div class="org-title">In-house Dev Agent</div>
-              <div class="org-desc">Custom dev agent for OpenClaw infra. Handles deploys, scripted builds, and routine fixes.</div>
-              <div class="org-tags">
-                <span class="org-tag org-tag-pink">In-house</span>
-                <span class="org-tag org-tag-teal">DevOps</span>
-                <span class="org-tag org-tag-pink">Build</span>
-              </div>
-            </div>
-          </div>
-          <div class="org-cta">AGENT CARD →</div>
-        </div>
-      </div>
-
-      <div class="org-section-label" style="margin-top:24px;">
-        <div class="line"></div><div class="text">⌘ EXTERNAL CODING TOOLS</div><div class="line"></div>
-      </div>
-
-      <div class="org-row-3">
-        <div class="org-card glow-orange">
-          <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(217,119,87,0.18);border-color:rgba(217,119,87,0.3);">🧠</div>
-            <div class="org-body">
-              <div class="org-name">Claude Code</div>
-              <div class="org-title">Anthropic CLI</div>
-              <div class="org-desc">Primary coding CLI. Long-context reasoning, full repo edits, runs in terminal and IDE.</div>
-              <div class="org-tags">
-                <span class="org-tag org-tag-orange">Anthropic</span>
-                <span class="org-tag org-tag-teal">CLI</span>
-                <span class="org-tag org-tag-orange">Sonnet 4.6</span>
-              </div>
-            </div>
-          </div>
-          <div class="org-cta">AGENT CARD →</div>
-        </div>
-        <div class="org-card glow-blue">
-          <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.25);">⌘</div>
-            <div class="org-body">
-              <div class="org-name">Cursor</div>
-              <div class="org-title">Agentic IDE</div>
-              <div class="org-desc">In-editor agent for inline edits, multi-file refactors, and quick UI iteration.</div>
-              <div class="org-tags">
-                <span class="org-tag org-tag-blue">IDE</span>
-                <span class="org-tag org-tag-teal">Inline</span>
-                <span class="org-tag org-tag-blue">Multi-file</span>
-              </div>
-            </div>
-          </div>
-          <div class="org-cta">AGENT CARD →</div>
-        </div>
-        <div class="org-card glow-purple">
-          <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.25);">🐙</div>
-            <div class="org-body">
-              <div class="org-name">GitHub Copilot</div>
-              <div class="org-title">Pair Programmer</div>
-              <div class="org-desc">Autocomplete and chat inside the editor. Fast completions for boilerplate and known patterns.</div>
-              <div class="org-tags">
-                <span class="org-tag org-tag-purple">GitHub</span>
-                <span class="org-tag org-tag-purple">Autocomplete</span>
-                <span class="org-tag org-tag-pink">Chat</span>
-              </div>
-            </div>
-          </div>
-          <div class="org-cta">AGENT CARD →</div>
-        </div>
-      </div>
-
-      <div class="org-flow-divider">
-        <div class="line"></div>
-        <div class="org-flow-label">↓ INPUT SIGNAL</div>
-        <div class="line"></div>
-        <div class="org-flow-label">OUTPUT ACTION ↓</div>
-        <div class="line"></div>
-      </div>
 
       <div class="org-section-label">
         <div class="line"></div><div class="text">💻 OPERATIONS</div><div class="line"></div>
@@ -1426,11 +1125,19 @@
         </div>
       </div>
 
-      <div class="org-section-label" style="margin-top:32px;">
-        <div class="line"></div><div class="text">✨ SOCIAL & CREATIVE</div><div class="line"></div>
+      <div class="org-flow-divider">
+        <div class="line"></div>
+        <div class="org-flow-label">↓ INPUT SIGNAL</div>
+        <div class="line"></div>
+        <div class="org-flow-label">OUTPUT ACTION ↓</div>
+        <div class="line"></div>
       </div>
 
-      <div class="org-row-3">
+      <div class="org-section-label">
+        <div class="line"></div><div class="text">⚡ EXECUTION LAYER</div><div class="line"></div>
+      </div>
+
+      <div class="org-row-4">
         <div class="org-card glow-cyan">
           <div class="org-card-inner">
             <div class="org-avatar" style="background:rgba(6,182,212,0.15);border-color:rgba(6,182,212,0.25);">🐦</div>
@@ -1447,17 +1154,17 @@
           </div>
           <div class="org-cta">AGENT CARD →</div>
         </div>
-        <div class="org-card glow-pink">
+        <div class="org-card glow-orange">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(236,72,153,0.15);border-color:rgba(236,72,153,0.25);">🤖</div>
+            <div class="org-avatar" style="background:rgba(249,115,22,0.15);border-color:rgba(249,115,22,0.25);">⚙️</div>
             <div class="org-body">
-              <div class="org-name">XBot</div>
-              <div class="org-title">X Publisher</div>
-              <div class="org-desc">Posts to @DiamondHands811, reposts content, engages with replies on X.</div>
+              <div class="org-name">Forge</div>
+              <div class="org-title">Dev Agent</div>
+              <div class="org-desc">Writes code, debugs, ships features. General-purpose developer.</div>
               <div class="org-tags">
-                <span class="org-tag org-tag-pink">Posting</span>
-                <span class="org-tag org-tag-orange">Reach</span>
-                <span class="org-tag org-tag-pink">Engage</span>
+                <span class="org-tag org-tag-orange">Coding</span>
+                <span class="org-tag org-tag-teal">DevOps</span>
+                <span class="org-tag org-tag-orange">Build</span>
               </div>
             </div>
           </div>
@@ -1479,56 +1186,48 @@
           </div>
           <div class="org-cta">AGENT CARD →</div>
         </div>
-      </div>
-
-      <div class="org-section-label" style="margin-top:32px;">
-        <div class="line"></div><div class="text">🔬 RESEARCH & SUPPORT</div><div class="line"></div>
-      </div>
-
-      <div class="org-row-3">
-        <div class="org-card glow-indigo">
+        <div class="org-card" style="border-color:rgba(34,197,94,0.2);">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.25);">🔭</div>
+            <div class="org-avatar" style="background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.2);">💀</div>
             <div class="org-body">
-              <div class="org-name">Nova</div>
-              <div class="org-title">Product Researcher</div>
-              <div class="org-desc">OpenClaw <code>dev</code> agent. Hunts niche pain points, drafts positioning briefs, scopes new product ideas.</div>
+              <div class="org-name">Reaper</div>
+              <div class="org-title">Farm Operator</div>
+              <div class="org-desc">Runs the CommentFarm. Manages jobs, queue, and engagement stats. Cold, calculated, results only.</div>
               <div class="org-tags">
-                <span class="org-tag org-tag-indigo">Research</span>
-                <span class="org-tag org-tag-teal">Briefs</span>
-                <span class="org-tag org-tag-indigo">Discovery</span>
+                <span class="org-tag org-tag-green">CommentFarm</span>
+                <span class="org-tag org-tag-teal">Queue</span>
+                <span class="org-tag org-tag-green">Qwen/free</span>
               </div>
             </div>
           </div>
           <div class="org-cta">AGENT CARD →</div>
         </div>
-        <div class="org-card glow-orange">
+        <div class="org-card" style="border-color:rgba(234,179,8,0.2);">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(245,158,11,0.18);border-color:rgba(245,158,11,0.3);">🪙</div>
+            <div class="org-avatar" style="background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.2);">🪙</div>
             <div class="org-body">
               <div class="org-name">Penny</div>
-              <div class="org-title">OSS / Community</div>
-              <div class="org-desc">OpenClaw <code>oss</code> agent on Gemma 4-31B. Tracks open-source threads, drafts community replies, manages contributions.</div>
+              <div class="org-title">Utility Agent</div>
+              <div class="org-desc">Free-tier general purpose agent. Always available, practical, no-nonsense. Runs on Gemma 4.</div>
               <div class="org-tags">
-                <span class="org-tag org-tag-orange">OSS</span>
-                <span class="org-tag org-tag-teal">Gemma</span>
-                <span class="org-tag org-tag-orange">Community</span>
+                <span class="org-tag org-tag-orange">General</span>
+                <span class="org-tag org-tag-teal">Free Tier</span>
+                <span class="org-tag org-tag-blue">Gemma 4</span>
               </div>
             </div>
           </div>
           <div class="org-cta">AGENT CARD →</div>
-        </div>
-        <div class="org-card glow-green">
+        </div>        <div class="org-card glow-pink">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.25);">🌾</div>
+            <div class="org-avatar" style="background:rgba(236,72,153,0.15);border-color:rgba(236,72,153,0.25);">🤖</div>
             <div class="org-body">
-              <div class="org-name">FarmBot</div>
-              <div class="org-title">Comment Farming</div>
-              <div class="org-desc">OpenClaw <code>farmbot</code> agent on Qwen3.6. Mass-replies, engagement automation, low-cost reach building.</div>
+              <div class="org-name">XBot</div>
+              <div class="org-title">X Publisher</div>
+              <div class="org-desc">Posts to @DiamondHands811, reposts content, engages with replies on X.</div>
               <div class="org-tags">
-                <span class="org-tag org-tag-green">Engagement</span>
-                <span class="org-tag org-tag-teal">Qwen3.6</span>
-                <span class="org-tag org-tag-green">Reach</span>
+                <span class="org-tag org-tag-pink">Posting</span>
+                <span class="org-tag org-tag-orange">Reach</span>
+                <span class="org-tag org-tag-pink">Engage</span>
               </div>
             </div>
           </div>
@@ -1537,11 +1236,27 @@
       </div>
 
       <div class="org-section-label" style="margin-top:32px;">
-        <div class="line"></div><div class="text">🛡 SECURITY</div><div class="line"></div>
+        <div class="line"></div><div class="text">🔒 SYSTEM LAYER</div><div class="line"></div>
       </div>
 
-      <div class="org-row-center">
-        <div class="org-card org-card-wide" style="border-color:rgba(239,68,68,0.15);">
+      <div class="org-row-2" style="max-width:680px; margin: 0 auto;">
+        <div class="org-card" style="border-color:rgba(100,116,139,0.2);">
+          <div class="org-card-inner">
+            <div class="org-avatar" style="background:rgba(100,116,139,0.15);border-color:rgba(100,116,139,0.25);">👑</div>
+            <div class="org-body">
+              <div class="org-name">FatherClaw</div>
+              <div class="org-title">Orchestrator</div>
+              <div class="org-desc">Routes tasks between all agents, monitors agent health, and manages cross-agent workflows. Jason's system-wide air traffic control.</div>
+              <div class="org-tags">
+                <span class="org-tag org-tag-indigo">Routing</span>
+                <span class="org-tag org-tag-teal">Health</span>
+                <span class="org-tag org-tag-indigo">Workflows</span>
+              </div>
+            </div>
+          </div>
+          <div class="org-cta">AGENT CARD →</div>
+        </div>
+        <div class="org-card" style="border-color:rgba(239,68,68,0.15);">
           <div class="org-card-inner">
             <div class="org-avatar" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.2);">🛡</div>
             <div class="org-body">
@@ -1563,7 +1278,18 @@
         <div class="line"></div><div class="text">⬡ META LAYER - OPENCLAW GATEWAY</div><div class="line"></div>
       </div>
 
-      <div class="org-row-2" style="max-width:680px; margin: 0 auto;">
+      <div class="org-row-3">
+        <div class="org-card">
+          <div class="org-card-inner">
+            <div class="org-avatar" style="background:rgba(255,255,255,0.05);font-size:18px;">🧠</div>
+            <div class="org-body">
+              <div class="org-name" style="font-size:13px;">Memory</div>
+              <div class="org-title" style="font-size:11px;">Persistent Context</div>
+              <div class="org-desc">MEMORY.md + daily notes. Agents retain context across sessions.</div>
+              <div class="org-tags"><span class="org-tag org-tag-teal">MEMORY.md</span><span class="org-tag org-tag-indigo">Sessions</span></div>
+            </div>
+          </div>
+        </div>
         <div class="org-card">
           <div class="org-card-inner">
             <div class="org-avatar" style="background:rgba(255,255,255,0.05);font-size:18px;">📡</div>
@@ -1581,14 +1307,19 @@
             <div class="org-body">
               <div class="org-name" style="font-size:13px;">Models</div>
               <div class="org-title" style="font-size:11px;">AI Providers</div>
-              <div class="org-desc">Sonnet 4.6 (default) · GPT-5.4 (WebClaw) · Gemma 4-31B (Penny) · Qwen3.6 (Codex, FarmBot)</div>
-              <div class="org-tags"><span class="org-tag org-tag-indigo">Claude</span><span class="org-tag org-tag-green">GPT-5.4</span><span class="org-tag org-tag-orange">Gemma</span><span class="org-tag org-tag-teal">Qwen</span></div>
+              <div class="org-desc">Claude Sonnet (default) · GPT-5.4 (WebClaw)</div>
+              <div class="org-tags"><span class="org-tag org-tag-indigo">Claude</span><span class="org-tag org-tag-green">GPT-5.4</span></div>
             </div>
           </div>
         </div>
       </div>
 
     </div>
+  </div>
+
+  <!-- CALENDAR VIEW -->
+  <div class="view" id="view-calendar" style="flex-direction:column; overflow:hidden;">
+    <div id="calendar-app" style="flex:1; min-height:0;"></div>
   </div>
 
   <!-- TRADERCLAW VIEW -->
@@ -1627,79 +1358,14 @@
           <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">📥 DROPBOX</div>
           <div style="font-size:13px; color:var(--muted);">Drop ideas, tasks, and reminders — tagged by subject.</div>
         </div>
-        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;"><button id="drop-auth-btn" onclick="toggleDropboxAccess()" style="background:transparent; color:var(--muted); border:1px solid var(--border); border-radius:8px; padding:11px 16px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; -webkit-tap-highlight-color:transparent;">Unlock</button><button class="drop-new-btn" onclick="showDropForm()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 20px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap; -webkit-tap-highlight-color:transparent;">
+        <button class="drop-new-btn" onclick="showDropForm()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 20px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap; -webkit-tap-highlight-color:transparent;">
           <span>＋</span> New Drop
-        </button></div>
+        </button>
       </div>
 
-      <div id="drop-auth-note" style="font-size:12px; color:var(--muted); margin:-18px 0 24px;"></div>
-
       <!-- Add form (hidden by default) -->
-      <div id="drop-form" class="drop-composer" style="display:none;">
-        <div class="drop-composer-head">
-          <div>
-            <div class="drop-section-kicker">Dropbox v2 composer</div>
-            <div class="drop-composer-title">Capture a drop without changing the inbox.</div>
-            <div class="drop-composer-copy">Reuse saved subjects, set urgency with one tap, and keep the same <code>{ subject, priority, content }</code> payload behind the scenes.</div>
-          </div>
-          <div class="drop-composer-badges">
-            <span class="drop-composer-badge">Same API</span>
-            <span class="drop-composer-badge">Saved subject suggestions</span>
-            <span class="drop-composer-badge">Session lock aware</span>
-          </div>
-        </div>
-        <div class="drop-form-grid" style="display:grid; grid-template-columns:1.15fr 0.85fr; gap:16px; margin-bottom:16px;">
-          <div class="drop-field drop-subject-field">
-            <label class="drop-field-label" for="drop-subject">Subject / Tag</label>
-            <div class="drop-subject-shell">
-              <input id="drop-subject" class="drop-input" type="text" placeholder="Type a subject or pick from saved tags..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="drop-subject-suggestions" />
-              <div id="drop-subject-suggestions" class="drop-subject-suggestions" role="listbox"></div>
-            </div>
-            <div class="drop-field-note" id="drop-subject-note">Recent subjects from saved drops will show here while you type.</div>
-            <div id="drop-subject-pills" class="drop-quick-subjects" aria-label="Suggested subjects"></div>
-          </div>
-          <div class="drop-field">
-            <label class="drop-field-label" for="drop-priority">Priority</label>
-            <input id="drop-priority" type="hidden" value="normal" />
-            <div class="drop-priority-picker" id="drop-priority-picker" role="radiogroup" aria-label="Priority">
-              <button type="button" class="drop-priority-option priority-normal active" data-priority="normal" aria-pressed="true">
-                <div class="drop-priority-top">
-                  <span class="drop-priority-name">Normal</span>
-                  <span class="drop-priority-dot"></span>
-                </div>
-                <div class="drop-priority-note">Routine capture for notes that can wait.</div>
-              </button>
-              <button type="button" class="drop-priority-option priority-high" data-priority="high" aria-pressed="false">
-                <div class="drop-priority-top">
-                  <span class="drop-priority-name">High</span>
-                  <span class="drop-priority-dot"></span>
-                </div>
-                <div class="drop-priority-note">Needs attention soon, but not first in line.</div>
-              </button>
-              <button type="button" class="drop-priority-option priority-urgent" data-priority="urgent" aria-pressed="false">
-                <div class="drop-priority-top">
-                  <span class="drop-priority-name">Urgent</span>
-                  <span class="drop-priority-dot"></span>
-                </div>
-                <div class="drop-priority-note">Act on this first or it risks getting missed.</div>
-              </button>
-            </div>
-            <div class="drop-field-note">Pick the signal strength before you save it to the inbox.</div>
-          </div>
-        </div>
-        <div class="drop-field" style="margin-bottom:18px;">
-          <label class="drop-field-label" for="drop-content">Content</label>
-          <textarea id="drop-content" class="drop-textarea" rows="5" placeholder="Paste the note, task, reminder, or idea..."></textarea>
-          <div class="drop-field-note">This deployment keeps the same data contract and save flow, just with the server session lock in front of it.</div>
-        </div>
-        <div class="drop-composer-footer">
-          <div class="drop-composer-status">Unlock Dropbox for this browser session, then save to the same subject, priority, and content model.</div>
-          <div class="drop-composer-actions">
-            <button class="drop-secondary-action" onclick="hideDropForm()">Cancel</button>
-            <button class="drop-primary-action" onclick="saveDrop()">Save Drop</button>
-          </div>
-        </div>
-        <!-- Legacy Dropbox form kept disabled for deploy bundle sync
+      <div id="drop-form" style="display:none; background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:28px;">
+        <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:16px;">New Drop</div>
         <div class="drop-form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
           <div>
             <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">Subject / Tag</label>
@@ -1714,30 +1380,19 @@
             </select>
           </div>
         </div>
-        -->
-        <!-- Legacy Dropbox content/actions kept disabled for deploy bundle sync
         <div style="margin-bottom:12px;">
           <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">Content</label>
           <textarea id="drop-content" rows="5" placeholder="Paste your note, ideas, task..." style="width:100%; background:#0d0f14; border:1px solid var(--border); border-radius:8px; padding:11px 12px; font-size:16px; color:var(--text); outline:none; resize:vertical; font-family:inherit;"></textarea>
         </div>
-        -->
-        <!-- Legacy Dropbox action bar kept disabled for deploy bundle sync
         <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
           <button onclick="hideDropForm()" style="background:transparent; color:var(--muted); border:1px solid var(--border); border-radius:8px; padding:12px 20px; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;">Cancel</button>
           <button onclick="saveDrop()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 22px; font-size:14px; font-weight:600; cursor:pointer; -webkit-tap-highlight-color:transparent;">Save Drop</button>
         </div>
-        -->
       </div>
 
       <!-- Filter bar -->
-      <div class="drop-toolbar">
-        <div class="drop-toolbar-copy" id="drop-summary">Checking Dropbox access...</div>
-      </div>
-      <div class="drop-filter-bar" id="drop-filters">
-        <button class="drop-filter active" type="button" data-filter-subject="all">
-          <span>All</span>
-          <span class="drop-filter-count">0</span>
-        </button>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px;" id="drop-filters">
+        <button class="drop-filter active" onclick="filterDrops('all', this)" style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid var(--accent); background:rgba(99,102,241,0.15); color:var(--accent); cursor:pointer;">All</button>
       </div>
 
       <!-- Drops list -->
@@ -1746,9 +1401,44 @@
     </div>
   </div>
 
-  <!-- CALENDAR VIEW -->
-  <div class="view" id="view-calendar" style="flex-direction:column; overflow:hidden;">
-    <div id="calendar-app" style="flex:1; min-height:0;"></div>
+  <!-- MEMORY VIEW -->
+  <div class="view" id="view-memory" style="flex-direction:column; background:#0a0c11; overflow-y:auto;">
+    <div id="memory-app" style="max-width:900px; width:100%; margin:0 auto; padding:40px 28px 80px;">
+
+      <!-- Header -->
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; gap:16px;">
+        <div>
+          <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">🧠 MEMORY</div>
+          <div style="font-size:13px; color:var(--muted);">Agent memory banks — notes, learnings, and context per bot.</div>
+        </div>
+        <button onclick="MEM.showForm()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 20px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap; -webkit-tap-highlight-color:transparent;">
+          <span>＋</span> New Memory
+        </button>
+      </div>
+
+      <!-- Add form (hidden by default) -->
+      <div id="mem-form" style="display:none; background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:28px;">
+        <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:16px;">New Memory Entry</div>
+        <!-- Agent tabs -->
+        <div id="mem-agent-tabs" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px;"></div>
+        <input type="hidden" id="mem-agent" value="">
+        <div style="margin-bottom:12px;">
+          <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">Memory</label>
+          <textarea id="mem-content" rows="6" placeholder="Paste agent memory here..." style="width:100%; background:#0d0f14; border:1px solid var(--border); border-radius:8px; padding:11px 12px; font-size:16px; color:var(--text); outline:none; resize:vertical; font-family:inherit;"></textarea>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
+          <button onclick="MEM.hideForm()" style="background:transparent; color:var(--muted); border:1px solid var(--border); border-radius:8px; padding:12px 20px; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;">Cancel</button>
+          <button onclick="MEM.save()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 22px; font-size:14px; font-weight:600; cursor:pointer; -webkit-tap-highlight-color:transparent;">Save Memory</button>
+        </div>
+      </div>
+
+      <!-- Agent filter tabs -->
+      <div id="mem-filters" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px;"></div>
+
+      <!-- Memory list -->
+      <div id="mem-list"></div>
+
+    </div>
   </div>
 
   <!-- ACTIVITY FEED -->
@@ -1964,25 +1654,112 @@ const AGENTS = [
 
 // ─── POSITIONS (grid slots in office) ─────────────────────────
 const POSITIONS = [
-  { x: 0.18, y: 0.25 },
-  { x: 0.45, y: 0.20 },
-  { x: 0.72, y: 0.28 },
-  { x: 0.25, y: 0.60 },
-  { x: 0.55, y: 0.65 },
-  { x: 0.80, y: 0.55 },
-  { x: 0.40, y: 0.42 },
-  { x: 0.62, y: 0.38 },
-  { x: 0.30, y: 0.35 },
+  { x: 0.49, y: 0.36 },
+  { x: 0.27, y: 0.59 },
+  { x: 0.70, y: 0.58 },
+  { x: 0.77, y: 0.41 },
+  { x: 0.20, y: 0.39 },
+  { x: 0.18, y: 0.71 },
+  { x: 0.86, y: 0.24 },
+  { x: 0.54, y: 0.23 },
+  { x: 0.78, y: 0.71 },
 ];
 
 // ─── STATE ────────────────────────────────────────────────────
-let agentState = AGENTS.map((a, i) => ({
-  ...a,
-  pos: { ...POSITIONS[i] },
-  currentTask: a.tasks[0],
-  status: 'active',
-  targetPos: { ...POSITIONS[i] },
-}));
+const OFFICE_SCENE = {
+  gridW: 14,
+  gridH: 11,
+  tileRatio: 0.06,
+  maxTileW: 84,
+  originXRatio: 0.5,
+  originYRatio: 0.14,
+  platformLiftRatio: 1.55,
+};
+
+const OFFICE_ROUTES = {
+  devin: [
+    { gx: 6.35, gy: 3.45, pose: 'stand', facing: 'S', motion: 'monitoring', tasks: ['Reviewing project status', 'Coordinating agents', 'Planning next sprint'] },
+    { gx: 4.95, gy: 6.35, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Updating MEMORY.md', 'Coordinating agents', 'Planning next sprint'] },
+    { gx: 2.15, gy: 8.35, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Updating MEMORY.md', 'Reviewing project status', 'Flagged open TODOs for Jason'] },
+    { gx: 7.2, gy: 8.15, pose: 'stand', facing: 'N', motion: 'monitoring', tasks: ['Planning next sprint', 'Coordinating agents', 'Reviewing project status'] },
+  ],
+  traderclaw: [
+    { gx: 1.82, gy: 2.56, pose: 'seated', facing: 'NE', motion: 'typing', tasks: ['Monitoring BTC 1H signal', 'Scanning RSI divergence', 'Checking Polymarket odds'] },
+    { gx: 2.72, gy: 3.26, pose: 'stand', facing: 'E', motion: 'monitoring', tasks: ['Scanning RSI divergence', 'Monitoring BTC 1H signal', 'Logging trade to history'] },
+    { gx: 3.28, gy: 8.08, pose: 'stand', facing: 'S', motion: 'reading', tasks: ['Checking Polymarket odds', 'Logging trade to history', 'Screener refresh (4H)'] },
+    { gx: 6.18, gy: 6.14, pose: 'stand', facing: 'E', motion: 'monitoring', tasks: ['Paper trade open: BTC long', 'Monitoring BTC 1H signal', 'Screener refresh (4H)'] },
+  ],
+  webclaw: [
+    { gx: 10.22, gy: 2.56, pose: 'seated', facing: 'NW', motion: 'typing', tasks: ['Building demo site', 'Generating client HTML', 'Optimizing for mobile'] },
+    { gx: 8.95, gy: 2.02, pose: 'stand', facing: 'N', motion: 'reading', tasks: ['Writing pitch copy', 'Optimizing for mobile', 'Building demo site'] },
+    { gx: 8.24, gy: 5.96, pose: 'stand', facing: 'W', motion: 'monitoring', tasks: ['Customizing template', 'Generating client HTML', 'Deploying to Railway'] },
+    { gx: 6.48, gy: 3.86, pose: 'stand', facing: 'S', motion: 'monitoring', tasks: ['Building demo site', 'Writing pitch copy', 'Deploying to Railway'] },
+  ],
+  xhunter: [
+    { gx: 10.12, gy: 5.38, pose: 'seated', facing: 'NW', motion: 'typing', tasks: ['Scanning trending crypto posts', 'Drafting reply to @BitcoinMagazine', 'Checking X notifications'] },
+    { gx: 12.28, gy: 3.18, pose: 'stand', facing: 'W', motion: 'monitoring', tasks: ['Monitoring @CoinDesk feed', 'Analyzing engagement metrics', 'Scanning trending crypto posts'] },
+    { gx: 10.56, gy: 6.08, pose: 'stand', facing: 'S', motion: 'monitoring', tasks: ['Scheduling repost', 'Checking X notifications', 'Analyzing engagement metrics'] },
+    { gx: 8.78, gy: 4.58, pose: 'stand', facing: 'W', motion: 'reading', tasks: ['Drafting reply to @BitcoinMagazine', 'Scanning trending crypto posts', 'Monitoring @CoinDesk feed'] },
+  ],
+  nova: [
+    { gx: 1.84, gy: 5.42, pose: 'seated', facing: 'NE', motion: 'typing', tasks: ['Researching niche pain points', 'Analyzing competitor products', 'Drafting positioning brief'] },
+    { gx: 1.24, gy: 7.18, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Analyzing competitor products', 'Evaluating market size', 'Researching niche pain points'] },
+    { gx: 4.96, gy: 5.54, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Drafting positioning brief', 'Evaluating market size', 'Writing lead magnet outline'] },
+    { gx: 3.42, gy: 8.48, pose: 'stand', facing: 'N', motion: 'monitoring', tasks: ['Writing lead magnet outline', 'Researching niche pain points', 'Drafting positioning brief'] },
+  ],
+  lyra: [
+    { gx: 4.46, gy: 7.46, pose: 'stand', facing: 'NE', motion: 'reading', tasks: ['Working on Innerverse...', 'Crafting narrative', 'Building world lore'] },
+    { gx: 2.18, gy: 8.52, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Building world lore', 'Writing chapter draft', 'Crafting narrative'] },
+    { gx: 5.32, gy: 6.74, pose: 'stand', facing: 'N', motion: 'monitoring', tasks: ['Crafting narrative', 'Working on Innerverse...', 'Writing chapter draft'] },
+    { gx: 7.88, gy: 8.66, pose: 'stand', facing: 'W', motion: 'reading', tasks: ['Writing chapter draft', 'Building world lore', 'Crafting narrative'] },
+  ],
+  xbot: [
+    { gx: 10.82, gy: 8.08, pose: 'seated', facing: 'NW', motion: 'typing', tasks: ['Queuing scheduled posts', 'Posting to X', 'Monitoring mentions'] },
+    { gx: 12.16, gy: 6.68, pose: 'stand', facing: 'W', motion: 'monitoring', tasks: ['Monitoring mentions', 'Engaging with replies', 'Posting to X'] },
+    { gx: 10.94, gy: 6.16, pose: 'stand', facing: 'N', motion: 'monitoring', tasks: ['Posting to X', 'Queuing scheduled posts', 'Engaging with replies'] },
+    { gx: 8.82, gy: 7.18, pose: 'stand', facing: 'W', motion: 'reading', tasks: ['Monitoring mentions', 'Engaging with replies', 'Queuing scheduled posts'] },
+  ],
+  guardian: [
+    { gx: 12.28, gy: 2.12, pose: 'stand', facing: 'W', motion: 'monitoring', tasks: ['Monitoring gateway access', 'Reviewing auth logs', 'Scanning for anomalies'] },
+    { gx: 12.18, gy: 8.16, pose: 'stand', facing: 'W', motion: 'monitoring', tasks: ['Scanning for anomalies', 'Hardening firewall rules', 'Monitoring gateway access'] },
+    { gx: 9.68, gy: 1.42, pose: 'stand', facing: 'S', motion: 'monitoring', tasks: ['Reviewing auth logs', 'Monitoring gateway access', 'Hardening firewall rules'] },
+    { gx: 10.44, gy: 4.12, pose: 'stand', facing: 'W', motion: 'reading', tasks: ['Reviewing auth logs', 'Scanning for anomalies', 'Idle - all clear'] },
+  ],
+  fatherclaw: [
+    { gx: 6.9, gy: 8.32, pose: 'seated', facing: 'N', motion: 'typing', tasks: ['Routing tasks between agents', 'Monitoring agent health', 'Queuing cross-agent workflow'] },
+    { gx: 7.04, gy: 6.56, pose: 'stand', facing: 'N', motion: 'monitoring', tasks: ['Monitoring agent health', 'Routing tasks between agents', 'Logging inter-agent comms'] },
+    { gx: 7.34, gy: 4.32, pose: 'stand', facing: 'S', motion: 'monitoring', tasks: ['Queuing cross-agent workflow', 'Routing tasks between agents', 'Monitoring agent health'] },
+    { gx: 4.28, gy: 6.92, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Logging inter-agent comms', 'Monitoring agent health', 'Queuing cross-agent workflow'] },
+  ],
+};
+
+function cloneRoute(route) {
+  return (route || []).map(stop => ({
+    ...stop,
+    tasks: stop.tasks ? [...stop.tasks] : null,
+  }));
+}
+
+let agentState = AGENTS.map((agent) => {
+  const route = cloneRoute(OFFICE_ROUTES[agent.id]);
+  const start = route[0] || { gx: 6.5, gy: 5.5, pose: 'stand', facing: 'S', motion: 'monitoring', status: 'active' };
+  return {
+    ...agent,
+    route,
+    routeIndex: 0,
+    pos: { gx: start.gx, gy: start.gy },
+    currentTask: (start.tasks && start.tasks[0]) || agent.tasks[0],
+    status: start.status || 'active',
+    lookState: {
+      pose: start.pose || 'stand',
+      facing: start.facing || 'S',
+      motion: start.motion || (start.pose === 'seated' ? 'typing' : 'monitoring'),
+    },
+    travelMs: 2200,
+    availableAt: 0,
+    arrivalTimer: null,
+  };
+});
 
 let feedItems = [];
 let feedCount = 0;
@@ -1992,6 +1769,36 @@ const canvas = document.getElementById('officeCanvas');
 const ctx = canvas.getContext('2d');
 const officeArea = document.getElementById('officeArea');
 
+function getOfficeMetrics(width = canvas.width, height = canvas.height) {
+  const tileW = Math.min(width * OFFICE_SCENE.tileRatio, OFFICE_SCENE.maxTileW);
+  const tileH = tileW * 0.5;
+  const originX = width * OFFICE_SCENE.originXRatio;
+  const originY = Math.max(148, height * OFFICE_SCENE.originYRatio);
+  const platformLift = tileH * OFFICE_SCENE.platformLiftRatio;
+  const iso = (gx, gy, z = 0) => ({
+    x: originX + (gx - gy) * tileW / 2,
+    y: originY + (gx + gy) * tileH / 2 - z,
+  });
+  return {
+    width,
+    height,
+    tileW,
+    tileH,
+    originX,
+    originY,
+    gridW: OFFICE_SCENE.gridW,
+    gridH: OFFICE_SCENE.gridH,
+    platformLift,
+    iso,
+  };
+}
+
+function projectAgentPosition(agent, metrics = getOfficeMetrics(officeArea.clientWidth, officeArea.clientHeight)) {
+  const point = metrics.iso(agent.pos.gx, agent.pos.gy, metrics.platformLift + 2);
+  const depth = Math.max(0.08, Math.min(0.96, (agent.pos.gx + agent.pos.gy) / (metrics.gridW + metrics.gridH)));
+  return { x: point.x, y: point.y, depth };
+}
+
 function resizeCanvas() {
   canvas.width = officeArea.clientWidth;
   canvas.height = officeArea.clientHeight;
@@ -1999,90 +1806,600 @@ function resizeCanvas() {
 }
 
 function drawOffice() {
-  const W = canvas.width, H = canvas.height;
+  const { width: W, height: H, tileW, tileH, gridW, gridH, platformLift, originX, iso } = getOfficeMetrics(canvas.width, canvas.height);
   ctx.clearRect(0, 0, W, H);
 
-  // Floor - dark checkerboard
-  const TILE = 40;
-  for (let x = 0; x < W; x += TILE) {
-    for (let y = 0; y < H; y += TILE) {
-      const isDark = ((x / TILE + y / TILE) % 2 === 0);
-      ctx.fillStyle = isDark ? '#0d0f14' : '#0f1118';
-      ctx.fillRect(x, y, TILE, TILE);
+  const poly = (points, fill, stroke = null, lineWidth = 1) => {
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+    ctx.closePath();
+    if (fill) {
+      ctx.fillStyle = fill;
+      ctx.fill();
+    }
+    if (stroke) {
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = lineWidth;
+      ctx.stroke();
+    }
+  };
+
+  const flat = (gx, gy, w, d, fill, stroke = 'rgba(0,0,0,0.14)') => {
+    poly([
+      iso(gx, gy, platformLift + 1),
+      iso(gx + w, gy, platformLift + 1),
+      iso(gx + w, gy + d, platformLift + 1),
+      iso(gx, gy + d, platformLift + 1),
+    ], fill, stroke, 1);
+  };
+
+  const box = (gx, gy, w, d, h, colors, stroke = 'rgba(0,0,0,0.18)') => {
+    const A = iso(gx, gy, platformLift + h);
+    const B = iso(gx + w, gy, platformLift + h);
+    const C = iso(gx + w, gy + d, platformLift + h);
+    const D = iso(gx, gy + d, platformLift + h);
+    const Ab = iso(gx, gy, platformLift);
+    const Bb = iso(gx + w, gy, platformLift);
+    const Cb = iso(gx + w, gy + d, platformLift);
+    const Db = iso(gx, gy + d, platformLift);
+    if (colors.east) poly([B, C, Cb, Bb], colors.east, stroke, 1);
+    if (colors.west) poly([D, C, Cb, Db], colors.west, stroke, 1);
+    if (colors.south) poly([A, D, Db, Ab], colors.south, stroke, 1);
+    poly([A, B, C, D], colors.top, 'rgba(255,255,255,0.08)', 1);
+  };
+
+  const dk = (h, f = 0.25) => shadeHex(h, -f);
+  const lt = (h, f = 0.25) => shadeHex(h, f);
+
+  const desk = (gx, gy, accent = '#3b82f6') => {
+    box(gx, gy, 1.48, 0.92, 17, { top: '#f4efe7', west: '#cbb89c', east: '#d9c7ad', south: '#b59e82' });
+    box(gx + 0.12, gy + 0.12, 0.46, 0.58, 19, { top: '#d2b48c', west: '#ad875d', east: '#bf9569', south: '#8f6b46' });
+    box(gx + 0.82, gy + 0.14, 0.44, 0.28, 14, { top: '#0f172a', west: '#1e293b', east: '#111827', south: '#020617' });
+    box(gx + 0.88, gy + 0.18, 0.32, 0.14, 16, { top: accent, west: accent, east: accent, south: '#0f172a' });
+    box(gx + 0.96, gy + 0.56, 0.24, 0.18, 9, { top: '#e2e8f0', west: '#94a3b8', east: '#cbd5e1', south: '#94a3b8' });
+    box(gx + 0.2, gy + 0.78, 0.96, 0.08, 18, { top: '#d6d3d1', west: '#a8a29e', east: '#cbd5e1', south: '#a8a29e' });
+  };
+
+  const chair = (gx, gy, accent = '#ef4444') => {
+    box(gx, gy, 0.34, 0.34, 12, { top: accent, west: '#991b1b', east: '#b91c1c', south: '#7f1d1d' });
+    box(gx + 0.08, gy + 0.08, 0.18, 0.18, 18, { top: accent, west: '#991b1b', east: '#dc2626', south: '#7f1d1d' });
+  };
+
+  const plant = (gx, gy, size = 13) => {
+    box(gx, gy, 0.34, 0.34, 14, { top: '#52525b', west: '#3f3f46', east: '#52525b', south: '#27272a' });
+    const p = iso(gx + 0.17, gy + 0.17, platformLift + 28);
+    ctx.fillStyle = '#16a34a';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.beginPath();
+    ctx.arc(p.x - 4, p.y - 3, Math.max(4, size * 0.3), 0, Math.PI * 2);
+    ctx.fill();
+  };
+
+  const drawSofa = (gx, gy) => {
+    const sd = '#7a1c22', sm = '#b4232e', sl = '#d73c45', ssh = '#f87171';
+    box(gx, gy, 2.0, 0.38, 44, { top: sl, west: sm, east: sd, south: sm });
+    box(gx, gy, 0.36, 1.85, 34, { top: sl, west: sm, east: sd, south: sm });
+    box(gx + 1.64, gy, 0.36, 1.85, 34, { top: sl, west: sm, east: sd, south: sm });
+    box(gx + 0.36, gy + 0.38, 1.28, 1.47, 17, { top: lt(ssh, 0.05), west: sm, east: sd, south: sm });
+    box(gx + 0.36, gy + 0.45, 0.62, 1.33, 23, { top: ssh, west: lt(sm, 0.05), east: sm, south: sm });
+    box(gx + 1.02, gy + 0.45, 0.62, 1.33, 23, { top: ssh, west: lt(sm, 0.05), east: sm, south: sm });
+    const ca = iso(gx + 1.0, gy + 0.45, platformLift + 23);
+    const cb = iso(gx + 1.0, gy + 1.78, platformLift + 23);
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(ca.x, ca.y);
+    ctx.lineTo(cb.x, cb.y);
+    ctx.stroke();
+    box(gx + 1.1, gy + 0.5, 0.45, 0.4, 34, { top: lt(ssh, 0.2), west: lt(sm, 0.12), east: sm, south: sm });
+  };
+
+  const drawCoffeeTable = (gx, gy) => {
+    const wood = '#7a4c14', woodDark = dk('#7a4c14', 0.3), woodLight = lt('#7a4c14', 0.28);
+    [[gx + 0.12, gy + 0.1, 0.32, 0.32], [gx + 1.58, gy + 0.1, 0.32, 0.32], [gx + 0.12, gy + 1.38, 0.32, 0.32], [gx + 1.58, gy + 1.38, 0.32, 0.32]].forEach(([x, y, w, d]) => {
+      box(x, y, w, d, 22, { top: woodLight, west: wood, east: woodDark, south: wood });
+    });
+    box(gx, gy, 2.04, 1.8, 24, { top: woodLight, west: wood, east: woodDark, south: wood });
+    box(gx + 0.62, gy + 0.52, 0.35, 0.4, 18, { top: '#d0c0a0', west: '#a09070', east: '#c0b080', south: '#a09070' });
+    box(gx + 0.64, gy + 0.54, 0.31, 0.36, 22, { top: '#f8ece0', west: '#d0c0a8', east: '#e8d8c8', south: '#d0c0a8' });
+  };
+
+  const drawRoomPlant = (gx, gy) => {
+    const pot = '#b84e28', potDark = dk(pot, 0.3), potLight = lt(pot, 0.2);
+    const leaf = '#1a7a30', leafDark = dk(leaf, 0.25), leafLight = lt(leaf, 0.22);
+    box(gx + 0.25, gy + 0.18, 0.5, 0.44, 18, { top: potLight, west: pot, east: potDark, south: pot });
+    box(gx + 0.22, gy + 0.15, 0.56, 0.5, 20, { top: lt(potLight, 0.15), west: lt(pot, 0.1), east: pot, south: lt(pot, 0.1) });
+    box(gx + 0.4, gy + 0.26, 0.2, 0.28, 36, { top: '#7a3e12', west: '#4e2808', east: '#9a5218', south: '#4e2808' });
+    box(gx + 0.05, gy + 0.08, 0.9, 0.64, 54, { top: leafLight, west: leaf, east: leafDark, south: leaf });
+    box(gx - 0.02, gy + 0.02, 1.04, 0.76, 62, { top: leafLight, west: leaf, east: leafDark, south: leaf });
+    box(gx + 0.1, gy + 0.12, 0.8, 0.56, 70, { top: lt(leaf, 0.1), west: leaf, east: leafDark, south: leaf });
+  };
+
+  const drawBookshelf = (gx, gy) => {
+    const wood = '#6b4220', woodDark = dk(wood, 0.3), woodLight = lt(wood, 0.18);
+    box(gx, gy, 0.88, 3.18, 74, { top: woodLight, west: wood, east: woodDark, south: wood });
+    [[0.1, 56], [1.1, 58], [2.12, 60]].forEach(([offset, height]) => {
+      box(gx + 0.06, gy + offset, 0.76, 0.08, height, { top: woodLight, west: wood, east: woodDark, south: wood });
+    });
+    [
+      [0.18, ['#475569', '#64748b', '#94a3b8', '#d97706', '#1d4ed8']],
+      [1.18, ['#334155', '#52525b', '#0f766e', '#a16207', '#ef4444']],
+      [2.18, ['#57534e', '#64748b', '#0f766e', '#2563eb', '#f59e0b']],
+    ].forEach(([rowOffset, colors]) => {
+      colors.forEach((color, index) => {
+        box(gx + 0.12 + index * 0.12, gy + rowOffset, 0.1, 0.34, 65 - index * 2, {
+          top: lt(color, 0.16),
+          west: color,
+          east: dk(color, 0.28),
+          south: color,
+        });
+      });
+    });
+  };
+
+  const drawConferenceTable = (gx, gy) => {
+    const wood = '#9b734a';
+    box(gx, gy, 4.18, 1.48, 18, { top: lt(wood, 0.2), west: wood, east: '#bc8f62', south: dk(wood, 0.28) });
+    [[0.32, '#22c55e'], [1.24, '#3b82f6'], [2.14, '#ef4444'], [3.04, '#f59e0b']].forEach(([offset, accent]) => {
+      box(gx + offset, gy + 0.22, 0.42, 0.26, 13, { top: '#111827', west: '#0f172a', east: '#1f2937', south: '#0f172a' });
+      box(gx + offset + 0.07, gy + 0.26, 0.28, 0.12, 15, { top: accent, west: accent, east: accent, south: '#0f172a' });
+    });
+    [0.2, 1.1, 2.0, 2.9].forEach(x => chair(gx + x, gy - 0.48, '#475569'));
+    [0.58, 1.66, 2.74].forEach(x => chair(gx + x, gy + 1.58, '#475569'));
+  };
+
+  const drawSecurityWall = (gx, gy) => {
+    box(gx, gy, 2.18, 0.72, 28, { top: '#1f2937', west: '#111827', east: '#0f172a', south: '#111827' });
+    box(gx + 0.12, gy - 0.2, 2.56, 0.34, 76, { top: '#0b1020', west: '#050814', east: '#0f172a', south: '#050814' });
+    [0.0, 0.84, 1.68].forEach((offset, index) => {
+      const accent = index === 1 ? '#38bdf8' : '#1d4ed8';
+      box(gx + 0.18 + offset, gy - 0.14, 0.66, 0.22, 70, { top: accent, west: '#0b2b6f', east: '#0f4ab8', south: '#0b2b6f' });
+    });
+    const sc = iso(gx + 1.28, gy - 0.02, platformLift + 70);
+    [[0, 'rgba(56,189,248,0.55)'], [1, 'rgba(96,165,250,0.4)'], [2, 'rgba(56,189,248,0.3)']].forEach(([index, color]) => {
+      const row = sc.y + index * 5;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(sc.x - 34, row);
+      ctx.lineTo(sc.x + 34, row);
+      ctx.stroke();
+    });
+  };
+
+  const drawWhiteboard = (gx, gy, d = 2.1) => {
+    box(gx, gy, 0.08, d, 58, { top: '#f8fafc', west: '#cbd5e1', east: '#e2e8f0', south: '#94a3b8' });
+    [[0.34, '#3b82f6'], [0.92, '#22c55e'], [1.48, '#ef4444']].forEach(([offset, color]) => {
+      box(gx + 0.02, gy + offset, 0.04, 0.36, 60, { top: color, west: color, east: color, south: color });
+    });
+  };
+
+  const drawKitchenette = (gx, gy) => {
+    box(gx, gy, 2.44, 0.78, 22, { top: '#d6d3d1', west: '#a8a29e', east: '#e5e7eb', south: '#78716c' });
+    box(gx + 0.12, gy + 0.08, 0.48, 0.28, 42, { top: '#111827', west: '#0f172a', east: '#1f2937', south: '#0f172a' });
+    box(gx + 0.84, gy + 0.18, 0.2, 0.14, 13, { top: '#fafaf9', west: '#d6d3d1', east: '#f5f5f4', south: '#d6d3d1' });
+    box(gx + 1.18, gy + 0.16, 0.2, 0.14, 13, { top: '#fafaf9', west: '#d6d3d1', east: '#f5f5f4', south: '#d6d3d1' });
+    box(gx + 1.78, gy + 0.18, 0.46, 0.26, 17, { top: '#f59e0b', west: '#d97706', east: '#fbbf24', south: '#b45309' });
+  };
+
+  const drawPrinterBay = (gx, gy) => {
+    box(gx, gy, 0.84, 0.84, 30, { top: '#e5e7eb', west: '#9ca3af', east: '#cbd5e1', south: '#94a3b8' });
+    box(gx + 0.1, gy + 0.12, 0.64, 0.42, 38, { top: '#f8fafc', west: '#cbd5e1', east: '#e2e8f0', south: '#cbd5e1' });
+    box(gx + 0.18, gy + 0.18, 0.48, 0.12, 42, { top: '#111827', west: '#0f172a', east: '#1f2937', south: '#0f172a' });
+    box(gx - 0.92, gy + 0.12, 0.76, 0.94, 28, { top: '#d4d4d8', west: '#71717a', east: '#a1a1aa', south: '#71717a' });
+  };
+
+  const drawLamp = (gx, gy) => {
+    const metal = '#c0a030';
+    box(gx, gy, 0.4, 0.4, 8, { top: lt(metal, 0.2), west: metal, east: dk(metal, 0.3), south: metal });
+    box(gx + 0.14, gy + 0.14, 0.12, 0.12, 44, { top: '#d0b040', west: '#a88030', east: '#c0a038', south: '#a88030' });
+    box(gx - 0.15, gy - 0.05, 0.7, 0.5, 52, { top: lt('#f8e880', 0.2), west: '#f0d860', east: '#e0c840', south: '#f0d860' });
+    box(gx - 0.08, gy + 0.02, 0.56, 0.36, 56, { top: lt('#ffe890', 0.15), west: '#f8e068', east: '#e8cf48', south: '#f8e068' });
+  };
+
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0d1320');
+  bg.addColorStop(0.32, '#0b1020');
+  bg.addColorStop(0.6, '#09090b');
+  bg.addColorStop(1, '#020202');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
+
+  const topGlow = ctx.createRadialGradient(originX, H * 0.08, 0, originX, H * 0.08, W * 0.52);
+  topGlow.addColorStop(0, 'rgba(255,246,214,0.18)');
+  topGlow.addColorStop(0.5, 'rgba(191,219,254,0.06)');
+  topGlow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = topGlow;
+  ctx.fillRect(0, 0, W, H);
+
+  poly([iso(0, gridH, 0), iso(gridW, gridH, 0), iso(gridW, gridH + 0.8, 0), iso(0, gridH + 0.8, 0)], 'rgba(0,0,0,0.34)');
+
+  for (let gy = gridH - 1; gy >= 0; gy--) {
+    for (let gx = gridW - 1; gx >= 0; gx--) {
+      const inMainAisle = gx >= 4 && gx <= 9 && gy >= 1 && gy <= 9;
+      const warm = (gx + gy) % 2 === 0;
+      const fill = inMainAisle
+        ? (warm ? '#c4beb4' : '#b2aba2')
+        : (warm ? '#b8b1a7' : '#a7a095');
+      flat(gx, gy, 1, 1, fill, 'rgba(17,24,39,0.14)');
     }
   }
 
-  // Grid lines
-  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-  ctx.lineWidth = 1;
-  for (let x = 0; x <= W; x += TILE) {
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  for (let gx = 0; gx < gridW; gx++) {
+    poly([iso(gx, gridH, platformLift), iso(gx + 1, gridH, platformLift), iso(gx + 1, gridH, 0), iso(gx, gridH, 0)], gx % 2 === 0 ? '#4b5563' : '#52525b', 'rgba(0,0,0,0.22)');
   }
-  for (let y = 0; y <= H; y += TILE) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  for (let gy = 0; gy < gridH; gy++) {
+    poly([iso(gridW, gy, platformLift), iso(gridW, gy + 1, platformLift), iso(gridW, gy + 1, 0), iso(gridW, gy, 0)], gy % 2 === 0 ? '#475569' : '#52525b', 'rgba(0,0,0,0.22)');
   }
 
-  // Desks
-  const desks = POSITIONS.map(p => ({ x: p.x * W, y: p.y * H }));
-  desks.forEach(d => {
-    // Desk shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.fillRect(d.x - 36, d.y + 18, 72, 8);
+  box(0.08, 0.08, 13.84, 0.24, 88, { top: '#ece7df', west: '#cec5bb', east: '#ddd5cb', south: '#c8bbb0' });
+  box(0.08, 0.08, 0.24, 10.84, 88, { top: '#ece7df', west: '#cec5bb', east: '#ddd5cb', south: '#c8bbb0' });
 
-    // Desk body
-    ctx.fillStyle = '#1a1f2e';
-    ctx.strokeStyle = '#2a3048';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(d.x - 32, d.y - 8, 64, 28, 4);
-    ctx.fill(); ctx.stroke();
+  [1.0, 4.05, 7.1, 10.15].forEach(x => {
+    box(x, 0.12, 2.35, 0.08, 62, {
+      top: 'rgba(191,219,254,0.9)',
+      west: 'rgba(96,165,250,0.42)',
+      east: 'rgba(147,197,253,0.48)',
+      south: 'rgba(191,219,254,0.22)',
+    }, 'rgba(255,255,255,0.12)');
+  });
 
-    // Monitor
-    ctx.fillStyle = '#0d1117';
-    ctx.strokeStyle = '#334155';
-    ctx.beginPath();
-    ctx.roundRect(d.x - 14, d.y - 22, 28, 18, 3);
-    ctx.fill(); ctx.stroke();
+  flat(1.0, 1.15, 2.4, 5.9, 'rgba(34,197,94,0.07)', 'rgba(134,239,172,0.12)');
+  flat(9.2, 1.1, 2.8, 7.8, 'rgba(59,130,246,0.06)', 'rgba(96,165,250,0.12)');
+  flat(3.8, 6.1, 4.1, 2.9, 'rgba(236,72,153,0.05)', 'rgba(244,114,182,0.1)');
+  flat(5.0, 1.8, 4.6, 2.1, 'rgba(245,158,11,0.05)', 'rgba(251,191,36,0.1)');
 
-    // Screen glow
-    ctx.fillStyle = 'rgba(99,102,241,0.15)';
+  for (let y = 2; y <= 6; y++) {
+    for (let x = 4; x <= 8; x++) {
+      const rug = (x + y) % 2 === 0 ? 'rgba(164,28,45,0.18)' : 'rgba(127,29,29,0.10)';
+      flat(x, y, 1, 1, rug, null);
+    }
+  }
+  [[4,2],[4,3],[4,4],[4,5],[4,6],[8,2],[8,3],[8,4],[8,5],[8,6],[5,2],[6,2],[7,2],[5,6],[6,6],[7,6]].forEach(([x, y]) => {
+    flat(x, y, 1, 1, 'rgba(239,68,68,0.16)', null);
+  });
+
+  desk(1.35, 1.68, '#22c55e');
+  chair(1.68, 2.5, '#22c55e');
+  desk(1.35, 4.54, '#f97316');
+  chair(1.68, 5.36, '#f97316');
+  desk(9.55, 1.7, '#3b82f6');
+  chair(10.32, 2.52, '#3b82f6');
+  desk(9.42, 4.54, '#06b6d4');
+  chair(10.18, 5.36, '#06b6d4');
+  desk(6.1, 7.54, '#64748b');
+  chair(6.88, 8.36, '#64748b');
+  desk(10.0, 7.24, '#ec4899');
+  chair(10.76, 8.06, '#db2777');
+
+  drawConferenceTable(4.4, 1.58);
+  drawSofa(3.95, 6.18);
+  drawCoffeeTable(5.68, 6.66);
+  drawBookshelf(0.56, 2.62);
+  drawWhiteboard(0.28, 6.42, 2.22);
+  drawWhiteboard(0.28, 8.88, 1.42);
+  drawSecurityWall(11.26, 1.08);
+  drawKitchenette(1.02, 8.18);
+  drawPrinterBay(12.04, 7.86);
+  drawRoomPlant(13.08, 8.76);
+  drawLamp(8.92, 8.62);
+
+  plant(0.78, 0.86, 12);
+  plant(12.86, 0.84, 12);
+  plant(0.84, 9.36, 12);
+  plant(11.18, 9.22, 12);
+
+  [iso(2.5, 2.3, platformLift + 2), iso(7.0, 2.6, platformLift + 2), iso(5.2, 7.2, platformLift + 2), iso(10.6, 6.2, platformLift + 2)].forEach(p => {
+    const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 66);
+    g.addColorStop(0, 'rgba(255,228,180,0.2)');
+    g.addColorStop(1, 'rgba(255,244,214,0)');
+    ctx.fillStyle = g;
     ctx.beginPath();
-    ctx.roundRect(d.x - 12, d.y - 20, 24, 14, 2);
+    ctx.arc(p.x, p.y, 66, 0, Math.PI * 2);
     ctx.fill();
-
-    // Screen content lines
-    ctx.fillStyle = 'rgba(99,102,241,0.5)';
-    ctx.fillRect(d.x - 9, d.y - 18, 18, 2);
-    ctx.fillStyle = 'rgba(99,102,241,0.25)';
-    ctx.fillRect(d.x - 9, d.y - 14, 12, 2);
-    ctx.fillRect(d.x - 9, d.y - 10, 15, 2);
   });
 
-  // Plants / decorations
-  const plants = [
-    { x: 0.05 * W, y: 0.08 * H },
-    { x: 0.92 * W, y: 0.12 * H },
-    { x: 0.08 * W, y: 0.88 * H },
-    { x: 0.88 * W, y: 0.85 * H },
-  ];
-  plants.forEach(p => {
-    ctx.fillStyle = '#1a2e1a';
-    ctx.beginPath(); ctx.arc(p.x, p.y, 14, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#22c55e';
-    ctx.font = '20px serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('🌿', p.x, p.y);
-  });
+  const vignette = ctx.createRadialGradient(W / 2, H / 2, H * 0.24, W / 2, H / 2, H * 0.82);
+  vignette.addColorStop(0, 'rgba(0,0,0,0)');
+  vignette.addColorStop(1, 'rgba(0,0,0,0.45)');
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, W, H);
 
-  // Room label
-  ctx.font = '10px Inter, sans-serif';
-  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  ctx.fillStyle = 'rgba(255,241,220,0.84)';
+  ctx.font = '700 11px Inter, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('OPERATIONS FLOOR', W / 2, H - 16);
+  ctx.fillText('AGENT OFFICE / FLOOR 01', W / 2, H - 18);
 }
 
-// ─── AGENT CHARACTERS (DOM overlays) ──────────────────────────
+function depthScale(yNorm) {
+  return 0.78 + (yNorm * 0.5);
+}
+
+function applyAgentDepth(el, yNorm) {
+  const scale = depthScale(yNorm);
+  el.style.setProperty('--agent-scale', scale.toFixed(2));
+  el.style.setProperty('--agent-z', String(100 + Math.round(yNorm * 100)));
+  el.style.filter = `drop-shadow(0 ${Math.round(14 * scale)}px ${Math.round(24 * scale)}px rgba(0,0,0,0.42))`;
+  const label = el.querySelector('.agent-label');
+  if (label) label.style.opacity = (0.84 + yNorm * 0.18).toFixed(2);
+}
+
+function getAgentLook(agent) {
+  const looks = {
+    devin: {
+      skin: '#f1c8a1', hair: '#47311f', shirt: '#2563eb', pants: '#111827', chair: '#475569', pose: 'stand', facing: 'S', accessory: 'glasses'
+    },
+    traderclaw: {
+      skin: '#9f6a43', hair: '#151515', shirt: '#16a34a', pants: '#14532d', chair: '#166534', pose: 'seated', facing: 'SE', accessory: 'beard'
+    },
+    webclaw: {
+      skin: '#e4b78f', hair: '#2a2a2a', shirt: '#3b82f6', pants: '#1e293b', chair: '#2563eb', pose: 'seated', facing: 'SW', accessory: 'glasses'
+    },
+    xhunter: {
+      skin: '#8e5c3b', hair: '#111827', shirt: '#14b8a6', pants: '#111827', chair: '#0891b2', pose: 'stand', facing: 'W', accessory: 'headset'
+    },
+    nova: {
+      skin: '#dba77d', hair: '#9a3412', shirt: '#f97316', pants: '#431407', chair: '#ea580c', pose: 'stand', facing: 'E'
+    },
+    lyra: {
+      skin: '#f0c2ab', hair: '#7c3aed', shirt: '#a855f7', pants: '#312e81', chair: '#7c3aed', pose: 'stand', facing: 'SE'
+    },
+    xbot: {
+      skin: '#d8ab8b', hair: '#ec4899', shirt: '#ec4899', pants: '#4a044e', chair: '#db2777', pose: 'stand', facing: 'S', accessory: 'headset'
+    },
+    guardian: {
+      skin: '#9c6b49', hair: '#334155', shirt: '#475569', pants: '#020617', chair: '#334155', pose: 'stand', facing: 'W', accessory: 'beard'
+    },
+    fatherclaw: {
+      skin: '#b88564', hair: '#e2e8f0', shirt: '#6366f1', pants: '#111827', chair: '#4338ca', pose: 'seated', facing: 'S', accessory: 'glasses'
+    },
+  };
+  const base = looks[agent.id] || {
+    skin: '#d9ab89', hair: '#334155', shirt: agent.color, pants: '#1f2937', chair: agent.color, pose: 'stand', facing: 'S'
+  };
+  return {
+    ...base,
+    ...(agent.lookState || {}),
+  };
+}
+
+function hexToRgb(hex) {
+  const clean = hex.replace('#', '');
+  return [0, 2, 4].map(i => parseInt(clean.slice(i, i + 2), 16));
+}
+
+function shadeHex(hex, amount = 0) {
+  const [r, g, b] = hexToRgb(hex);
+  const mix = (v) => amount >= 0 ? v + (255 - v) * amount : v * (1 + amount);
+  return `rgb(${Math.max(0, Math.min(255, Math.round(mix(r))))}, ${Math.max(0, Math.min(255, Math.round(mix(g))))}, ${Math.max(0, Math.min(255, Math.round(mix(b))))})`;
+}
+
+function drawPixelAgent(canvasEl, look, agent) {
+  if (!canvasEl) return;
+  const c = canvasEl.getContext('2d', { willReadFrequently: true });
+  c.imageSmoothingEnabled = false;
+  c.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+  const dot = (x, y, color) => {
+    c.fillStyle = color;
+    c.fillRect(x, y, 1, 1);
+  };
+  const bx = (x, y, w, h, color) => {
+    c.fillStyle = color;
+    c.fillRect(x, y, w, h);
+  };
+
+  const outlinePass = () => {
+    const img = c.getImageData(0, 0, canvasEl.width, canvasEl.height);
+    const d = img.data;
+    const out = new Uint8ClampedArray(d);
+    const idx = (x, y) => (y * canvasEl.width + x) * 4;
+    const empty = (x, y) => x < 0 || y < 0 || x >= canvasEl.width || y >= canvasEl.height || d[idx(x, y) + 3] < 5;
+    for (let y = 0; y < canvasEl.height; y++) {
+      for (let x = 0; x < canvasEl.width; x++) {
+        const i = idx(x, y);
+        if (d[i + 3] > 5) {
+          for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+            const nx = x + dx, ny = y + dy;
+            if (empty(nx, ny) && nx >= 0 && ny >= 0 && nx < canvasEl.width && ny < canvasEl.height) {
+              const ni = idx(nx, ny);
+              out[ni] = 8; out[ni + 1] = 9; out[ni + 2] = 18; out[ni + 3] = 255;
+            }
+          }
+        }
+      }
+    }
+    img.data.set(out);
+    c.putImageData(img, 0, 0);
+  };
+
+  const sk = look.skin;
+  const sk2 = shadeHex(look.skin, -0.10);
+  const sk3 = shadeHex(look.skin, -0.18);
+  const hr = look.hair;
+  const sh = look.shirt;
+  const sh2 = shadeHex(look.shirt, -0.15);
+  const sh3 = shadeHex(look.shirt, -0.28);
+  const pnt = look.pants;
+  const shoe = '#e8dece';
+  const ew = '#f8f8ff';
+  const ep = '#080816';
+  const eb = look.hair === '#151515' || look.hair === '#111827' ? '#28180a' : shadeHex(look.hair, -0.2);
+  const mth = '#9e2c2c';
+
+  const isFront = ['S', 'SE', 'SW'].includes(look.facing);
+  const isBack = ['N', 'NE', 'NW'].includes(look.facing);
+  const isE = ['E', 'SE', 'NE'].includes(look.facing);
+  const isW = ['W', 'SW', 'NW'].includes(look.facing);
+
+  if (isFront) {
+    bx(5,0,16,3,hr);
+    bx(4,1,18,5,hr);
+    bx(3,4,3,6,shadeHex(hr,-0.15));
+    bx(20,4,3,6,shadeHex(hr,-0.15));
+    bx(4,3,2,3,shadeHex(hr,0.08));
+
+    bx(7,3,12,12,sk);
+    bx(17,4,2,10,sk2);
+    bx(6,7,2,5,sk);
+    bx(18,7,2,5,sk);
+    dot(6,8,sk2); dot(6,10,sk2);
+    dot(19,8,sk2); dot(19,10,sk2);
+
+    bx(9,5,4,1,eb);
+    bx(14,5,4,1,eb);
+    bx(9,6,4,4,ew);
+    bx(14,6,4,4,ew);
+    bx(10,7,2,2,'#3878e8');
+    bx(15,7,2,2,'#3878e8');
+    dot(10,7,ep); dot(15,7,ep);
+    dot(9,6,'#ffffff'); dot(14,6,'#ffffff');
+    bx(9,9,4,1,shadeHex(eb,-0.05));
+    bx(14,9,4,1,shadeHex(eb,-0.05));
+    bx(9,6,4,1,shadeHex(eb,-0.1));
+    bx(14,6,4,1,shadeHex(eb,-0.1));
+
+    dot(13,11,sk3);
+    dot(12,12,sk3);
+
+    dot(10,13,mth); dot(11,14,mth); dot(12,14,mth);
+    dot(13,14,mth); dot(14,13,mth);
+    dot(11,13,'#f8b0b0'); dot(12,13,'#f8b0b0'); dot(13,13,'#f8b0b0');
+
+    bx(8,11,2,2,'rgba(240,140,140,0.35)');
+    bx(17,11,2,2,'rgba(240,140,140,0.35)');
+
+    bx(11,15,4,3,sk); bx(13,15,1,3,sk2);
+
+    bx(7,18,12,9,sh);
+    bx(15,19,4,8,sh2);
+    dot(11,18,sk); dot(12,18,sk); dot(10,19,sk); dot(13,19,sk);
+    bx(8,18,3,1,shadeHex(sh,0.15)); bx(15,18,3,1,shadeHex(sh,0.15));
+    bx(11,21,4,3,sh3);
+    dot(13,21,sh2); dot(11,22,sh2); dot(14,22,sh2);
+    bx(7,26,12,1,sh3);
+
+    bx(3,18,5,8,sh2);
+    bx(18,18,5,8,sh2);
+    bx(4,19,3,6,shadeHex(sh2,0.08));
+    bx(3,26,5,2,sk); bx(18,26,5,2,sk);
+    bx(3,27,5,1,sk2); bx(18,27,5,1,sk2);
+
+    bx(7,27,12,2,'#0c0e1e');
+    bx(12,27,2,2,'#c09030');
+    dot(12,27,'#e8c050'); dot(13,27,'#e8c050');
+
+    if (look.pose === 'seated') {
+      bx(8,29,5,4,pnt); bx(13,29,5,4,pnt);
+      bx(7,33,7,2,shoe); bx(12,33,7,2,shoe);
+      bx(7,34,8,1,shadeHex(shoe,-0.2)); bx(12,34,8,1,shadeHex(shoe,-0.2));
+    } else {
+      bx(8,29,5,5,pnt); bx(13,29,5,5,pnt);
+      bx(12,29,1,5,shadeHex(pnt,-0.25));
+      bx(8,29,1,5,shadeHex(pnt,-0.18));
+      bx(17,29,1,5,shadeHex(pnt,-0.18));
+      bx(7,34,7,2,shoe); bx(12,34,7,2,shoe);
+      bx(7,35,8,1,shadeHex(shoe,-0.2)); bx(12,35,8,1,shadeHex(shoe,-0.2));
+      bx(7,34,2,1,shadeHex(shoe,0.15)); bx(12,34,2,1,shadeHex(shoe,0.15));
+    }
+  } else if (isBack) {
+    bx(4,0,18,6,hr);
+    bx(7,3,12,12,sk2);
+    bx(6,7,2,5,sk); bx(18,7,2,5,sk);
+    bx(11,15,4,3,sk);
+    bx(7,18,12,9,sh); bx(15,19,4,8,sh2);
+    bx(3,18,5,8,sh2); bx(18,18,5,8,sh2);
+    bx(3,26,5,2,sk); bx(18,26,5,2,sk);
+    bx(7,27,12,2,'#0c0e1e');
+    bx(8,29,5,5,pnt); bx(13,29,5,5,pnt);
+    bx(7,34,7,2,shoe); bx(12,34,7,2,shoe);
+    bx(7,35,8,1,shadeHex(shoe,-0.2)); bx(12,35,8,1,shadeHex(shoe,-0.2));
+  } else {
+    const fl = isW;
+
+    bx(4,0,16,5,hr);
+    bx(fl ? 16 : 4, 3, 5, 6,shadeHex(hr,-0.18));
+    bx(5,3,14,12,sk);
+    bx(fl ? 5 : 17,4,3,10,sk2);
+    bx(fl ? 17 : 4,7,2,4,sk);
+    const nx2 = fl ? 7 : 19;
+    dot(nx2,10,sk3); dot(nx2,11,sk3);
+    const ex = fl ? 8 : 15;
+    bx(ex,6,3,3,ew);
+    dot(fl ? 9 : 16,7,ep);
+    bx(ex,6,3,1,shadeHex(eb,-0.1));
+    dot(fl ? 10 : 17,7,'#3878e8');
+    dot(ex,6,'#fff');
+    bx(fl ? 8 : 13,5,4,1,eb);
+    dot(fl ? 9 : 17,13,mth);
+
+    bx(10,15,5,3,sk); bx(13,15,2,3,sk2);
+    bx(7,18,12,9,sh);
+    bx(fl ? 7 : 15,19,4,8,sh2);
+    bx(fl ? 17 : 2,18,5,9,sh);
+    bx(fl ? 18 : 3,18,3,7,shadeHex(sh2,0.06));
+    bx(fl ? 17 : 2,27,5,2,sk);
+    bx(fl ? 2 : 18,18,4,8,sh2);
+    bx(fl ? 2 : 18,26,4,2,sk2);
+    bx(7,27,12,2,'#0c0e1e');
+    bx(fl ? 17 : 2,27,5,2,'#0c0e1e');
+
+    if (look.pose === 'seated') {
+      bx(8,29,10,4,pnt);
+      bx(fl ? 4 : 8,33,14,2,shoe);
+      bx(fl ? 4 : 8,34,14,1,shadeHex(shoe,-0.2));
+      bx(fl ? 4 : 8,33,3,1,shadeHex(shoe,0.15));
+    } else {
+      bx(8,29,10,5,pnt);
+      bx(fl ? 8 : 16,29,2,5,shadeHex(pnt,-0.25));
+      bx(fl ? 4 : 8,34,14,2,shoe);
+      bx(fl ? 4 : 8,35,14,1,shadeHex(shoe,-0.2));
+      bx(fl ? 4 : 8,34,3,1,shadeHex(shoe,0.15));
+    }
+  }
+
+  const accessory = look.accessory;
+  if (accessory === 'glasses') {
+    const frame = '#1f2937';
+    if (isFront) {
+      bx(9,7,4,1,frame); bx(14,7,4,1,frame);
+      dot(13,7,frame);
+      bx(8,7,1,2,frame); bx(18,7,1,2,frame);
+    } else if (!isBack) {
+      const bridgeX = isW ? 8 : 15;
+      bx(bridgeX,7,3,1,frame);
+      bx(isW ? 11 : 14,6,1,4,frame);
+    }
+  } else if (accessory === 'headset') {
+    const headset = '#0f172a';
+    if (isFront) {
+      bx(6,4,14,1,headset);
+      bx(5,8,1,4,headset); bx(20,8,1,4,headset);
+      bx(20,11,2,1,headset);
+    } else if (isBack) {
+      bx(7,2,12,1,headset);
+    } else {
+      bx(isW ? 8 : 13,4,6,1,headset);
+      bx(isW ? 17 : 6,7,1,5,headset);
+      bx(isW ? 5 : 18,11,2,1,headset);
+    }
+  } else if (accessory === 'beard') {
+    const beard = shadeHex(hr, -0.12);
+    if (isFront) {
+      bx(10,12,6,2,beard);
+      dot(9,13,beard); dot(16,13,beard);
+    } else if (!isBack) {
+      bx(isW ? 8 : 16,12,3,2,beard);
+    }
+  }
+
+  outlinePass();
+}
+
 function renderAgents() {
   document.querySelectorAll('.agent-char').forEach(el => el.remove());
 
@@ -2090,22 +2407,35 @@ function renderAgents() {
     const el = document.createElement('div');
     el.className = 'agent-char';
     el.id = 'agent-' + agent.id;
-    el.style.left = (agent.pos.x * officeArea.clientWidth) + 'px';
-    el.style.top = (agent.pos.y * officeArea.clientHeight) + 'px';
 
     el.innerHTML = `
       <div class="agent-label">
         <strong>${agent.name}</strong>
         <span>${agent.currentTask}</span>
       </div>
-      <div class="agent-sprite" style="background: linear-gradient(135deg, ${agent.color}cc, ${agent.color}66);">
-        ${agent.emoji}
-        <div class="status-ring" style="background: ${agent.status === 'active' ? 'var(--green)' : agent.status === 'idle' ? 'var(--yellow)' : 'var(--muted)'}"></div>
+      <div class="agent-avatar">
+        <div class="agent-shadow"></div>
+        <div class="agent-chair"></div>
+        <canvas class="agent-pixel" width="26" height="36"></canvas>
+        <div class="status-ring"></div>
       </div>
     `;
 
     officeArea.appendChild(el);
+    syncAgentElement(agent);
   });
+}
+
+let officeHasAutoCentered = false;
+
+function centerOfficeView(force = false) {
+  if (officeHasAutoCentered && !force) return;
+  const officeView = document.getElementById('view-office');
+  if (!officeView) return;
+
+  officeView.scrollLeft = Math.max(0, Math.round((officeArea.scrollWidth - officeView.clientWidth) / 2));
+  officeView.scrollTop = Math.max(0, Math.round((officeArea.scrollHeight - officeView.clientHeight) * 0.08));
+  officeHasAutoCentered = true;
 }
 
 // ─── STATUS BAR ───────────────────────────────────────────────
@@ -2151,48 +2481,143 @@ function addFeedItem(agent, msg) {
   // Keep max 30 items
   while (list.children.length > 30) list.removeChild(list.lastChild);
 
-  feedCount = list.children.length;
   document.getElementById('feedCount').textContent = feedCount;
 }
 
 // ─── AUTO-UPDATE LOOP ─────────────────────────────────────────
 function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-function updateAgentTask(agent) {
-  agent.currentTask = randomFrom(agent.tasks);
-  agent.status = Math.random() > 0.15 ? 'active' : 'idle';
+function screenFacingFromDelta(dx, dy, fallback = 'S') {
+  const vertical = Math.abs(dy) < 6 ? '' : (dy < 0 ? 'N' : 'S');
+  const horizontal = Math.abs(dx) < 6 ? '' : (dx < 0 ? 'W' : 'E');
+  return (vertical + horizontal) || fallback;
+}
 
-  // Slightly wander position
-  const base = POSITIONS[agentState.indexOf(agent)];
-  agent.pos = {
-    x: Math.max(0.05, Math.min(0.95, base.x + (Math.random() - 0.5) * 0.08)),
-    y: Math.max(0.08, Math.min(0.88, base.y + (Math.random() - 0.5) * 0.06)),
-  };
-
-  // Update DOM element
+function syncAgentElement(agent) {
   const el = document.getElementById('agent-' + agent.id);
-  if (el && currentView === 'office') {
-    el.style.left = (agent.pos.x * officeArea.clientWidth) + 'px';
-    el.style.top = (agent.pos.y * officeArea.clientHeight) + 'px';
-    el.querySelector('.agent-label span').textContent = agent.currentTask;
-    el.querySelector('.status-ring').style.background =
-      agent.status === 'active' ? 'var(--green)' : 'var(--yellow)';
+  if (!el) return;
+
+  const look = getAgentLook(agent);
+  const projected = projectAgentPosition(agent);
+  el.style.left = projected.x + 'px';
+  el.style.top = projected.y + 'px';
+  el.style.setProperty('--travel-ms', `${agent.travelMs || 2200}ms`);
+  el.classList.toggle('agent-moving', look.motion === 'walking');
+
+  const labelName = el.querySelector('.agent-label strong');
+  const labelTask = el.querySelector('.agent-label span');
+  if (labelName) labelName.textContent = agent.name;
+  if (labelTask) labelTask.textContent = agent.currentTask;
+
+  const avatar = el.querySelector('.agent-avatar');
+  if (avatar) {
+    const classes = ['agent-avatar'];
+    if (look.pose === 'seated') classes.push('seated');
+    if (look.motion) classes.push(`motion-${look.motion}`);
+    avatar.className = classes.join(' ');
+    avatar.style.setProperty('--chair', look.chair);
   }
+
+  const ring = el.querySelector('.status-ring');
+  if (ring) {
+    ring.style.background = agent.status === 'active'
+      ? 'var(--green)'
+      : agent.status === 'idle'
+        ? 'var(--yellow)'
+        : 'var(--muted)';
+  }
+
+  applyAgentDepth(el, projected.depth);
+  drawPixelAgent(el.querySelector('.agent-pixel'), look, agent);
+}
+
+function nextWorkStop(agent) {
+  const route = agent.route || [];
+  if (!route.length) {
+    return { gx: agent.pos.gx, gy: agent.pos.gy, pose: 'stand', facing: agent.lookState?.facing || 'S', motion: 'monitoring', tasks: agent.tasks };
+  }
+
+  if (Math.random() < 0.24) {
+    return route[agent.routeIndex];
+  }
+
+  const stride = route.length > 3 && Math.random() > 0.78 ? 2 : 1;
+  agent.routeIndex = (agent.routeIndex + stride) % route.length;
+  return route[agent.routeIndex];
+}
+
+function updateAgentTask(agent) {
+  const now = Date.now();
+  if (agent.availableAt && now < agent.availableAt) return false;
+
+  const stop = nextWorkStop(agent);
+  const metrics = getOfficeMetrics(officeArea.clientWidth, officeArea.clientHeight);
+  const fromPoint = projectAgentPosition({ pos: { gx: agent.pos.gx, gy: agent.pos.gy } }, metrics);
+  const toPoint = projectAgentPosition({ pos: { gx: stop.gx, gy: stop.gy } }, metrics);
+  const dx = toPoint.x - fromPoint.x;
+  const dy = toPoint.y - fromPoint.y;
+  const taskPool = stop.tasks && stop.tasks.length ? stop.tasks : agent.tasks;
+  const nextTask = randomFrom(taskPool);
+  const isIdleTask = nextTask.toLowerCase().includes('idle');
+  const isMoving = Math.hypot(dx, dy) > 10;
+
+  window.clearTimeout(agent.arrivalTimer);
+  agent.currentTask = nextTask;
+  agent.status = isIdleTask ? 'idle' : (stop.status || (Math.random() > 0.18 ? 'active' : 'idle'));
+  agent.pos = { gx: stop.gx, gy: stop.gy };
+
+  if (!isMoving) {
+    agent.lookState = {
+      pose: stop.pose || 'stand',
+      facing: stop.facing || agent.lookState?.facing || 'S',
+      motion: stop.motion || (stop.pose === 'seated' ? 'typing' : 'monitoring'),
+    };
+    agent.travelMs = 1000;
+    agent.availableAt = now + 900;
+    syncAgentElement(agent);
+    return true;
+  }
+
+  agent.travelMs = Math.max(1450, Math.min(3200, Math.round(900 + Math.hypot(dx, dy) * 3.15)));
+  agent.availableAt = now + agent.travelMs + 260;
+  agent.lookState = {
+    pose: 'stand',
+    facing: screenFacingFromDelta(dx, dy, stop.facing || agent.lookState?.facing || 'S'),
+    motion: 'walking',
+  };
+  syncAgentElement(agent);
+
+  agent.arrivalTimer = window.setTimeout(() => {
+    agent.lookState = {
+      pose: stop.pose || 'stand',
+      facing: stop.facing || screenFacingFromDelta(dx, dy, agent.lookState?.facing || 'S'),
+      motion: stop.motion || (stop.pose === 'seated' ? 'typing' : 'monitoring'),
+    };
+    syncAgentElement(agent);
+  }, Math.max(240, agent.travelMs - 180));
+
+  return true;
 }
 
 function tick() {
-  // Pick 1-2 random agents to update
-  const count = Math.random() > 0.5 ? 2 : 1;
-  for (let i = 0; i < count; i++) {
-    const agent = randomFrom(agentState);
-    updateAgentTask(agent);
-    if (Math.random() > 0.3) {
+  const available = agentState.filter(agent => !agent.availableAt || Date.now() >= agent.availableAt);
+  if (!available.length) return;
+
+  const desired = Math.max(1, Math.min(available.length, Math.random() > 0.55 ? 3 : 2));
+  const selected = [];
+  while (selected.length < desired) {
+    const candidate = randomFrom(available);
+    if (!selected.includes(candidate)) selected.push(candidate);
+  }
+
+  selected.forEach(agent => {
+    if (updateAgentTask(agent) && Math.random() > 0.38) {
       addFeedItem(agent, randomFrom(agent.feed));
     }
-  }
+  });
+
   renderStatusBar();
 
-  // Update online count
   const activeCount = agentState.filter(a => a.status === 'active').length;
   document.getElementById('onlineCount').textContent = activeCount;
 }
@@ -2205,51 +2630,45 @@ function updateClock() {
 }
 
 // ─── VIEW SWITCHER ────────────────────────────────────────────
-const VIEW_HANDLERS = {
-  office: { enter: () => { resizeCanvas(); renderAgents(); }, focus: false },
-  org: { focus: false }
-};
-VIEW_HANDLERS.calendar = { enter: () => { if (window.CAL) window.CAL.render(); }, focus: false };
-let currentView = 'office';
-
 function switchView(view, navEl) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('view-' + view).classList.add('active');
   if (navEl) navEl.classList.add('active');
-  const handler = VIEW_HANDLERS[view];
-  if (handler && typeof handler.enter === 'function') handler.enter();
-  currentView = view;
+  if (view === 'office') {
+    resizeCanvas();
+    renderAgents();
+    centerOfficeView();
+  }
 }
 
 // ─── INIT ─────────────────────────────────────────────────────
-window.addEventListener('resize', () => { resizeCanvas(); renderAgents(); });
+window.addEventListener('resize', () => {
+  officeHasAutoCentered = false;
+  resizeCanvas();
+  renderAgents();
+  centerOfficeView(true);
+});
 resizeCanvas();
 renderAgents();
+centerOfficeView(true);
 renderStatusBar();
 
 // Seed initial feed
 agentState.forEach(agent => addFeedItem(agent, randomFrom(agent.feed)));
 
 // Kick off loops
-let tickInterval = null;
-function startTickLoop() {
-  if (!tickInterval) tickInterval = setInterval(tick, 3500);
-}
-function stopTickLoop() {
-  if (!tickInterval) return;
-  clearInterval(tickInterval);
-  tickInterval = null;
-}
-
-startTickLoop();
+setInterval(tick, 2400);
 setInterval(updateClock, 1000);
 updateClock();
 
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) stopTickLoop();
-  else startTickLoop();
-});
+// Hook agent view inits
+const _origSwitch = switchView;
+window.switchView = function(view, navEl) {
+  _origSwitch(view, navEl);
+  if (view === 'traderclaw') DE.render();
+  if (view === 'lyra') SORA.render();
+};
 </script>
 
 <!-- ── DECISION ENGINE ─────────────────────────────────────── -->
@@ -2724,6 +3143,23 @@ function showAgentInfo(id) {
   panel.style.display = 'block';
 }
 
+
+function toggleProjGroup(headerEl) {
+  const links = headerEl.nextElementSibling;
+  if (!links) return;
+  const isOpen = links.style.maxHeight && links.style.maxHeight !== '0px';
+  if (isOpen) {
+    links.style.maxHeight = links.scrollHeight + 'px';
+    requestAnimationFrame(() => { links.style.maxHeight = '0px'; });
+    headerEl.classList.add('collapsed');
+  } else {
+    links.style.maxHeight = links.scrollHeight + 'px';
+    links.addEventListener('transitionend', () => {
+      if (!headerEl.classList.contains('collapsed')) links.style.maxHeight = 'none';
+    }, { once: true });
+    headerEl.classList.remove('collapsed');
+  }
+}
 function toggleNav(labelEl) {
   const wrap = labelEl.nextElementSibling;
   if (!wrap) return;
@@ -2743,17 +3179,17 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.nav-items-wrap').forEach(el => {
     el.style.maxHeight = 'none';
   });
-  const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-  if (!isLocalHost) {
-    document.querySelectorAll('[data-dev-only="true"]').forEach(el => el.remove());
-  }
+  document.querySelectorAll('.nav-proj-links').forEach(el => {
+    el.style.maxHeight = '0px';
+    el.style.overflow = 'hidden';
+  });
 });
 
 // ─── PANEL COLLAPSE ───────────────────────────────────────────────────────────
 let focusMode = false;
 
-function setFocusMode(enabled) {
-  focusMode = enabled;
+function toggleFocusMode() {
+  focusMode = !focusMode;
   const layout = document.querySelector('.layout');
   const btn = document.getElementById('focus-btn');
   if (focusMode) {
@@ -2772,24 +3208,6 @@ function setFocusMode(enabled) {
 }
 
 // ─── MOBILE NAV ───────────────────────────────────────────────────────────────
-function updateFocusButtonLabel() {
-  const btn = document.getElementById('focus-btn');
-  if (!btn) return;
-  btn.textContent = focusMode ? 'Exit Focus' : 'Focus';
-}
-
-const _baseSetFocusMode = setFocusMode;
-setFocusMode = function(enabled) {
-  _baseSetFocusMode(enabled);
-  updateFocusButtonLabel();
-};
-
-document.addEventListener('DOMContentLoaded', updateFocusButtonLabel);
-
-function toggleFocusMode() {
-  setFocusMode(!focusMode);
-}
-
 function toggleMobileNav() {
   const nav = document.querySelector('.nav');
   const overlay = document.getElementById('mobile-overlay');
@@ -2809,13 +3227,13 @@ document.querySelectorAll('.nav-item').forEach(el => {
 
 // ─── DROPBOX ──────────────────────────────────────────────────────────────────
 const DROPS_API = '/api/drops';
-const DROPS_SESSION_API = '/api/session';
 let _dropsCache = null;
 let dropsAuthState = { configured: false, authenticated: false, checked: false };
 
 VIEW_HANDLERS.traderclaw = { enter: () => DE.render(), focus: true };
 VIEW_HANDLERS.lyra = { enter: () => SORA.render(), focus: true };
 VIEW_HANDLERS.dropbox = { enter: () => renderDrops(), focus: true };
+VIEW_HANDLERS.memory = { enter: () => MEM.render(), focus: true };
 
 async function requestJson(url, options = {}) {
   const response = await fetch(url, {
@@ -3014,21 +3432,13 @@ async function toggleDropboxAccess() {
 
 async function loadDrops() {
   try {
-    const drops = await requestJson(DROPS_API);
-    _dropsCache = Array.isArray(drops) ? drops : [];
+    const r = await fetch(DROPS_API);
+    _dropsCache = await r.json();
     return _dropsCache;
-  } catch (error) {
-    if (error.status === 401) {
-      dropsAuthState = { ...dropsAuthState, authenticated: false, checked: true };
-      updateDropboxAuthUI();
-      return null;
-    }
-    throw error;
-  }
+  } catch(e) { return _dropsCache || []; }
 }
 
-async function showDropForm() {
-  if (!await ensureDropsSession(true)) return;
+function showDropForm() {
   document.getElementById('drop-form').style.display = 'block';
   document.getElementById('drop-subject').focus();
 }
@@ -3040,79 +3450,36 @@ function hideDropForm() {
   document.getElementById('drop-priority').value = 'normal';
 }
 
-function handleDropboxRequestError(error, fallbackMessage) {
-  if (error.status === 401) {
-    dropsAuthState = { ...dropsAuthState, authenticated: false, checked: true };
-    _dropsCache = null;
-    hideDropForm();
-    updateDropboxAuthUI();
-    renderDrops(false);
-    alert('Dropbox session expired. Unlock it again to continue.');
-    return;
-  }
-
-  alert(error.message || fallbackMessage);
-}
-
 async function saveDrop() {
-  if (!await ensureDropsSession(true)) return;
-
-  const subject = document.getElementById('drop-subject').value.trim();
+  const subject = document.getElementById('drop-subject').value.trim() || 'General';
   const content = document.getElementById('drop-content').value.trim();
   const priority = document.getElementById('drop-priority').value;
-
-  if (!subject || subject.length > 100) {
-    alert('Subject is required and must be 100 characters or fewer.');
-    return;
-  }
-
-  if (!content || content.length > 10000) {
-    alert('Content is required and must be 10,000 characters or fewer.');
-    return;
-  }
-
-  try {
-    await requestJson(DROPS_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject, priority, content })
-    });
-    hideDropForm();
-    await renderDrops();
-  } catch (error) {
-    handleDropboxRequestError(error, 'Failed to save drop.');
-  }
+  if (!content) { alert('Add some content first!'); return; }
+  await fetch(DROPS_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-API-Key': 'devin-key' },
+    body: JSON.stringify({ subject, priority, content })
+  });
+  hideDropForm();
+  renderDrops();
 }
 
 async function toggleDone(id) {
-  if (!await ensureDropsSession(true)) return;
-
   const drops = _dropsCache || [];
-  const drop = drops.find(x => x.id === id);
-  if (!drop) return;
-
-  try {
-    await requestJson(`${DROPS_API}/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ done: !drop.done })
-    });
-    await renderDrops(false);
-  } catch (error) {
-    handleDropboxRequestError(error, 'Failed to update drop.');
-  }
+  const d = drops.find(x => x.id === id);
+  if (!d) return;
+  await fetch(`${DROPS_API}/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'X-API-Key': 'devin-key' },
+    body: JSON.stringify({ done: !d.done })
+  });
+  renderDrops();
 }
 
 async function deleteDrop(id) {
   if (!confirm('Delete this drop?')) return;
-  if (!await ensureDropsSession(true)) return;
-
-  try {
-    await requestJson(`${DROPS_API}/${id}`, { method: 'DELETE' });
-    await renderDrops(false);
-  } catch (error) {
-    handleDropboxRequestError(error, 'Failed to delete drop.');
-  }
+  await fetch(`${DROPS_API}/${id}`, { method: 'DELETE', headers: { 'X-API-Key': 'devin-key' } });
+  renderDrops();
 }
 
 let activeFilter = 'all';
@@ -3135,67 +3502,25 @@ function filterDrops(subject, btn) {
 async function renderDrops(rebuildFilters = true) {
   const list = document.getElementById('drops-list');
   const filterBar = document.getElementById('drop-filters');
-  if (!list || !filterBar) return;
+  if (!list) return;
 
   list.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px;">Loading...</div>`;
-  try {
-    await refreshDropboxAuthState();
-  } catch (error) {
-    updateDropboxAuthUI();
-    hideDropForm();
-    renderDropsState('Could not reach the Dropbox auth endpoint.');
-    return;
-  }
-
-  updateDropboxAuthUI();
-
-  if (!dropsAuthState.configured) {
-    hideDropForm();
-    renderDropsState('Dropbox auth is not configured on the server.');
-    return;
-  }
-
-  if (!dropsAuthState.authenticated) {
-    hideDropForm();
-    renderDropsState('Dropbox is locked.', {
-      actionLabel: 'Unlock Dropbox',
-      actionOnClick: 'toggleDropboxAccess()'
-    });
-    return;
-  }
-
-  let drops;
-  try {
-    drops = await loadDrops();
-  } catch (error) {
-    renderDropsState(escHTML(error.message || 'Failed to load drops.'));
-    return;
-  }
-
-  if (drops === null) {
-    hideDropForm();
-    renderDropsState('Dropbox is locked.', {
-      actionLabel: 'Unlock Dropbox',
-      actionOnClick: 'toggleDropboxAccess()'
-    });
-    return;
-  }
+  const drops = await loadDrops();
 
   if (rebuildFilters) {
     const subjects = ['all', ...new Set(drops.map(d => d.subject))];
-    if (!subjects.includes(activeFilter)) activeFilter = 'all';
     filterBar.innerHTML = subjects.map(s => {
       const isActive = s === activeFilter;
       const label = s === 'all' ? 'All' : s;
-      return `<button class="drop-filter${isActive ? ' active' : ''}" onclick="filterDrops(decodeURIComponent('${encodeURIComponent(s)}'), this)"
-        style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid ${isActive ? 'var(--accent)' : 'var(--border)'}; background:${isActive ? 'rgba(99,102,241,0.15)' : 'transparent'}; color:${isActive ? 'var(--accent)' : 'var(--muted)'}; cursor:pointer;">${escHTML(label)}</button>`;
+      return `<button class="drop-filter${isActive ? ' active' : ''}" onclick="filterDrops('${s}', this)"
+        style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid ${isActive ? 'var(--accent)' : 'var(--border)'}; background:${isActive ? 'rgba(99,102,241,0.15)' : 'transparent'}; color:${isActive ? 'var(--accent)' : 'var(--muted)'}; cursor:pointer;">${label}</button>`;
     }).join('');
   }
 
   const filtered = activeFilter === 'all' ? drops : drops.filter(d => d.subject === activeFilter);
 
   if (filtered.length === 0) {
-    list.innerHTML = `<div style="text-align:center; padding:60px 0; color:var(--muted); font-size:13px;">No drops yet. Hit <strong style="color:var(--text)">New Drop</strong> to add one.</div>`;
+    list.innerHTML = `<div style="text-align:center; padding:60px 0; color:var(--muted); font-size:13px;">No drops yet. Hit <strong style="color:var(--text)">+ New Drop</strong> to add one.</div>`;
     return;
   }
 
@@ -3218,557 +3543,196 @@ async function renderDrops(rebuildFilters = true) {
   }).join('');
 }
 
-const DROP_PRIORITY_META = {
-  normal: { label: 'Normal', className: 'priority-normal' },
-  high: { label: 'High', className: 'priority-high' },
-  urgent: { label: 'Urgent', className: 'priority-urgent' }
-};
-const dropComposerState = {
-  subjectDirectory: [],
-  suggestions: [],
-  activeSuggestionIndex: -1
-};
-
-function normalizeDropSubject(value) {
-  return String(value || '').replace(/\s+/g, ' ').trim();
-}
-
-function getDropDefaultSubject() {
-  return activeFilter === 'all' ? '' : (normalizeDropSubject(activeFilter) || '');
-}
-
-function initDropboxUI() {
-  if (initDropboxUI.done) return;
-  initDropboxUI.done = true;
-
-  const subjectInput = document.getElementById('drop-subject');
-  const subjectSuggestions = document.getElementById('drop-subject-suggestions');
-  const subjectPills = document.getElementById('drop-subject-pills');
-  const priorityPicker = document.getElementById('drop-priority-picker');
-  const filterBar = document.getElementById('drop-filters');
-
-  if (priorityPicker) {
-    priorityPicker.addEventListener('click', (event) => {
-      const button = event.target.closest('[data-priority]');
-      if (!button) return;
-      setDropPriority(button.dataset.priority);
-    });
-  }
-
-  if (subjectInput) {
-    subjectInput.addEventListener('input', () => {
-      dropComposerState.activeSuggestionIndex = -1;
-      renderDropSubjectSuggestions(true);
-    });
-    subjectInput.addEventListener('focus', () => {
-      renderDropSubjectSuggestions(true);
-    });
-    subjectInput.addEventListener('keydown', handleDropSubjectKeydown);
-    subjectInput.addEventListener('blur', () => {
-      window.setTimeout(() => {
-        const activeEl = document.activeElement;
-        if (!activeEl || !activeEl.closest('#drop-form')) closeDropSubjectSuggestions();
-      }, 100);
-    });
-  }
-
-  if (subjectSuggestions) {
-    subjectSuggestions.addEventListener('mousedown', (event) => {
-      const button = event.target.closest('[data-subject-suggestion]');
-      if (!button) return;
-      event.preventDefault();
-      selectDropSubject(button.dataset.subjectSuggestion, true);
-    });
-  }
-
-  if (subjectPills) {
-    subjectPills.addEventListener('click', (event) => {
-      const button = event.target.closest('[data-drop-pill]');
-      if (!button) return;
-      selectDropSubject(button.dataset.dropPill, true);
-    });
-  }
-
-  if (filterBar) {
-    filterBar.addEventListener('click', (event) => {
-      const button = event.target.closest('[data-filter-subject]');
-      if (!button) return;
-      filterDrops(button.dataset.filterSubject);
-    });
-  }
-
-  document.addEventListener('click', (event) => {
-    if (!event.target.closest('#drop-form')) closeDropSubjectSuggestions();
-  });
-}
-
-function syncDropboxSubjects(drops) {
-  const bySubject = new Map();
-  (drops || []).forEach(drop => {
-    const subject = normalizeDropSubject(drop.subject) || 'General';
-    const existing = bySubject.get(subject) || { label: subject, count: 0, lastSeen: 0 };
-    existing.count += 1;
-    const stamp = Number(new Date(drop.date || 0)) || 0;
-    if (stamp > existing.lastSeen) existing.lastSeen = stamp;
-    bySubject.set(subject, existing);
-  });
-
-  dropComposerState.subjectDirectory = Array.from(bySubject.values()).sort((a, b) => {
-    if (b.lastSeen !== a.lastSeen) return b.lastSeen - a.lastSeen;
-    if (b.count !== a.count) return b.count - a.count;
-    return a.label.localeCompare(b.label);
-  });
-
-  updateDropSubjectNote();
-  renderDropQuickSubjects();
-  renderDropSubjectSuggestions(false);
-}
-
-function updateDropSubjectNote() {
-  const note = document.getElementById('drop-subject-note');
-  if (!note) return;
-
-  if (!dropComposerState.subjectDirectory.length) {
-    note.textContent = 'No saved subjects yet. Type any tag you want and it will become a future suggestion.';
-    return;
-  }
-
-  const recent = dropComposerState.subjectDirectory.slice(0, 2).map(entry => entry.label);
-  note.textContent = `Recent subjects stay one tap away. Try ${recent.map(label => `"${label}"`).join(' or ')} or type your own.`;
-}
-
-function renderDropQuickSubjects() {
-  const container = document.getElementById('drop-subject-pills');
-  if (!container) return;
-
-  const quickSubjects = dropComposerState.subjectDirectory.slice(0, 5);
-  if (!quickSubjects.length) {
-    container.innerHTML = `<span class="drop-quick-empty">Saved subjects will appear here after your first few drops.</span>`;
-    return;
-  }
-
-  container.innerHTML = quickSubjects.map(entry => `<button type="button" class="drop-quick-pill" data-drop-pill="${escAttr(entry.label)}">
-    <span>${escHTML(entry.label)}</span>
-    <span class="drop-quick-pill-count">${entry.count}</span>
-  </button>`).join('');
-}
-
-function getDropSubjectSuggestions(query) {
-  const normalizedQuery = normalizeDropSubject(query).toLowerCase();
-  return dropComposerState.subjectDirectory
-    .filter(entry => {
-      const label = entry.label.toLowerCase();
-      if (normalizedQuery && label === normalizedQuery) return false;
-      return !normalizedQuery || label.includes(normalizedQuery);
-    })
-    .slice(0, 6);
-}
-
-function renderDropSubjectSuggestions(openPanel = false) {
-  const input = document.getElementById('drop-subject');
-  const panel = document.getElementById('drop-subject-suggestions');
-  if (!input || !panel) return;
-
-  const suggestions = getDropSubjectSuggestions(input.value);
-  dropComposerState.suggestions = suggestions;
-
-  if (dropComposerState.activeSuggestionIndex >= suggestions.length) {
-    dropComposerState.activeSuggestionIndex = suggestions.length - 1;
-  }
-
-  const typedValue = normalizeDropSubject(input.value);
-  const shouldShowEmpty = openPanel && typedValue && suggestions.length === 0;
-  const shouldOpen = openPanel && (suggestions.length > 0 || shouldShowEmpty);
-
-  if (!shouldOpen) {
-    closeDropSubjectSuggestions();
-    return;
-  }
-
-  panel.classList.add('open');
-  input.setAttribute('aria-expanded', 'true');
-
-  if (!suggestions.length) {
-    input.removeAttribute('aria-activedescendant');
-    panel.innerHTML = `<div class="drop-suggestion-empty">No saved subjects match "${escHTML(typedValue)}" yet. Press Enter or keep typing to save it as a new tag.</div>`;
-    return;
-  }
-
-  panel.innerHTML = suggestions.map((entry, index) => {
-    const isActive = index === dropComposerState.activeSuggestionIndex;
-    return `<button type="button" id="drop-subject-option-${index}" class="drop-suggestion-row${isActive ? ' active' : ''}" data-subject-suggestion="${escAttr(entry.label)}" role="option" aria-selected="${isActive ? 'true' : 'false'}">
-      <span class="drop-suggestion-copy">
-        <span class="drop-suggestion-label">${escHTML(entry.label)}</span>
-        <span class="drop-suggestion-meta">${entry.count} drop${entry.count === 1 ? '' : 's'}</span>
-      </span>
-      <span class="drop-suggestion-arrow">Use</span>
-    </button>`;
-  }).join('');
-
-  if (dropComposerState.activeSuggestionIndex >= 0) {
-    input.setAttribute('aria-activedescendant', `drop-subject-option-${dropComposerState.activeSuggestionIndex}`);
-  } else {
-    input.removeAttribute('aria-activedescendant');
-  }
-}
-
-function closeDropSubjectSuggestions() {
-  const input = document.getElementById('drop-subject');
-  const panel = document.getElementById('drop-subject-suggestions');
-  dropComposerState.activeSuggestionIndex = -1;
-  dropComposerState.suggestions = [];
-  if (panel) {
-    panel.classList.remove('open');
-    panel.innerHTML = '';
-  }
-  if (input) {
-    input.setAttribute('aria-expanded', 'false');
-    input.removeAttribute('aria-activedescendant');
-  }
-}
-
-function selectDropSubject(subject, moveToContent = false) {
-  const input = document.getElementById('drop-subject');
-  if (!input) return;
-
-  input.value = normalizeDropSubject(subject);
-  closeDropSubjectSuggestions();
-  input.focus();
-  input.setSelectionRange(input.value.length, input.value.length);
-
-  if (moveToContent) {
-    const contentField = document.getElementById('drop-content');
-    if (contentField) contentField.focus();
-  }
-}
-
-function handleDropSubjectKeydown(event) {
-  const suggestions = dropComposerState.suggestions;
-  if (event.key === 'ArrowDown' && suggestions.length) {
-    event.preventDefault();
-    dropComposerState.activeSuggestionIndex = Math.min(dropComposerState.activeSuggestionIndex + 1, suggestions.length - 1);
-    renderDropSubjectSuggestions(true);
-    return;
-  }
-
-  if (event.key === 'ArrowUp' && suggestions.length) {
-    event.preventDefault();
-    dropComposerState.activeSuggestionIndex = Math.max(dropComposerState.activeSuggestionIndex - 1, 0);
-    renderDropSubjectSuggestions(true);
-    return;
-  }
-
-  if (event.key === 'Enter') {
-    if (dropComposerState.activeSuggestionIndex >= 0 && suggestions[dropComposerState.activeSuggestionIndex]) {
-      event.preventDefault();
-      selectDropSubject(suggestions[dropComposerState.activeSuggestionIndex].label, true);
-      return;
-    }
-    closeDropSubjectSuggestions();
-    return;
-  }
-
-  if (event.key === 'Escape') {
-    closeDropSubjectSuggestions();
-  }
-}
-
-function setDropPriority(priority) {
-  const safePriority = DROP_PRIORITY_META[priority] ? priority : 'normal';
-  const input = document.getElementById('drop-priority');
-  if (input) input.value = safePriority;
-
-  document.querySelectorAll('#drop-priority-picker [data-priority]').forEach(button => {
-    const isActive = button.dataset.priority === safePriority;
-    button.classList.toggle('active', isActive);
-    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-  });
-}
-
-function updateDropFilterButtons() {
-  document.querySelectorAll('.drop-filter').forEach(button => {
-    button.classList.toggle('active', button.dataset.filterSubject === activeFilter);
-  });
-}
-
-function updateDropboxAuthUI() {
-  const authBtn = document.getElementById('drop-auth-btn');
-  const authNote = document.getElementById('drop-auth-note');
-  const newBtn = document.querySelector('.drop-new-btn');
-  const summary = document.getElementById('drop-summary');
-  if (!authBtn || !authNote || !newBtn) return;
-
-  const canEdit = dropsAuthState.configured && dropsAuthState.authenticated;
-  newBtn.disabled = !canEdit;
-  newBtn.style.opacity = canEdit ? '1' : '0.55';
-  newBtn.style.cursor = canEdit ? 'pointer' : 'not-allowed';
-
-  if (!dropsAuthState.configured) {
-    authBtn.textContent = 'Auth Off';
-    authBtn.disabled = true;
-    authBtn.style.opacity = '0.55';
-    authBtn.style.cursor = 'not-allowed';
-    authBtn.style.color = 'var(--muted)';
-    authBtn.style.borderColor = 'var(--border)';
-    authBtn.style.background = 'transparent';
-    authNote.textContent = 'Server auth is not configured. Set DROPS_PASSPHRASE_HASH or DROPS_PASSPHRASE.';
-    if (summary) summary.textContent = 'Dropbox auth is not configured on the server.';
-    return;
-  }
-
-  authBtn.disabled = false;
-  authBtn.style.opacity = '1';
-  authBtn.style.cursor = 'pointer';
-
-  if (dropsAuthState.authenticated) {
-    authBtn.textContent = 'Lock';
-    authBtn.style.color = 'var(--accent)';
-    authBtn.style.borderColor = 'var(--accent)';
-    authBtn.style.background = 'rgba(99,102,241,0.12)';
-    authNote.textContent = 'Unlocked for this browser session. Reads and writes now stay behind the server session cookie.';
-  } else {
-    authBtn.textContent = 'Unlock';
-    authBtn.style.color = 'var(--muted)';
-    authBtn.style.borderColor = 'var(--border)';
-    authBtn.style.background = 'transparent';
-    authNote.textContent = 'Dropbox is locked. Unlock it to load or edit drops.';
-    if (summary) summary.textContent = 'Unlock Dropbox to load the subject filters and drop stream.';
-  }
-}
-
-function renderDropsState(message, options = {}) {
-  const list = document.getElementById('drops-list');
-  const filterBar = document.getElementById('drop-filters');
-  const summary = document.getElementById('drop-summary');
-  if (!list || !filterBar) return;
-
-  filterBar.innerHTML = '';
-  if (summary) summary.textContent = options.summary || message;
-
-  const actionHtml = options.actionLabel
-    ? `<div class="drop-empty-actions"><button type="button" class="drop-empty-action" onclick="${options.actionOnClick}">${options.actionLabel}</button></div>`
-    : '';
-
-  list.innerHTML = `<div class="drop-empty">
-    <div class="drop-empty-title">${options.title || 'Dropbox unavailable'}</div>
-    <div class="drop-empty-copy">${message}</div>
-    ${actionHtml}
-  </div>`;
-}
-
-async function showDropForm() {
-  if (!await ensureDropsSession(true)) return;
-  initDropboxUI();
-  const form = document.getElementById('drop-form');
-  const subjectInput = document.getElementById('drop-subject');
-
-  form.style.display = 'block';
-  subjectInput.value = getDropDefaultSubject();
-  syncDropboxSubjects(_dropsCache || []);
-  setDropPriority(document.getElementById('drop-priority').value || 'normal');
-  renderDropSubjectSuggestions(false);
-  subjectInput.focus();
-  subjectInput.setSelectionRange(subjectInput.value.length, subjectInput.value.length);
-}
-
-function hideDropForm() {
-  document.getElementById('drop-form').style.display = 'none';
-  document.getElementById('drop-subject').value = '';
-  document.getElementById('drop-content').value = '';
-  closeDropSubjectSuggestions();
-  setDropPriority('normal');
-}
-
-async function saveDrop() {
-  if (!await ensureDropsSession(true)) return;
-
-  const subject = normalizeDropSubject(document.getElementById('drop-subject').value) || 'General';
-  const content = document.getElementById('drop-content').value.trim();
-  const priority = document.getElementById('drop-priority').value;
-
-  if (!content || content.length > 10000) {
-    alert('Content is required and must be 10,000 characters or fewer.');
-    return;
-  }
-
-  try {
-    await requestJson(DROPS_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject, priority, content })
-    });
-    hideDropForm();
-    await renderDrops();
-  } catch (error) {
-    handleDropboxRequestError(error, 'Failed to save drop.');
-  }
-}
-
-function filterDrops(subject) {
-  activeFilter = subject;
-  updateDropFilterButtons();
-  renderDrops(false);
-}
-
-function clearDropFilter() {
-  activeFilter = 'all';
-  updateDropFilterButtons();
-  renderDrops(false);
-}
-
-async function renderDrops(rebuildFilters = true) {
-  const list = document.getElementById('drops-list');
-  const filterBar = document.getElementById('drop-filters');
-  const summary = document.getElementById('drop-summary');
-  if (!list || !filterBar) return;
-
-  initDropboxUI();
-  list.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px;">Loading...</div>`;
-  try {
-    await refreshDropboxAuthState();
-  } catch (error) {
-    updateDropboxAuthUI();
-    hideDropForm();
-    renderDropsState('Could not reach the Dropbox auth endpoint.', {
-      title: 'Auth endpoint unavailable'
-    });
-    return;
-  }
-
-  updateDropboxAuthUI();
-
-  if (!dropsAuthState.configured) {
-    hideDropForm();
-    renderDropsState('Dropbox auth is not configured on the server.', {
-      title: 'Dropbox auth is off'
-    });
-    return;
-  }
-
-  if (!dropsAuthState.authenticated) {
-    hideDropForm();
-    renderDropsState('Unlock Dropbox to view and edit the drop stream.', {
-      title: 'Dropbox is locked',
-      actionLabel: 'Unlock Dropbox',
-      actionOnClick: 'toggleDropboxAccess()'
-    });
-    return;
-  }
-
-  let drops;
-  try {
-    drops = await loadDrops();
-  } catch (error) {
-    renderDropsState(escHTML(error.message || 'Failed to load drops.'), {
-      title: 'Could not load drops'
-    });
-    return;
-  }
-
-  if (drops === null) {
-    hideDropForm();
-    renderDropsState('Dropbox is locked.', {
-      title: 'Dropbox is locked',
-      actionLabel: 'Unlock Dropbox',
-      actionOnClick: 'toggleDropboxAccess()'
-    });
-    return;
-  }
-
-  syncDropboxSubjects(drops);
-  const subjectDirectory = dropComposerState.subjectDirectory;
-  const availableSubjects = new Set(subjectDirectory.map(entry => entry.label));
-  if (activeFilter !== 'all' && !availableSubjects.has(activeFilter)) activeFilter = 'all';
-
-  if (rebuildFilters) {
-    const filterEntries = [{ subject: 'all', count: drops.length }, ...subjectDirectory.map(entry => ({ subject: entry.label, count: entry.count }))];
-    filterBar.innerHTML = filterEntries.map(entry => {
-      const label = entry.subject === 'all' ? 'All' : escHTML(entry.subject);
-      return `<button class="drop-filter" type="button" data-filter-subject="${escAttr(entry.subject)}">
-        <span>${label}</span>
-        <span class="drop-filter-count">${entry.count}</span>
-      </button>`;
-    }).join('');
-  }
-
-  updateDropFilterButtons();
-
-  const filtered = activeFilter === 'all'
-    ? drops
-    : drops.filter(d => (normalizeDropSubject(d.subject) || 'General') === activeFilter);
-
-  if (summary) {
-    if (!drops.length) {
-      summary.textContent = 'No drops yet. Your first saved item will seed future subject suggestions automatically.';
-    } else if (activeFilter === 'all') {
-      const subjectLabel = `${subjectDirectory.length} subject${subjectDirectory.length === 1 ? '' : 's'}`;
-      summary.textContent = `${drops.length} total drop${drops.length === 1 ? '' : 's'} across ${subjectLabel}.`;
-    } else {
-      summary.textContent = `${filtered.length} drop${filtered.length === 1 ? '' : 's'} filed under ${activeFilter}.`;
-    }
-  }
-
-  if (!drops.length) {
-    list.innerHTML = `<div class="drop-empty">
-      <div class="drop-empty-title">Dropbox is clear.</div>
-      <div class="drop-empty-copy">Start the stream with your first note, task, or reminder. New subjects will become quick suggestions here automatically.</div>
-      <div class="drop-empty-actions">
-        <button type="button" class="drop-empty-action" onclick="showDropForm()">Create the first drop</button>
-      </div>
-    </div>`;
-    return;
-  }
-
-  if (filtered.length === 0) {
-    list.innerHTML = `<div class="drop-empty">
-      <div class="drop-empty-title">No drops match this filter.</div>
-      <div class="drop-empty-copy">Try another subject, clear the filter, or add a fresh drop to ${escHTML(activeFilter)}.</div>
-      <div class="drop-empty-actions">
-        <button type="button" class="drop-empty-action" onclick="clearDropFilter()">Show all drops</button>
-        <button type="button" class="drop-empty-action" onclick="showDropForm()">New drop</button>
-      </div>
-    </div>`;
-    return;
-  }
-
-  list.innerHTML = filtered.map(d => {
-    const dropSubject = normalizeDropSubject(d.subject) || 'General';
-    const priorityMeta = DROP_PRIORITY_META[d.priority] || DROP_PRIORITY_META.normal;
-    const dateValue = d.date ? new Date(d.date) : null;
-    const date = dateValue && !Number.isNaN(dateValue.valueOf())
-      ? dateValue.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })
-      : 'Unknown date';
-    return `<div class="drop-card${d.done ? ' done' : ''}">
-      <div class="drop-header">
-        <span class="drop-tag">${escHTML(dropSubject)}</span>
-        <span class="drop-priority-badge ${priorityMeta.className}"><span class="drop-priority-badge-dot"></span>${priorityMeta.label}</span>
-        <span class="drop-date">${date}</span>
-      </div>
-      <div class="drop-content">${escHTML(d.content)}</div>
-      <div class="drop-actions">
-        <button class="drop-btn done-btn" onclick="toggleDone('${d.id}')">${d.done ? 'Reopen' : 'Done'}</button>
-        <button class="drop-btn del-btn" onclick="deleteDrop('${d.id}')">Delete</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function escAttr(str) {
-  return String(str)
-    .replace(/&/g,'&amp;')
-    .replace(/"/g,'&quot;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;');
-}
-
-initDropboxUI();
-
 function escHTML(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// Patch switchView to render Dropbox when opened + auto focus-mode
+(function() {
+  const _orig = window.switchView;
+  window.switchView = function(view, navEl) {
+    _orig(view, navEl);
+    const layout = document.querySelector('.layout');
+    const btn = document.getElementById('focus-btn');
+    if (view === 'calendar') {
+      if (window.CAL) CAL.render();
+      layout.classList.remove('nav-collapsed');
+      layout.classList.add('feed-collapsed');
+      focusMode = false;
+      if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
+    } else if (['dropbox', 'traderclaw', 'lyra', 'memory'].includes(view)) {
+      layout.classList.add('nav-collapsed', 'feed-collapsed');
+      focusMode = true;
+      if (btn) { btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(99,102,241,0.12)'; }
+    } else if (view === 'office' || view === 'org') {
+      layout.classList.remove('nav-collapsed', 'feed-collapsed');
+      focusMode = false;
+      if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
+    }
+  };
+})();
+
+// ─── MEMORY MODULE ───────────────────────────────────────────────────────────
+const MEM = (() => {
+  const API = '/api/memories';
+  let activeAgent = 'all';
+  let _cache = null;
+  let _editingId = null;
+
+  async function load() {
+    try {
+      const r = await fetch(API);
+      if (!r.ok) return _cache || [];
+      const data = await r.json();
+      _cache = Array.isArray(data) ? data : [];
+      return _cache;
+    } catch { return _cache || []; }
+  }
+
+  function selectFormAgent(id) {
+    document.getElementById('mem-agent').value = id;
+    document.querySelectorAll('#mem-agent-tabs .mem-tab').forEach(b => {
+      const a = AGENTS.find(x => x.id === b.dataset.agent);
+      if (!a) return;
+      const sel = b.dataset.agent === id;
+      b.style.background = sel ? a.color + '25' : 'transparent';
+      b.style.borderColor = sel ? a.color : 'var(--border)';
+      b.style.color = sel ? a.color : 'var(--muted)';
+    });
+  }
+
+  function showForm() {
+    _editingId = null;
+    const tabs = document.getElementById('mem-agent-tabs');
+    tabs.innerHTML = AGENTS.map(a =>
+      `<button class="mem-tab" data-agent="${a.id}" onclick="MEM.selectFormAgent('${a.id}')"
+        style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; white-space:nowrap;">${a.emoji} ${a.name}</button>`
+    ).join('');
+    const preselect = activeAgent !== 'all' ? activeAgent : AGENTS[0].id;
+    selectFormAgent(preselect);
+    document.getElementById('mem-content').value = '';
+    document.getElementById('mem-form').style.display = 'block';
+    document.getElementById('mem-content').focus();
+  }
+
+  function hideForm() {
+    _editingId = null;
+    document.getElementById('mem-form').style.display = 'none';
+    document.getElementById('mem-content').value = '';
+  }
+
+  function edit(id) {
+    const entry = (_cache || []).find(e => e.id === id);
+    if (!entry) return;
+    _editingId = id;
+    const tabs = document.getElementById('mem-agent-tabs');
+    const agent = AGENTS.find(a => a.id === entry.agent) || { emoji: '?', name: entry.agent, color: '#64748b' };
+    tabs.innerHTML = `<span style="font-size:13px; color:${agent.color}; font-weight:600;">${agent.emoji} ${escHTML(agent.name)}</span>`;
+    document.getElementById('mem-agent').value = entry.agent;
+    document.getElementById('mem-content').value = entry.content;
+    document.getElementById('mem-form').style.display = 'block';
+    document.getElementById('mem-content').focus();
+  }
+
+  async function save() {
+    const agent = document.getElementById('mem-agent').value;
+    const content = document.getElementById('mem-content').value.trim();
+    if (!agent) { alert('Select an agent first!'); return; }
+    if (!content) { alert('Add some content first!'); return; }
+
+    if (_editingId) {
+      await fetch(`${API}/${_editingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      });
+    } else {
+      await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent, content })
+      });
+    }
+    hideForm();
+    render();
+  }
+
+  async function remove(id) {
+    if (!confirm('Delete this memory?')) return;
+    await fetch(`${API}/${id}`, { method: 'DELETE' });
+    render();
+  }
+
+  function setFilter(agentId, btn) {
+    activeAgent = agentId;
+    document.querySelectorAll('#mem-filters .mem-filter').forEach(b => {
+      b.classList.remove('active');
+      b.style.background = 'transparent';
+      b.style.borderColor = 'var(--border)';
+      b.style.color = 'var(--muted)';
+    });
+    btn.classList.add('active');
+    const agent = AGENTS.find(a => a.id === agentId);
+    const color = agent ? agent.color : 'var(--accent)';
+    btn.style.background = (agentId === 'all') ? 'rgba(99,102,241,0.15)' : color + '20';
+    btn.style.borderColor = (agentId === 'all') ? 'var(--accent)' : color;
+    btn.style.color = (agentId === 'all') ? 'var(--accent)' : color;
+    renderList();
+  }
+
+  function renderFilters() {
+    const bar = document.getElementById('mem-filters');
+    const isAll = activeAgent === 'all';
+    let html = `<button class="mem-filter${isAll ? ' active' : ''}" onclick="MEM.setFilter('all', this)"
+      style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid ${isAll ? 'var(--accent)' : 'var(--border)'}; background:${isAll ? 'rgba(99,102,241,0.15)' : 'transparent'}; color:${isAll ? 'var(--accent)' : 'var(--muted)'}; cursor:pointer;">All</button>`;
+    AGENTS.forEach(a => {
+      const isActive = activeAgent === a.id;
+      html += `<button class="mem-filter${isActive ? ' active' : ''}" onclick="MEM.setFilter('${a.id}', this)"
+        style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid ${isActive ? a.color : 'var(--border)'}; background:${isActive ? a.color + '20' : 'transparent'}; color:${isActive ? a.color : 'var(--muted)'}; cursor:pointer;">${a.emoji} ${a.name}</button>`;
+    });
+    bar.innerHTML = html;
+  }
+
+  async function renderList() {
+    const list = document.getElementById('mem-list');
+    list.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px;">Loading...</div>`;
+    const entries = await load();
+    const filtered = activeAgent === 'all' ? entries : entries.filter(e => e.agent === activeAgent);
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div style="text-align:center; padding:60px 0; color:var(--muted); font-size:13px;">No memories yet. Hit <strong style="color:var(--text)">+ New Memory</strong> to add one.</div>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map(e => {
+      const agent = AGENTS.find(a => a.id === e.agent) || { emoji: '?', name: e.agent, color: '#64748b' };
+      const date = new Date(e.date || e.created_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      return `<div style="background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px 20px; margin-bottom:12px; border-left:3px solid ${agent.color};">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:12px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:16px;">${agent.emoji}</span>
+            <span style="font-size:13px; font-weight:600; color:${agent.color};">${escHTML(agent.name)}</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:11px; color:var(--muted);">${date}</span>
+            <button onclick="MEM.edit('${e.id}')" style="background:transparent; border:1px solid rgba(99,102,241,0.3); color:var(--accent); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; opacity:0.6; transition:opacity 0.15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">edit</button>
+            <button onclick="MEM.remove('${e.id}')" style="background:transparent; border:1px solid rgba(239,68,68,0.3); color:#ef4444; border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; opacity:0.6; transition:opacity 0.15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">delete</button>
+          </div>
+        </div>
+        <div style="font-size:13px; color:var(--text); line-height:1.6; white-space:pre-wrap;">${escHTML(e.content)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  async function render() {
+    renderFilters();
+    await renderList();
+  }
+
+  return { render, showForm, hideForm, save, remove, edit, setFilter, selectFormAgent };
+})();
 
 </script>
-  <script src="calendar-view.js"></script>
+<script src="calendar-view.js"></script>
 </body>
 </html>

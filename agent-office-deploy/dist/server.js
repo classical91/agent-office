@@ -5,6 +5,7 @@ const crypto = require('crypto');
 
 const PORT = process.env.PORT || 3000;
 const DROPS_FILE = path.join(__dirname, process.env.DROPS_FILE || 'drops.json');
+const MEMORIES_FILE = path.join(__dirname, process.env.MEMORIES_FILE || 'memories.json');
 const MAX_BODY_BYTES = 50 * 1024;
 const SESSION_COOKIE = 'agent_office_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
@@ -202,6 +203,30 @@ function validateDropInput(input) {
   };
 }
 
+function validateMemoryInput(input) {
+  const agent = typeof input.agent === 'string' ? input.agent.trim() : '';
+  const content = typeof input.content === 'string' ? input.content.trim() : '';
+
+  if (!agent || agent.length > 50) {
+    return { ok: false, error: 'Agent is required and must be 50 characters or fewer.' };
+  }
+  if (!content || content.length > 50000) {
+    return { ok: false, error: 'Content is required and must be 50,000 characters or fewer.' };
+  }
+  return { ok: true, value: { agent, content } };
+}
+
+function validateMemoryPatchInput(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return { ok: false, error: 'PATCH body must be a JSON object.' };
+  }
+  const content = typeof input.content === 'string' ? input.content.trim() : '';
+  if (!content || content.length > 50000) {
+    return { ok: false, error: 'Content is required and must be 50,000 characters or fewer.' };
+  }
+  return { ok: true, value: { content } };
+}
+
 function validatePatchInput(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     return { ok: false, error: 'PATCH body must be a JSON object.' };
@@ -283,6 +308,24 @@ async function saveDropsToFile(drops) {
   await writeQueue;
 }
 
+async function loadMemoriesFromFile() {
+  try {
+    const raw = await fs.readFile(MEMORIES_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
+}
+
+async function saveMemoriesToFile(memories) {
+  writeQueue = writeQueue.then(() =>
+    fs.writeFile(MEMORIES_FILE, JSON.stringify(memories, null, 2), 'utf8')
+  );
+  await writeQueue;
+}
+
 function createFileStorage() {
   return {
     async listDrops() {
@@ -308,6 +351,31 @@ function createFileStorage() {
       drop.done = done;
       await saveDropsToFile(drops);
       return drop;
+    },
+    async listMemories() {
+      return loadMemoriesFromFile();
+    },
+    async createMemory(mem) {
+      const memories = await loadMemoriesFromFile();
+      memories.unshift(mem);
+      await saveMemoriesToFile(memories);
+      return mem;
+    },
+    async updateMemory(id, content) {
+      const memories = await loadMemoriesFromFile();
+      const mem = memories.find(m => m.id === id);
+      if (!mem) return null;
+      mem.content = content;
+      mem.updated_at = new Date().toISOString();
+      await saveMemoriesToFile(memories);
+      return mem;
+    },
+    async deleteMemory(id) {
+      const memories = await loadMemoriesFromFile();
+      const next = memories.filter(m => m.id !== id);
+      const deleted = next.length !== memories.length;
+      if (deleted) await saveMemoriesToFile(next);
+      return deleted;
     },
   };
 }
@@ -343,6 +411,16 @@ async function createPostgresStorage() {
       priority VARCHAR(16) NOT NULL,
       done BOOLEAN NOT NULL DEFAULT FALSE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS memories (
+      id TEXT PRIMARY KEY,
+      agent VARCHAR(50) NOT NULL,
+      content TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
 
@@ -415,6 +493,41 @@ async function createPostgresStorage() {
         [id, done]
       );
       return result.rows[0] ? toClientDrop(result.rows[0]) : null;
+    },
+    async listMemories() {
+      const result = await pool.query(`
+        SELECT id, agent, content, created_at AS date, updated_at
+        FROM memories
+        ORDER BY created_at DESC
+      `);
+      return result.rows;
+    },
+    async createMemory(mem) {
+      const result = await pool.query(
+        `
+          INSERT INTO memories (id, agent, content, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $4)
+          RETURNING id, agent, content, created_at AS date, updated_at
+        `,
+        [mem.id, mem.agent, mem.content, mem.date]
+      );
+      return result.rows[0];
+    },
+    async updateMemory(id, content) {
+      const result = await pool.query(
+        `
+          UPDATE memories
+          SET content = $2, updated_at = NOW()
+          WHERE id = $1
+          RETURNING id, agent, content, created_at AS date, updated_at
+        `,
+        [id, content]
+      );
+      return result.rows[0] || null;
+    },
+    async deleteMemory(id) {
+      const result = await pool.query('DELETE FROM memories WHERE id = $1', [id]);
+      return result.rowCount > 0;
     },
   };
 }
@@ -578,6 +691,76 @@ const server = http.createServer(async (req, res) => {
       }
 
       sendJson(res, 200, drop);
+      return;
+    }
+
+    // ── MEMORIES API ───────────────────────────────────────────
+    if (req.method === 'GET' && pathname === '/api/memories') {
+      if (!requireDropsAuth(res, req)) return;
+      sendJson(res, 200, await storage.listMemories());
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/memories') {
+      if (!requireDropsAuth(res, req)) return;
+
+      const payload = validateMemoryInput(await readJsonBody(req));
+      if (!payload.ok) {
+        sendJson(res, 400, { error: payload.error });
+        return;
+      }
+
+      const mem = await storage.createMemory({
+        id: `mem-${typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now()}`,
+        date: new Date().toISOString(),
+        ...payload.value,
+      });
+
+      sendJson(res, 201, mem);
+      return;
+    }
+
+    if (req.method === 'PATCH' && pathname.startsWith('/api/memories/')) {
+      if (!requireDropsAuth(res, req)) return;
+
+      const id = pathname.slice('/api/memories/'.length).trim();
+      if (!id) {
+        sendJson(res, 400, { error: 'Memory id is required.' });
+        return;
+      }
+
+      const payload = validateMemoryPatchInput(await readJsonBody(req));
+      if (!payload.ok) {
+        sendJson(res, 400, { error: payload.error });
+        return;
+      }
+
+      const mem = await storage.updateMemory(id, payload.value.content);
+      if (!mem) {
+        sendJson(res, 404, { error: 'Memory not found.' });
+        return;
+      }
+
+      sendJson(res, 200, mem);
+      return;
+    }
+
+    if (req.method === 'DELETE' && pathname.startsWith('/api/memories/')) {
+      if (!requireDropsAuth(res, req)) return;
+
+      const id = pathname.slice('/api/memories/'.length).trim();
+      if (!id) {
+        sendJson(res, 400, { error: 'Memory id is required.' });
+        return;
+      }
+
+      const deleted = await storage.deleteMemory(id);
+      if (!deleted) {
+        sendJson(res, 404, { error: 'Memory not found.' });
+        return;
+      }
+
+      sendJson(res, 200, { ok: true });
       return;
     }
 
