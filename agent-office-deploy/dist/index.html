@@ -3616,9 +3616,15 @@ async function loadDrops() {
   } catch(e) { return _dropsCache || []; }
 }
 
-function showDropForm() {
+function showDropForm(subject) {
   document.getElementById('drop-form').style.display = 'block';
-  document.getElementById('drop-subject').focus();
+  if (subject && subject !== 'all') {
+    document.getElementById('drop-subject').value = subject;
+    document.getElementById('drop-content').focus();
+  } else {
+    document.getElementById('drop-subject').value = '';
+    document.getElementById('drop-subject').focus();
+  }
 }
 
 function hideDropForm() {
@@ -3690,8 +3696,11 @@ async function renderDrops(rebuildFilters = true) {
     filterBar.innerHTML = subjects.map(s => {
       const isActive = s === activeFilter;
       const label = s === 'all' ? 'All' : s;
-      return `<button class="drop-filter${isActive ? ' active' : ''}" onclick="filterDrops('${s}', this)"
-        style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid ${isActive ? 'var(--accent)' : 'var(--border)'}; background:${isActive ? 'rgba(99,102,241,0.15)' : 'transparent'}; color:${isActive ? 'var(--accent)' : 'var(--muted)'}; cursor:pointer;">${label}</button>`;
+      const activeStyle = isActive ? 'var(--accent)' : 'var(--border)';
+      const activeBg = isActive ? 'rgba(99,102,241,0.15)' : 'transparent';
+      const activeColor = isActive ? 'var(--accent)' : 'var(--muted)';
+      const plusBtn = s !== 'all' ? '<button onclick="showDropForm(\'' + s + '\')" title="New drop in ' + s + '" style="margin-left:4px;background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 3px;line-height:1;vertical-align:middle;">+</button>' : '';
+      return '<span style="display:inline-flex;align-items:center;"><button class="drop-filter' + (isActive ? ' active' : '') + '" onclick="filterDrops(\'' + s + '\', this)" style="font-size:12px;padding:6px 14px;border-radius:20px;border:1px solid ' + activeStyle + ';background:' + activeBg + ';color:' + activeColor + ';cursor:pointer;">' + label + '</button>' + plusBtn + '</span>';
     }).join('');
   }
 
