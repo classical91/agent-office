@@ -1020,13 +1020,17 @@
       <div class="nav-label" onclick="toggleNav(this)">Agents <span class="nav-chevron">▾</span></div>
       <div class="nav-items-wrap">
         <div class="nav-item" onclick="showAgentInfo('devin')"><span class="icon">🛠️</span> Devin</div>
-        <div class="nav-item" onclick="switchView('traderclaw', this); showAgentInfo('traderclaw')"><span class="icon">📈</span> TraderClaw</div>
+        <div class="nav-item" onclick="showAgentInfo('traderclaw')"><span class="icon">📈</span> TraderClaw</div>
         <div class="nav-item" onclick="showAgentInfo('webclaw')"><span class="icon">🌐</span> WebClaw</div>
         <div class="nav-item" onclick="showAgentInfo('xhunter')"><span class="icon">🐦</span> X-Hunter</div>
+        <div class="nav-item" onclick="showAgentInfo('swarm')"><span class="icon">🐝</span> Swarm</div>
+        <div class="nav-item" onclick="showAgentInfo('penny')"><span class="icon">🪙</span> Penny</div>
+        <div class="nav-item" onclick="showAgentInfo('reaper')"><span class="icon">💀</span> Reaper</div>
         <div class="nav-item" onclick="showAgentInfo('forge')"><span class="icon">⚙️</span> Forge</div>
-        <div class="nav-item" onclick="switchView('lyra', this); showAgentInfo('lyra')"><span class="icon">✨</span> Lyra</div>
+        <div class="nav-item" onclick="showAgentInfo('lyra')"><span class="icon">✨</span> Lyra</div>
         <div class="nav-item" onclick="showAgentInfo('xbot')"><span class="icon">🤖</span> XBot</div>
         <div class="nav-item" onclick="showAgentInfo('guardian')"><span class="icon">🛡</span> Guardian</div>
+        <div class="nav-item" onclick="showAgentInfo('command')"><span class="icon">📡</span> Command</div>
         <div class="nav-item" onclick="showAgentInfo('fatherclaw')"><span class="icon">👑</span> FatherClaw</div>
       </div>
     </div>
@@ -1463,6 +1467,7 @@ const AGENTS = [
     emoji: '🛠️',
     color: '#6366f1',
     role: 'Project Overseer',
+    model: 'Claude Sonnet 4.6',
     tasks: [
       'Reviewing project status',
       'Coordinating agents',
@@ -1485,6 +1490,7 @@ const AGENTS = [
     emoji: '📈',
     color: '#22c55e',
     role: 'Trading Bot',
+    model: 'Claude Sonnet 4.6',
     tasks: [
       'Monitoring BTC 1H signal',
       'Scanning RSI divergence',
@@ -1507,6 +1513,7 @@ const AGENTS = [
     emoji: '🌐',
     color: '#3b82f6',
     role: 'Web Developer',
+    model: 'GPT-5.4',
     tasks: [
       'Building demo site',
       'Generating client HTML',
@@ -1529,6 +1536,7 @@ const AGENTS = [
     emoji: '🐦',
     color: '#06b6d4',
     role: 'Social / X Agent',
+    model: 'Claude Sonnet 4.6',
     tasks: [
       'Scanning trending crypto posts',
       'Drafting reply to @BitcoinMagazine',
@@ -1546,24 +1554,91 @@ const AGENTS = [
     ]
   },
   {
-    id: 'nova',
-    name: 'Nova',
-    emoji: '🔭',
-    color: '#f97316',
-    role: 'Product Researcher',
+    id: 'swarm',
+    name: 'Swarm',
+    emoji: '🐝',
+    color: '#eab308',
+    role: 'Codex Agent',
+    model: 'GPT-4o-mini',
     tasks: [
-      'Researching niche pain points',
-      'Analyzing competitor products',
-      'Drafting positioning brief',
-      'Evaluating market size',
-      'Writing lead magnet outline',
+      'Processing codex tasks',
+      'Running batch operations',
+      'Indexing project data',
+      'Syncing agent state',
+      'Idle',
     ],
     feed: [
-      'Niche research: AI automation for SMBs',
-      'Competitor analysis complete - 5 tools',
-      'Positioning brief drafted for Jason',
-      'Found underserved pain point in Nanaimo market',
-      'Lead magnet outline ready for review',
+      'Codex batch complete - 12 tasks processed',
+      'Project index refreshed',
+      'Agent state synced across cluster',
+      'Batch queue cleared',
+      'Task pipeline healthy',
+    ]
+  },
+  {
+    id: 'penny',
+    name: 'Penny',
+    emoji: '🪙',
+    color: '#f59e0b',
+    role: 'OSS Agent',
+    model: 'GPT-5.4',
+    tasks: [
+      'Scanning open-source repos',
+      'Evaluating dependencies',
+      'Checking license compliance',
+      'Reviewing PR activity',
+      'Idle',
+    ],
+    feed: [
+      'OSS scan complete - 3 repos reviewed',
+      'License check passed for all deps',
+      'Flagged outdated dependency in trader',
+      'PR activity summary generated',
+      'Vulnerability scan clean',
+    ]
+  },
+  {
+    id: 'reaper',
+    name: 'Reaper',
+    emoji: '💀',
+    color: '#78716c',
+    role: 'Farm Bot',
+    model: 'GPT-4o-mini',
+    tasks: [
+      'Running discover pipeline',
+      'Posting scheduled content',
+      'Farming engagement',
+      'Cron job active',
+      'Idle',
+    ],
+    feed: [
+      'Morning discover pipeline complete',
+      'Scheduled 5 posts for today',
+      'Engagement farm cycle finished',
+      'Cron job triggered - next run in 4H',
+      'Content queue replenished',
+    ]
+  },
+  {
+    id: 'forge',
+    name: 'Forge',
+    emoji: '⚙️',
+    color: '#8b5cf6',
+    role: 'Dev Agent',
+    model: 'Claude Sonnet 4.6',
+    tasks: [
+      'Writing feature code',
+      'Debugging issue',
+      'Shipping to production',
+      'Code review',
+      'Idle',
+    ],
+    feed: [
+      'Feature branch merged to main',
+      'Bug fix deployed - auth flow',
+      'Code review complete on PR #47',
+      'New endpoint shipped to Railway',
+      'Test suite passing - 100%',
     ]
   },
   {
@@ -1572,6 +1647,7 @@ const AGENTS = [
     emoji: '✨',
     color: '#a855f7',
     role: 'Innerverse',
+    model: 'Claude Sonnet 4.6',
     tasks: [
       'Working on Innerverse...',
       'Crafting narrative',
@@ -1593,6 +1669,7 @@ const AGENTS = [
     emoji: '🤖',
     color: '#ec4899',
     role: 'X Bot',
+    model: 'GPT-5',
     tasks: [
       'Posting to X',
       'Idle',
@@ -1614,6 +1691,7 @@ const AGENTS = [
     emoji: '🛡',
     color: '#ef4444',
     role: 'Security',
+    model: 'Claude Sonnet 4.6',
     tasks: [
       'Monitoring gateway access',
       'Scanning for anomalies',
@@ -1635,6 +1713,7 @@ const AGENTS = [
     emoji: '👑',
     color: '#64748b',
     role: 'Orchestrator',
+    model: 'Claude Sonnet 4.6',
     tasks: [
       'Routing tasks between agents',
       'Monitoring agent health',
@@ -1643,14 +1722,37 @@ const AGENTS = [
       'Logging inter-agent comms',
     ],
     feed: [
-      'Routed WebClaw brief from Nova',
-      'All 9 agents healthy',
+      'Routed WebClaw brief from Swarm',
+      'All 12 agents healthy',
       'Cross-agent workflow complete',
       'Task queue: 2 pending',
       'Inter-agent log updated',
     ]
   }
-];;
+,
+  {
+    id: 'command',
+    name: 'Command',
+    emoji: '📡',
+    color: '#64748b',
+    role: 'Orchestrator',
+    model: 'Claude Sonnet 4.6',
+    tasks: [
+      'Routing tasks between agents',
+      'Monitoring agent health',
+      'Idle',
+      'Queuing cross-agent workflow',
+      'Logging inter-agent comms',
+    ],
+    feed: [
+      'Routed WebClaw brief from Swarm',
+      'All 12 agents healthy',
+      'Cross-agent workflow complete',
+      'Task queue: 2 pending',
+      'Inter-agent log updated',
+    ]
+  }
+];
 
 // ─── POSITIONS (grid slots in office) ─────────────────────────
 const POSITIONS = [
@@ -1663,6 +1765,9 @@ const POSITIONS = [
   { x: 0.86, y: 0.24 },
   { x: 0.54, y: 0.23 },
   { x: 0.78, y: 0.71 },
+  { x: 0.35, y: 0.45 },
+  { x: 0.62, y: 0.45 },
+  { x: 0.42, y: 0.68 },
 ];
 
 // ─── STATE ────────────────────────────────────────────────────
