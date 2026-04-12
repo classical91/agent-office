@@ -2794,17 +2794,15 @@ renderStatusBar();
 agentState.forEach(agent => addFeedItem(agent, randomFrom(agent.feed)));
 
 // Kick off loops
-setInterval(tick, 2400);
+let tickInterval = setInterval(tick, 2400);
 setInterval(updateClock, 1000);
 updateClock();
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { clearInterval(tickInterval); tickInterval = null; }
+  else if (!tickInterval) { tickInterval = setInterval(tick, 2400); }
+});
 
-// Hook agent view inits
-const _origSwitch = switchView;
-window.switchView = function(view, navEl) {
-  _origSwitch(view, navEl);
-  if (view === 'traderclaw') DE.render();
-  if (view === 'lyra') SORA.render();
-};
+// View lifecycle hooks consolidated below
 </script>
 
 <!-- ── DECISION ENGINE ─────────────────────────────────────── -->
@@ -2821,6 +2819,7 @@ const ALT_LIST=[{id:"p1",phase:true,label:"PHASE 1 - SOCIAL & SENTIMENT",sub:"Se
 const VIEWS=[{id:"home",label:"HOME",dot:"#e4e4e7"},{id:"markettd",label:"MARKET TOP-DOWN",dot:"#a78bfa"},{id:"bottomup",label:"CRYPTO BOTTOM-UP",dot:"#38bdf8"},{id:"btcstrat",label:"BTC STRATEGY",dot:"#f97316"},{id:"altres",label:"ALT RESEARCH",dot:"#f59e0b"},{id:"drafting",label:"DRAFTING IDEAS",dot:"#71717a"}];
 
 const st={view:"home",menuOpen:false,checks:{},collapsed:{},filter:"all",altToken:"",altChecks:{},altCollapsed:{},altFilter:"all",drafts:[{id:1,text:"",done:false}],draftsOpen:false,tdStep:1,td:{usdt_above_ema:null,usdt_change:"",btc_d_rising:null,total_bull:null,dxy_bull:null,blackout:false,adx:"",price_ema50:null,ema50_ema200:null,atr_state:null,daily_ema200:null,ema50_cross:null,structure:null,trend:null,momentum:null,reversal:null,participation:null,volatility:null,cipher:null,balance:"",risk:"1",atr_val:"",entry:"",dir:null},linkOpen:{},cuOpen:false,mtdCollapsed:{}};
+Object.assign(st, JSON.parse(localStorage.getItem('de-state') || '{}'));
 
 function fmt(n,d=0){if(isNaN(n)||!isFinite(n))return"-";return Number(n).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});}
 function pill(color,text){const m={green:"background:rgba(6,78,59,0.5);color:#6ee7b7;border:1px solid rgba(16,185,129,0.4)",red:"background:rgba(127,29,29,0.5);color:#fca5a5;border:1px solid rgba(239,68,68,0.4)",amber:"background:rgba(120,53,15,0.5);color:#fcd34d;border:1px solid rgba(245,158,11,0.4)",blue:"background:rgba(12,74,110,0.5);color:#7dd3fc;border:1px solid rgba(14,165,233,0.4)",gray:"background:rgba(39,39,42,0.8);color:#a1a1aa;border:1px solid rgba(63,63,70,0.5)"};return`<span style="font-size:11px;font-family:monospace;padding:2px 8px;border-radius:3px;${m[color]||m.gray}">${text}</span>`;}
@@ -2990,6 +2989,7 @@ function buildApp(){
 function render(){
   const el=document.getElementById("de-app");
   if(!el)return;
+  localStorage.setItem('de-state', JSON.stringify(st));
   el.innerHTML=buildApp();
   el.addEventListener("click",handleClick,{once:true});
   el.addEventListener("input",handleInput,{once:true});
@@ -3050,6 +3050,7 @@ let ideas=[
   {id:10,title:"5D Ascension - Timeline Shift",prompt:"A figure standing at a crossroads of parallel realities - layered dimensions visible simultaneously, each slightly different, light bending between them, gradual merging into one radiant path",stage:"idea",aspectRatio:"16:9",duration:15,tags:["ascension-glossary","5D","timelines","transformation"],notes:"Combines Ascension Glossary: 5D Ascension + Timelines. Great for longer-form content.",referenceImage:null,createdAt:"2025-03-15"},
   {id:11,title:"IQ & Age Norms - Explainer Concept",prompt:"Animated data visualization showing two bell curves side by side (adult vs child IQ distribution), age groups highlighted, scores shifting to show relative comparison - clean and informative",stage:"idea",aspectRatio:"16:9",duration:12,tags:["educational","explainer","data-viz","psychology"],notes:"IQ tests are age-normed. Key insight: a child with IQ 130 outperforms age peers, not adults. Short-form educational visual.",referenceImage:null,createdAt:"2025-03-15"},
 ];
+const _savedSora = localStorage.getItem('sora-ideas'); if(_savedSora) try { ideas = JSON.parse(_savedSora); } catch(e) {}
 
 let selectedId=1,search="",filterStage="all",newTag="";
 
@@ -3197,6 +3198,7 @@ function buildApp(){
 function render(){
   const el=document.getElementById("sora-app");
   if(!el)return;
+  localStorage.setItem('sora-ideas', JSON.stringify(ideas));
   el.innerHTML=buildApp();
   attachEvents();
 }
@@ -3724,29 +3726,38 @@ function escHTML(str) {
 }
 
 // Patch switchView to render Dropbox when opened + auto focus-mode
-(function() {
-  const _orig = window.switchView;
-  window.switchView = function(view, navEl) {
-    _orig(view, navEl);
-    const layout = document.querySelector('.layout');
-    const btn = document.getElementById('focus-btn');
-    if (view === 'calendar') {
-      if (window.CAL) CAL.render();
-      layout.classList.remove('nav-collapsed');
-      layout.classList.add('feed-collapsed');
-      focusMode = false;
-      if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
-    } else if (['dropbox', 'traderclaw', 'lyra', 'memory'].includes(view)) {
-      layout.classList.add('nav-collapsed', 'feed-collapsed');
-      focusMode = true;
-      if (btn) { btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(99,102,241,0.12)'; }
-    } else if (view === 'office' || view === 'org') {
-      layout.classList.remove('nav-collapsed', 'feed-collapsed');
-      focusMode = false;
-      if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
-    }
-  };
-})();
+// Consolidated router - single source of truth for all view lifecycle
+VIEW_HANDLERS.traderclaw = { enter: () => { if (typeof DE !== 'undefined') DE.render(); }, focus: true };
+VIEW_HANDLERS.lyra       = { enter: () => { if (typeof SORA !== 'undefined') SORA.render(); }, focus: true };
+VIEW_HANDLERS.calendar   = { enter: () => { if (window.CAL) CAL.render(); }, focus: false, feedOnly: true };
+VIEW_HANDLERS.dropbox    = { enter: async () => { if (await ensureDropsSession(true)) renderDrops(); }, focus: true };
+VIEW_HANDLERS.memory     = { enter: () => { if (typeof MEM !== 'undefined') MEM.render(); }, focus: true };
+VIEW_HANDLERS.office     = { enter: null, focus: false };
+VIEW_HANDLERS.org        = { enter: null, focus: false };
+
+const _baseSwitchView = switchView;
+window.switchView = function(view, navEl) {
+  _baseSwitchView(view, navEl);
+  const layout = document.querySelector('.layout');
+  const btn = document.getElementById('focus-btn');
+  const handler = VIEW_HANDLERS[view];
+  if (!handler) return;
+  if (handler.enter) handler.enter();
+  if (handler.focus) {
+    layout.classList.add('nav-collapsed', 'feed-collapsed');
+    focusMode = true;
+    if (btn) { btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(99,102,241,0.12)'; }
+  } else if (handler.feedOnly) {
+    layout.classList.remove('nav-collapsed');
+    layout.classList.add('feed-collapsed');
+    focusMode = false;
+    if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
+  } else {
+    layout.classList.remove('nav-collapsed', 'feed-collapsed');
+    focusMode = false;
+    if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
+  }
+};
 
 // ─── MEMORY MODULE ───────────────────────────────────────────────────────────
 const MEM = (() => {
