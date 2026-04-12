@@ -3680,6 +3680,13 @@ function filterDrops(subject, btn) {
   btn.style.background = 'rgba(99,102,241,0.15)';
   btn.style.color = 'var(--accent)';
   btn.style.borderColor = 'var(--accent)';
+  // Auto-fill subject field when a specific filter is selected
+  const subjectInput = document.getElementById('drop-subject');
+  if (subjectInput && subject !== 'all') {
+    subjectInput.value = subject;
+  } else if (subjectInput && subject === 'all') {
+    subjectInput.value = '';
+  }
   renderDrops(false);
 }
 
