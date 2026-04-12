@@ -3579,9 +3579,16 @@ const MEM = (() => {
   let _cache = null;
   let _editingId = null;
 
+  async function ensureAuth() {
+    if (typeof ensureDropsSession === 'function') {
+      return await ensureDropsSession(true);
+    }
+    return true;
+  }
+
   async function load() {
     try {
-      const r = await fetch(API);
+      const r = await fetch(API, { credentials: 'same-origin' });
       if (!r.ok) return _cache || [];
       const data = await r.json();
       _cache = Array.isArray(data) ? data : [];
@@ -3639,17 +3646,20 @@ const MEM = (() => {
     const content = document.getElementById('mem-content').value.trim();
     if (!agent) { alert('Select an agent first!'); return; }
     if (!content) { alert('Add some content first!'); return; }
+    if (!(await ensureAuth())) return;
 
     if (_editingId) {
       await fetch(`${API}/${_editingId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({ content })
       });
     } else {
       await fetch(API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({ agent, content })
       });
     }
@@ -3659,7 +3669,8 @@ const MEM = (() => {
 
   async function remove(id) {
     if (!confirm('Delete this memory?')) return;
-    await fetch(`${API}/${id}`, { method: 'DELETE' });
+    if (!(await ensureAuth())) return;
+    await fetch(`${API}/${id}`, { method: 'DELETE', credentials: 'same-origin' });
     render();
   }
 
@@ -3726,6 +3737,10 @@ const MEM = (() => {
 
   async function render() {
     renderFilters();
+    if (!(await ensureAuth())) {
+      document.getElementById('mem-list').innerHTML = `<div style="text-align:center; padding:60px 0; color:var(--muted); font-size:13px;">Unlock the dropbox first to access memories.</div>`;
+      return;
+    }
     await renderList();
   }
 
