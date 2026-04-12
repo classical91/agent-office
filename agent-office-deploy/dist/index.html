@@ -1038,7 +1038,9 @@
     <!-- AGENT INFO PANEL -->
     <div id="agent-info-panel" style="display:none;margin:8px 12px;padding:12px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.08);">
       <div id="agent-info-name" style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:2px;"></div>
-      <div id="agent-info-role" style="font-size:10px;color:#6366f1;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;"></div>
+      <div id="agent-info-role" style="font-size:10px;color:#6366f1;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;"></div>
+      <div id="agent-info-model" style="font-size:10px;color:#94a3b8;margin-bottom:3px;"></div>
+      <div id="agent-info-memory" style="font-size:10px;margin-bottom:8px;"></div>
       <div id="agent-info-desc" style="font-size:11px;color:#94a3b8;line-height:1.5;"></div>
     </div>
 
@@ -3232,15 +3234,19 @@ function handleFileUpload(e){
 return{render};
 })();
 const AGENT_DESCRIPTIONS = {
-  'devin':      { name: 'Devin',      role: 'Project Overseer',  desc: 'Coordinates the team, manages the big picture. First point of contact for new projects and cross-agent strategy.' },
-  'traderclaw': { name: 'TraderClaw', role: 'Trading Bot',        desc: 'Monitors BTC signals, manages paper trades on Bitget, and tracks Polymarket opportunities. Runs autonomously.' },
-  'webclaw':    { name: 'WebClaw',    role: 'Web Developer',      desc: 'Builds pitch-ready HTML demo sites for local Nanaimo businesses. Cold-call ready URLs in minutes.' },
-  'xhunter':    { name: 'X-Hunter',  role: 'Social / X Agent',   desc: 'Monitors crypto Twitter, finds trending narratives, farms engagement on @BitcoinMagazine and @CoinDesk threads.' },
-  'forge':      { name: 'Forge',     role: 'Dev Agent',          desc: 'Writes code, debugs, and ships features. General-purpose developer for any coding task.' },
-  'lyra':       { name: 'Lyra',      role: 'Innerverse',         desc: 'Creative and narrative work on the Innerverse project. World-building, storytelling, and character arcs.' },
-  'xbot':       { name: 'XBot',      role: 'X Bot',              desc: 'Auto-posts to @DiamondHands811. Scheduled content, engagement replies, and crypto narrative amplification.' },
-  'guardian':   { name: 'Guardian',  role: 'Security',           desc: 'Monitors gateway access, reviews auth logs, and keeps the OpenClaw system locked down. Silent and watchful.' },
-  'fatherclaw': { name: 'FatherClaw',role: 'Orchestrator',       desc: "Routes tasks between all agents, monitors agent health, and manages cross-agent workflows. Jason's system-wide air traffic control." },
+  'devin':      { name: 'Devin',      role: 'Project Overseer',   model: 'Claude Sonnet 4.6', memory: true,  desc: 'Coordinates the team, manages the big picture. First point of contact for new projects and cross-agent strategy.' },
+  'traderclaw': { name: 'TraderClaw', role: 'Trading Bot',         model: 'Claude Sonnet 4.6', memory: true,  desc: 'Monitors BTC signals, manages paper trades on Bitget, and tracks Polymarket opportunities. Runs autonomously.' },
+  'webclaw':    { name: 'WebClaw',    role: 'Web Developer',       model: 'GPT-5.4',           memory: true,  desc: 'Builds pitch-ready HTML demo sites for local Nanaimo businesses. Cold-call ready URLs in minutes.' },
+  'xhunter':    { name: 'X-Hunter',  role: 'Social / X Agent',    model: 'Claude Sonnet 4.6', memory: true,  desc: 'Monitors crypto Twitter, finds trending narratives, farms engagement on @BitcoinMagazine and @CoinDesk threads.' },
+  'swarm':      { name: 'Swarm',     role: 'Codex Agent',         model: 'GPT-4o-mini',       memory: false, desc: 'Processes codex tasks and batch operations. Runs isolated sub-agent jobs without persistent memory.' },
+  'penny':      { name: 'Penny',     role: 'OSS Agent',           model: 'GPT-5.4',           memory: true,  desc: 'General utility agent. Scans repos, evaluates dependencies, and handles miscellaneous tasks.' },
+  'reaper':     { name: 'Reaper',    role: 'Farm Bot',            model: 'GPT-4o-mini',       memory: false, desc: 'CommentFarm operator. Runs discover pipeline, queues content, and posts to @DiamondHands811 on schedule.' },
+  'forge':      { name: 'Forge',     role: 'Dev Agent',           model: 'Claude Sonnet 4.6', memory: true,  desc: 'Writes code, debugs, and ships features. General-purpose developer for any coding task.' },
+  'lyra':       { name: 'Lyra',      role: 'Innerverse',          model: 'Claude Sonnet 4.6', memory: true,  desc: 'Creative and narrative work on the Innerverse project. World-building, storytelling, and character arcs.' },
+  'xbot':       { name: 'XBot',      role: 'X Bot',               model: 'GPT-5',             memory: false, desc: 'Auto-posts to @DiamondHands811. Scheduled content, engagement replies, and crypto narrative amplification.' },
+  'guardian':   { name: 'Guardian',  role: 'Security',            model: 'Claude Sonnet 4.6', memory: true,  desc: 'Monitors gateway access, reviews auth logs, and keeps the OpenClaw system locked down. Silent and watchful.' },
+  'command':    { name: 'Command',   role: 'Orchestrator',        model: 'Claude Sonnet 4.6', memory: true,  desc: 'Routes tasks between all agents, monitors agent health, and manages cross-agent workflows.' },
+  'fatherclaw': { name: 'FatherClaw',role: 'Orchestrator',        model: 'Claude Sonnet 4.6', memory: true,  desc: "Jason's system-wide air traffic control. Routes tasks, monitors agent health, and manages cross-agent workflows." },
 };
 
 function showAgentInfo(id) {
@@ -3249,6 +3255,13 @@ function showAgentInfo(id) {
   const panel = document.getElementById('agent-info-panel');
   document.getElementById('agent-info-name').textContent = info.name;
   document.getElementById('agent-info-role').textContent = info.role;
+  document.getElementById('agent-info-model').textContent = '⚡ ' + (info.model || 'Unknown');
+  const memEl = document.getElementById('agent-info-memory');
+  if (info.memory) {
+    memEl.innerHTML = '<span style="color:#22c55e;">●</span> Memory enabled';
+  } else {
+    memEl.innerHTML = '<span style="color:#64748b;">○</span> No memory (stateless)';
+  }
   document.getElementById('agent-info-desc').textContent = info.desc;
   panel.style.display = 'block';
 }
