@@ -264,7 +264,8 @@
   .org-tag-pink   { background: rgba(244,114,182,0.12); color: #f472b6; }
   .org-tag-blue   { background: rgba(96,165,250,0.12);  color: #60a5fa; }
   .org-cta { position: absolute; bottom: 14px; right: 18px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #374151; transition: color 0.2s; }
-  .org-card:hover .org-cta { color: #6b7280; }
+  .org-card:hover .org-cta { color: #a5b4fc; }
+  .org-card .org-cta { color: #4b5563; }
 
   .org-row-center { display: flex; justify-content: center; width: 100%; }
   .org-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; max-width: 680px; }
@@ -1072,8 +1073,8 @@
     <div class="org-page">
 
       <div class="org-row-center">
-        <div class="org-card glow-indigo org-card-wide">
-          <div class="org-card-inner">
+        <div class="org-card glow-indigo org-card-wide" onclick="showAgentInfo('devin'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('devin')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
+          <div class="org-card-inner" onclick="showAgentInfo('traderclaw'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('traderclaw')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
             <div class="org-avatar" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.25);">🛠️</div>
             <div class="org-body">
               <div class="org-name">Devin</div>
@@ -1086,7 +1087,7 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
       </div>
 
@@ -1097,8 +1098,8 @@
       </div>
 
       <div class="org-row-2" style="max-width:680px; margin: 0 auto;">
-        <div class="org-card glow-green">
-          <div class="org-card-inner">
+        <div class="org-card glow-green" onclick="showAgentInfo('webclaw'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('webclaw')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
+          <div class="org-card-inner" onclick="showAgentInfo('xhunter'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('xhunter')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
             <div class="org-avatar" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.25);">📈</div>
             <div class="org-body">
               <div class="org-name">TraderClaw</div>
@@ -1111,10 +1112,10 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
-        <div class="org-card glow-blue">
-          <div class="org-card-inner">
+        <div class="org-card glow-blue" onclick="showAgentInfo('penny'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('penny')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
+          <div class="org-card-inner" onclick="showAgentInfo('reaper'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('reaper')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
             <div class="org-avatar" style="background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.25);">🌐</div>
             <div class="org-body">
               <div class="org-name">WebClaw</div>
@@ -1127,7 +1128,7 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
       </div>
 
@@ -1144,8 +1145,8 @@
       </div>
 
       <div class="org-row-4">
-        <div class="org-card glow-cyan">
-          <div class="org-card-inner">
+        <div class="org-card glow-cyan" onclick="showAgentInfo('forge'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('forge')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
+          <div class="org-card-inner" onclick="showAgentInfo('lyra'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('lyra')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
             <div class="org-avatar" style="background:rgba(6,182,212,0.15);border-color:rgba(6,182,212,0.25);">🐦</div>
             <div class="org-body">
               <div class="org-name">X-Hunter</div>
@@ -1158,10 +1159,10 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
-        <div class="org-card glow-orange">
-          <div class="org-card-inner">
+        <div class="org-card glow-orange" onclick="showAgentInfo('xbot'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('xbot')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
+          <div class="org-card-inner" onclick="showAgentInfo('guardian'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('guardian')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
             <div class="org-avatar" style="background:rgba(249,115,22,0.15);border-color:rgba(249,115,22,0.25);">⚙️</div>
             <div class="org-body">
               <div class="org-name">Forge</div>
@@ -1174,9 +1175,9 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
-        <div class="org-card glow-purple">
+        <div class="org-card glow-purple" onclick="showAgentInfo('fatherclaw'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('fatherclaw')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
           <div class="org-card-inner">
             <div class="org-avatar" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.25);">✨</div>
             <div class="org-body">
@@ -1190,7 +1191,7 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
         <div class="org-card" style="border-color:rgba(34,197,94,0.2);">
           <div class="org-card-inner">
@@ -1202,11 +1203,11 @@
               <div class="org-tags">
                 <span class="org-tag org-tag-green">CommentFarm</span>
                 <span class="org-tag org-tag-teal">Queue</span>
-                <span class="org-tag org-tag-green">Qwen/free</span>
+                <span class="org-tag org-tag-green">GPT-4o-mini</span>
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
         <div class="org-card" style="border-color:rgba(234,179,8,0.2);">
           <div class="org-card-inner">
@@ -1214,15 +1215,30 @@
             <div class="org-body">
               <div class="org-name">Penny</div>
               <div class="org-title">Utility Agent</div>
-              <div class="org-desc">Free-tier general purpose agent. Always available, practical, no-nonsense. Runs on Gemma 4.</div>
+              <div class="org-desc">Free-tier general purpose agent. General utility agent. Handles research, misc tasks, and one-off jobs. Runs on GPT-5.4.</div>
               <div class="org-tags">
                 <span class="org-tag org-tag-orange">General</span>
                 <span class="org-tag org-tag-teal">Free Tier</span>
-                <span class="org-tag org-tag-blue">Gemma 4</span>
+                <span class="org-tag org-tag-blue">GPT-5.4</span>
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
+        </div>        <div class="org-card" style="border-color:rgba(234,179,8,0.2);" onclick="showAgentInfo('swarm'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('swarm')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
+          <div class="org-card-inner">
+            <div class="org-avatar" style="background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.2);">🐝</div>
+            <div class="org-body">
+              <div class="org-name">Swarm</div>
+              <div class="org-title">Codex Agent</div>
+              <div class="org-desc">Runs coding tasks in isolated ACP sessions via @codex87bot. Stateless, no persistent memory.</div>
+              <div class="org-tags">
+                <span class="org-tag org-tag-orange">Codex</span>
+                <span class="org-tag org-tag-teal">Stateless</span>
+                <span class="org-tag org-tag-blue">GPT-4o-mini</span>
+              </div>
+            </div>
+          </div>
+          <div class="org-cta">VIEW AGENT →</div>
         </div>        <div class="org-card glow-pink">
           <div class="org-card-inner">
             <div class="org-avatar" style="background:rgba(236,72,153,0.15);border-color:rgba(236,72,153,0.25);">🤖</div>
@@ -1237,7 +1253,7 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
       </div>
 
@@ -1260,7 +1276,7 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
         <div class="org-card" style="border-color:rgba(239,68,68,0.15);">
           <div class="org-card-inner">
@@ -1276,9 +1292,25 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
       </div>
+        <div class="org-card" onclick="showAgentInfo('command');" style="cursor:pointer;border-color:rgba(100,116,139,0.2);">
+          <div class="org-card-inner">
+            <div class="org-avatar" style="background:rgba(100,116,139,0.1);border-color:rgba(100,116,139,0.2);">📡</div>
+            <div class="org-body">
+              <div class="org-name">Command</div>
+              <div class="org-title">Orchestrator</div>
+              <div class="org-desc">Routes tasks between agents, monitors agent health, and manages cross-agent workflows.</div>
+              <div class="org-tags">
+                <span class="org-tag org-tag-indigo">Orchestration</span>
+                <span class="org-tag org-tag-teal">Routing</span>
+                <span class="org-tag org-tag-blue">Claude Sonnet</span>
+              </div>
+            </div>
+          </div>
+          <div class="org-cta">VIEW AGENT →</div>
+        </div>
 
       <div class="org-section-label" style="margin-top:32px;">
         <div class="line"></div><div class="text">⬡ META LAYER - OPENCLAW GATEWAY</div><div class="line"></div>
@@ -3250,6 +3282,9 @@ const AGENT_DESCRIPTIONS = {
 };
 
 function showAgentInfo(id) {
+  // Scroll nav to show agent info panel
+  const navEl = document.querySelector('.nav');
+  if (navEl) navEl.scrollTop = 99999;
   const info = AGENT_DESCRIPTIONS[id];
   if (!info) return;
   const panel = document.getElementById('agent-info-panel');
