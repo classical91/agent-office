@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -3408,7 +3408,7 @@ let dropsAuthState = { configured: false, authenticated: false, checked: false }
 
 VIEW_HANDLERS.traderclaw = { enter: () => DE.render(), focus: true };
 VIEW_HANDLERS.lyra = { enter: () => SORA.render(), focus: true };
-VIEW_HANDLERS.dropbox = { enter: () => renderDrops(), focus: true };
+VIEW_HANDLERS.dropbox = { enter: async () => { if (await ensureDropsSession(true)) renderDrops(); }, focus: true };
 VIEW_HANDLERS.memory = { enter: () => MEM.render(), focus: true };
 
 async function requestJson(url, options = {}) {
