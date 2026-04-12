@@ -129,7 +129,7 @@
   .nav-items-wrap {
     overflow: hidden;
     transition: max-height 0.25s ease;
-    max-height: 9999px;
+    max-height: 0px;
   }
 
   .nav-item {
@@ -3165,24 +3165,45 @@ function toggleProjGroup(headerEl) {
     headerEl.classList.remove('collapsed');
   }
 }
+function getNavState() {
+  try { return JSON.parse(localStorage.getItem('nav-collapsed-state')) || {}; } catch { return {}; }
+}
+function saveNavState(state) { localStorage.setItem('nav-collapsed-state', JSON.stringify(state)); }
+
 function toggleNav(labelEl) {
   const wrap = labelEl.nextElementSibling;
   if (!wrap) return;
+  const section = labelEl.textContent.trim().replace(/\s*▾$/, '');
   const isOpen = wrap.style.maxHeight && wrap.style.maxHeight !== '0px';
+  const state = getNavState();
   if (isOpen) {
     wrap.style.maxHeight = wrap.scrollHeight + 'px';
     requestAnimationFrame(() => { wrap.style.maxHeight = '0px'; });
     labelEl.classList.add('collapsed');
+    state[section] = true;
   } else {
     wrap.style.maxHeight = wrap.scrollHeight + 'px';
     wrap.addEventListener('transitionend', () => { if (!labelEl.classList.contains('collapsed')) wrap.style.maxHeight = 'none'; }, { once: true });
     labelEl.classList.remove('collapsed');
+    state[section] = false;
   }
+  saveNavState(state);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.nav-items-wrap').forEach(el => {
-    el.style.maxHeight = 'none';
+  const state = getNavState();
+  document.querySelectorAll('.nav-label').forEach(labelEl => {
+    const wrap = labelEl.nextElementSibling;
+    if (!wrap || !wrap.classList.contains('nav-items-wrap')) return;
+    const section = labelEl.textContent.trim().replace(/\s*▾$/, '');
+    const collapsed = state[section] !== false;
+    if (collapsed) {
+      wrap.style.maxHeight = '0px';
+      labelEl.classList.add('collapsed');
+    } else {
+      wrap.style.maxHeight = 'none';
+      labelEl.classList.remove('collapsed');
+    }
   });
   document.querySelectorAll('.nav-proj-links').forEach(el => {
     el.style.maxHeight = '0px';
