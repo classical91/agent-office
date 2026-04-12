@@ -3668,7 +3668,7 @@ async function deleteDrop(id) {
 
 let activeFilter = 'all';
 
-function filterDrops(subject, btn) {
+async function filterDrops(subject, btn) {
   activeFilter = subject;
   document.querySelectorAll('.drop-filter').forEach(b => {
     b.classList.remove('active');
@@ -3680,14 +3680,10 @@ function filterDrops(subject, btn) {
   btn.style.background = 'rgba(99,102,241,0.15)';
   btn.style.color = 'var(--accent)';
   btn.style.borderColor = 'var(--accent)';
-  // Auto-fill subject field when a specific filter is selected
+  await renderDrops(false);
+  // Pre-fill subject field after render so DOM is fresh
   const subjectInput = document.getElementById('drop-subject');
-  if (subjectInput && subject !== 'all') {
-    subjectInput.value = subject;
-  } else if (subjectInput && subject === 'all') {
-    subjectInput.value = '';
-  }
-  renderDrops(false);
+  if (subjectInput) subjectInput.value = subject !== 'all' ? subject : '';
 }
 
 async function renderDrops(rebuildFilters = true) {
