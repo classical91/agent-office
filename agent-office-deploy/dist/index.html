@@ -182,6 +182,15 @@
   /* VIEW SWITCHER */
   .view { display: none; flex: 1; overflow: hidden; }
   .view.active { display: flex; }
+  #view-office {
+    overflow: auto;
+    display: none;
+    flex: 1;
+    align-items: flex-start;
+    justify-content: flex-start;
+    background: #0a0c11;
+  }
+  #view-office.active { display: flex; }
 
   /* ORG CHART VIEW */
   #orgView {
@@ -280,10 +289,10 @@
   .office {
     position: relative;
     overflow: hidden;
+    width: 1560px;
+    height: 1020px;
     min-width: 1560px;
     min-height: 1020px;
-    width: 100%;
-    height: 100%;
     flex: 0 0 auto;
     background:
       radial-gradient(circle at 50% 16%, rgba(255,255,255,0.05), transparent 20%),
@@ -840,53 +849,35 @@
   /* ── MOBILE RESPONSIVE ─────────────────────────────── */
   @media (max-width: 768px) {
     body { overflow: auto; }
-
-    .layout {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto 1fr;
-      overflow: visible;
-    }
-
-    /* Hide left nav and activity feed on mobile by default */
-    .nav { display: none; }
-    .feed { display: none; }
-
-    /* Mobile topbar tweaks */
+    .layout { grid-template-columns: 1fr !important; overflow: visible; }
+    .nav { display: none !important; }
+    .feed { display: none !important; }
     .topbar { padding: 0 12px; }
     .topbar-meta { gap: 10px; font-size: 11px; }
-
-    /* Show a hamburger nav toggle */
     .mobile-nav-toggle {
       display: flex !important;
-      align-items: center;
-      justify-content: center;
-      width: 32px; height: 32px;
-      border-radius: 6px;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      cursor: pointer;
-      font-size: 16px;
-      color: var(--text);
+      align-items: center; justify-content: center;
+      min-width: 44px; min-height: 44px;
+      border-radius: 8px;
+      background: var(--panel); border: 1px solid var(--border);
+      cursor: pointer; font-size: 20px; color: var(--text);
+      touch-action: manipulation; user-select: none;
     }
-
-    /* Mobile nav drawer */
     .nav.mobile-open {
-      display: block;
-      position: fixed;
-      top: 48px; left: 0; bottom: 0;
-      width: 220px;
-      z-index: 1000;
-      box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+      display: flex !important; flex-direction: column;
+      position: fixed !important; top: 48px !important; left: 0 !important;
+      bottom: 0 !important; width: 280px !important; z-index: 9999 !important;
+      background: #13161d !important; border-right: 1px solid #1e2330 !important;
+      overflow-y: auto !important; -webkit-overflow-scrolling: touch;
+      box-shadow: 6px 0 40px rgba(0,0,0,0.85) !important; padding: 8px 0 !important;
     }
-
-    /* Views fill full width */
     .view { width: 100%; min-height: calc(100vh - 48px); }
-
-    /* Canvas office — let it scroll */
     #view-office { overflow: auto !important; }
   }
 
+  /* Hide hamburger on desktop */
   .mobile-nav-toggle { display: none; }
+
 
   /* DROPBOX */
   .drop-card {
@@ -940,7 +931,7 @@
 
 <div class="topbar">
   <div style="display:flex; align-items:center; gap:12px;">
-    <div class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu">☰</div>
+    <button class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu" aria-label="Open navigation">&#9776;</button>
     <div class="topbar-logo">⬡ AGENT OFFICE</div>
   </div>
   <div class="topbar-meta">
@@ -1062,7 +1053,7 @@
   </nav>
 
   <!-- OFFICE VIEW -->
-  <div class="view active" id="view-office" style="position:relative; overflow:auto; background:#0a0c11; align-items:flex-start; justify-content:flex-start;">
+  <div class="view active" id="view-office" style="overflow:auto; background:#0a0c11;">
     <div class="office" id="officeArea" style="position:relative; width:100%; height:100%; min-width:1560px; min-height:1020px;">
       <canvas id="officeCanvas"></canvas>
     </div>
@@ -2777,6 +2768,7 @@ VIEW_HANDLERS.calendar = { enter: () => { if (window.CAL) window.CAL.render(); }
 let currentView = 'office';
 
 function switchView(view, navEl) {
+  closeMobileNav();
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('view-' + view).classList.add('active');
@@ -3266,39 +3258,37 @@ function handleFileUpload(e){
 return{render};
 })();
 const AGENT_DESCRIPTIONS = {
-  'devin':      { name: 'Devin',      role: 'Project Overseer',   model: 'Claude Sonnet 4.6', memory: true,  desc: "The overseer. Coordinates all agents, tracks every active project, and is Jason's main developer assistant. Handles new builds, cross-agent strategy, and big-picture planning. Talks to Jason via Telegram (@coder bot)." },
-  'traderclaw': { name: 'TraderClaw', role: 'Trading Bot',         model: 'Claude Sonnet 4.6', memory: true,  desc: 'Autonomous trading agent. Monitors BTC 1H/4H/1D signals, RSI divergence, BTC.D and USDT.D. Runs paper trades on Bitget and shadows Polymarket. Mobile-first dashboard with Portfolio, History, Screener, and Checklist tabs. Live at traderclaw-production.up.railway.app.' },
-  'webclaw':    { name: 'WebClaw',    role: 'Web Developer',       model: 'GPT-5.4',           memory: true,  desc: 'AI web agency agent. Builds pitch-ready demo sites for local Nanaimo retail businesses. Jason gives a business name, WebClaw generates a polished HTML site and deploys a live URL for cold-call pitches on the spot. Pricing: $300-500 setup + $50-100/month.' },
-  'xhunter':    { name: 'X-Hunter',  role: 'Social / X Agent',    model: 'Claude Sonnet 4.6', memory: true,  desc: 'Crypto Twitter monitor and content agent. Tracks @BitcoinMagazine, @CoinDesk, and other major handles for trending narratives. Posts original content and manages Jason's X presence. Runs on the main session.' },
-  'swarm':      { name: 'Swarm',     role: 'Codex Agent',         model: 'GPT-4o-mini',       memory: false, desc: 'OpenClaw's Codex harness agent (@codex87bot on Telegram). Runs coding tasks in isolated ACP sessions. Stateless — no persistent memory between runs. Formerly called Codex, renamed Swarm on 2026-04-11.' },
-  'penny':      { name: 'Penny',     role: 'General Utility',     model: 'GPT-5.4',           memory: true,  desc: 'General-purpose utility agent (@oss bot). Handles miscellaneous tasks, research, and one-off jobs. Switched to GPT-5.4 on 2026-04-11 after Gemma free models kept hitting rate limits.' },
-  'reaper':     { name: 'Reaper',    role: 'CommentFarm Operator', model: 'GPT-4o-mini',       memory: false, desc: 'Runs the CommentFarm pipeline autonomously. Fetches trending X posts via xAI, ranks and queues them for review, then posts approved content to @DiamondHands811. Cron-driven. Frontend at commentfarm-production-fc8b.up.railway.app.' },
-  'forge':      { name: 'Forge',     role: 'Dev Agent',           model: 'Claude Sonnet 4.6', memory: true,  desc: 'General coding and development agent (@dev bot). Handles feature work, bug fixes, and dev tasks that don't need Devin's oversight. A solid pair programmer for focused coding sessions.' },
-  'lyra':       { name: 'Lyra',      role: 'Innerverse Agent',    model: 'Claude Sonnet 4.6', memory: true,  desc: 'Creative and narrative agent for the Innerverse project (@sora bot). Handles world-building, storytelling, character arcs, and all creative work tied to the Innerverse universe.' },
-  'xbot':       { name: 'XBot',      role: 'X Posting Bot',       model: 'GPT-5',             memory: false, desc: 'Automated posting bot for @DiamondHands811. Handles scheduled X posts, content queuing, and crypto narrative amplification. Stateless — no memory, just executes the post queue.' },
-  'guardian':   { name: 'Guardian',  role: 'Security Agent',      model: 'Claude Sonnet 4.6', memory: true,  desc: 'Security and hardening agent. Monitors OpenClaw gateway access, reviews auth logs, scans for anomalies, and hardens firewall and SSH rules. Quiet by default — speaks up when something is wrong.' },
-  'command':    { name: 'Command',   role: 'Orchestrator',        model: 'Claude Sonnet 4.6', memory: true,  desc: 'Cross-agent orchestration layer. Routes tasks between agents, monitors agent health, and manages multi-agent workflows. The system's internal air traffic control.' },
-  'fatherclaw': { name: 'FatherClaw',role: 'Orchestrator',        model: 'Claude Sonnet 4.6', memory: true,  desc: "Senior orchestrator. Jason's top-level system coordinator. Oversees all agents, manages inter-agent dependencies, and handles escalations that need a commanding presence." },
+  'devin':      { name: 'Devin',      role: 'Project Overseer',    model: 'Claude Sonnet 4.6', memory: true,  desc: "The overseer. Coordinates all agents, tracks every active project, and is Jason main developer assistant. Handles new builds, cross-agent strategy, and big-picture planning." },
+  'traderclaw': { name: 'TraderClaw', role: 'Trading Bot',          model: 'Claude Sonnet 4.6', memory: true,  desc: "Autonomous trading agent. Monitors BTC 1H/4H/1D signals, RSI divergence, BTC.D and USDT.D. Runs paper trades on Bitget and shadows Polymarket. Live at traderclaw-production.up.railway.app." },
+  'webclaw':    { name: 'WebClaw',    role: 'Web Developer',        model: 'GPT-5.4',           memory: true,  desc: "AI web agency agent. Builds pitch-ready demo sites for local Nanaimo businesses. Generates HTML and deploys a live URL for cold-call pitches. $300-500 setup + $50-100/month." },
+  'xhunter':    { name: 'X-Hunter',  role: 'Social / X Agent',     model: 'Claude Sonnet 4.6', memory: true,  desc: "Crypto Twitter monitor and content agent. Tracks @BitcoinMagazine, @CoinDesk, and other major handles for trending narratives. Posts content and manages Jason X presence." },
+  'swarm':      { name: 'Swarm',     role: 'Codex Agent',          model: 'GPT-4o-mini',       memory: false, desc: "OpenClaw Codex harness agent (@codex87bot on Telegram). Runs coding tasks in isolated ACP sessions. Stateless - no persistent memory between runs. Formerly called Codex." },
+  'penny':      { name: 'Penny',     role: 'General Utility',      model: 'GPT-5.4',           memory: true,  desc: "General-purpose utility agent (@oss bot). Handles miscellaneous tasks, research, and one-off jobs. Switched to GPT-5.4 on 2026-04-11 after free models kept hitting rate limits." },
+  'reaper':     { name: 'Reaper',    role: 'CommentFarm Operator', model: 'GPT-4o-mini',       memory: false, desc: "Runs the CommentFarm pipeline autonomously. Fetches trending X posts via xAI, ranks and queues them for review, then posts approved content to @DiamondHands811. Cron-driven." },
+  'forge':      { name: 'Forge',     role: 'Dev Agent',            model: 'Claude Sonnet 4.6', memory: true,  desc: "General coding and development agent (@dev bot). Handles feature work, bug fixes, and dev tasks. A solid pair programmer for focused coding sessions." },
+  'lyra':       { name: 'Lyra',      role: 'Innerverse Agent',     model: 'Claude Sonnet 4.6', memory: true,  desc: "Creative and narrative agent for the Innerverse project (@sora bot). Handles world-building, storytelling, character arcs, and all creative work tied to the Innerverse universe." },
+  'xbot':       { name: 'XBot',      role: 'X Posting Bot',        model: 'GPT-5',             memory: false, desc: "Automated posting bot for @DiamondHands811. Handles scheduled X posts, content queuing, and crypto narrative amplification. Stateless - no memory, just executes the post queue." },
+  'guardian':   { name: 'Guardian',  role: 'Security Agent',       model: 'Claude Sonnet 4.6', memory: true,  desc: "Security and hardening agent. Monitors OpenClaw gateway access, reviews auth logs, scans for anomalies, and hardens firewall and SSH rules. Quiet by default - speaks up when something is wrong." },
+  'command':    { name: 'Command',   role: 'Orchestrator',         model: 'Claude Sonnet 4.6', memory: true,  desc: "Cross-agent orchestration layer. Routes tasks between agents, monitors agent health, and manages multi-agent workflows. The system internal air traffic control." },
+  'fatherclaw': { name: 'FatherClaw',role: 'Orchestrator',         model: 'Claude Sonnet 4.6', memory: true,  desc: "Senior orchestrator. Jason top-level system coordinator. Oversees all agents, manages inter-agent dependencies, and handles escalations." },
 };
 
 function showAgentInfo(id) {
-  // Scroll nav to show agent info panel
-  const navEl = document.querySelector('.nav');
-  if (navEl) navEl.scrollTop = 99999;
+  closeMobileNav();
   const info = AGENT_DESCRIPTIONS[id];
   if (!info) return;
   const panel = document.getElementById('agent-info-panel');
   document.getElementById('agent-info-name').textContent = info.name;
   document.getElementById('agent-info-role').textContent = info.role;
-  document.getElementById('agent-info-model').textContent = '⚡ ' + (info.model || 'Unknown');
+  document.getElementById('agent-info-model').textContent = '\u26a1 ' + (info.model || '');
   const memEl = document.getElementById('agent-info-memory');
-  if (info.memory) {
-    memEl.innerHTML = '<span style="color:#22c55e;">●</span> Memory enabled';
-  } else {
-    memEl.innerHTML = '<span style="color:#64748b;">○</span> No memory (stateless)';
-  }
+  memEl.innerHTML = info.memory
+    ? '<span style="color:#22c55e;">\u25cf</span> Memory enabled'
+    : '<span style="color:#64748b;">\u25cb</span> No memory (stateless)';
   document.getElementById('agent-info-desc').textContent = info.desc;
   panel.style.display = 'block';
+  const nav = document.querySelector('.nav');
+  if (nav) nav.scrollTop = 99999;
 }
 
 
@@ -3388,14 +3378,20 @@ function toggleFocusMode() {
 
 // ─── MOBILE NAV ───────────────────────────────────────────────────────────────
 function toggleMobileNav() {
-  const nav = document.querySelector('.nav');
-  const overlay = document.getElementById('mobile-overlay');
-  const isOpen = nav.classList.toggle('mobile-open');
-  overlay.style.display = isOpen ? 'block' : 'none';
+  var nav = document.querySelector('.nav');
+  var overlay = document.getElementById('mobile-overlay');
+  var isOpen = nav.classList.toggle('mobile-open');
+  if (overlay) overlay.style.display = isOpen ? 'block' : 'none';
+  if (isOpen) {
+    nav.querySelectorAll('.nav-items-wrap').forEach(function(w) { w.style.maxHeight = 'none'; });
+    nav.querySelectorAll('.nav-label').forEach(function(l) { l.classList.remove('collapsed'); });
+  }
 }
 function closeMobileNav() {
-  document.querySelector('.nav').classList.remove('mobile-open');
-  document.getElementById('mobile-overlay').style.display = 'none';
+  var nav = document.querySelector('.nav');
+  var overlay = document.getElementById('mobile-overlay');
+  if (nav) nav.classList.remove('mobile-open');
+  if (overlay) overlay.style.display = 'none';
 }
 // Close nav when a nav-item is tapped on mobile
 document.querySelectorAll('.nav-item').forEach(el => {
@@ -3406,6 +3402,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
 
 // ─── DROPBOX ──────────────────────────────────────────────────────────────────
 const DROPS_API = '/api/drops';
+const DROPS_SESSION_API = '/api/session';
 let _dropsCache = null;
 let dropsAuthState = { configured: false, authenticated: false, checked: false };
 
