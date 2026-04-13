@@ -899,7 +899,6 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (req.m
     if (req.method === 'GET' && pathname === '/api/calendar/events') {
       const rows = await pool.query('SELECT * FROM calendar_events ORDER BY start_time ASC');
       const events = rows.rows.map(r => ({
