@@ -1,4 +1,4 @@
-﻿const http = require('http');
+const http = require('http');
 const https = require('https');
 const fs = require('fs/promises');
 const path = require('path');
@@ -438,19 +438,32 @@ async function createPostgresStorage() {
     )
   `);
 
-  // Seed cron jobs if calendar is empty
-  const calCount = await pool.query('SELECT COUNT(*)::int AS count FROM calendar_events');
-  if (calCount.rows[0].count === 0) {
-    const tz = 'America/Vancouver';
-    const seedEvents = [
-      { id: 'seed_farmbot', title: 'Farmbot Morning Run', start_time: '2026-04-13T09:00:00-07:00', end_time: '2026-04-13T09:05:00-07:00', notes: 'Automated: Reaper runs CommentFarm discover + autopost. Posts to @DiamondHands811.', type: 'task' },
-      { id: 'seed_xam', title: 'X Morning Session', start_time: '2026-04-13T09:00:00-07:00', end_time: '2026-04-13T09:30:00-07:00', notes: 'Manual: 5 comments on trending crypto posts on X.', type: 'task' },
-      { id: 'seed_xpm', title: 'X Afternoon Session', start_time: '2026-04-13T13:00:00-07:00', end_time: '2026-04-13T13:30:00-07:00', notes: 'Manual: 5 comments on trending crypto posts on X.', type: 'task' },
-      { id: 'seed_xeve', title: 'X Evening Session', start_time: '2026-04-13T19:00:00-07:00', end_time: '2026-04-13T19:30:00-07:00', notes: 'Manual: 5 comments on trending crypto posts on X.', type: 'task' },
+  // Recurring daily events - ensure today + next 7 days always have entries
+  {
+    // [startHour, startMin, endHour, endMin]
+    const RECURRING = [
+      { suffix: 'farmbot', title: 'Farmbot Morning Run', s: [9,0],  e: [9,30],  notes: 'Automated: Reaper runs CommentFarm discover + autopost. Posts to @DiamondHands811.', type: 'task' },
+      { suffix: 'xam',    title: 'X Morning Session',   s: [9,30], e: [10,0],  notes: 'Manual: 5 comments on trending crypto posts on X.', type: 'task' },
+      { suffix: 'xpm',    title: 'X Afternoon Session', s: [13,0], e: [13,30], notes: 'Manual: 5 comments on trending crypto posts on X.', type: 'task' },
+      { suffix: 'xeve',   title: 'X Evening Session',   s: [19,0], e: [19,30], notes: 'Manual: 5 comments on trending crypto posts on X.', type: 'task' },
     ];
-    for (const e of seedEvents) {
-      await pool.query('INSERT INTO calendar_events (id,title,start_time,end_time,notes,type) VALUES ($1,$2,$3,$4,$5,$6)', [e.id, e.title, e.start_time, e.end_time, e.notes, e.type]);
+    const pad = n => String(n).padStart(2,'0');
+    const toISO = (dateStr, [h, m]) => `${dateStr}T${pad(h)}:${pad(m)}:00-07:00`;
+    const now = new Date();
+    for (let d = 0; d < 8; d++) {
+      const day = new Date(now);
+      day.setUTCDate(day.getUTCDate() + d);
+      const dateStr = day.toISOString().slice(0, 10);
+      for (const r of RECURRING) {
+        const id = `recur_${dateStr}_${r.suffix}`;
+        await pool.query(
+          'INSERT INTO calendar_events (id,title,start_time,end_time,notes,type) VALUES ($1,$2,$3,$4,$5,$6) ON CONFLICT (id) DO NOTHING',
+          [id, r.title, toISO(dateStr, r.s), toISO(dateStr, r.e), r.notes, r.type]
+        );
+      }
     }
+    // Clean up old hardcoded seed events
+    await pool.query("DELETE FROM calendar_events WHERE id IN ('seed_farmbot','seed_xam','seed_xpm','seed_xeve')");
   }
 
   const existingCount = await pool.query('SELECT COUNT(*)::int AS count FROM drops');
@@ -558,6 +571,28 @@ async function createPostgresStorage() {
       const result = await pool.query('DELETE FROM memories WHERE id = $1', [id]);
       return result.rowCount > 0;
     },
+    async listCalendarEvents() {
+      const result = await pool.query('SELECT * FROM calendar_events ORDER BY start_time ASC');
+      return result.rows.map(r => ({
+        id: r.id, summary: r.title, description: r.notes || '', type: r.type || 'meeting', done: r.done,
+        start: { dateTime: r.start_time.toISOString(), timeZone: 'America/Vancouver' },
+        end: { dateTime: r.end_time.toISOString(), timeZone: 'America/Vancouver' }
+      }));
+    },
+    async createCalendarEvent(ev) {
+      const id = 'evt_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+      await pool.query('INSERT INTO calendar_events (id,title,start_time,end_time,notes,type) VALUES ($1,$2,$3,$4,$5,$6)',
+        [id, ev.title, ev.start, ev.end, ev.notes || '', ev.type || 'meeting']);
+      return id;
+    },
+    async deleteCalendarEvent(id) {
+      const result = await pool.query('DELETE FROM calendar_events WHERE id=$1', [id]);
+      return result.rowCount > 0;
+    },
+    async patchCalendarEvent(id, body) {
+      if (body.done !== undefined) await pool.query('UPDATE calendar_events SET done=$1 WHERE id=$2', [body.done, id]);
+      if (body.title) await pool.query('UPDATE calendar_events SET title=$1 WHERE id=$2', [body.title, id]);
+    },
   };
 }
 
@@ -604,7 +639,7 @@ async function handleStatic(req, res, pathname) {
   }
 }
 
-// ── GOOGLE CALENDAR INTEGRATION ────────────────────────────────
+// -- GOOGLE CALENDAR INTEGRATION --------------------------------
 
 let gcalToken = null; // { access_token, expires_at }
 
@@ -675,7 +710,7 @@ async function getGcalToken() {
   return gcalToken.access_token;
 }
 
-// ───────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------
 
 const server = http.createServer(async (req, res) => {
   const pathname = req.url.split('?')[0];
@@ -796,7 +831,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // ── MEMORIES API ───────────────────────────────────────────
+    // -- MEMORIES API -------------------------------------------
     if (req.method === 'GET' && pathname === '/api/memories') {
       if (!requireDropsAuth(res, req)) return;
       sendJson(res, 200, await storage.listMemories());
@@ -866,7 +901,7 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // ── GOOGLE CALENDAR API ─────────────────────────────────────
+    // -- GOOGLE CALENDAR API -------------------------------------
 
 
     if (req.method === 'GET' && pathname === '/api/calendar/oauth/callback') {
@@ -886,7 +921,7 @@ const server = http.createServer(async (req, res) => {
           process.env.GOOGLE_REFRESH_TOKEN = data.refresh_token;
           gcalToken = { access_token: data.access_token, expires_at: Date.now() + (data.expires_in * 1000) };
           res.writeHead(200, { 'Content-Type': 'text/html' });
-          res.end('<html><body style="background:#0a0c11;color:#e2e8f0;font-family:sans-serif;padding:40px;text-align:center;"><h2 style="color:#22c55e;">✅ Google Calendar connected!</h2><p>Refresh token saved. Closing in 3 seconds...</p><script>setTimeout(()=>window.location="/"  ,3000)</script></body></html>');
+          res.end('<html><body style="background:#0a0c11;color:#e2e8f0;font-family:sans-serif;padding:40px;text-align:center;"><h2 style="color:#22c55e;">? Google Calendar connected!</h2><p>Refresh token saved. Closing in 3 seconds...</p><script>setTimeout(()=>window.location="/"  ,3000)</script></body></html>');
         } else {
           res.writeHead(200, { 'Content-Type': 'text/html' });
           res.end('<html><body style="background:#0a0c11;color:#e2e8f0;font-family:sans-serif;padding:40px;"><h2>No refresh token returned.</h2><p>Go to myaccount.google.com/permissions, revoke access for this app, then try again.</p></body></html>');
@@ -900,12 +935,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'GET' && pathname === '/api/calendar/events') {
-      const rows = await pool.query('SELECT * FROM calendar_events ORDER BY start_time ASC');
-      const events = rows.rows.map(r => ({
-        id: r.id, summary: r.title, description: r.notes || '', type: r.type || 'meeting', done: r.done,
-        start: { dateTime: r.start_time.toISOString(), timeZone: 'America/Vancouver' },
-        end: { dateTime: r.end_time.toISOString(), timeZone: 'America/Vancouver' }
-      }));
+      const events = await storage.listCalendarEvents();
       sendJson(res, 200, { events });
       return;
     }
@@ -913,16 +943,14 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && pathname === '/api/calendar/events') {
       const body = await readJsonBody(req);
       if (!body.title || !body.start || !body.end) { sendJson(res, 400, { error: 'title, start, end required' }); return; }
-      const id = 'evt_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
-      await pool.query('INSERT INTO calendar_events (id,title,start_time,end_time,notes,type) VALUES ($1,$2,$3,$4,$5,$6)',
-        [id, body.title, body.start, body.end, body.notes || '', body.type || 'meeting']);
+      const id = await storage.createCalendarEvent(body);
       sendJson(res, 200, { id });
       return;
     }
 
     if (req.method === 'DELETE' && pathname.startsWith('/api/calendar/events/')) {
       const id = pathname.split('/').pop();
-      await pool.query('DELETE FROM calendar_events WHERE id=$1', [id]);
+      await storage.deleteCalendarEvent(id);
       sendJson(res, 200, { ok: true });
       return;
     }
@@ -930,38 +958,11 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'PATCH' && pathname.startsWith('/api/calendar/events/')) {
       const id = pathname.split('/').pop();
       const body = await readJsonBody(req);
-      if (body.done !== undefined) await pool.query('UPDATE calendar_events SET done=$1 WHERE id=$2', [body.done, id]);
-      if (body.title) await pool.query('UPDATE calendar_events SET title=$1 WHERE id=$2', [body.title, id]);
+      await storage.patchCalendarEvent(id, body);
       sendJson(res, 200, { ok: true });
       return;
     }
-if (req.method === 'POST' && pathname === '/api/calendar/events') {
-      if (!isGcalConfigured()) {
-        sendJson(res, 503, { error: 'Google Calendar not configured.' });
-        return;
-      }
-      const body = await readJsonBody(req);
-      if (!body.title || !body.start || !body.end) {
-        sendJson(res, 400, { error: 'title, start, and end are required.' });
-        return;
-      }
-      const token = await getGcalToken();
-      const tz = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Toronto';
-      const gEvent = {
-        summary: String(body.title),
-        description: body.notes ? String(body.notes) : undefined,
-        start: { dateTime: body.start, timeZone: tz },
-        end: { dateTime: body.end, timeZone: tz }
-      };
-      const created = await gcalHttpsRequest({
-        host: 'www.googleapis.com',
-        path: '/calendar/v3/calendars/primary/events',
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-      }, JSON.stringify(gEvent));
-      sendJson(res, 201, created);
-      return;
-    }
+
 
     if (req.method === 'POST' && pathname === '/api/calendar/quick-add') {
       if (!isGcalConfigured()) {
@@ -986,7 +987,7 @@ if (req.method === 'POST' && pathname === '/api/calendar/events') {
       return;
     }
 
-    // ────────────────────────────────────────────────────────────
+    // ------------------------------------------------------------
 
     await handleStatic(req, res, pathname);
   } catch (error) {

@@ -1,5 +1,5 @@
-﻿(function () {
-  const ROW_HEIGHT = 56;
+(function () {
+  const ROW_HEIGHT = 72;
   const HOUR_START = 7;
   const HOUR_END = 21;
   const MIN_WINDOW_MINUTES = 45;
@@ -854,13 +854,13 @@
     const start = parseLocalIso(event.start);
     const end = parseLocalIso(event.end);
     const top = ((start.getHours() + start.getMinutes() / 60) - HOUR_START) * ROW_HEIGHT + 6;
-    const height = Math.max(34, durationMinutes(event) / 60 * ROW_HEIGHT - 10);
+    const height = Math.max(48, durationMinutes(event) / 60 * ROW_HEIGHT - 4);
     const widthPct = 100 / layout.columns;
     const leftPct = widthPct * layout.column;
     return '<button class="calendar-event-block' + (state.selectedEventId === event.id ? ' active' : '') + '" style="top:' + top + 'px;height:' + height + 'px;left:calc(' + leftPct + '% + 6px);width:calc(' + widthPct + '% - 12px);background:' + meta.surface + ';border-color:' + meta.border + ';color:' + meta.color + ';" onclick="CAL.selectEvent(\'' + event.id + '\')">'
       + '<span class="calendar-event-time">' + escapeHtml(formatTime(start)) + '</span>'
       + '<span class="calendar-event-block-title">' + escapeHtml(event.title) + '</span>'
-      + (height > 56 ? '<span class="calendar-event-block-meta">' + escapeHtml(meta.label + ' / ' + formatRange(start, end)) + '</span>' : '')
+      + '<span class="calendar-event-block-meta">' + escapeHtml(formatRange(start, end)) + '</span>'
       + '</button>';
   }
 
@@ -1505,7 +1505,7 @@
     render();
   }
 
-  // ── GOOGLE CALENDAR SYNC ───────────────────────────────────────
+  // -- GOOGLE CALENDAR SYNC ---------------------------------------
 
   function googleEventToInternal(gEvent) {
     const startRaw = gEvent.start.dateTime || (gEvent.start.date + 'T00:00');
@@ -1561,17 +1561,20 @@
     }
   }
 
-  // ──────────────────────────────────────────────────────────────
+  // --------------------------------------------------------------
 
 
   async function deleteEvent(id) {
     if (!confirm('Delete this event?')) return;
+    try {
+      const r = await fetch('/api/calendar/events/' + id, { method: 'DELETE', credentials: 'same-origin' });
+      if (!r.ok) { alert('Delete failed - try again'); return; }
+    } catch(e) { alert('Network error - delete failed'); return; }
     state.events = state.events.filter(function(e) { return e.id !== id; });
     if (state.selectedEventId === id) {
       state.selectedEventId = state.events.length ? state.events[0].id : null;
     }
     render();
-    try { await fetch('/api/calendar/events/' + id, { method: 'DELETE', credentials: 'same-origin' }); } catch(_) {}
   }
   window.CAL = {
     render,
