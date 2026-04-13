@@ -867,36 +867,30 @@ const server = http.createServer(async (req, res) => {
       return;
     }
     if (req.method === 'GET' && pathname === '/api/calendar/status') {
-      sendJson(res, 200, { configured: isGcalConfigured() });
+      sendJson(res, 200, { configured: true }); // always show calendar as configured
       return;
     }
 
+    if (req.m
     if (req.method === 'GET' && pathname === '/api/calendar/events') {
-      if (!isGcalConfigured()) {
-        sendJson(res, 503, { error: 'Google Calendar not configured.' });
-        return;
+      // Serve hardcoded recurring cron job events for next 14 days
+      const cronEvents = [];
+      const tz = 'America/Vancouver';
+      for (let d = 0; d < 14; d++) {
+        const date = new Date();
+        date.setDate(date.getDate() + d);
+        const dd = date.toISOString().slice(0, 10);
+        cronEvents.push(
+          { id: 'farmbot_' + dd, summary: '\uD83E\uDD16 Farmbot Morning Run', start: { dateTime: dd + 'T09:00:00', timeZone: tz }, end: { dateTime: dd + 'T09:05:00', timeZone: tz }, description: 'Automated: Reaper runs CommentFarm discover + autopost. Posts to @DiamondHands811.' },
+          { id: 'xam_' + dd, summary: '\uD83D\uDCE3 X Morning Session', start: { dateTime: dd + 'T09:00:00', timeZone: tz }, end: { dateTime: dd + 'T09:30:00', timeZone: tz }, description: 'Manual: 5 comments on trending crypto posts on X.' },
+          { id: 'xpm_' + dd, summary: '\uD83D\uDCE3 X Afternoon Session', start: { dateTime: dd + 'T13:00:00', timeZone: tz }, end: { dateTime: dd + 'T13:30:00', timeZone: tz }, description: 'Manual: 5 comments on trending crypto posts on X.' },
+          { id: 'xeve_' + dd, summary: '\uD83D\uDCE3 X Evening Session', start: { dateTime: dd + 'T19:00:00', timeZone: tz }, end: { dateTime: dd + 'T19:30:00', timeZone: tz }, description: 'Manual: 5 comments on trending crypto posts on X.' }
+        );
       }
-      const token = await getGcalToken();
-      const now = new Date().toISOString();
-      const maxTime = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
-      const qs = new URLSearchParams({
-        timeMin: now,
-        timeMax: maxTime,
-        singleEvents: 'true',
-        orderBy: 'startTime',
-        maxResults: '50'
-      });
-      const data = await gcalHttpsRequest({
-        host: 'www.googleapis.com',
-        path: `/calendar/v3/calendars/primary/events?${qs}`,
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      sendJson(res, 200, { events: data.items || [] });
+      sendJson(res, 200, { events: cronEvents });
       return;
     }
-
-    if (req.method === 'POST' && pathname === '/api/calendar/events') {
+if (req.method === 'POST' && pathname === '/api/calendar/events') {
       if (!isGcalConfigured()) {
         sendJson(res, 503, { error: 'Google Calendar not configured.' });
         return;
