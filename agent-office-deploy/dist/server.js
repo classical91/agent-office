@@ -1,4 +1,4 @@
-const http = require('http');
+﻿const http = require('http');
 const https = require('https');
 const fs = require('fs/promises');
 const path = require('path');
@@ -840,6 +840,32 @@ const server = http.createServer(async (req, res) => {
 
     // ── GOOGLE CALENDAR API ─────────────────────────────────────
 
+
+    if (req.method === 'GET' && pathname === '/api/calendar/oauth/callback') {
+      const code = parsedUrl.searchParams.get('code');
+      if (!code) { sendJson(res, 400, { error: 'Missing code' }); return; }
+      const { GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET } = process.env;
+      const body = new URLSearchParams({
+        code,
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        redirect_uri: 'https://focused-creativity-production.up.railway.app/api/calendar/oauth/callback',
+        grant_type: 'authorization_code'
+      }).toString();
+      try {
+        const data = await gcalHttpsRequest({ host: 'oauth2.googleapis.com', path: '/token', method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }, body);
+        if (data.refresh_token) {
+          process.env.GOOGLE_REFRESH_TOKEN = data.refresh_token;
+          gcalToken = { access_token: data.access_token, expires_at: Date.now() + (data.expires_in * 1000) };
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end('<html><body style="background:#0a0c11;color:#e2e8f0;font-family:sans-serif;padding:40px;text-align:center;"><h2 style="color:#22c55e;">✅ Google Calendar connected!</h2><p>Refresh token saved. Closing in 3 seconds...</p><script>setTimeout(()=>window.location="/"  ,3000)</script></body></html>');
+        } else {
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end('<html><body style="background:#0a0c11;color:#e2e8f0;font-family:sans-serif;padding:40px;"><h2>No refresh token returned.</h2><p>Go to myaccount.google.com/permissions, revoke access for this app, then try again.</p></body></html>');
+        }
+      } catch(e) { sendJson(res, 500, { error: e.message }); }
+      return;
+    }
     if (req.method === 'GET' && pathname === '/api/calendar/status') {
       sendJson(res, 200, { configured: isGcalConfigured() });
       return;
