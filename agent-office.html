@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -182,6 +182,15 @@
   /* VIEW SWITCHER */
   .view { display: none; flex: 1; overflow: hidden; }
   .view.active { display: flex; }
+  #view-office {
+    overflow: auto;
+    display: none;
+    flex: 1;
+    align-items: flex-start;
+    justify-content: flex-start;
+    background: #0a0c11;
+  }
+  #view-office.active { display: flex; }
 
   /* ORG CHART VIEW */
   #orgView {
@@ -264,7 +273,8 @@
   .org-tag-pink   { background: rgba(244,114,182,0.12); color: #f472b6; }
   .org-tag-blue   { background: rgba(96,165,250,0.12);  color: #60a5fa; }
   .org-cta { position: absolute; bottom: 14px; right: 18px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #374151; transition: color 0.2s; }
-  .org-card:hover .org-cta { color: #6b7280; }
+  .org-card:hover .org-cta { color: #a5b4fc; }
+  .org-card .org-cta { color: #4b5563; }
 
   .org-row-center { display: flex; justify-content: center; width: 100%; }
   .org-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; max-width: 680px; }
@@ -279,6 +289,11 @@
   .office {
     position: relative;
     overflow: hidden;
+    width: 1560px;
+    height: 1020px;
+    min-width: 1560px;
+    min-height: 1020px;
+    flex: 0 0 auto;
     background:
       radial-gradient(circle at 50% 16%, rgba(255,255,255,0.05), transparent 20%),
       radial-gradient(circle at 22% 18%, rgba(239,68,68,0.14), transparent 24%),
@@ -331,8 +346,12 @@
     transform: translate(-50%, -100%);
     transform-style: preserve-3d;
     pointer-events: none;
-    transition: left 3s ease-in-out, top 3s ease-in-out, filter 0.35s ease;
+    transition:
+      left var(--travel-ms, 2200ms) cubic-bezier(0.22, 0.9, 0.24, 1),
+      top var(--travel-ms, 2200ms) cubic-bezier(0.22, 0.9, 0.24, 1),
+      filter 0.35s ease;
     z-index: var(--agent-z, 10);
+    will-change: left, top, filter;
   }
 
   .agent-label {
@@ -350,6 +369,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: center;
+    transition: opacity 0.2s ease, transform 0.2s ease;
   }
 
   .agent-label strong {
@@ -367,11 +387,32 @@
 
   .agent-avatar {
     position: relative;
-    width: 68px;
-    height: 96px;
+    width: 72px;
+    height: 102px;
     transform-origin: 50% 100%;
     transform: scale(var(--agent-scale, 1));
-    animation: bob 2s ease-in-out infinite;
+    animation: officeBob 2.15s ease-in-out infinite;
+  }
+
+  .agent-char.agent-moving .agent-label {
+    opacity: 0.72;
+    transform: translateY(-3px);
+  }
+
+  .agent-avatar.motion-typing {
+    animation: typingBob 0.96s ease-in-out infinite;
+  }
+
+  .agent-avatar.motion-reading {
+    animation: readingLean 2.4s ease-in-out infinite;
+  }
+
+  .agent-avatar.motion-monitoring {
+    animation: monitorShift 1.8s ease-in-out infinite;
+  }
+
+  .agent-avatar.motion-walking {
+    animation: walkBob 0.66s steps(2, end) infinite;
   }
 
   .agent-shadow {
@@ -612,9 +653,30 @@
     box-shadow: 0 0 0 3px rgba(15,23,42,0.55), 0 0 10px rgba(255,255,255,0.15);
   }
 
-  @keyframes bob {
+  @keyframes officeBob {
     0%, 100% { transform: translateY(0) scale(var(--agent-scale, 1)); }
     50% { transform: translateY(-4px) scale(var(--agent-scale, 1)); }
+  }
+
+  @keyframes typingBob {
+    0%, 100% { transform: translateY(0) scale(var(--agent-scale, 1)) rotate(0deg); }
+    35% { transform: translateY(-2px) scale(var(--agent-scale, 1)) rotate(-1.4deg); }
+    68% { transform: translateY(-4px) scale(var(--agent-scale, 1)) rotate(1.25deg); }
+  }
+
+  @keyframes readingLean {
+    0%, 100% { transform: translateY(0) scale(var(--agent-scale, 1)) rotate(0deg); }
+    50% { transform: translateY(-2px) scale(var(--agent-scale, 1)) rotate(-2.4deg); }
+  }
+
+  @keyframes monitorShift {
+    0%, 100% { transform: translateY(0) scale(var(--agent-scale, 1)) rotate(0deg); }
+    50% { transform: translateY(-2px) scale(var(--agent-scale, 1)) rotate(1.6deg); }
+  }
+
+  @keyframes walkBob {
+    0%, 100% { transform: translateY(0) scale(var(--agent-scale, 1)); }
+    50% { transform: translateY(-6px) scale(var(--agent-scale, 1)); }
   }
 
   .agent-char:nth-child(odd) .agent-avatar { animation-delay: -0.9s; }
@@ -787,53 +849,35 @@
   /* ── MOBILE RESPONSIVE ─────────────────────────────── */
   @media (max-width: 768px) {
     body { overflow: auto; }
-
-    .layout {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto 1fr;
-      overflow: visible;
-    }
-
-    /* Hide left nav and activity feed on mobile by default */
-    .nav { display: none; }
-    .feed { display: none; }
-
-    /* Mobile topbar tweaks */
+    .layout { grid-template-columns: 1fr !important; overflow: visible; }
+    .nav { display: none !important; }
+    .feed { display: none !important; }
     .topbar { padding: 0 12px; }
     .topbar-meta { gap: 10px; font-size: 11px; }
-
-    /* Show a hamburger nav toggle */
     .mobile-nav-toggle {
       display: flex !important;
-      align-items: center;
-      justify-content: center;
-      width: 32px; height: 32px;
-      border-radius: 6px;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      cursor: pointer;
-      font-size: 16px;
-      color: var(--text);
+      align-items: center; justify-content: center;
+      min-width: 44px; min-height: 44px;
+      border-radius: 8px;
+      background: var(--panel); border: 1px solid var(--border);
+      cursor: pointer; font-size: 20px; color: var(--text);
+      touch-action: manipulation; user-select: none;
     }
-
-    /* Mobile nav drawer */
     .nav.mobile-open {
-      display: block;
-      position: fixed;
-      top: 48px; left: 0; bottom: 0;
-      width: 220px;
-      z-index: 1000;
-      box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+      display: flex !important; flex-direction: column;
+      position: fixed !important; top: 48px !important; left: 0 !important;
+      bottom: 0 !important; width: 280px !important; z-index: 9999 !important;
+      background: #13161d !important; border-right: 1px solid #1e2330 !important;
+      overflow-y: auto !important; -webkit-overflow-scrolling: touch;
+      box-shadow: 6px 0 40px rgba(0,0,0,0.85) !important; padding: 8px 0 !important;
     }
-
-    /* Views fill full width */
     .view { width: 100%; min-height: calc(100vh - 48px); }
-
-    /* Canvas office — let it scroll */
     #view-office { overflow: auto !important; }
   }
 
+  /* Hide hamburger on desktop */
   .mobile-nav-toggle { display: none; }
+
 
   /* DROPBOX */
   .drop-card {
@@ -887,7 +931,7 @@
 
 <div class="topbar">
   <div style="display:flex; align-items:center; gap:12px;">
-    <div class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu">☰</div>
+    <button class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu" aria-label="Open navigation">&#9776;</button>
     <div class="topbar-logo">⬡ AGENT OFFICE</div>
   </div>
   <div class="topbar-meta">
@@ -968,13 +1012,17 @@
       <div class="nav-label" onclick="toggleNav(this)">Agents <span class="nav-chevron">▾</span></div>
       <div class="nav-items-wrap">
         <div class="nav-item" onclick="showAgentInfo('devin')"><span class="icon">🛠️</span> Devin</div>
-        <div class="nav-item" onclick="switchView('traderclaw', this); showAgentInfo('traderclaw')"><span class="icon">📈</span> TraderClaw</div>
+        <div class="nav-item" onclick="showAgentInfo('traderclaw')"><span class="icon">📈</span> TraderClaw</div>
         <div class="nav-item" onclick="showAgentInfo('webclaw')"><span class="icon">🌐</span> WebClaw</div>
         <div class="nav-item" onclick="showAgentInfo('xhunter')"><span class="icon">🐦</span> X-Hunter</div>
+        <div class="nav-item" onclick="showAgentInfo('swarm')"><span class="icon">🐝</span> Swarm</div>
+        <div class="nav-item" onclick="showAgentInfo('penny')"><span class="icon">🪙</span> Penny</div>
+        <div class="nav-item" onclick="showAgentInfo('reaper')"><span class="icon">💀</span> Reaper</div>
         <div class="nav-item" onclick="showAgentInfo('forge')"><span class="icon">⚙️</span> Forge</div>
-        <div class="nav-item" onclick="switchView('lyra', this); showAgentInfo('lyra')"><span class="icon">✨</span> Lyra</div>
+        <div class="nav-item" onclick="showAgentInfo('lyra')"><span class="icon">✨</span> Lyra</div>
         <div class="nav-item" onclick="showAgentInfo('xbot')"><span class="icon">🤖</span> XBot</div>
         <div class="nav-item" onclick="showAgentInfo('guardian')"><span class="icon">🛡</span> Guardian</div>
+        <div class="nav-item" onclick="showAgentInfo('command')"><span class="icon">📡</span> Command</div>
         <div class="nav-item" onclick="showAgentInfo('fatherclaw')"><span class="icon">👑</span> FatherClaw</div>
       </div>
     </div>
@@ -982,7 +1030,9 @@
     <!-- AGENT INFO PANEL -->
     <div id="agent-info-panel" style="display:none;margin:8px 12px;padding:12px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.08);">
       <div id="agent-info-name" style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:2px;"></div>
-      <div id="agent-info-role" style="font-size:10px;color:#6366f1;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;"></div>
+      <div id="agent-info-role" style="font-size:10px;color:#6366f1;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;"></div>
+      <div id="agent-info-model" style="font-size:10px;color:#94a3b8;margin-bottom:3px;"></div>
+      <div id="agent-info-memory" style="font-size:10px;margin-bottom:8px;"></div>
       <div id="agent-info-desc" style="font-size:11px;color:#94a3b8;line-height:1.5;"></div>
     </div>
 
@@ -1003,8 +1053,8 @@
   </nav>
 
   <!-- OFFICE VIEW -->
-  <div class="view active" id="view-office" style="position:relative; overflow:hidden; background:#0a0c11;">
-    <div class="office" id="officeArea" style="position:absolute;inset:0;">
+  <div class="view active" id="view-office" style="overflow:auto; background:#0a0c11;">
+    <div class="office" id="officeArea" style="position:relative; width:100%; height:100%; min-width:1560px; min-height:1020px;">
       <canvas id="officeCanvas"></canvas>
     </div>
   </div>
@@ -1014,8 +1064,8 @@
     <div class="org-page">
 
       <div class="org-row-center">
-        <div class="org-card glow-indigo org-card-wide">
-          <div class="org-card-inner">
+        <div class="org-card glow-indigo org-card-wide" onclick="showAgentInfo('devin'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('devin')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
+          <div class="org-card-inner" onclick="showAgentInfo('traderclaw'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('traderclaw')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
             <div class="org-avatar" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.25);">🛠️</div>
             <div class="org-body">
               <div class="org-name">Devin</div>
@@ -1028,7 +1078,7 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
       </div>
 
@@ -1039,8 +1089,8 @@
       </div>
 
       <div class="org-row-2" style="max-width:680px; margin: 0 auto;">
-        <div class="org-card glow-green">
-          <div class="org-card-inner">
+        <div class="org-card glow-green" onclick="showAgentInfo('webclaw'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('webclaw')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
+          <div class="org-card-inner" onclick="showAgentInfo('xhunter'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('xhunter')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
             <div class="org-avatar" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.25);">📈</div>
             <div class="org-body">
               <div class="org-name">TraderClaw</div>
@@ -1053,10 +1103,10 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
-        <div class="org-card glow-blue">
-          <div class="org-card-inner">
+        <div class="org-card glow-blue" onclick="showAgentInfo('penny'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('penny')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
+          <div class="org-card-inner" onclick="showAgentInfo('reaper'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('reaper')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
             <div class="org-avatar" style="background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.25);">🌐</div>
             <div class="org-body">
               <div class="org-name">WebClaw</div>
@@ -1069,7 +1119,7 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
       </div>
 
@@ -1086,8 +1136,8 @@
       </div>
 
       <div class="org-row-4">
-        <div class="org-card glow-cyan">
-          <div class="org-card-inner">
+        <div class="org-card glow-cyan" onclick="showAgentInfo('forge'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('forge')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
+          <div class="org-card-inner" onclick="showAgentInfo('lyra'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('lyra')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
             <div class="org-avatar" style="background:rgba(6,182,212,0.15);border-color:rgba(6,182,212,0.25);">🐦</div>
             <div class="org-body">
               <div class="org-name">X-Hunter</div>
@@ -1100,10 +1150,10 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
-        <div class="org-card glow-orange">
-          <div class="org-card-inner">
+        <div class="org-card glow-orange" onclick="showAgentInfo('xbot'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('xbot')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
+          <div class="org-card-inner" onclick="showAgentInfo('guardian'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('guardian')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
             <div class="org-avatar" style="background:rgba(249,115,22,0.15);border-color:rgba(249,115,22,0.25);">⚙️</div>
             <div class="org-body">
               <div class="org-name">Forge</div>
@@ -1116,9 +1166,9 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
-        <div class="org-card glow-purple">
+        <div class="org-card glow-purple" onclick="showAgentInfo('fatherclaw'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('fatherclaw')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
           <div class="org-card-inner">
             <div class="org-avatar" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.25);">✨</div>
             <div class="org-body">
@@ -1132,7 +1182,7 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
         <div class="org-card" style="border-color:rgba(34,197,94,0.2);">
           <div class="org-card-inner">
@@ -1144,11 +1194,11 @@
               <div class="org-tags">
                 <span class="org-tag org-tag-green">CommentFarm</span>
                 <span class="org-tag org-tag-teal">Queue</span>
-                <span class="org-tag org-tag-green">Qwen/free</span>
+                <span class="org-tag org-tag-green">GPT-4o-mini</span>
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
         <div class="org-card" style="border-color:rgba(234,179,8,0.2);">
           <div class="org-card-inner">
@@ -1156,15 +1206,30 @@
             <div class="org-body">
               <div class="org-name">Penny</div>
               <div class="org-title">Utility Agent</div>
-              <div class="org-desc">Free-tier general purpose agent. Always available, practical, no-nonsense. Runs on Gemma 4.</div>
+              <div class="org-desc">Free-tier general purpose agent. General utility agent. Handles research, misc tasks, and one-off jobs. Runs on GPT-5.4.</div>
               <div class="org-tags">
                 <span class="org-tag org-tag-orange">General</span>
                 <span class="org-tag org-tag-teal">Free Tier</span>
-                <span class="org-tag org-tag-blue">Gemma 4</span>
+                <span class="org-tag org-tag-blue">GPT-5.4</span>
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
+        </div>        <div class="org-card" style="border-color:rgba(234,179,8,0.2);" onclick="showAgentInfo('swarm'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('swarm')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
+          <div class="org-card-inner">
+            <div class="org-avatar" style="background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.2);">🐝</div>
+            <div class="org-body">
+              <div class="org-name">Swarm</div>
+              <div class="org-title">Codex Agent</div>
+              <div class="org-desc">Runs coding tasks in isolated ACP sessions via @codex87bot. Stateless, no persistent memory.</div>
+              <div class="org-tags">
+                <span class="org-tag org-tag-orange">Codex</span>
+                <span class="org-tag org-tag-teal">Stateless</span>
+                <span class="org-tag org-tag-blue">GPT-4o-mini</span>
+              </div>
+            </div>
+          </div>
+          <div class="org-cta">VIEW AGENT →</div>
         </div>        <div class="org-card glow-pink">
           <div class="org-card-inner">
             <div class="org-avatar" style="background:rgba(236,72,153,0.15);border-color:rgba(236,72,153,0.25);">🤖</div>
@@ -1179,7 +1244,7 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
       </div>
 
@@ -1202,7 +1267,7 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
         <div class="org-card" style="border-color:rgba(239,68,68,0.15);">
           <div class="org-card-inner">
@@ -1218,9 +1283,25 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →→</div>
         </div>
       </div>
+        <div class="org-card" onclick="showAgentInfo('command');" style="cursor:pointer;border-color:rgba(100,116,139,0.2);">
+          <div class="org-card-inner">
+            <div class="org-avatar" style="background:rgba(100,116,139,0.1);border-color:rgba(100,116,139,0.2);">📡</div>
+            <div class="org-body">
+              <div class="org-name">Command</div>
+              <div class="org-title">Orchestrator</div>
+              <div class="org-desc">Routes tasks between agents, monitors agent health, and manages cross-agent workflows.</div>
+              <div class="org-tags">
+                <span class="org-tag org-tag-indigo">Orchestration</span>
+                <span class="org-tag org-tag-teal">Routing</span>
+                <span class="org-tag org-tag-blue">Claude Sonnet</span>
+              </div>
+            </div>
+          </div>
+          <div class="org-cta">VIEW AGENT →</div>
+        </div>
 
       <div class="org-section-label" style="margin-top:32px;">
         <div class="line"></div><div class="text">⬡ META LAYER - OPENCLAW GATEWAY</div><div class="line"></div>
@@ -1280,6 +1361,22 @@
     <div id="sora-app" style="flex:1; overflow:hidden; display:flex; flex-direction:column;"></div>
   </div>
 
+  <!-- PASSPHRASE MODAL -->
+  <div id="passphrase-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.75); align-items:center; justify-content:center;">
+    <div style="background:#0d0f14; border:1px solid #2a3048; border-radius:12px; padding:28px 24px; width:100%; max-width:360px; margin:0 16px;">
+      <div style="font-size:14px; font-weight:700; color:#e2e8f0; margin-bottom:6px;">🔒 Unlock Dropbox</div>
+      <div style="font-size:12px; color:#64748b; margin-bottom:18px;">Enter the passphrase to access your drops.</div>
+      <input id="passphrase-input" type="password" placeholder="Passphrase..."
+        style="width:100%; background:#0a0c11; border:1px solid #2a3048; border-radius:8px; padding:12px 14px; font-size:15px; color:#e2e8f0; outline:none; box-sizing:border-box; -webkit-appearance:none;"
+        autocomplete="current-password" autocorrect="off" autocapitalize="none" spellcheck="false" />
+      <div id="passphrase-error" style="display:none; font-size:12px; color:#f87171; margin-top:8px;"></div>
+      <div style="display:flex; gap:10px; margin-top:18px;">
+        <button id="passphrase-cancel" style="flex:1; padding:11px; background:transparent; border:1px solid #2a3048; border-radius:8px; color:#64748b; font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
+        <button id="passphrase-submit" style="flex:2; padding:11px; background:var(--accent, #6366f1); border:none; border-radius:8px; color:#fff; font-size:13px; font-weight:600; cursor:pointer;">Unlock</button>
+      </div>
+    </div>
+  </div>
+
   <!-- DROPBOX VIEW -->
   <div class="view" id="view-dropbox" style="flex-direction:column; background:#0a0c11; overflow-y:auto;">
     <div id="dropbox-app" style="max-width:860px; width:100%; margin:0 auto; padding:40px 28px 80px;">
@@ -1290,7 +1387,7 @@
           <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">📥 DROPBOX</div>
           <div style="font-size:13px; color:var(--muted);">Drop ideas, tasks, and reminders — tagged by subject.</div>
         </div>
-        <button class="drop-new-btn" onclick="showDropForm()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 20px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap; -webkit-tap-highlight-color:transparent;">
+        <button class="drop-new-btn" onclick="showDropForm(activeFilter)" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 20px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap; -webkit-tap-highlight-color:transparent;">
           <span>＋</span> New Drop
         </button>
       </div>
@@ -1364,6 +1461,12 @@
         </div>
       </div>
 
+      <!-- Agent Roster Cards -->
+      <div id="mem-roster" style="margin-bottom:32px;">
+        <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin-bottom:14px;">Agent Roster</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px;" id="mem-roster-grid"></div>
+      </div>
+
       <!-- Agent filter tabs -->
       <div id="mem-filters" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px;"></div>
 
@@ -1395,6 +1498,7 @@ const AGENTS = [
     emoji: '🛠️',
     color: '#6366f1',
     role: 'Project Overseer',
+    model: 'Claude Sonnet 4.6',
     tasks: [
       'Reviewing project status',
       'Coordinating agents',
@@ -1417,6 +1521,7 @@ const AGENTS = [
     emoji: '📈',
     color: '#22c55e',
     role: 'Trading Bot',
+    model: 'Claude Sonnet 4.6',
     tasks: [
       'Monitoring BTC 1H signal',
       'Scanning RSI divergence',
@@ -1439,6 +1544,7 @@ const AGENTS = [
     emoji: '🌐',
     color: '#3b82f6',
     role: 'Web Developer',
+    model: 'GPT-5.4',
     tasks: [
       'Building demo site',
       'Generating client HTML',
@@ -1461,6 +1567,7 @@ const AGENTS = [
     emoji: '🐦',
     color: '#06b6d4',
     role: 'Social / X Agent',
+    model: 'Claude Sonnet 4.6',
     tasks: [
       'Scanning trending crypto posts',
       'Drafting reply to @BitcoinMagazine',
@@ -1478,24 +1585,91 @@ const AGENTS = [
     ]
   },
   {
-    id: 'nova',
-    name: 'Nova',
-    emoji: '🔭',
-    color: '#f97316',
-    role: 'Product Researcher',
+    id: 'swarm',
+    name: 'Swarm',
+    emoji: '🐝',
+    color: '#eab308',
+    role: 'Codex Agent',
+    model: 'GPT-4o-mini',
     tasks: [
-      'Researching niche pain points',
-      'Analyzing competitor products',
-      'Drafting positioning brief',
-      'Evaluating market size',
-      'Writing lead magnet outline',
+      'Processing codex tasks',
+      'Running batch operations',
+      'Indexing project data',
+      'Syncing agent state',
+      'Idle',
     ],
     feed: [
-      'Niche research: AI automation for SMBs',
-      'Competitor analysis complete - 5 tools',
-      'Positioning brief drafted for Jason',
-      'Found underserved pain point in Nanaimo market',
-      'Lead magnet outline ready for review',
+      'Codex batch complete - 12 tasks processed',
+      'Project index refreshed',
+      'Agent state synced across cluster',
+      'Batch queue cleared',
+      'Task pipeline healthy',
+    ]
+  },
+  {
+    id: 'penny',
+    name: 'Penny',
+    emoji: '🪙',
+    color: '#f59e0b',
+    role: 'OSS Agent',
+    model: 'GPT-5.4',
+    tasks: [
+      'Scanning open-source repos',
+      'Evaluating dependencies',
+      'Checking license compliance',
+      'Reviewing PR activity',
+      'Idle',
+    ],
+    feed: [
+      'OSS scan complete - 3 repos reviewed',
+      'License check passed for all deps',
+      'Flagged outdated dependency in trader',
+      'PR activity summary generated',
+      'Vulnerability scan clean',
+    ]
+  },
+  {
+    id: 'reaper',
+    name: 'Reaper',
+    emoji: '💀',
+    color: '#78716c',
+    role: 'Farm Bot',
+    model: 'GPT-4o-mini',
+    tasks: [
+      'Running discover pipeline',
+      'Posting scheduled content',
+      'Farming engagement',
+      'Cron job active',
+      'Idle',
+    ],
+    feed: [
+      'Morning discover pipeline complete',
+      'Scheduled 5 posts for today',
+      'Engagement farm cycle finished',
+      'Cron job triggered - next run in 4H',
+      'Content queue replenished',
+    ]
+  },
+  {
+    id: 'forge',
+    name: 'Forge',
+    emoji: '⚙️',
+    color: '#8b5cf6',
+    role: 'Dev Agent',
+    model: 'Claude Sonnet 4.6',
+    tasks: [
+      'Writing feature code',
+      'Debugging issue',
+      'Shipping to production',
+      'Code review',
+      'Idle',
+    ],
+    feed: [
+      'Feature branch merged to main',
+      'Bug fix deployed - auth flow',
+      'Code review complete on PR #47',
+      'New endpoint shipped to Railway',
+      'Test suite passing - 100%',
     ]
   },
   {
@@ -1504,6 +1678,7 @@ const AGENTS = [
     emoji: '✨',
     color: '#a855f7',
     role: 'Innerverse',
+    model: 'Claude Sonnet 4.6',
     tasks: [
       'Working on Innerverse...',
       'Crafting narrative',
@@ -1525,6 +1700,7 @@ const AGENTS = [
     emoji: '🤖',
     color: '#ec4899',
     role: 'X Bot',
+    model: 'GPT-5',
     tasks: [
       'Posting to X',
       'Idle',
@@ -1546,6 +1722,7 @@ const AGENTS = [
     emoji: '🛡',
     color: '#ef4444',
     role: 'Security',
+    model: 'Claude Sonnet 4.6',
     tasks: [
       'Monitoring gateway access',
       'Scanning for anomalies',
@@ -1567,6 +1744,7 @@ const AGENTS = [
     emoji: '👑',
     color: '#64748b',
     role: 'Orchestrator',
+    model: 'Claude Sonnet 4.6',
     tasks: [
       'Routing tasks between agents',
       'Monitoring agent health',
@@ -1575,14 +1753,37 @@ const AGENTS = [
       'Logging inter-agent comms',
     ],
     feed: [
-      'Routed WebClaw brief from Nova',
-      'All 9 agents healthy',
+      'Routed WebClaw brief from Swarm',
+      'All 12 agents healthy',
       'Cross-agent workflow complete',
       'Task queue: 2 pending',
       'Inter-agent log updated',
     ]
   }
-];;
+,
+  {
+    id: 'command',
+    name: 'Command',
+    emoji: '📡',
+    color: '#64748b',
+    role: 'Orchestrator',
+    model: 'Claude Sonnet 4.6',
+    tasks: [
+      'Routing tasks between agents',
+      'Monitoring agent health',
+      'Idle',
+      'Queuing cross-agent workflow',
+      'Logging inter-agent comms',
+    ],
+    feed: [
+      'Routed WebClaw brief from Swarm',
+      'All 12 agents healthy',
+      'Cross-agent workflow complete',
+      'Task queue: 2 pending',
+      'Inter-agent log updated',
+    ]
+  }
+];
 
 // ─── POSITIONS (grid slots in office) ─────────────────────────
 const POSITIONS = [
@@ -1595,16 +1796,106 @@ const POSITIONS = [
   { x: 0.86, y: 0.24 },
   { x: 0.54, y: 0.23 },
   { x: 0.78, y: 0.71 },
+  { x: 0.35, y: 0.45 },
+  { x: 0.62, y: 0.45 },
+  { x: 0.42, y: 0.68 },
 ];
 
 // ─── STATE ────────────────────────────────────────────────────
-let agentState = AGENTS.map((a, i) => ({
-  ...a,
-  pos: { ...POSITIONS[i] },
-  currentTask: a.tasks[0],
-  status: 'active',
-  targetPos: { ...POSITIONS[i] },
-}));
+const OFFICE_SCENE = {
+  gridW: 14,
+  gridH: 11,
+  tileRatio: 0.06,
+  maxTileW: 84,
+  originXRatio: 0.5,
+  originYRatio: 0.14,
+  platformLiftRatio: 1.55,
+};
+
+const OFFICE_ROUTES = {
+  devin: [
+    { gx: 6.35, gy: 3.45, pose: 'stand', facing: 'S', motion: 'monitoring', tasks: ['Reviewing project status', 'Coordinating agents', 'Planning next sprint'] },
+    { gx: 4.95, gy: 6.35, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Updating MEMORY.md', 'Coordinating agents', 'Planning next sprint'] },
+    { gx: 2.15, gy: 8.35, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Updating MEMORY.md', 'Reviewing project status', 'Flagged open TODOs for Jason'] },
+    { gx: 7.2, gy: 8.15, pose: 'stand', facing: 'N', motion: 'monitoring', tasks: ['Planning next sprint', 'Coordinating agents', 'Reviewing project status'] },
+  ],
+  traderclaw: [
+    { gx: 1.82, gy: 2.56, pose: 'seated', facing: 'NE', motion: 'typing', tasks: ['Monitoring BTC 1H signal', 'Scanning RSI divergence', 'Checking Polymarket odds'] },
+    { gx: 2.72, gy: 3.26, pose: 'stand', facing: 'E', motion: 'monitoring', tasks: ['Scanning RSI divergence', 'Monitoring BTC 1H signal', 'Logging trade to history'] },
+    { gx: 3.28, gy: 8.08, pose: 'stand', facing: 'S', motion: 'reading', tasks: ['Checking Polymarket odds', 'Logging trade to history', 'Screener refresh (4H)'] },
+    { gx: 6.18, gy: 6.14, pose: 'stand', facing: 'E', motion: 'monitoring', tasks: ['Paper trade open: BTC long', 'Monitoring BTC 1H signal', 'Screener refresh (4H)'] },
+  ],
+  webclaw: [
+    { gx: 10.22, gy: 2.56, pose: 'seated', facing: 'NW', motion: 'typing', tasks: ['Building demo site', 'Generating client HTML', 'Optimizing for mobile'] },
+    { gx: 8.95, gy: 2.02, pose: 'stand', facing: 'N', motion: 'reading', tasks: ['Writing pitch copy', 'Optimizing for mobile', 'Building demo site'] },
+    { gx: 8.24, gy: 5.96, pose: 'stand', facing: 'W', motion: 'monitoring', tasks: ['Customizing template', 'Generating client HTML', 'Deploying to Railway'] },
+    { gx: 6.48, gy: 3.86, pose: 'stand', facing: 'S', motion: 'monitoring', tasks: ['Building demo site', 'Writing pitch copy', 'Deploying to Railway'] },
+  ],
+  xhunter: [
+    { gx: 10.12, gy: 5.38, pose: 'seated', facing: 'NW', motion: 'typing', tasks: ['Scanning trending crypto posts', 'Drafting reply to @BitcoinMagazine', 'Checking X notifications'] },
+    { gx: 12.28, gy: 3.18, pose: 'stand', facing: 'W', motion: 'monitoring', tasks: ['Monitoring @CoinDesk feed', 'Analyzing engagement metrics', 'Scanning trending crypto posts'] },
+    { gx: 10.56, gy: 6.08, pose: 'stand', facing: 'S', motion: 'monitoring', tasks: ['Scheduling repost', 'Checking X notifications', 'Analyzing engagement metrics'] },
+    { gx: 8.78, gy: 4.58, pose: 'stand', facing: 'W', motion: 'reading', tasks: ['Drafting reply to @BitcoinMagazine', 'Scanning trending crypto posts', 'Monitoring @CoinDesk feed'] },
+  ],
+  nova: [
+    { gx: 1.84, gy: 5.42, pose: 'seated', facing: 'NE', motion: 'typing', tasks: ['Researching niche pain points', 'Analyzing competitor products', 'Drafting positioning brief'] },
+    { gx: 1.24, gy: 7.18, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Analyzing competitor products', 'Evaluating market size', 'Researching niche pain points'] },
+    { gx: 4.96, gy: 5.54, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Drafting positioning brief', 'Evaluating market size', 'Writing lead magnet outline'] },
+    { gx: 3.42, gy: 8.48, pose: 'stand', facing: 'N', motion: 'monitoring', tasks: ['Writing lead magnet outline', 'Researching niche pain points', 'Drafting positioning brief'] },
+  ],
+  lyra: [
+    { gx: 4.46, gy: 7.46, pose: 'stand', facing: 'NE', motion: 'reading', tasks: ['Working on Innerverse...', 'Crafting narrative', 'Building world lore'] },
+    { gx: 2.18, gy: 8.52, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Building world lore', 'Writing chapter draft', 'Crafting narrative'] },
+    { gx: 5.32, gy: 6.74, pose: 'stand', facing: 'N', motion: 'monitoring', tasks: ['Crafting narrative', 'Working on Innerverse...', 'Writing chapter draft'] },
+    { gx: 7.88, gy: 8.66, pose: 'stand', facing: 'W', motion: 'reading', tasks: ['Writing chapter draft', 'Building world lore', 'Crafting narrative'] },
+  ],
+  xbot: [
+    { gx: 10.82, gy: 8.08, pose: 'seated', facing: 'NW', motion: 'typing', tasks: ['Queuing scheduled posts', 'Posting to X', 'Monitoring mentions'] },
+    { gx: 12.16, gy: 6.68, pose: 'stand', facing: 'W', motion: 'monitoring', tasks: ['Monitoring mentions', 'Engaging with replies', 'Posting to X'] },
+    { gx: 10.94, gy: 6.16, pose: 'stand', facing: 'N', motion: 'monitoring', tasks: ['Posting to X', 'Queuing scheduled posts', 'Engaging with replies'] },
+    { gx: 8.82, gy: 7.18, pose: 'stand', facing: 'W', motion: 'reading', tasks: ['Monitoring mentions', 'Engaging with replies', 'Queuing scheduled posts'] },
+  ],
+  guardian: [
+    { gx: 12.28, gy: 2.12, pose: 'stand', facing: 'W', motion: 'monitoring', tasks: ['Monitoring gateway access', 'Reviewing auth logs', 'Scanning for anomalies'] },
+    { gx: 12.18, gy: 8.16, pose: 'stand', facing: 'W', motion: 'monitoring', tasks: ['Scanning for anomalies', 'Hardening firewall rules', 'Monitoring gateway access'] },
+    { gx: 9.68, gy: 1.42, pose: 'stand', facing: 'S', motion: 'monitoring', tasks: ['Reviewing auth logs', 'Monitoring gateway access', 'Hardening firewall rules'] },
+    { gx: 10.44, gy: 4.12, pose: 'stand', facing: 'W', motion: 'reading', tasks: ['Reviewing auth logs', 'Scanning for anomalies', 'Idle - all clear'] },
+  ],
+  fatherclaw: [
+    { gx: 6.9, gy: 8.32, pose: 'seated', facing: 'N', motion: 'typing', tasks: ['Routing tasks between agents', 'Monitoring agent health', 'Queuing cross-agent workflow'] },
+    { gx: 7.04, gy: 6.56, pose: 'stand', facing: 'N', motion: 'monitoring', tasks: ['Monitoring agent health', 'Routing tasks between agents', 'Logging inter-agent comms'] },
+    { gx: 7.34, gy: 4.32, pose: 'stand', facing: 'S', motion: 'monitoring', tasks: ['Queuing cross-agent workflow', 'Routing tasks between agents', 'Monitoring agent health'] },
+    { gx: 4.28, gy: 6.92, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Logging inter-agent comms', 'Monitoring agent health', 'Queuing cross-agent workflow'] },
+  ],
+};
+
+function cloneRoute(route) {
+  return (route || []).map(stop => ({
+    ...stop,
+    tasks: stop.tasks ? [...stop.tasks] : null,
+  }));
+}
+
+let agentState = AGENTS.map((agent) => {
+  const route = cloneRoute(OFFICE_ROUTES[agent.id]);
+  const start = route[0] || { gx: 6.5, gy: 5.5, pose: 'stand', facing: 'S', motion: 'monitoring', status: 'active' };
+  return {
+    ...agent,
+    route,
+    routeIndex: 0,
+    pos: { gx: start.gx, gy: start.gy },
+    currentTask: (start.tasks && start.tasks[0]) || agent.tasks[0],
+    status: start.status || 'active',
+    lookState: {
+      pose: start.pose || 'stand',
+      facing: start.facing || 'S',
+      motion: start.motion || (start.pose === 'seated' ? 'typing' : 'monitoring'),
+    },
+    travelMs: 2200,
+    availableAt: 0,
+    arrivalTimer: null,
+  };
+});
 
 let feedItems = [];
 let feedCount = 0;
@@ -1614,6 +1905,36 @@ const canvas = document.getElementById('officeCanvas');
 const ctx = canvas.getContext('2d');
 const officeArea = document.getElementById('officeArea');
 
+function getOfficeMetrics(width = canvas.width, height = canvas.height) {
+  const tileW = Math.min(width * OFFICE_SCENE.tileRatio, OFFICE_SCENE.maxTileW);
+  const tileH = tileW * 0.5;
+  const originX = width * OFFICE_SCENE.originXRatio;
+  const originY = Math.max(148, height * OFFICE_SCENE.originYRatio);
+  const platformLift = tileH * OFFICE_SCENE.platformLiftRatio;
+  const iso = (gx, gy, z = 0) => ({
+    x: originX + (gx - gy) * tileW / 2,
+    y: originY + (gx + gy) * tileH / 2 - z,
+  });
+  return {
+    width,
+    height,
+    tileW,
+    tileH,
+    originX,
+    originY,
+    gridW: OFFICE_SCENE.gridW,
+    gridH: OFFICE_SCENE.gridH,
+    platformLift,
+    iso,
+  };
+}
+
+function projectAgentPosition(agent, metrics = getOfficeMetrics(officeArea.clientWidth, officeArea.clientHeight)) {
+  const point = metrics.iso(agent.pos.gx, agent.pos.gy, metrics.platformLift + 2);
+  const depth = Math.max(0.08, Math.min(0.96, (agent.pos.gx + agent.pos.gy) / (metrics.gridW + metrics.gridH)));
+  return { x: point.x, y: point.y, depth };
+}
+
 function resizeCanvas() {
   canvas.width = officeArea.clientWidth;
   canvas.height = officeArea.clientHeight;
@@ -1621,21 +1942,8 @@ function resizeCanvas() {
 }
 
 function drawOffice() {
-  const W = canvas.width, H = canvas.height;
+  const { width: W, height: H, tileW, tileH, gridW, gridH, platformLift, originX, iso } = getOfficeMetrics(canvas.width, canvas.height);
   ctx.clearRect(0, 0, W, H);
-
-  const tileW = Math.min(W * 0.088, 92);
-  const tileH = tileW * 0.5;
-  const originX = W * 0.5;
-  const originY = H * 0.16;
-  const gridW = 10;
-  const gridH = 9;
-  const platformLift = tileH * 1.55;
-
-  const iso = (gx, gy, z = 0) => ({
-    x: originX + (gx - gy) * tileW / 2,
-    y: originY + (gx + gy) * tileH / 2 - z,
-  });
 
   const poly = (points, fill, stroke = null, lineWidth = 1) => {
     ctx.beginPath();
@@ -1677,12 +1985,16 @@ function drawOffice() {
     poly([A, B, C, D], colors.top, 'rgba(255,255,255,0.08)', 1);
   };
 
+  const dk = (h, f = 0.25) => shadeHex(h, -f);
+  const lt = (h, f = 0.25) => shadeHex(h, f);
+
   const desk = (gx, gy, accent = '#3b82f6') => {
-    box(gx, gy, 1.35, 0.85, 16, { top: '#f4efe7', west: '#cbb89c', east: '#d9c7ad', south: '#b59e82' });
-    box(gx + 0.1, gy + 0.12, 0.44, 0.56, 18, { top: '#d2b48c', west: '#ad875d', east: '#bf9569', south: '#8f6b46' });
-    box(gx + 0.7, gy + 0.14, 0.38, 0.24, 13, { top: '#0f172a', west: '#1e293b', east: '#111827', south: '#020617' });
-    box(gx + 0.75, gy + 0.18, 0.28, 0.12, 15, { top: accent, west: accent, east: accent, south: '#0f172a' });
-    box(gx + 0.8, gy + 0.48, 0.24, 0.18, 8, { top: '#e2e8f0', west: '#94a3b8', east: '#cbd5e1', south: '#94a3b8' });
+    box(gx, gy, 1.48, 0.92, 17, { top: '#f4efe7', west: '#cbb89c', east: '#d9c7ad', south: '#b59e82' });
+    box(gx + 0.12, gy + 0.12, 0.46, 0.58, 19, { top: '#d2b48c', west: '#ad875d', east: '#bf9569', south: '#8f6b46' });
+    box(gx + 0.82, gy + 0.14, 0.44, 0.28, 14, { top: '#0f172a', west: '#1e293b', east: '#111827', south: '#020617' });
+    box(gx + 0.88, gy + 0.18, 0.32, 0.14, 16, { top: accent, west: accent, east: accent, south: '#0f172a' });
+    box(gx + 0.96, gy + 0.56, 0.24, 0.18, 9, { top: '#e2e8f0', west: '#94a3b8', east: '#cbd5e1', south: '#94a3b8' });
+    box(gx + 0.2, gy + 0.78, 0.96, 0.08, 18, { top: '#d6d3d1', west: '#a8a29e', east: '#cbd5e1', south: '#a8a29e' });
   };
 
   const chair = (gx, gy, accent = '#ef4444') => {
@@ -1702,9 +2014,6 @@ function drawOffice() {
     ctx.arc(p.x - 4, p.y - 3, Math.max(4, size * 0.3), 0, Math.PI * 2);
     ctx.fill();
   };
-
-  const dk = (h, f = 0.25) => shadeHex(h, -f);
-  const lt = (h, f = 0.25) => shadeHex(h, f);
 
   const drawSofa = (gx, gy) => {
     const sd = '#7a1c22', sm = '#b4232e', sl = '#d73c45', ssh = '#f87171';
@@ -1726,94 +2035,106 @@ function drawOffice() {
   };
 
   const drawCoffeeTable = (gx, gy) => {
-    const wo = '#7a4c14', wod = dk('#7a4c14', 0.3), wol = lt('#7a4c14', 0.28);
+    const wood = '#7a4c14', woodDark = dk('#7a4c14', 0.3), woodLight = lt('#7a4c14', 0.28);
     [[gx + 0.12, gy + 0.1, 0.32, 0.32], [gx + 1.58, gy + 0.1, 0.32, 0.32], [gx + 0.12, gy + 1.38, 0.32, 0.32], [gx + 1.58, gy + 1.38, 0.32, 0.32]].forEach(([x, y, w, d]) => {
-      box(x, y, w, d, 22, { top: wol, west: wo, east: wod, south: wo });
+      box(x, y, w, d, 22, { top: woodLight, west: wood, east: woodDark, south: wood });
     });
-    box(gx, gy, 2.04, 1.8, 24, { top: wol, west: wo, east: wod, south: wo });
-    const g1 = iso(gx + 0.3, gy + 0.3, platformLift + 24);
-    const g2 = iso(gx + 1.7, gy + 0.3, platformLift + 24);
-    const g3 = iso(gx + 0.2, gy + 1.1, platformLift + 24);
-    const g4 = iso(gx + 1.8, gy + 1.1, platformLift + 24);
-    ctx.strokeStyle = 'rgba(0,0,0,0.12)';
-    ctx.lineWidth = 0.7;
-    [[g1, g2], [g3, g4]].forEach(([a, b]) => {
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-      ctx.stroke();
-    });
+    box(gx, gy, 2.04, 1.8, 24, { top: woodLight, west: wood, east: woodDark, south: wood });
     box(gx + 0.62, gy + 0.52, 0.35, 0.4, 18, { top: '#d0c0a0', west: '#a09070', east: '#c0b080', south: '#a09070' });
     box(gx + 0.64, gy + 0.54, 0.31, 0.36, 22, { top: '#f8ece0', west: '#d0c0a8', east: '#e8d8c8', south: '#d0c0a8' });
   };
 
-  const drawTVStand = (gx, gy) => {
-    const dd = '#14142a', dm = '#1e1e38', dl = '#282845';
-    box(gx, gy, 1.9, 0.55, 26, { top: dl, west: dm, east: dd, south: dm });
-    const d1 = iso(gx + 0.4, gy + 0.16, platformLift + 26);
-    const d2 = iso(gx + 1.45, gy + 0.16, platformLift + 26);
-    const d3 = iso(gx + 1.45, gy + 0.45, platformLift + 26);
-    const d4 = iso(gx + 0.4, gy + 0.45, platformLift + 26);
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-    ctx.lineWidth = 0.8;
-    ctx.beginPath();
-    ctx.moveTo(d1.x, d1.y); ctx.lineTo(d2.x, d2.y); ctx.lineTo(d3.x, d3.y); ctx.lineTo(d4.x, d4.y); ctx.closePath(); ctx.stroke();
-    box(gx + 0.6, gy + 0.12, 0.8, 0.18, 44, { top: '#101020', west: '#080812', east: '#141428', south: '#080812' });
-    box(gx + 0.1, gy - 0.18, 1.8, 0.33, 64, { top: '#0c0c20', west: '#06060e', east: '#101022', south: '#06060e' });
-    box(gx + 0.18, gy - 0.13, 1.64, 0.22, 62, { top: '#0a3ab8', west: '#051888', east: '#0826a0', south: '#051888' });
-    const sc = iso(gx + 1.0, gy - 0.02, platformLift + 62);
-    [[0, 'rgba(40,120,255,0.6)'], [1, 'rgba(80,180,255,0.4)'], [2, 'rgba(40,120,255,0.5)']].forEach(([i, color]) => {
-      const row = sc.y + i * 5;
+  const drawRoomPlant = (gx, gy) => {
+    const pot = '#b84e28', potDark = dk(pot, 0.3), potLight = lt(pot, 0.2);
+    const leaf = '#1a7a30', leafDark = dk(leaf, 0.25), leafLight = lt(leaf, 0.22);
+    box(gx + 0.25, gy + 0.18, 0.5, 0.44, 18, { top: potLight, west: pot, east: potDark, south: pot });
+    box(gx + 0.22, gy + 0.15, 0.56, 0.5, 20, { top: lt(potLight, 0.15), west: lt(pot, 0.1), east: pot, south: lt(pot, 0.1) });
+    box(gx + 0.4, gy + 0.26, 0.2, 0.28, 36, { top: '#7a3e12', west: '#4e2808', east: '#9a5218', south: '#4e2808' });
+    box(gx + 0.05, gy + 0.08, 0.9, 0.64, 54, { top: leafLight, west: leaf, east: leafDark, south: leaf });
+    box(gx - 0.02, gy + 0.02, 1.04, 0.76, 62, { top: leafLight, west: leaf, east: leafDark, south: leaf });
+    box(gx + 0.1, gy + 0.12, 0.8, 0.56, 70, { top: lt(leaf, 0.1), west: leaf, east: leafDark, south: leaf });
+  };
+
+  const drawBookshelf = (gx, gy) => {
+    const wood = '#6b4220', woodDark = dk(wood, 0.3), woodLight = lt(wood, 0.18);
+    box(gx, gy, 0.88, 3.18, 74, { top: woodLight, west: wood, east: woodDark, south: wood });
+    [[0.1, 56], [1.1, 58], [2.12, 60]].forEach(([offset, height]) => {
+      box(gx + 0.06, gy + offset, 0.76, 0.08, height, { top: woodLight, west: wood, east: woodDark, south: wood });
+    });
+    [
+      [0.18, ['#475569', '#64748b', '#94a3b8', '#d97706', '#1d4ed8']],
+      [1.18, ['#334155', '#52525b', '#0f766e', '#a16207', '#ef4444']],
+      [2.18, ['#57534e', '#64748b', '#0f766e', '#2563eb', '#f59e0b']],
+    ].forEach(([rowOffset, colors]) => {
+      colors.forEach((color, index) => {
+        box(gx + 0.12 + index * 0.12, gy + rowOffset, 0.1, 0.34, 65 - index * 2, {
+          top: lt(color, 0.16),
+          west: color,
+          east: dk(color, 0.28),
+          south: color,
+        });
+      });
+    });
+  };
+
+  const drawConferenceTable = (gx, gy) => {
+    const wood = '#9b734a';
+    box(gx, gy, 4.18, 1.48, 18, { top: lt(wood, 0.2), west: wood, east: '#bc8f62', south: dk(wood, 0.28) });
+    [[0.32, '#22c55e'], [1.24, '#3b82f6'], [2.14, '#ef4444'], [3.04, '#f59e0b']].forEach(([offset, accent]) => {
+      box(gx + offset, gy + 0.22, 0.42, 0.26, 13, { top: '#111827', west: '#0f172a', east: '#1f2937', south: '#0f172a' });
+      box(gx + offset + 0.07, gy + 0.26, 0.28, 0.12, 15, { top: accent, west: accent, east: accent, south: '#0f172a' });
+    });
+    [0.2, 1.1, 2.0, 2.9].forEach(x => chair(gx + x, gy - 0.48, '#475569'));
+    [0.58, 1.66, 2.74].forEach(x => chair(gx + x, gy + 1.58, '#475569'));
+  };
+
+  const drawSecurityWall = (gx, gy) => {
+    box(gx, gy, 2.18, 0.72, 28, { top: '#1f2937', west: '#111827', east: '#0f172a', south: '#111827' });
+    box(gx + 0.12, gy - 0.2, 2.56, 0.34, 76, { top: '#0b1020', west: '#050814', east: '#0f172a', south: '#050814' });
+    [0.0, 0.84, 1.68].forEach((offset, index) => {
+      const accent = index === 1 ? '#38bdf8' : '#1d4ed8';
+      box(gx + 0.18 + offset, gy - 0.14, 0.66, 0.22, 70, { top: accent, west: '#0b2b6f', east: '#0f4ab8', south: '#0b2b6f' });
+    });
+    const sc = iso(gx + 1.28, gy - 0.02, platformLift + 70);
+    [[0, 'rgba(56,189,248,0.55)'], [1, 'rgba(96,165,250,0.4)'], [2, 'rgba(56,189,248,0.3)']].forEach(([index, color]) => {
+      const row = sc.y + index * 5;
       ctx.strokeStyle = color;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(sc.x - 20, row);
-      ctx.lineTo(sc.x + 20, row);
+      ctx.moveTo(sc.x - 34, row);
+      ctx.lineTo(sc.x + 34, row);
       ctx.stroke();
     });
-    const grd = ctx.createRadialGradient(sc.x, sc.y, 4, sc.x, sc.y + 12, tileW);
-    grd.addColorStop(0, 'rgba(20,90,255,0.2)');
-    grd.addColorStop(1, 'rgba(20,90,255,0)');
-    ctx.fillStyle = grd;
-    ctx.beginPath();
-    ctx.ellipse(sc.x, sc.y + 6, tileW * 0.9, tileH * 1.4, 0, 0, Math.PI * 2);
-    ctx.fill();
   };
 
-  const drawRoomPlant = (gx, gy) => {
-    const pt = '#b84e28', ptd = dk('#b84e28', 0.3), ptl = lt('#b84e28', 0.2);
-    const gn = '#1a7a30', gnd = dk('#1a7a30', 0.25), gnl = lt('#1a7a30', 0.22);
-    box(gx + 0.25, gy + 0.18, 0.5, 0.44, 18, { top: ptl, west: pt, east: ptd, south: pt });
-    box(gx + 0.22, gy + 0.15, 0.56, 0.5, 20, { top: lt(ptl, 0.15), west: lt(pt, 0.1), east: pt, south: lt(pt, 0.1) });
-    box(gx + 0.4, gy + 0.26, 0.2, 0.28, 36, { top: '#7a3e12', west: '#4e2808', east: '#9a5218', south: '#4e2808' });
-    box(gx + 0.05, gy + 0.08, 0.9, 0.64, 54, { top: gnl, west: gn, east: gnd, south: gn });
-    box(gx - 0.02, gy + 0.02, 1.04, 0.76, 62, { top: gnl, west: gn, east: gnd, south: gn });
-    box(gx + 0.1, gy + 0.12, 0.8, 0.56, 70, { top: lt(gn, 0.1), west: gn, east: gnd, south: gn });
-    const tp = iso(gx + 0.5, gy + 0.4, platformLift + 70);
-    ctx.fillStyle = lt(gn, 0.18); ctx.beginPath(); ctx.ellipse(tp.x, tp.y, 8, 4, -0.4, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = lt(gn, 0.18); ctx.beginPath(); ctx.ellipse(tp.x - 10, tp.y + 2, 5, 3, -0.2, 0, Math.PI * 2); ctx.fill();
+  const drawWhiteboard = (gx, gy, d = 2.1) => {
+    box(gx, gy, 0.08, d, 58, { top: '#f8fafc', west: '#cbd5e1', east: '#e2e8f0', south: '#94a3b8' });
+    [[0.34, '#3b82f6'], [0.92, '#22c55e'], [1.48, '#ef4444']].forEach(([offset, color]) => {
+      box(gx + 0.02, gy + offset, 0.04, 0.36, 60, { top: color, west: color, east: color, south: color });
+    });
   };
 
-  const drawBookshelf = () => {
-    const b = '#5a3010', bd = dk('#5a3010', 0.32), bl = lt('#5a3010', 0.22);
-    box(0, 3, 1, 3, 60, { top: bl, west: b, east: bd, south: b });
-    box(0.04, 3.04, 0.92, 2.92, 61, { top: lt(bl, 0.04), west: lt(b, 0.04), east: lt(bd, 0.04), south: lt(b, 0.04) });
-    [['#d83030',0],['#2888e0',1],['#28b040',2],['#e0c010',3]].forEach(([c,i]) => box(0.08 + i * 0.22, 3.08, 0.18, 2.8, 60 - i, { top: lt(c, 0.18), west: c, east: dk(c, 0.28), south: c }));
-    [['#d0b010',0],['#b028d0',1],['#d06020',2],['#18a8b0',3]].forEach(([c,i]) => box(0.08 + i * 0.22, 5.1, 0.18, 0.82, 48 - i, { top: lt(c, 0.18), west: c, east: dk(c, 0.28), south: c }));
-    box(0.35, 3.4, 0.3, 0.2, 68, { top: '#a07850', west: '#785830', east: '#907040', south: '#785830' });
-    box(0.38, 3.42, 0.24, 0.16, 76, { top: '#d0a870', west: '#a88050', east: '#c09060', south: '#a88050' });
+  const drawKitchenette = (gx, gy) => {
+    box(gx, gy, 2.44, 0.78, 22, { top: '#d6d3d1', west: '#a8a29e', east: '#e5e7eb', south: '#78716c' });
+    box(gx + 0.12, gy + 0.08, 0.48, 0.28, 42, { top: '#111827', west: '#0f172a', east: '#1f2937', south: '#0f172a' });
+    box(gx + 0.84, gy + 0.18, 0.2, 0.14, 13, { top: '#fafaf9', west: '#d6d3d1', east: '#f5f5f4', south: '#d6d3d1' });
+    box(gx + 1.18, gy + 0.16, 0.2, 0.14, 13, { top: '#fafaf9', west: '#d6d3d1', east: '#f5f5f4', south: '#d6d3d1' });
+    box(gx + 1.78, gy + 0.18, 0.46, 0.26, 17, { top: '#f59e0b', west: '#d97706', east: '#fbbf24', south: '#b45309' });
   };
 
-  const drawLamp = () => {
-    const ms = '#c0a030', msd = dk('#c0a030', 0.3), msl = lt('#c0a030', 0.2);
-    box(9.3, 7.3, 0.4, 0.4, 8, { top: msl, west: ms, east: msd, south: ms });
-    box(9.44, 7.44, 0.12, 0.12, 44, { top: '#d0b040', west: '#a88030', east: '#c0a038', south: '#a88030' });
-    box(9.15, 7.25, 0.7, 0.5, 52, { top: lt('#f8e880', 0.2), west: '#f0d860', east: '#e0c840', south: '#f0d860' });
-    box(9.22, 7.32, 0.56, 0.36, 56, { top: lt('#ffe890', 0.15), west: '#f8e068', east: '#e8cf48', south: '#f8e068' });
-    const lp = iso(9.5, 7.5, platformLift + 56);
-    const lg = ctx.createRadialGradient(lp.x, lp.y, 2, lp.x, lp.y + 20, tileW * 0.7);
-    lg.addColorStop(0, 'rgba(255,230,80,0.18)'); lg.addColorStop(1, 'rgba(255,230,80,0)');
-    ctx.fillStyle = lg; ctx.beginPath(); ctx.ellipse(lp.x, lp.y + 10, tileW * 0.6, tileH * 1.2, 0, 0, Math.PI * 2); ctx.fill();
+  const drawPrinterBay = (gx, gy) => {
+    box(gx, gy, 0.84, 0.84, 30, { top: '#e5e7eb', west: '#9ca3af', east: '#cbd5e1', south: '#94a3b8' });
+    box(gx + 0.1, gy + 0.12, 0.64, 0.42, 38, { top: '#f8fafc', west: '#cbd5e1', east: '#e2e8f0', south: '#cbd5e1' });
+    box(gx + 0.18, gy + 0.18, 0.48, 0.12, 42, { top: '#111827', west: '#0f172a', east: '#1f2937', south: '#0f172a' });
+    box(gx - 0.92, gy + 0.12, 0.76, 0.94, 28, { top: '#d4d4d8', west: '#71717a', east: '#a1a1aa', south: '#71717a' });
+  };
+
+  const drawLamp = (gx, gy) => {
+    const metal = '#c0a030';
+    box(gx, gy, 0.4, 0.4, 8, { top: lt(metal, 0.2), west: metal, east: dk(metal, 0.3), south: metal });
+    box(gx + 0.14, gy + 0.14, 0.12, 0.12, 44, { top: '#d0b040', west: '#a88030', east: '#c0a038', south: '#a88030' });
+    box(gx - 0.15, gy - 0.05, 0.7, 0.5, 52, { top: lt('#f8e880', 0.2), west: '#f0d860', east: '#e0c840', south: '#f0d860' });
+    box(gx - 0.08, gy + 0.02, 0.56, 0.36, 56, { top: lt('#ffe890', 0.15), west: '#f8e068', east: '#e8cf48', south: '#f8e068' });
   };
 
   const bg = ctx.createLinearGradient(0, 0, 0, H);
@@ -1824,19 +2145,23 @@ function drawOffice() {
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  const topGlow = ctx.createRadialGradient(originX, H * 0.08, 0, originX, H * 0.08, W * 0.5);
+  const topGlow = ctx.createRadialGradient(originX, H * 0.08, 0, originX, H * 0.08, W * 0.52);
   topGlow.addColorStop(0, 'rgba(255,246,214,0.18)');
   topGlow.addColorStop(0.5, 'rgba(191,219,254,0.06)');
   topGlow.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = topGlow;
   ctx.fillRect(0, 0, W, H);
 
-  poly([iso(0, gridH, 0), iso(gridW, gridH, 0), iso(gridW, gridH + 0.75, 0), iso(0, gridH + 0.75, 0)], 'rgba(0,0,0,0.34)');
+  poly([iso(0, gridH, 0), iso(gridW, gridH, 0), iso(gridW, gridH + 0.8, 0), iso(0, gridH + 0.8, 0)], 'rgba(0,0,0,0.34)');
 
   for (let gy = gridH - 1; gy >= 0; gy--) {
     for (let gx = gridW - 1; gx >= 0; gx--) {
+      const inMainAisle = gx >= 4 && gx <= 9 && gy >= 1 && gy <= 9;
       const warm = (gx + gy) % 2 === 0;
-      flat(gx, gy, 1, 1, warm ? '#bdb7ae' : '#aaa399', 'rgba(17,24,39,0.14)');
+      const fill = inMainAisle
+        ? (warm ? '#c4beb4' : '#b2aba2')
+        : (warm ? '#b8b1a7' : '#a7a095');
+      flat(gx, gy, 1, 1, fill, 'rgba(17,24,39,0.14)');
     }
   }
 
@@ -1847,63 +2172,66 @@ function drawOffice() {
     poly([iso(gridW, gy, platformLift), iso(gridW, gy + 1, platformLift), iso(gridW, gy + 1, 0), iso(gridW, gy, 0)], gy % 2 === 0 ? '#475569' : '#52525b', 'rgba(0,0,0,0.22)');
   }
 
-  box(0.08, 0.08, 9.84, 0.24, 84, { top: '#ece7df', west: '#cec5bb', east: '#ddd5cb', south: '#c8bbb0' });
-  box(0.08, 0.08, 0.24, 8.84, 84, { top: '#ece7df', west: '#cec5bb', east: '#ddd5cb', south: '#c8bbb0' });
+  box(0.08, 0.08, 13.84, 0.24, 88, { top: '#ece7df', west: '#cec5bb', east: '#ddd5cb', south: '#c8bbb0' });
+  box(0.08, 0.08, 0.24, 10.84, 88, { top: '#ece7df', west: '#cec5bb', east: '#ddd5cb', south: '#c8bbb0' });
 
-  box(1.0, 0.12, 2.3, 0.08, 58, { top: 'rgba(191,219,254,0.88)', west: 'rgba(96,165,250,0.42)', east: 'rgba(147,197,253,0.48)', south: 'rgba(191,219,254,0.22)' }, 'rgba(255,255,255,0.12)');
-  box(3.7, 0.12, 2.15, 0.08, 58, { top: 'rgba(191,219,254,0.88)', west: 'rgba(96,165,250,0.42)', east: 'rgba(147,197,253,0.48)', south: 'rgba(191,219,254,0.22)' }, 'rgba(255,255,255,0.12)');
-  box(6.35, 0.12, 2.25, 0.08, 58, { top: 'rgba(191,219,254,0.88)', west: 'rgba(96,165,250,0.42)', east: 'rgba(147,197,253,0.48)', south: 'rgba(191,219,254,0.22)' }, 'rgba(255,255,255,0.12)');
+  [1.0, 4.05, 7.1, 10.15].forEach(x => {
+    box(x, 0.12, 2.35, 0.08, 62, {
+      top: 'rgba(191,219,254,0.9)',
+      west: 'rgba(96,165,250,0.42)',
+      east: 'rgba(147,197,253,0.48)',
+      south: 'rgba(191,219,254,0.22)',
+    }, 'rgba(255,255,255,0.12)');
+  });
 
-  flat(1.0, 1.2, 2.0, 2.3, 'rgba(59,130,246,0.10)', 'rgba(96,165,250,0.16)');
-  flat(6.2, 1.1, 2.1, 2.6, 'rgba(34,197,94,0.10)', 'rgba(134,239,172,0.14)');
-  flat(2.8, 5.2, 2.6, 2.1, 'rgba(234,179,8,0.12)', 'rgba(253,224,71,0.14)');
+  flat(1.0, 1.15, 2.4, 5.9, 'rgba(34,197,94,0.07)', 'rgba(134,239,172,0.12)');
+  flat(9.2, 1.1, 2.8, 7.8, 'rgba(59,130,246,0.06)', 'rgba(96,165,250,0.12)');
+  flat(3.8, 6.1, 4.1, 2.9, 'rgba(236,72,153,0.05)', 'rgba(244,114,182,0.1)');
+  flat(5.0, 1.8, 4.6, 2.1, 'rgba(245,158,11,0.05)', 'rgba(251,191,36,0.1)');
 
-  for (let y = 1; y <= 5; y++) {
-    for (let x = 3; x <= 7; x++) {
+  for (let y = 2; y <= 6; y++) {
+    for (let x = 4; x <= 8; x++) {
       const rug = (x + y) % 2 === 0 ? 'rgba(164,28,45,0.18)' : 'rgba(127,29,29,0.10)';
       flat(x, y, 1, 1, rug, null);
     }
   }
-  [[3,1],[3,2],[3,3],[3,4],[3,5],[7,1],[7,2],[7,3],[7,4],[7,5],[4,1],[5,1],[6,1],[4,5],[5,5],[6,5]].forEach(([x, y]) => {
+  [[4,2],[4,3],[4,4],[4,5],[4,6],[8,2],[8,3],[8,4],[8,5],[8,6],[5,2],[6,2],[7,2],[5,6],[6,6],[7,6]].forEach(([x, y]) => {
     flat(x, y, 1, 1, 'rgba(239,68,68,0.16)', null);
   });
 
-  desk(1.15, 1.45, '#22c55e');
-  chair(1.45, 2.28, '#22c55e');
-  desk(1.18, 4.2, '#f97316');
-  chair(1.48, 5.03, '#f97316');
-  desk(6.28, 1.45, '#3b82f6');
-  chair(7.05, 2.28, '#3b82f6');
-  desk(6.2, 4.18, '#06b6d4');
-  chair(6.98, 5.02, '#06b6d4');
+  desk(1.35, 1.68, '#22c55e');
+  chair(1.68, 2.5, '#22c55e');
+  desk(1.35, 4.54, '#f97316');
+  chair(1.68, 5.36, '#f97316');
+  desk(9.55, 1.7, '#3b82f6');
+  chair(10.32, 2.52, '#3b82f6');
+  desk(9.42, 4.54, '#06b6d4');
+  chair(10.18, 5.36, '#06b6d4');
+  desk(6.1, 7.54, '#64748b');
+  chair(6.88, 8.36, '#64748b');
+  desk(10.0, 7.24, '#ec4899');
+  chair(10.76, 8.06, '#db2777');
 
-  box(3.55, 1.2, 2.5, 1.25, 18, { top: '#d6b694', west: '#b58d63', east: '#c69d71', south: '#976f48' });
-  chair(3.72, 0.76, '#475569');
-  chair(4.45, 0.62, '#475569');
-  chair(5.22, 0.76, '#475569');
-  chair(4.05, 2.42, '#475569');
-  chair(5.08, 2.44, '#475569');
+  drawConferenceTable(4.4, 1.58);
+  drawSofa(3.95, 6.18);
+  drawCoffeeTable(5.68, 6.66);
+  drawBookshelf(0.56, 2.62);
+  drawWhiteboard(0.28, 6.42, 2.22);
+  drawWhiteboard(0.28, 8.88, 1.42);
+  drawSecurityWall(11.26, 1.08);
+  drawKitchenette(1.02, 8.18);
+  drawPrinterBay(12.04, 7.86);
+  drawRoomPlant(13.08, 8.76);
+  drawLamp(8.92, 8.62);
 
-  drawSofa(2.85, 5.2);
-  drawCoffeeTable(4.55, 5.55);
+  plant(0.78, 0.86, 12);
+  plant(12.86, 0.84, 12);
+  plant(0.84, 9.36, 12);
+  plant(11.18, 9.22, 12);
 
-  drawBookshelf();
-
-  drawTVStand(8.0, 0.55);
-
-  box(8.35, 5.95, 0.7, 0.7, 24, { top: '#e5e7eb', west: '#9ca3af', east: '#cbd5e1', south: '#94a3b8' });
-  box(8.46, 6.12, 0.46, 0.28, 34, { top: '#bfdbfe', west: '#60a5fa', east: '#93c5fd', south: '#3b82f6' });
-
-  plant(0.7, 0.82, 12);
-  plant(8.95, 0.8, 12);
-  plant(0.72, 7.3, 12);
-  drawRoomPlant(10.0, 6.6);
-  drawLamp();
-
-  const lamps = [iso(2.2, 2.2, platformLift + 2), iso(7.0, 2.2, platformLift + 2), iso(4.1, 6.2, platformLift + 2)];
-  lamps.forEach(p => {
+  [iso(2.5, 2.3, platformLift + 2), iso(7.0, 2.6, platformLift + 2), iso(5.2, 7.2, platformLift + 2), iso(10.6, 6.2, platformLift + 2)].forEach(p => {
     const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 66);
-    g.addColorStop(0, 'rgba(255,228,180,0.20)');
+    g.addColorStop(0, 'rgba(255,228,180,0.2)');
     g.addColorStop(1, 'rgba(255,244,214,0)');
     ctx.fillStyle = g;
     ctx.beginPath();
@@ -1920,11 +2248,11 @@ function drawOffice() {
   ctx.fillStyle = 'rgba(255,241,220,0.84)';
   ctx.font = '700 11px Inter, sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('AGENT OFFICE / COKE ROOM PASS', W / 2, H - 18);
+  ctx.fillText('AGENT OFFICE / FLOOR 01', W / 2, H - 18);
 }
 
 function depthScale(yNorm) {
-  return 0.82 + (yNorm * 0.42);
+  return 0.78 + (yNorm * 0.5);
 }
 
 function applyAgentDepth(el, yNorm) {
@@ -1939,16 +2267,16 @@ function applyAgentDepth(el, yNorm) {
 function getAgentLook(agent) {
   const looks = {
     devin: {
-      skin: '#f1c8a1', hair: '#47311f', shirt: '#2563eb', pants: '#111827', chair: '#475569', pose: 'stand', facing: 'S'
+      skin: '#f1c8a1', hair: '#47311f', shirt: '#2563eb', pants: '#111827', chair: '#475569', pose: 'stand', facing: 'S', accessory: 'glasses'
     },
     traderclaw: {
-      skin: '#9f6a43', hair: '#151515', shirt: '#16a34a', pants: '#14532d', chair: '#166534', pose: 'seated', facing: 'SE'
+      skin: '#9f6a43', hair: '#151515', shirt: '#16a34a', pants: '#14532d', chair: '#166534', pose: 'seated', facing: 'SE', accessory: 'beard'
     },
     webclaw: {
-      skin: '#e4b78f', hair: '#2a2a2a', shirt: '#3b82f6', pants: '#1e293b', chair: '#2563eb', pose: 'seated', facing: 'SW'
+      skin: '#e4b78f', hair: '#2a2a2a', shirt: '#3b82f6', pants: '#1e293b', chair: '#2563eb', pose: 'seated', facing: 'SW', accessory: 'glasses'
     },
     xhunter: {
-      skin: '#8e5c3b', hair: '#111827', shirt: '#14b8a6', pants: '#111827', chair: '#0891b2', pose: 'stand', facing: 'W'
+      skin: '#8e5c3b', hair: '#111827', shirt: '#14b8a6', pants: '#111827', chair: '#0891b2', pose: 'stand', facing: 'W', accessory: 'headset'
     },
     nova: {
       skin: '#dba77d', hair: '#9a3412', shirt: '#f97316', pants: '#431407', chair: '#ea580c', pose: 'stand', facing: 'E'
@@ -1957,17 +2285,21 @@ function getAgentLook(agent) {
       skin: '#f0c2ab', hair: '#7c3aed', shirt: '#a855f7', pants: '#312e81', chair: '#7c3aed', pose: 'stand', facing: 'SE'
     },
     xbot: {
-      skin: '#d8ab8b', hair: '#ec4899', shirt: '#ec4899', pants: '#4a044e', chair: '#db2777', pose: 'stand', facing: 'S'
+      skin: '#d8ab8b', hair: '#ec4899', shirt: '#ec4899', pants: '#4a044e', chair: '#db2777', pose: 'stand', facing: 'S', accessory: 'headset'
     },
     guardian: {
-      skin: '#9c6b49', hair: '#334155', shirt: '#475569', pants: '#020617', chair: '#334155', pose: 'stand', facing: 'W'
+      skin: '#9c6b49', hair: '#334155', shirt: '#475569', pants: '#020617', chair: '#334155', pose: 'stand', facing: 'W', accessory: 'beard'
     },
     fatherclaw: {
-      skin: '#b88564', hair: '#e2e8f0', shirt: '#6366f1', pants: '#111827', chair: '#4338ca', pose: 'seated', facing: 'S'
+      skin: '#b88564', hair: '#e2e8f0', shirt: '#6366f1', pants: '#111827', chair: '#4338ca', pose: 'seated', facing: 'S', accessory: 'glasses'
     },
   };
-  return looks[agent.id] || {
+  const base = looks[agent.id] || {
     skin: '#d9ab89', hair: '#334155', shirt: agent.color, pants: '#1f2937', chair: agent.color, pose: 'stand', facing: 'S'
+  };
+  return {
+    ...base,
+    ...(agent.lookState || {}),
   };
 }
 
@@ -1984,7 +2316,7 @@ function shadeHex(hex, amount = 0) {
 
 function drawPixelAgent(canvasEl, look, agent) {
   if (!canvasEl) return;
-  const c = canvasEl.getContext('2d');
+  const c = canvasEl.getContext('2d', { willReadFrequently: true });
   c.imageSmoothingEnabled = false;
   c.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
@@ -2166,6 +2498,41 @@ function drawPixelAgent(canvasEl, look, agent) {
     }
   }
 
+  const accessory = look.accessory;
+  if (accessory === 'glasses') {
+    const frame = '#1f2937';
+    if (isFront) {
+      bx(9,7,4,1,frame); bx(14,7,4,1,frame);
+      dot(13,7,frame);
+      bx(8,7,1,2,frame); bx(18,7,1,2,frame);
+    } else if (!isBack) {
+      const bridgeX = isW ? 8 : 15;
+      bx(bridgeX,7,3,1,frame);
+      bx(isW ? 11 : 14,6,1,4,frame);
+    }
+  } else if (accessory === 'headset') {
+    const headset = '#0f172a';
+    if (isFront) {
+      bx(6,4,14,1,headset);
+      bx(5,8,1,4,headset); bx(20,8,1,4,headset);
+      bx(20,11,2,1,headset);
+    } else if (isBack) {
+      bx(7,2,12,1,headset);
+    } else {
+      bx(isW ? 8 : 13,4,6,1,headset);
+      bx(isW ? 17 : 6,7,1,5,headset);
+      bx(isW ? 5 : 18,11,2,1,headset);
+    }
+  } else if (accessory === 'beard') {
+    const beard = shadeHex(hr, -0.12);
+    if (isFront) {
+      bx(10,12,6,2,beard);
+      dot(9,13,beard); dot(16,13,beard);
+    } else if (!isBack) {
+      bx(isW ? 8 : 16,12,3,2,beard);
+    }
+  }
+
   outlinePass();
 }
 
@@ -2173,30 +2540,38 @@ function renderAgents() {
   document.querySelectorAll('.agent-char').forEach(el => el.remove());
 
   agentState.forEach(agent => {
-    const look = getAgentLook(agent);
     const el = document.createElement('div');
     el.className = 'agent-char';
     el.id = 'agent-' + agent.id;
-    el.style.left = (agent.pos.x * officeArea.clientWidth) + 'px';
-    el.style.top = (agent.pos.y * officeArea.clientHeight) + 'px';
 
     el.innerHTML = `
       <div class="agent-label">
         <strong>${agent.name}</strong>
         <span>${agent.currentTask}</span>
       </div>
-      <div class="agent-avatar ${look.pose === 'seated' ? 'seated' : ''}" style="--chair:${look.chair};">
+      <div class="agent-avatar">
         <div class="agent-shadow"></div>
         <div class="agent-chair"></div>
         <canvas class="agent-pixel" width="26" height="36"></canvas>
-        <div class="status-ring" style="background: ${agent.status === 'active' ? 'var(--green)' : agent.status === 'idle' ? 'var(--yellow)' : 'var(--muted)'}"></div>
+        <div class="status-ring"></div>
       </div>
     `;
 
-    applyAgentDepth(el, agent.pos.y);
     officeArea.appendChild(el);
-    drawPixelAgent(el.querySelector('.agent-pixel'), look, agent);
+    syncAgentElement(agent);
   });
+}
+
+let officeHasAutoCentered = false;
+
+function centerOfficeView(force = false) {
+  if (officeHasAutoCentered && !force) return;
+  const officeView = document.getElementById('view-office');
+  if (!officeView) return;
+
+  officeView.scrollLeft = Math.max(0, Math.round((officeArea.scrollWidth - officeView.clientWidth) / 2));
+  officeView.scrollTop = Math.max(0, Math.round((officeArea.scrollHeight - officeView.clientHeight) * 0.08));
+  officeHasAutoCentered = true;
 }
 
 // ─── STATUS BAR ───────────────────────────────────────────────
@@ -2248,42 +2623,137 @@ function addFeedItem(agent, msg) {
 // ─── AUTO-UPDATE LOOP ─────────────────────────────────────────
 function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-function updateAgentTask(agent) {
-  agent.currentTask = randomFrom(agent.tasks);
-  agent.status = Math.random() > 0.15 ? 'active' : 'idle';
+function screenFacingFromDelta(dx, dy, fallback = 'S') {
+  const vertical = Math.abs(dy) < 6 ? '' : (dy < 0 ? 'N' : 'S');
+  const horizontal = Math.abs(dx) < 6 ? '' : (dx < 0 ? 'W' : 'E');
+  return (vertical + horizontal) || fallback;
+}
 
-  // Slightly wander position
-  const base = POSITIONS[agentState.indexOf(agent)];
-  agent.pos = {
-    x: Math.max(0.05, Math.min(0.95, base.x + (Math.random() - 0.5) * 0.04)),
-    y: Math.max(0.24, Math.min(0.66, base.y + (Math.random() - 0.5) * 0.035)),
-  };
-
-  // Update DOM element
+function syncAgentElement(agent) {
   const el = document.getElementById('agent-' + agent.id);
-  if (el) {
-    el.style.left = (agent.pos.x * officeArea.clientWidth) + 'px';
-    el.style.top = (agent.pos.y * officeArea.clientHeight) + 'px';
-    el.querySelector('.agent-label span').textContent = agent.currentTask;
-    el.querySelector('.status-ring').style.background =
-      agent.status === 'active' ? 'var(--green)' : 'var(--yellow)';
-    applyAgentDepth(el, agent.pos.y);
+  if (!el) return;
+
+  const look = getAgentLook(agent);
+  const projected = projectAgentPosition(agent);
+  el.style.left = projected.x + 'px';
+  el.style.top = projected.y + 'px';
+  el.style.setProperty('--travel-ms', `${agent.travelMs || 2200}ms`);
+  el.classList.toggle('agent-moving', look.motion === 'walking');
+
+  const labelName = el.querySelector('.agent-label strong');
+  const labelTask = el.querySelector('.agent-label span');
+  if (labelName) labelName.textContent = agent.name;
+  if (labelTask) labelTask.textContent = agent.currentTask;
+
+  const avatar = el.querySelector('.agent-avatar');
+  if (avatar) {
+    const classes = ['agent-avatar'];
+    if (look.pose === 'seated') classes.push('seated');
+    if (look.motion) classes.push(`motion-${look.motion}`);
+    avatar.className = classes.join(' ');
+    avatar.style.setProperty('--chair', look.chair);
   }
+
+  const ring = el.querySelector('.status-ring');
+  if (ring) {
+    ring.style.background = agent.status === 'active'
+      ? 'var(--green)'
+      : agent.status === 'idle'
+        ? 'var(--yellow)'
+        : 'var(--muted)';
+  }
+
+  applyAgentDepth(el, projected.depth);
+  drawPixelAgent(el.querySelector('.agent-pixel'), look, agent);
+}
+
+function nextWorkStop(agent) {
+  const route = agent.route || [];
+  if (!route.length) {
+    return { gx: agent.pos.gx, gy: agent.pos.gy, pose: 'stand', facing: agent.lookState?.facing || 'S', motion: 'monitoring', tasks: agent.tasks };
+  }
+
+  if (Math.random() < 0.24) {
+    return route[agent.routeIndex];
+  }
+
+  const stride = route.length > 3 && Math.random() > 0.78 ? 2 : 1;
+  agent.routeIndex = (agent.routeIndex + stride) % route.length;
+  return route[agent.routeIndex];
+}
+
+function updateAgentTask(agent) {
+  const now = Date.now();
+  if (agent.availableAt && now < agent.availableAt) return false;
+
+  const stop = nextWorkStop(agent);
+  const metrics = getOfficeMetrics(officeArea.clientWidth, officeArea.clientHeight);
+  const fromPoint = projectAgentPosition({ pos: { gx: agent.pos.gx, gy: agent.pos.gy } }, metrics);
+  const toPoint = projectAgentPosition({ pos: { gx: stop.gx, gy: stop.gy } }, metrics);
+  const dx = toPoint.x - fromPoint.x;
+  const dy = toPoint.y - fromPoint.y;
+  const taskPool = stop.tasks && stop.tasks.length ? stop.tasks : agent.tasks;
+  const nextTask = randomFrom(taskPool);
+  const isIdleTask = nextTask.toLowerCase().includes('idle');
+  const isMoving = Math.hypot(dx, dy) > 10;
+
+  window.clearTimeout(agent.arrivalTimer);
+  agent.currentTask = nextTask;
+  agent.status = isIdleTask ? 'idle' : (stop.status || (Math.random() > 0.18 ? 'active' : 'idle'));
+  agent.pos = { gx: stop.gx, gy: stop.gy };
+
+  if (!isMoving) {
+    agent.lookState = {
+      pose: stop.pose || 'stand',
+      facing: stop.facing || agent.lookState?.facing || 'S',
+      motion: stop.motion || (stop.pose === 'seated' ? 'typing' : 'monitoring'),
+    };
+    agent.travelMs = 1000;
+    agent.availableAt = now + 900;
+    syncAgentElement(agent);
+    return true;
+  }
+
+  agent.travelMs = Math.max(1450, Math.min(3200, Math.round(900 + Math.hypot(dx, dy) * 3.15)));
+  agent.availableAt = now + agent.travelMs + 260;
+  agent.lookState = {
+    pose: 'stand',
+    facing: screenFacingFromDelta(dx, dy, stop.facing || agent.lookState?.facing || 'S'),
+    motion: 'walking',
+  };
+  syncAgentElement(agent);
+
+  agent.arrivalTimer = window.setTimeout(() => {
+    agent.lookState = {
+      pose: stop.pose || 'stand',
+      facing: stop.facing || screenFacingFromDelta(dx, dy, agent.lookState?.facing || 'S'),
+      motion: stop.motion || (stop.pose === 'seated' ? 'typing' : 'monitoring'),
+    };
+    syncAgentElement(agent);
+  }, Math.max(240, agent.travelMs - 180));
+
+  return true;
 }
 
 function tick() {
-  // Pick 1-2 random agents to update
-  const count = Math.random() > 0.5 ? 2 : 1;
-  for (let i = 0; i < count; i++) {
-    const agent = randomFrom(agentState);
-    updateAgentTask(agent);
-    if (Math.random() > 0.3) {
+  const available = agentState.filter(agent => !agent.availableAt || Date.now() >= agent.availableAt);
+  if (!available.length) return;
+
+  const desired = Math.max(1, Math.min(available.length, Math.random() > 0.55 ? 3 : 2));
+  const selected = [];
+  while (selected.length < desired) {
+    const candidate = randomFrom(available);
+    if (!selected.includes(candidate)) selected.push(candidate);
+  }
+
+  selected.forEach(agent => {
+    if (updateAgentTask(agent) && Math.random() > 0.38) {
       addFeedItem(agent, randomFrom(agent.feed));
     }
-  }
+  });
+
   renderStatusBar();
 
-  // Update online count
   const activeCount = agentState.filter(a => a.status === 'active').length;
   document.getElementById('onlineCount').textContent = activeCount;
 }
@@ -2296,35 +2766,49 @@ function updateClock() {
 }
 
 // ─── VIEW SWITCHER ────────────────────────────────────────────
+const VIEW_HANDLERS = {
+  office: { enter: () => { resizeCanvas(); renderAgents(); centerOfficeView(); }, focus: false },
+  org: { focus: false }
+};
+VIEW_HANDLERS.calendar = { enter: () => { if (window.CAL) window.CAL.render(); }, focus: false };
+let currentView = 'office';
+
 function switchView(view, navEl) {
+  closeMobileNav();
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('view-' + view).classList.add('active');
   if (navEl) navEl.classList.add('active');
-  if (view === 'office') { resizeCanvas(); renderAgents(); }
+  const handler = VIEW_HANDLERS[view];
+  if (handler && typeof handler.enter === 'function') handler.enter();
+  currentView = view;
 }
 
 // ─── INIT ─────────────────────────────────────────────────────
-window.addEventListener('resize', () => { resizeCanvas(); renderAgents(); });
+window.addEventListener('resize', () => {
+  officeHasAutoCentered = false;
+  resizeCanvas();
+  renderAgents();
+  centerOfficeView(true);
+});
 resizeCanvas();
 renderAgents();
+centerOfficeView(true);
 renderStatusBar();
 
 // Seed initial feed
 agentState.forEach(agent => addFeedItem(agent, randomFrom(agent.feed)));
 
 // Kick off loops
-setInterval(tick, 3500);
+let tickInterval = setInterval(tick, 2400);
 setInterval(updateClock, 1000);
 updateClock();
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { clearInterval(tickInterval); tickInterval = null; }
+  else if (!tickInterval) { tickInterval = setInterval(tick, 2400); }
+});
 
-// Hook agent view inits
-const _origSwitch = switchView;
-window.switchView = function(view, navEl) {
-  _origSwitch(view, navEl);
-  if (view === 'traderclaw') DE.render();
-  if (view === 'lyra') SORA.render();
-};
+// View lifecycle hooks consolidated below
 </script>
 
 <!-- ── DECISION ENGINE ─────────────────────────────────────── -->
@@ -2341,6 +2825,7 @@ const ALT_LIST=[{id:"p1",phase:true,label:"PHASE 1 - SOCIAL & SENTIMENT",sub:"Se
 const VIEWS=[{id:"home",label:"HOME",dot:"#e4e4e7"},{id:"markettd",label:"MARKET TOP-DOWN",dot:"#a78bfa"},{id:"bottomup",label:"CRYPTO BOTTOM-UP",dot:"#38bdf8"},{id:"btcstrat",label:"BTC STRATEGY",dot:"#f97316"},{id:"altres",label:"ALT RESEARCH",dot:"#f59e0b"},{id:"drafting",label:"DRAFTING IDEAS",dot:"#71717a"}];
 
 const st={view:"home",menuOpen:false,checks:{},collapsed:{},filter:"all",altToken:"",altChecks:{},altCollapsed:{},altFilter:"all",drafts:[{id:1,text:"",done:false}],draftsOpen:false,tdStep:1,td:{usdt_above_ema:null,usdt_change:"",btc_d_rising:null,total_bull:null,dxy_bull:null,blackout:false,adx:"",price_ema50:null,ema50_ema200:null,atr_state:null,daily_ema200:null,ema50_cross:null,structure:null,trend:null,momentum:null,reversal:null,participation:null,volatility:null,cipher:null,balance:"",risk:"1",atr_val:"",entry:"",dir:null},linkOpen:{},cuOpen:false,mtdCollapsed:{}};
+Object.assign(st, JSON.parse(localStorage.getItem('de-state') || '{}'));
 
 function fmt(n,d=0){if(isNaN(n)||!isFinite(n))return"-";return Number(n).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});}
 function pill(color,text){const m={green:"background:rgba(6,78,59,0.5);color:#6ee7b7;border:1px solid rgba(16,185,129,0.4)",red:"background:rgba(127,29,29,0.5);color:#fca5a5;border:1px solid rgba(239,68,68,0.4)",amber:"background:rgba(120,53,15,0.5);color:#fcd34d;border:1px solid rgba(245,158,11,0.4)",blue:"background:rgba(12,74,110,0.5);color:#7dd3fc;border:1px solid rgba(14,165,233,0.4)",gray:"background:rgba(39,39,42,0.8);color:#a1a1aa;border:1px solid rgba(63,63,70,0.5)"};return`<span style="font-size:11px;font-family:monospace;padding:2px 8px;border-radius:3px;${m[color]||m.gray}">${text}</span>`;}
@@ -2510,6 +2995,7 @@ function buildApp(){
 function render(){
   const el=document.getElementById("de-app");
   if(!el)return;
+  localStorage.setItem('de-state', JSON.stringify(st));
   el.innerHTML=buildApp();
   el.addEventListener("click",handleClick,{once:true});
   el.addEventListener("input",handleInput,{once:true});
@@ -2570,6 +3056,7 @@ let ideas=[
   {id:10,title:"5D Ascension - Timeline Shift",prompt:"A figure standing at a crossroads of parallel realities - layered dimensions visible simultaneously, each slightly different, light bending between them, gradual merging into one radiant path",stage:"idea",aspectRatio:"16:9",duration:15,tags:["ascension-glossary","5D","timelines","transformation"],notes:"Combines Ascension Glossary: 5D Ascension + Timelines. Great for longer-form content.",referenceImage:null,createdAt:"2025-03-15"},
   {id:11,title:"IQ & Age Norms - Explainer Concept",prompt:"Animated data visualization showing two bell curves side by side (adult vs child IQ distribution), age groups highlighted, scores shifting to show relative comparison - clean and informative",stage:"idea",aspectRatio:"16:9",duration:12,tags:["educational","explainer","data-viz","psychology"],notes:"IQ tests are age-normed. Key insight: a child with IQ 130 outperforms age peers, not adults. Short-form educational visual.",referenceImage:null,createdAt:"2025-03-15"},
 ];
+const _savedSora = localStorage.getItem('sora-ideas'); if(_savedSora) try { ideas = JSON.parse(_savedSora); } catch(e) {}
 
 let selectedId=1,search="",filterStage="all",newTag="";
 
@@ -2717,6 +3204,7 @@ function buildApp(){
 function render(){
   const el=document.getElementById("sora-app");
   if(!el)return;
+  localStorage.setItem('sora-ideas', JSON.stringify(ideas));
   el.innerHTML=buildApp();
   attachEvents();
 }
@@ -2778,25 +3266,37 @@ function handleFileUpload(e){
 return{render};
 })();
 const AGENT_DESCRIPTIONS = {
-  'devin':      { name: 'Devin',      role: 'Project Overseer',  desc: 'Coordinates the team, manages the big picture. First point of contact for new projects and cross-agent strategy.' },
-  'traderclaw': { name: 'TraderClaw', role: 'Trading Bot',        desc: 'Monitors BTC signals, manages paper trades on Bitget, and tracks Polymarket opportunities. Runs autonomously.' },
-  'webclaw':    { name: 'WebClaw',    role: 'Web Developer',      desc: 'Builds pitch-ready HTML demo sites for local Nanaimo businesses. Cold-call ready URLs in minutes.' },
-  'xhunter':    { name: 'X-Hunter',  role: 'Social / X Agent',   desc: 'Monitors crypto Twitter, finds trending narratives, farms engagement on @BitcoinMagazine and @CoinDesk threads.' },
-  'forge':      { name: 'Forge',     role: 'Dev Agent',          desc: 'Writes code, debugs, and ships features. General-purpose developer for any coding task.' },
-  'lyra':       { name: 'Lyra',      role: 'Innerverse',         desc: 'Creative and narrative work on the Innerverse project. World-building, storytelling, and character arcs.' },
-  'xbot':       { name: 'XBot',      role: 'X Bot',              desc: 'Auto-posts to @DiamondHands811. Scheduled content, engagement replies, and crypto narrative amplification.' },
-  'guardian':   { name: 'Guardian',  role: 'Security',           desc: 'Monitors gateway access, reviews auth logs, and keeps the OpenClaw system locked down. Silent and watchful.' },
-  'fatherclaw': { name: 'FatherClaw',role: 'Orchestrator',       desc: "Routes tasks between all agents, monitors agent health, and manages cross-agent workflows. Jason's system-wide air traffic control." },
+  'devin':      { name: 'Devin',      role: 'Project Overseer',    model: 'Claude Sonnet 4.6', memory: true,  desc: "The overseer. Coordinates all agents, tracks every active project, and is Jason main developer assistant. Handles new builds, cross-agent strategy, and big-picture planning." },
+  'traderclaw': { name: 'TraderClaw', role: 'Trading Bot',          model: 'Claude Sonnet 4.6', memory: true,  desc: "Autonomous trading agent. Monitors BTC 1H/4H/1D signals, RSI divergence, BTC.D and USDT.D. Runs paper trades on Bitget and shadows Polymarket. Live at traderclaw-production.up.railway.app." },
+  'webclaw':    { name: 'WebClaw',    role: 'Web Developer',        model: 'GPT-5.4',           memory: true,  desc: "AI web agency agent. Builds pitch-ready demo sites for local Nanaimo businesses. Generates HTML and deploys a live URL for cold-call pitches. $300-500 setup + $50-100/month." },
+  'xhunter':    { name: 'X-Hunter',  role: 'Social / X Agent',     model: 'Claude Sonnet 4.6', memory: true,  desc: "Crypto Twitter monitor and content agent. Tracks @BitcoinMagazine, @CoinDesk, and other major handles for trending narratives. Posts content and manages Jason X presence." },
+  'swarm':      { name: 'Swarm',     role: 'Codex Agent',          model: 'GPT-4o-mini',       memory: false, desc: "OpenClaw Codex harness agent (@codex87bot on Telegram). Runs coding tasks in isolated ACP sessions. Stateless - no persistent memory between runs. Formerly called Codex." },
+  'penny':      { name: 'Penny',     role: 'General Utility',      model: 'GPT-5.4',           memory: true,  desc: "General-purpose utility agent (@oss bot). Handles miscellaneous tasks, research, and one-off jobs. Switched to GPT-5.4 on 2026-04-11 after free models kept hitting rate limits." },
+  'reaper':     { name: 'Reaper',    role: 'CommentFarm Operator', model: 'GPT-4o-mini',       memory: false, desc: "Runs the CommentFarm pipeline autonomously. Fetches trending X posts via xAI, ranks and queues them for review, then posts approved content to @DiamondHands811. Cron-driven." },
+  'forge':      { name: 'Forge',     role: 'Dev Agent',            model: 'Claude Sonnet 4.6', memory: true,  desc: "General coding and development agent (@dev bot). Handles feature work, bug fixes, and dev tasks. A solid pair programmer for focused coding sessions." },
+  'lyra':       { name: 'Lyra',      role: 'Innerverse Agent',     model: 'Claude Sonnet 4.6', memory: true,  desc: "Creative and narrative agent for the Innerverse project (@sora bot). Handles world-building, storytelling, character arcs, and all creative work tied to the Innerverse universe." },
+  'xbot':       { name: 'XBot',      role: 'X Posting Bot',        model: 'GPT-5',             memory: false, desc: "Automated posting bot for @DiamondHands811. Handles scheduled X posts, content queuing, and crypto narrative amplification. Stateless - no memory, just executes the post queue." },
+  'guardian':   { name: 'Guardian',  role: 'Security Agent',       model: 'Claude Sonnet 4.6', memory: true,  desc: "Security and hardening agent. Monitors OpenClaw gateway access, reviews auth logs, scans for anomalies, and hardens firewall and SSH rules. Quiet by default - speaks up when something is wrong." },
+  'command':    { name: 'Command',   role: 'Orchestrator',         model: 'Claude Sonnet 4.6', memory: true,  desc: "Cross-agent orchestration layer. Routes tasks between agents, monitors agent health, and manages multi-agent workflows. The system internal air traffic control." },
+  'fatherclaw': { name: 'FatherClaw',role: 'Orchestrator',         model: 'Claude Sonnet 4.6', memory: true,  desc: "Senior orchestrator. Jason top-level system coordinator. Oversees all agents, manages inter-agent dependencies, and handles escalations." },
 };
 
 function showAgentInfo(id) {
+  closeMobileNav();
   const info = AGENT_DESCRIPTIONS[id];
   if (!info) return;
   const panel = document.getElementById('agent-info-panel');
   document.getElementById('agent-info-name').textContent = info.name;
   document.getElementById('agent-info-role').textContent = info.role;
+  document.getElementById('agent-info-model').textContent = '\u26a1 ' + (info.model || '');
+  const memEl = document.getElementById('agent-info-memory');
+  memEl.innerHTML = info.memory
+    ? '<span style="color:#22c55e;">\u25cf</span> Memory enabled'
+    : '<span style="color:#64748b;">\u25cb</span> No memory (stateless)';
   document.getElementById('agent-info-desc').textContent = info.desc;
   panel.style.display = 'block';
+  const nav = document.querySelector('.nav');
+  if (nav) nav.scrollTop = 99999;
 }
 
 
@@ -2886,14 +3386,20 @@ function toggleFocusMode() {
 
 // ─── MOBILE NAV ───────────────────────────────────────────────────────────────
 function toggleMobileNav() {
-  const nav = document.querySelector('.nav');
-  const overlay = document.getElementById('mobile-overlay');
-  const isOpen = nav.classList.toggle('mobile-open');
-  overlay.style.display = isOpen ? 'block' : 'none';
+  var nav = document.querySelector('.nav');
+  var overlay = document.getElementById('mobile-overlay');
+  var isOpen = nav.classList.toggle('mobile-open');
+  if (overlay) overlay.style.display = isOpen ? 'block' : 'none';
+  if (isOpen) {
+    nav.querySelectorAll('.nav-items-wrap').forEach(function(w) { w.style.maxHeight = 'none'; });
+    nav.querySelectorAll('.nav-label').forEach(function(l) { l.classList.remove('collapsed'); });
+  }
 }
 function closeMobileNav() {
-  document.querySelector('.nav').classList.remove('mobile-open');
-  document.getElementById('mobile-overlay').style.display = 'none';
+  var nav = document.querySelector('.nav');
+  var overlay = document.getElementById('mobile-overlay');
+  if (nav) nav.classList.remove('mobile-open');
+  if (overlay) overlay.style.display = 'none';
 }
 // Close nav when a nav-item is tapped on mobile
 document.querySelectorAll('.nav-item').forEach(el => {
@@ -2904,7 +3410,209 @@ document.querySelectorAll('.nav-item').forEach(el => {
 
 // ─── DROPBOX ──────────────────────────────────────────────────────────────────
 const DROPS_API = '/api/drops';
+const DROPS_SESSION_API = '/api/session';
 let _dropsCache = null;
+let dropsAuthState = { configured: false, authenticated: false, checked: false };
+
+VIEW_HANDLERS.traderclaw = { enter: () => DE.render(), focus: true };
+VIEW_HANDLERS.lyra = { enter: () => SORA.render(), focus: true };
+VIEW_HANDLERS.dropbox = { enter: async () => { if (await ensureDropsSession(true)) renderDrops(); }, focus: true };
+VIEW_HANDLERS.memory = { enter: () => MEM.render(), focus: true };
+
+async function requestJson(url, options = {}) {
+  const response = await fetch(url, {
+    credentials: 'same-origin',
+    ...options
+  });
+  const raw = await response.text();
+  let data = null;
+  try { data = raw ? JSON.parse(raw) : null; } catch (e) { data = null; }
+  if (!response.ok) {
+    const err = new Error((data && data.error) || `Request failed (${response.status})`);
+    err.status = response.status;
+    err.data = data;
+    throw err;
+  }
+  return data;
+}
+
+async function refreshDropboxAuthState() {
+  try {
+    const status = await requestJson(DROPS_SESSION_API);
+    dropsAuthState = { ...status, checked: true };
+  } catch (error) {
+    dropsAuthState = { configured: false, authenticated: false, checked: true };
+    throw error;
+  }
+  return dropsAuthState;
+}
+
+function updateDropboxAuthUI() {
+  const authBtn = document.getElementById('drop-auth-btn');
+  const authNote = document.getElementById('drop-auth-note');
+  const newBtn = document.querySelector('.drop-new-btn');
+  if (!authBtn || !authNote || !newBtn) return;
+
+  const canEdit = dropsAuthState.configured && dropsAuthState.authenticated;
+  newBtn.disabled = !canEdit;
+  newBtn.style.opacity = canEdit ? '1' : '0.55';
+  newBtn.style.cursor = canEdit ? 'pointer' : 'not-allowed';
+
+  if (!dropsAuthState.configured) {
+    authBtn.textContent = 'Auth Off';
+    authBtn.disabled = true;
+    authBtn.style.opacity = '0.55';
+    authBtn.style.cursor = 'not-allowed';
+    authBtn.style.color = 'var(--muted)';
+    authBtn.style.borderColor = 'var(--border)';
+    authBtn.style.background = 'transparent';
+    authNote.textContent = 'Server auth is not configured. Set DROPS_PASSPHRASE_HASH or DROPS_PASSPHRASE.';
+    return;
+  }
+
+  authBtn.disabled = false;
+  authBtn.style.opacity = '1';
+  authBtn.style.cursor = 'pointer';
+
+  if (dropsAuthState.authenticated) {
+    authBtn.textContent = 'Lock';
+    authBtn.style.color = 'var(--accent)';
+    authBtn.style.borderColor = 'var(--accent)';
+    authBtn.style.background = 'rgba(99,102,241,0.12)';
+    authNote.textContent = 'Unlocked for this browser session. Reads and writes now stay behind the server session cookie.';
+  } else {
+    authBtn.textContent = 'Unlock';
+    authBtn.style.color = 'var(--muted)';
+    authBtn.style.borderColor = 'var(--border)';
+    authBtn.style.background = 'transparent';
+    authNote.textContent = 'Dropbox is locked. Unlock it to load or edit drops.';
+  }
+}
+
+function renderDropsState(message, options = {}) {
+  const list = document.getElementById('drops-list');
+  const filterBar = document.getElementById('drop-filters');
+  if (!list || !filterBar) return;
+
+  filterBar.innerHTML = '';
+  const actionHtml = options.actionLabel
+    ? `<div style="margin-top:16px;"><button onclick="${options.actionOnClick}" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:10px 16px; font-size:13px; font-weight:600; cursor:pointer;">${options.actionLabel}</button></div>`
+    : '';
+  list.innerHTML = `<div style="text-align:center; padding:60px 0; color:var(--muted); font-size:13px;">${message}${actionHtml}</div>`;
+}
+
+function showPassphraseModal() {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('passphrase-modal');
+    const input = document.getElementById('passphrase-input');
+    const errorEl = document.getElementById('passphrase-error');
+    const submitBtn = document.getElementById('passphrase-submit');
+    const cancelBtn = document.getElementById('passphrase-cancel');
+
+    errorEl.style.display = 'none';
+    errorEl.textContent = '';
+    input.value = '';
+    modal.style.display = 'flex';
+    setTimeout(() => input.focus(), 100);
+
+    function cleanup() {
+      modal.style.display = 'none';
+      submitBtn.removeEventListener('click', onSubmit);
+      cancelBtn.removeEventListener('click', onCancel);
+      input.removeEventListener('keydown', onKeydown);
+    }
+
+    function onSubmit() {
+      const val = input.value;
+      if (!val) { input.focus(); return; }
+      cleanup();
+      resolve(val);
+    }
+
+    function onCancel() {
+      cleanup();
+      resolve(null);
+    }
+
+    function onKeydown(e) {
+      if (e.key === 'Enter') onSubmit();
+      if (e.key === 'Escape') onCancel();
+    }
+
+    submitBtn.addEventListener('click', onSubmit);
+    cancelBtn.addEventListener('click', onCancel);
+    input.addEventListener('keydown', onKeydown);
+  });
+}
+
+function showPassphraseError(message) {
+  const modal = document.getElementById('passphrase-modal');
+  const errorEl = document.getElementById('passphrase-error');
+  const input = document.getElementById('passphrase-input');
+  errorEl.textContent = message;
+  errorEl.style.display = 'block';
+  input.value = '';
+  modal.style.display = 'flex';
+  setTimeout(() => input.focus(), 100);
+}
+
+async function ensureDropsSession(interactive = true) {
+  let status;
+  try {
+    status = dropsAuthState.checked ? dropsAuthState : await refreshDropboxAuthState();
+  } catch (error) {
+    if (interactive) alert(error.message || 'Could not reach the Dropbox auth endpoint.');
+    return false;
+  }
+  updateDropboxAuthUI();
+
+  if (!status.configured) {
+    if (interactive) alert('Dropbox auth is not configured on the server. Set DROPS_PASSPHRASE_HASH or DROPS_PASSPHRASE.');
+    return false;
+  }
+
+  if (status.authenticated) return true;
+  if (!interactive) return false;
+
+  const passphrase = await showPassphraseModal();
+  if (passphrase == null) return false;
+
+  try {
+    await requestJson(DROPS_SESSION_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ passphrase })
+    });
+    dropsAuthState = { configured: true, authenticated: true, checked: true };
+    updateDropboxAuthUI();
+    return true;
+  } catch (error) {
+    showPassphraseError(error.message || 'Incorrect passphrase. Try again.');
+    return false;
+  }
+}
+
+async function toggleDropboxAccess() {
+  let status;
+  try {
+    status = dropsAuthState.checked ? dropsAuthState : await refreshDropboxAuthState();
+  } catch (error) {
+    alert(error.message || 'Could not reach the Dropbox auth endpoint.');
+    return;
+  }
+
+  if (status.authenticated) {
+    await requestJson(DROPS_SESSION_API, { method: 'DELETE' }).catch(() => null);
+    dropsAuthState = { configured: status.configured, authenticated: false, checked: true };
+    _dropsCache = null;
+    hideDropForm();
+    updateDropboxAuthUI();
+    renderDrops(false);
+    return;
+  }
+
+  if (await ensureDropsSession(true)) renderDrops();
+}
 
 async function loadDrops() {
   try {
@@ -2914,9 +3622,15 @@ async function loadDrops() {
   } catch(e) { return _dropsCache || []; }
 }
 
-function showDropForm() {
+function showDropForm(subject) {
   document.getElementById('drop-form').style.display = 'block';
-  document.getElementById('drop-subject').focus();
+  if (subject && subject !== 'all') {
+    document.getElementById('drop-subject').value = subject;
+    document.getElementById('drop-content').focus();
+  } else {
+    document.getElementById('drop-subject').value = '';
+    document.getElementById('drop-subject').focus();
+  }
 }
 
 function hideDropForm() {
@@ -2960,7 +3674,7 @@ async function deleteDrop(id) {
 
 let activeFilter = 'all';
 
-function filterDrops(subject, btn) {
+async function filterDrops(subject, btn) {
   activeFilter = subject;
   document.querySelectorAll('.drop-filter').forEach(b => {
     b.classList.remove('active');
@@ -2972,7 +3686,10 @@ function filterDrops(subject, btn) {
   btn.style.background = 'rgba(99,102,241,0.15)';
   btn.style.color = 'var(--accent)';
   btn.style.borderColor = 'var(--accent)';
-  renderDrops(false);
+  await renderDrops(false);
+  // Pre-fill subject field after render so DOM is fresh
+  const subjectInput = document.getElementById('drop-subject');
+  if (subjectInput) subjectInput.value = subject !== 'all' ? subject : '';
 }
 
 async function renderDrops(rebuildFilters = true) {
@@ -2988,8 +3705,11 @@ async function renderDrops(rebuildFilters = true) {
     filterBar.innerHTML = subjects.map(s => {
       const isActive = s === activeFilter;
       const label = s === 'all' ? 'All' : s;
-      return `<button class="drop-filter${isActive ? ' active' : ''}" onclick="filterDrops('${s}', this)"
-        style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid ${isActive ? 'var(--accent)' : 'var(--border)'}; background:${isActive ? 'rgba(99,102,241,0.15)' : 'transparent'}; color:${isActive ? 'var(--accent)' : 'var(--muted)'}; cursor:pointer;">${label}</button>`;
+      const activeStyle = isActive ? 'var(--accent)' : 'var(--border)';
+      const activeBg = isActive ? 'rgba(99,102,241,0.15)' : 'transparent';
+      const activeColor = isActive ? 'var(--accent)' : 'var(--muted)';
+      const plusBtn = s !== 'all' ? '<button onclick="showDropForm(\'' + s + '\')" title="New drop in ' + s + '" style="margin-left:4px;background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 3px;line-height:1;vertical-align:middle;">+</button>' : '';
+      return '<span style="display:inline-flex;align-items:center;"><button class="drop-filter' + (isActive ? ' active' : '') + '" onclick="filterDrops(\'' + s + '\', this)" style="font-size:12px;padding:6px 14px;border-radius:20px;border:1px solid ' + activeStyle + ';background:' + activeBg + ';color:' + activeColor + ';cursor:pointer;">' + label + '</button>' + plusBtn + '</span>';
     }).join('');
   }
 
@@ -3024,31 +3744,38 @@ function escHTML(str) {
 }
 
 // Patch switchView to render Dropbox when opened + auto focus-mode
-(function() {
-  const _orig = window.switchView;
-  window.switchView = function(view, navEl) {
-    _orig(view, navEl);
-    if (view === 'dropbox') renderDrops();
-    const layout = document.querySelector('.layout');
-    const btn = document.getElementById('focus-btn');
-    if (view === 'calendar') {
-      if (window.CAL) CAL.render();
-      layout.classList.remove('nav-collapsed');
-      layout.classList.add('feed-collapsed');
-      focusMode = false;
-      if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
-    if (view === 'memory') MEM.render();
-    if (['dropbox', 'traderclaw', 'lyra', 'memory'].includes(view)) {
-      layout.classList.add('nav-collapsed', 'feed-collapsed');
-      focusMode = true;
-      if (btn) { btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(99,102,241,0.12)'; }
-    } else if (view === 'office' || view === 'org') {
-      layout.classList.remove('nav-collapsed', 'feed-collapsed');
-      focusMode = false;
-      if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
-    }
-  };
-})();
+// Consolidated router - single source of truth for all view lifecycle
+VIEW_HANDLERS.traderclaw = { enter: () => { if (typeof DE !== 'undefined') DE.render(); }, focus: true };
+VIEW_HANDLERS.lyra       = { enter: () => { if (typeof SORA !== 'undefined') SORA.render(); }, focus: true };
+VIEW_HANDLERS.calendar   = { enter: () => { if (window.CAL) CAL.render(); }, focus: false, feedOnly: true };
+VIEW_HANDLERS.dropbox    = { enter: async () => { if (await ensureDropsSession(true)) renderDrops(); }, focus: true };
+VIEW_HANDLERS.memory     = { enter: () => { if (typeof MEM !== 'undefined') MEM.render(); }, focus: true };
+VIEW_HANDLERS.office     = { enter: null, focus: false };
+VIEW_HANDLERS.org        = { enter: null, focus: false };
+
+const _baseSwitchView = switchView;
+window.switchView = function(view, navEl) {
+  _baseSwitchView(view, navEl);
+  const layout = document.querySelector('.layout');
+  const btn = document.getElementById('focus-btn');
+  const handler = VIEW_HANDLERS[view];
+  if (!handler) return;
+  if (handler.enter) handler.enter();
+  if (handler.focus) {
+    layout.classList.add('nav-collapsed', 'feed-collapsed');
+    focusMode = true;
+    if (btn) { btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(99,102,241,0.12)'; }
+  } else if (handler.feedOnly) {
+    layout.classList.remove('nav-collapsed');
+    layout.classList.add('feed-collapsed');
+    focusMode = false;
+    if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
+  } else {
+    layout.classList.remove('nav-collapsed', 'feed-collapsed');
+    focusMode = false;
+    if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
+  }
+};
 
 // ─── MEMORY MODULE ───────────────────────────────────────────────────────────
 const MEM = (() => {
@@ -3213,7 +3940,28 @@ const MEM = (() => {
     }).join('');
   }
 
+    function renderRoster() {
+    const grid = document.getElementById('mem-roster-grid');
+    if (!grid) return;
+    grid.innerHTML = Object.entries(AGENT_DESCRIPTIONS).map(([id, info]) => {
+      const agent = AGENTS.find(a => a.id === id) || { color: '#64748b', emoji: '?' };
+      const memBadge = info.memory
+        ? '<span style="background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600;">MEMORY ON</span>'
+        : '<span style="background:rgba(100,116,139,0.15);color:var(--muted);border:1px solid var(--border);border-radius:20px;padding:2px 8px;font-size:10px;">STATELESS</span>';
+      return '<div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;border-left:3px solid ' + agent.color + ';cursor:pointer;" onclick="MEM.setFilter(\'' + id + '\')">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+        + '<div style="display:flex;align-items:center;gap:8px;">'
+        + '<span style="font-size:18px;">' + agent.emoji + '</span>'
+        + '<span style="font-size:13px;font-weight:700;color:' + agent.color + ';">' + info.name + '</span>'
+        + '</div>' + memBadge + '</div>'
+        + '<div style="font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">' + info.role + '</div>'
+        + '<div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Model: <span style="color:var(--text);">' + info.model + '</span></div>'
+        + '<div style="font-size:12px;color:var(--text);line-height:1.5;opacity:0.75;">' + info.desc + '</div>'
+        + '</div>';
+    }).join('');
+  }
   async function render() {
+    renderRoster();
     renderFilters();
     if (!(await ensureAuth())) {
       document.getElementById('mem-list').innerHTML = `<div style="text-align:center; padding:60px 0; color:var(--muted); font-size:13px;">Unlock the dropbox first to access memories.</div>`;
@@ -3222,7 +3970,7 @@ const MEM = (() => {
     await renderList();
   }
 
-  return { render, showForm, hideForm, save, remove, edit, setFilter, selectFormAgent };
+  return { render, renderRoster, showForm, hideForm, save, remove, edit, setFilter, selectFormAgent };
 })();
 
 </script>
