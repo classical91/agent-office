@@ -227,28 +227,24 @@
           title: 'Farmbot Morning Run',
           type: 'task',
           notes: 'Automated: Reaper runs CommentFarm discover + autopost. Posts to @DiamondHands811.',
-          recurring: 'Daily'
+          recurring: 'Daily',
+          seriesId: 'farmbot'
         }),
-        makeEvent(today, d, 9, 30, 10, 0, {
-          id: 'evt_xam_' + d,
-          title: 'X Morning Session',
+        makeEvent(today, d, 11, 0, 11, 30, {
+          id: 'evt_farmbot_session_am_' + d,
+          title: 'Farmbot Session',
           type: 'task',
-          notes: 'Manual: 5 comments on trending crypto posts on X.',
-          recurring: 'Daily'
+          notes: 'Manual: Farmbot session.',
+          recurring: 'Daily',
+          seriesId: 'farmbot_session_am'
         }),
-        makeEvent(today, d, 13, 0, 13, 30, {
-          id: 'evt_xpm_' + d,
-          title: 'X Afternoon Session',
+        makeEvent(today, d, 16, 0, 16, 30, {
+          id: 'evt_farmbot_session_pm_' + d,
+          title: 'Farmbot Session',
           type: 'task',
-          notes: 'Manual: 5 comments on trending crypto posts on X.',
-          recurring: 'Daily'
-        }),
-        makeEvent(today, d, 19, 0, 19, 30, {
-          id: 'evt_xeve_' + d,
-          title: 'X Evening Session',
-          type: 'task',
-          notes: 'Manual: 5 comments on trending crypto posts on X.',
-          recurring: 'Daily'
+          notes: 'Manual: Farmbot session.',
+          recurring: 'Daily',
+          seriesId: 'farmbot_session_pm'
         })
       );
     }
@@ -780,7 +776,7 @@
         + '<div class="calendar-next-time">' + escapeHtml(formatShortDate(start)) + ' / ' + escapeHtml(formatTime(start)) + '</div>'
         + '<div class="calendar-next-title">' + escapeHtml(event.title) + '</div>'
         + '<div class="calendar-next-meta">' + escapeHtml(meta.label + ' / ' + (event.location || event.notes || 'Ready to run')) + '</div>'
-        + '<div style="text-align:right;margin-top:4px;"><button onclick="event.stopPropagation();CAL.deleteEvent(\'' + event.id + '\')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#ef4444;border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;">delete</button></div>'
+        + '<div style="text-align:right;margin-top:4px;"><button onclick="event.stopPropagation();CAL.deleteEvent(\'' + event.id + '\')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#ef4444;border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;">' + escapeHtml(deleteActionLabel(event)) + '</button></div>'
         + '</button>';
     }).join('');
   }
@@ -810,6 +806,107 @@
       + '</div>').join('');
   }
 
+  function eventSeriesId(event) {
+    if (!event) return null;
+    if (event.seriesId) return event.seriesId;
+    const serverMatch = String(event.serverId || event.id || '').match(/^recur_\d{4}-\d{2}-\d{2}_(.+)$/);
+    if (serverMatch) return serverMatch[1];
+    if (!event.recurring) return null;
+    const localMatch = String(event.id || '').match(/^evt_(.+)_-?\d+$/);
+    return localMatch ? localMatch[1] : null;
+  }
+
+  function isRecurringEvent(event) {
+    return Boolean(event && (event.recurring || eventSeriesId(event)));
+  }
+
+  function deleteActionLabel(event) {
+    return isRecurringEvent(event) ? 'delete series' : 'delete';
+  }
+
+  function snoozeActionLabel(event) {
+    return isRecurringEvent(event) ? '+15m daily' : 'Snooze 15m';
+  }
+
+  function moveActionLabel(event) {
+    return isRecurringEvent(event) ? '10:00 daily' : 'Tomorrow 10:00';
+  }
+
+  const noteSaveTimers = {};
+
+  function patchTargetPath(event) {
+    const seriesId = eventSeriesId(event);
+    if (seriesId && isRecurringEvent(event)) {
+      return '/api/calendar/series/' + encodeURIComponent(seriesId);
+    }
+    const serverId = event.serverId || null;
+    return serverId ? '/api/calendar/events/' + encodeURIComponent(serverId) : null;
+  }
+
+  async function persistEventPatch(event, body) {
+    const path = patchTargetPath(event);
+    if (!path) return true;
+    try {
+      const response = await fetch(path, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(body)
+      });
+      return response.ok;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function applySingleEventPatchLocal(event, body) {
+    if (body.title) event.title = body.title;
+    if (body.notes !== undefined) event.notes = body.notes;
+    if (body.type) event.type = body.type;
+    if (body.start) event.start = body.start;
+    if (body.end) event.end = body.end;
+  }
+
+  function applySeriesEventPatchLocal(seriesId, body) {
+    const start = body.start ? parseLocalIso(body.start) : null;
+    const end = body.end ? parseLocalIso(body.end) : null;
+    state.events.forEach(item => {
+      if (eventSeriesId(item) !== seriesId) return;
+      if (body.title) item.title = body.title;
+      if (body.notes !== undefined) item.notes = body.notes;
+      if (body.type) item.type = body.type;
+      if (start && end) {
+        const day = parseLocalIso(item.start);
+        item.start = formatLocalIso(withTime(day, start.getHours(), start.getMinutes()));
+        item.end = formatLocalIso(withTime(day, end.getHours(), end.getMinutes()));
+      }
+    });
+  }
+
+  async function updateEventLocallyAndPersist(event, body, options) {
+    const isSeries = isRecurringEvent(event) && Boolean(eventSeriesId(event));
+    const ok = await persistEventPatch(event, body);
+    if (!ok) {
+      setFlash((options && options.failureMessage) || 'Update failed. Try again.', 'warn');
+      render();
+      return false;
+    }
+    if (isSeries) {
+      applySeriesEventPatchLocal(eventSeriesId(event), body);
+    } else {
+      applySingleEventPatchLocal(event, body);
+      if (body.start) {
+        state.selectedDate = parseDateKey(dateKey(body.start));
+        state.cursorDate = state.selectedDate;
+      }
+    }
+    if (options && options.successMessage) {
+      setFlash(options.successMessage, 'info');
+    }
+    render();
+    return true;
+  }
+
   function selectedEvent() {
     ensureSelection();
     return state.selectedEventId ? findEvent(state.selectedEventId) : null;
@@ -829,6 +926,8 @@
     const meta = TYPE_META[event.type];
     const start = parseLocalIso(event.start);
     const end = parseLocalIso(event.end);
+    const snoozeLabel = snoozeActionLabel(event);
+    const moveLabel = moveActionLabel(event);
     return '<div class="calendar-detail-card">'
       + '<div class="calendar-detail-label">' + (event.type === 'meeting' ? 'Meeting intelligence' : 'Selected event') + '</div>'
       + '<div class="calendar-detail-top">'
@@ -838,9 +937,10 @@
       + '<textarea class="calendar-note-input" placeholder="Add notes for this meeting or reminder..." oninput="CAL.updateNotes(\'' + event.id + '\', this.value)">' + escapeHtml(event.notes || '') + '</textarea>'
       + renderAttachments(event)
       + '<div class="calendar-action-row">'
-      + '<button class="calendar-btn tiny" onclick="CAL.snoozeSelected(15)">Snooze 15m</button>'
-      + '<button class="calendar-btn tiny ghost" onclick="CAL.moveSelectedTomorrow()">Tomorrow 10:00</button>'
+      + '<button class="calendar-btn tiny" onclick="CAL.snoozeSelected(15)">' + escapeHtml(snoozeLabel) + '</button>'
+      + '<button class="calendar-btn tiny ghost" onclick="CAL.moveSelectedTomorrow()">' + escapeHtml(moveLabel) + '</button>'
       + '<button class="calendar-btn tiny ghost" onclick="CAL.convertSelectedToTask()">Convert to task</button>'
+      + '<button class="calendar-btn tiny ghost" onclick="CAL.deleteEvent(\'' + event.id + '\')">' + escapeHtml(deleteActionLabel(event)) + '</button>'
       + (event.type === 'meeting' ? '<button class="calendar-btn tiny" onclick="CAL.prepareBrief()">Prepare brief</button><button class="calendar-btn tiny" onclick="CAL.createRecapFor(\'' + event.id + '\')">Summarize after</button>' : '')
       + '</div>'
       + '</div>';
@@ -1089,6 +1189,10 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: event.title, start: event.start, end: event.end, notes: event.notes || '' })
+      }).then(function (response) {
+        return response.ok ? response.json() : null;
+      }).then(function (payload) {
+        if (payload && payload.id) event.serverId = payload.id;
       }).catch(function () {});
     }
     return event;
@@ -1278,32 +1382,58 @@
   function updateNotes(eventId, value) {
     const event = findEvent(eventId);
     if (!event) return;
-    event.notes = value;
+    const seriesId = eventSeriesId(event);
+    if (seriesId && isRecurringEvent(event)) {
+      applySeriesEventPatchLocal(seriesId, { notes: value });
+    } else {
+      event.notes = value;
+    }
+    const timerKey = seriesId || event.serverId || event.id;
+    clearTimeout(noteSaveTimers[timerKey]);
+    noteSaveTimers[timerKey] = setTimeout(async function () {
+      const ok = await persistEventPatch(event, { notes: value });
+      if (!ok) {
+        setFlash('Could not save notes. Try again.', 'warn');
+        render();
+      }
+    }, 300);
   }
 
-  function snoozeSelected(minutes) {
+  async function snoozeSelected(minutes) {
     const event = selectedEvent();
     if (!event) return;
     const start = addMinutes(parseLocalIso(event.start), minutes);
     const end = addMinutes(parseLocalIso(event.end), minutes);
-    event.start = formatLocalIso(start);
-    event.end = formatLocalIso(end);
-    setFlash('Snoozed ' + event.title + ' by ' + minutes + ' minutes.', 'info');
-    render();
+    await updateEventLocallyAndPersist(event, {
+      start: formatLocalIso(start),
+      end: formatLocalIso(end)
+    }, {
+      successMessage: isRecurringEvent(event)
+        ? 'Shifted the recurring series for ' + event.title + ' by ' + minutes + ' minutes.'
+        : 'Snoozed ' + event.title + ' by ' + minutes + ' minutes.',
+      failureMessage: isRecurringEvent(event)
+        ? 'Could not update the recurring series. Try again.'
+        : 'Could not update the event. Try again.'
+    });
   }
 
-  function moveSelectedTomorrow() {
+  async function moveSelectedTomorrow() {
     const event = selectedEvent();
     if (!event) return;
     const duration = durationMinutes(event);
     const tomorrow = addDays(state.today, 1);
     const start = withTime(tomorrow, 10, 0);
-    event.start = formatLocalIso(start);
-    event.end = formatLocalIso(addMinutes(start, duration));
-    state.selectedDate = tomorrow;
-    state.cursorDate = tomorrow;
-    setFlash('Moved ' + event.title + ' to tomorrow at 10:00.', 'info');
-    render();
+    await updateEventLocallyAndPersist(event, {
+      start: formatLocalIso(start),
+      end: formatLocalIso(addMinutes(start, duration))
+    }, {
+      successMessage: isRecurringEvent(event)
+        ? 'Moved the recurring series for ' + event.title + ' to 10:00 daily.'
+        : 'Moved ' + event.title + ' to tomorrow at 10:00.',
+      failureMessage: isRecurringEvent(event)
+        ? 'Could not update the recurring series. Try again.'
+        : 'Could not update the event. Try again.'
+    });
   }
 
   function convertSelectedToTask() {
@@ -1372,14 +1502,23 @@
     render();
   }
 
-  function shiftEvent(eventId, minutes) {
+  async function shiftEvent(eventId, minutes) {
     const event = findEvent(eventId);
     if (!event) return;
-    event.start = formatLocalIso(addMinutes(parseLocalIso(event.start), minutes));
-    event.end = formatLocalIso(addMinutes(parseLocalIso(event.end), minutes));
     state.selectedEventId = eventId;
-    setFlash('Moved ' + event.title + ' by ' + minutes + ' minutes.', 'info');
-    render();
+    const start = addMinutes(parseLocalIso(event.start), minutes);
+    const end = addMinutes(parseLocalIso(event.end), minutes);
+    await updateEventLocallyAndPersist(event, {
+      start: formatLocalIso(start),
+      end: formatLocalIso(end)
+    }, {
+      successMessage: isRecurringEvent(event)
+        ? 'Shifted the recurring series for ' + event.title + ' by ' + minutes + ' minutes.'
+        : 'Moved ' + event.title + ' by ' + minutes + ' minutes.',
+      failureMessage: isRecurringEvent(event)
+        ? 'Could not update the recurring series. Try again.'
+        : 'Could not update the event. Try again.'
+    });
   }
 
   // -- GOOGLE CALENDAR SYNC ---------------------------------------
@@ -1390,13 +1529,21 @@
     const start = formatLocalIso(new Date(startRaw));
     const end = formatLocalIso(new Date(endRaw));
     const summary = (gEvent.summary || '').toLowerCase();
-    let type = 'meeting';
-    if (summary.includes('focus') || summary.includes('deep work')) type = 'focus';
-    else if (summary.includes('deadline') || summary.includes('due')) type = 'deadline';
-    else if (summary.includes('remind') || summary.includes('reminder')) type = 'reminder';
-    else if (summary.includes('task') || summary.includes('todo')) type = 'task';
+    let type = gEvent.type || 'meeting';
+    if (!gEvent.type) {
+      if (summary.includes('focus') || summary.includes('deep work')) type = 'focus';
+      else if (summary.includes('deadline') || summary.includes('due')) type = 'deadline';
+      else if (summary.includes('remind') || summary.includes('reminder')) type = 'reminder';
+      else if (summary.includes('task') || summary.includes('todo')) type = 'task';
+    }
+    const serverId = gEvent.id || null;
+    const seriesId = gEvent.seriesId || eventSeriesId({
+      id: serverId,
+      recurring: gEvent.recurring || null
+    });
     return {
-      id: 'gcal_' + gEvent.id,
+      id: serverId || uid('gcal'),
+      serverId: serverId || null,
       title: gEvent.summary || '(No title)',
       type,
       start,
@@ -1404,7 +1551,9 @@
       notes: gEvent.description || '',
       attachments: [],
       location: gEvent.location || null,
-      gcalId: gEvent.id
+      recurring: gEvent.recurring || (seriesId ? 'Daily' : null),
+      seriesId: seriesId || null,
+      gcalId: gEvent.gcalId || null
     };
   }
 
@@ -1442,15 +1591,38 @@
 
 
   async function deleteEvent(id) {
-    if (!confirm('Delete this event?')) return;
-    try {
-      const r = await fetch('/api/calendar/events/' + id, { method: 'DELETE', credentials: 'same-origin' });
-      if (!r.ok) { alert('Delete failed - try again'); return; }
-    } catch(e) { alert('Network error - delete failed'); return; }
-    state.events = state.events.filter(function(e) { return e.id !== id; });
-    if (state.selectedEventId === id) {
-      state.selectedEventId = state.events.length ? state.events[0].id : null;
+    const event = findEvent(id);
+    if (!event) return;
+    const seriesId = eventSeriesId(event);
+    const deleteSeries = Boolean(seriesId && isRecurringEvent(event));
+    const confirmCopy = deleteSeries
+      ? 'Delete every "' + event.title + '" event in this recurring series?'
+      : 'Delete this event?';
+    if (!confirm(confirmCopy)) return;
+
+    if (deleteSeries || event.serverId) {
+      const requestPath = deleteSeries
+        ? '/api/calendar/series/' + encodeURIComponent(seriesId)
+        : '/api/calendar/events/' + encodeURIComponent(event.serverId);
+      try {
+        const r = await fetch(requestPath, { method: 'DELETE', credentials: 'same-origin' });
+        if (!r.ok) {
+          alert(deleteSeries ? 'Delete series failed - try again' : 'Delete failed - try again');
+          return;
+        }
+      } catch (e) {
+        alert('Network error - delete failed');
+        return;
+      }
     }
+
+    state.events = state.events.filter(function (item) {
+      return deleteSeries ? eventSeriesId(item) !== seriesId : item.id !== id;
+    });
+    if (!findEvent(state.selectedEventId)) {
+      state.selectedEventId = null;
+    }
+    setFlash(deleteSeries ? 'Deleted the recurring series for ' + event.title + '.' : 'Deleted ' + event.title + '.', 'info');
     render();
   }
   window.CAL = {
