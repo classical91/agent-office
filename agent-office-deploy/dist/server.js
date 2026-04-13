@@ -425,6 +425,34 @@ async function createPostgresStorage() {
     )
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS calendar_events (
+      id TEXT PRIMARY KEY,
+      title VARCHAR(200) NOT NULL,
+      start_time TIMESTAMPTZ NOT NULL,
+      end_time TIMESTAMPTZ NOT NULL,
+      notes TEXT,
+      type VARCHAR(50) DEFAULT 'meeting',
+      done BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  // Seed cron jobs if calendar is empty
+  const calCount = await pool.query('SELECT COUNT(*)::int AS count FROM calendar_events');
+  if (calCount.rows[0].count === 0) {
+    const tz = 'America/Vancouver';
+    const seedEvents = [
+      { id: 'seed_farmbot', title: 'Farmbot Morning Run', start_time: '2026-04-13T09:00:00-07:00', end_time: '2026-04-13T09:05:00-07:00', notes: 'Automated: Reaper runs CommentFarm discover + autopost. Posts to @DiamondHands811.', type: 'task' },
+      { id: 'seed_xam', title: 'X Morning Session', start_time: '2026-04-13T09:00:00-07:00', end_time: '2026-04-13T09:30:00-07:00', notes: 'Manual: 5 comments on trending crypto posts on X.', type: 'task' },
+      { id: 'seed_xpm', title: 'X Afternoon Session', start_time: '2026-04-13T13:00:00-07:00', end_time: '2026-04-13T13:30:00-07:00', notes: 'Manual: 5 comments on trending crypto posts on X.', type: 'task' },
+      { id: 'seed_xeve', title: 'X Evening Session', start_time: '2026-04-13T19:00:00-07:00', end_time: '2026-04-13T19:30:00-07:00', notes: 'Manual: 5 comments on trending crypto posts on X.', type: 'task' },
+    ];
+    for (const e of seedEvents) {
+      await pool.query('INSERT INTO calendar_events (id,title,start_time,end_time,notes,type) VALUES ($1,$2,$3,$4,$5,$6)', [e.id, e.title, e.start_time, e.end_time, e.notes, e.type]);
+    }
+  }
+
   const existingCount = await pool.query('SELECT COUNT(*)::int AS count FROM drops');
   if (existingCount.rows[0].count === 0) {
     const legacyDrops = await loadDropsFromFile();
@@ -873,21 +901,39 @@ const server = http.createServer(async (req, res) => {
 
     if (req.m
     if (req.method === 'GET' && pathname === '/api/calendar/events') {
-      // Serve hardcoded recurring cron job events for next 14 days
-      const cronEvents = [];
-      const tz = 'America/Vancouver';
-      for (let d = 0; d < 14; d++) {
-        const date = new Date();
-        date.setDate(date.getDate() + d);
-        const dd = date.toISOString().slice(0, 10);
-        cronEvents.push(
-          { id: 'farmbot_' + dd, summary: '\uD83E\uDD16 Farmbot Morning Run', start: { dateTime: dd + 'T09:00:00', timeZone: tz }, end: { dateTime: dd + 'T09:05:00', timeZone: tz }, description: 'Automated: Reaper runs CommentFarm discover + autopost. Posts to @DiamondHands811.' },
-          { id: 'xam_' + dd, summary: '\uD83D\uDCE3 X Morning Session', start: { dateTime: dd + 'T09:00:00', timeZone: tz }, end: { dateTime: dd + 'T09:30:00', timeZone: tz }, description: 'Manual: 5 comments on trending crypto posts on X.' },
-          { id: 'xpm_' + dd, summary: '\uD83D\uDCE3 X Afternoon Session', start: { dateTime: dd + 'T13:00:00', timeZone: tz }, end: { dateTime: dd + 'T13:30:00', timeZone: tz }, description: 'Manual: 5 comments on trending crypto posts on X.' },
-          { id: 'xeve_' + dd, summary: '\uD83D\uDCE3 X Evening Session', start: { dateTime: dd + 'T19:00:00', timeZone: tz }, end: { dateTime: dd + 'T19:30:00', timeZone: tz }, description: 'Manual: 5 comments on trending crypto posts on X.' }
-        );
-      }
-      sendJson(res, 200, { events: cronEvents });
+      const rows = await pool.query('SELECT * FROM calendar_events ORDER BY start_time ASC');
+      const events = rows.rows.map(r => ({
+        id: r.id, summary: r.title, description: r.notes || '', type: r.type || 'meeting', done: r.done,
+        start: { dateTime: r.start_time.toISOString(), timeZone: 'America/Vancouver' },
+        end: { dateTime: r.end_time.toISOString(), timeZone: 'America/Vancouver' }
+      }));
+      sendJson(res, 200, { events });
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/calendar/events') {
+      const body = await readJsonBody(req);
+      if (!body.title || !body.start || !body.end) { sendJson(res, 400, { error: 'title, start, end required' }); return; }
+      const id = 'evt_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+      await pool.query('INSERT INTO calendar_events (id,title,start_time,end_time,notes,type) VALUES ($1,$2,$3,$4,$5,$6)',
+        [id, body.title, body.start, body.end, body.notes || '', body.type || 'meeting']);
+      sendJson(res, 200, { id });
+      return;
+    }
+
+    if (req.method === 'DELETE' && pathname.startsWith('/api/calendar/events/')) {
+      const id = pathname.split('/').pop();
+      await pool.query('DELETE FROM calendar_events WHERE id=$1', [id]);
+      sendJson(res, 200, { ok: true });
+      return;
+    }
+
+    if (req.method === 'PATCH' && pathname.startsWith('/api/calendar/events/')) {
+      const id = pathname.split('/').pop();
+      const body = await readJsonBody(req);
+      if (body.done !== undefined) await pool.query('UPDATE calendar_events SET done=$1 WHERE id=$2', [body.done, id]);
+      if (body.title) await pool.query('UPDATE calendar_events SET title=$1 WHERE id=$2', [body.title, id]);
+      sendJson(res, 200, { ok: true });
       return;
     }
 if (req.method === 'POST' && pathname === '/api/calendar/events') {
