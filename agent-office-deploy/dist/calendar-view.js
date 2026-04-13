@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   const ROW_HEIGHT = 56;
   const HOUR_START = 7;
   const HOUR_END = 21;
@@ -903,6 +903,7 @@
         + '<div class="calendar-next-time">' + escapeHtml(formatShortDate(start)) + ' / ' + escapeHtml(formatTime(start)) + '</div>'
         + '<div class="calendar-next-title">' + escapeHtml(event.title) + '</div>'
         + '<div class="calendar-next-meta">' + escapeHtml(meta.label + ' / ' + (event.location || event.notes || 'Ready to run')) + '</div>'
+        + '<div style="text-align:right;margin-top:4px;"><button onclick="event.stopPropagation();CAL.deleteEvent(\'' + event.id + '\')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#ef4444;border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;">delete</button></div>'
         + '</button>';
     }).join('');
   }
@@ -1562,12 +1563,23 @@
 
   // ──────────────────────────────────────────────────────────────
 
+
+  async function deleteEvent(id) {
+    if (!confirm('Delete this event?')) return;
+    state.events = state.events.filter(function(e) { return e.id !== id; });
+    if (state.selectedEventId === id) {
+      state.selectedEventId = state.events.length ? state.events[0].id : null;
+    }
+    render();
+    try { await fetch('/api/calendar/events/' + id, { method: 'DELETE', credentials: 'same-origin' }); } catch(_) {}
+  }
   window.CAL = {
     render,
     navigate,
     goToday,
     changeView,
     selectEvent,
+    deleteEvent,
     toggleFilter,
     setSearch,
     updateCommand,
