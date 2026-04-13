@@ -161,6 +161,18 @@
     return formatTime(start) + ' - ' + formatTime(end);
   }
 
+  function formatTimeInput(value) {
+    const date = value instanceof Date ? value : parseLocalIso(value);
+    const pad = amount => String(amount).padStart(2, '0');
+    return pad(date.getHours()) + ':' + pad(date.getMinutes());
+  }
+
+  function combineInputDateTime(dateValue, timeValue) {
+    if (!dateValue || !timeValue) return null;
+    const combined = new Date(dateValue + 'T' + timeValue);
+    return Number.isNaN(combined.getTime()) ? null : combined;
+  }
+
   function escapeHtml(value) {
     return String(value)
       .replace(/&/g, '&amp;')
@@ -259,6 +271,8 @@
       cursorDate: today,
       selectedDate: today,
       selectedEventId: upcoming ? upcoming.id : events[0].id,
+      editingEventId: null,
+      editDraft: null,
       view: 'week',
       search: '',
       command: 'call client next Tuesday at 2pm',
@@ -320,6 +334,18 @@
     if (findEvent(state.selectedEventId)) return;
     const next = visibleEvents().find(event => parseLocalIso(event.end) >= new Date()) || visibleEvents()[0] || state.events[0];
     state.selectedEventId = next ? next.id : null;
+  }
+
+  function resetEventEditor() {
+    state.editingEventId = null;
+    state.editDraft = null;
+  }
+
+  function syncEventEditor() {
+    if (!state.editingEventId) return;
+    if (state.editingEventId !== state.selectedEventId || !state.editDraft || !findEvent(state.editingEventId)) {
+      resetEventEditor();
+    }
   }
 
   function overlapLayout(dayEvents) {
@@ -776,7 +802,10 @@
         + '<div class="calendar-next-time">' + escapeHtml(formatShortDate(start)) + ' / ' + escapeHtml(formatTime(start)) + '</div>'
         + '<div class="calendar-next-title">' + escapeHtml(event.title) + '</div>'
         + '<div class="calendar-next-meta">' + escapeHtml(meta.label + ' / ' + (event.location || event.notes || 'Ready to run')) + '</div>'
-        + '<div style="text-align:right;margin-top:4px;"><button onclick="event.stopPropagation();CAL.deleteEvent(\'' + event.id + '\')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#ef4444;border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;">' + escapeHtml(deleteActionLabel(event)) + '</button></div>'
+        + '<div style="display:flex;justify-content:flex-end;gap:6px;margin-top:4px;">'
+        + '<button onclick="event.stopPropagation();CAL.openEventEditor(\'' + event.id + '\')" style="background:rgba(56,189,248,0.10);border:1px solid rgba(56,189,248,0.28);color:#38bdf8;border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;">' + escapeHtml(editActionLabel(event)) + '</button>'
+        + '<button onclick="event.stopPropagation();CAL.deleteEvent(\'' + event.id + '\')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#ef4444;border-radius:6px;padding:2px 8px;font-size:11px;cursor:pointer;">' + escapeHtml(deleteActionLabel(event)) + '</button>'
+        + '</div>'
         + '</button>';
     }).join('');
   }
@@ -822,6 +851,10 @@
 
   function deleteActionLabel(event) {
     return isRecurringEvent(event) ? 'delete series' : 'delete';
+  }
+
+  function editActionLabel(event) {
+    return isRecurringEvent(event) ? 'edit series' : 'edit event';
   }
 
   function snoozeActionLabel(event) {
@@ -907,9 +940,102 @@
     return true;
   }
 
+  function updateEditField(field, value) {
+    if (!state.editDraft) return;
+    state.editDraft[field] = value;
+  }
+
+  function openEventEditor(id) {
+    const event = id ? findEvent(id) : selectedEvent();
+    if (!event) return;
+    state.selectedEventId = event.id;
+    state.selectedDate = parseDateKey(dateKey(event.start));
+    if (state.view === 'month') state.cursorDate = state.selectedDate;
+    state.editingEventId = event.id;
+    state.editDraft = buildEventEditDraft(event);
+    render();
+  }
+
+  function cancelEventEdit() {
+    if (!state.editingEventId) return;
+    resetEventEditor();
+    render();
+  }
+
+  async function saveEventEdit() {
+    const event = state.editingEventId ? findEvent(state.editingEventId) : selectedEvent();
+    const draft = state.editDraft;
+    if (!event || !draft) return;
+
+    const title = String(draft.title || '').trim();
+    if (!title) {
+      setFlash('Title is required before saving.', 'warn');
+      render();
+      return;
+    }
+
+    const baseDate = isRecurringEvent(event) ? dateKey(event.start) : draft.date;
+    const nextStart = combineInputDateTime(baseDate, draft.startTime);
+    const nextEnd = combineInputDateTime(baseDate, draft.endTime);
+    if (!nextStart || !nextEnd) {
+      setFlash('Choose a valid date and time before saving.', 'warn');
+      render();
+      return;
+    }
+    if (nextEnd <= nextStart) {
+      setFlash('End time must be after the start time.', 'warn');
+      render();
+      return;
+    }
+
+    const timerKey = eventSeriesId(event) || event.serverId || event.id;
+    if (noteSaveTimers[timerKey]) {
+      window.clearTimeout(noteSaveTimers[timerKey]);
+      delete noteSaveTimers[timerKey];
+    }
+
+    const body = {
+      title,
+      type: TYPE_META[draft.type] ? draft.type : event.type,
+      notes: draft.notes || '',
+      start: formatLocalIso(nextStart),
+      end: formatLocalIso(nextEnd)
+    };
+
+    const ok = await updateEventLocallyAndPersist(event, body, {
+      successMessage: isRecurringEvent(event)
+        ? 'Updated the recurring series for ' + title + '.'
+        : 'Saved changes to ' + title + '.',
+      failureMessage: isRecurringEvent(event)
+        ? 'Could not save the recurring series. Try again.'
+        : 'Could not save the event. Try again.'
+    });
+    if (!ok) return;
+
+    resetEventEditor();
+    render();
+  }
+
   function selectedEvent() {
     ensureSelection();
     return state.selectedEventId ? findEvent(state.selectedEventId) : null;
+  }
+
+  function buildEventEditDraft(event) {
+    const start = parseLocalIso(event.start);
+    const end = parseLocalIso(event.end);
+    return {
+      title: event.title || '',
+      type: TYPE_META[event.type] ? event.type : 'meeting',
+      date: dateKey(start),
+      startTime: formatTimeInput(start),
+      endTime: formatTimeInput(end),
+      notes: event.notes || ''
+    };
+  }
+
+  function isEditingSelectedEvent(event) {
+    return Boolean(event && state.editingEventId === event.id && state.editDraft);
   }
 
   function renderAttachments(event) {
@@ -920,6 +1046,39 @@
     }).join('') + '</div>';
   }
 
+  function renderEventEditor(event) {
+    const draft = state.editDraft || buildEventEditDraft(event);
+    const recurring = isRecurringEvent(event);
+    const typeOptions = Object.keys(TYPE_META).map(key => {
+      return '<option value="' + key + '"' + (draft.type === key ? ' selected' : '') + '>' + escapeHtml(TYPE_META[key].label) + '</option>';
+    }).join('');
+    const scheduleFields = recurring
+      ? '<div class="calendar-form-grid calendar-form-grid-split">'
+        + '<label class="calendar-form-field"><span class="calendar-form-label">Start time</span><input class="calendar-form-input" type="time" value="' + escapeHtml(draft.startTime || '') + '" onchange="CAL.updateEditField(\'startTime\', this.value)" /></label>'
+        + '<label class="calendar-form-field"><span class="calendar-form-label">End time</span><input class="calendar-form-input" type="time" value="' + escapeHtml(draft.endTime || '') + '" onchange="CAL.updateEditField(\'endTime\', this.value)" /></label>'
+        + '</div>'
+      : '<div class="calendar-form-grid calendar-form-grid-three">'
+        + '<label class="calendar-form-field"><span class="calendar-form-label">Date</span><input class="calendar-form-input" type="date" value="' + escapeHtml(draft.date || '') + '" onchange="CAL.updateEditField(\'date\', this.value)" /></label>'
+        + '<label class="calendar-form-field"><span class="calendar-form-label">Start time</span><input class="calendar-form-input" type="time" value="' + escapeHtml(draft.startTime || '') + '" onchange="CAL.updateEditField(\'startTime\', this.value)" /></label>'
+        + '<label class="calendar-form-field"><span class="calendar-form-label">End time</span><input class="calendar-form-input" type="time" value="' + escapeHtml(draft.endTime || '') + '" onchange="CAL.updateEditField(\'endTime\', this.value)" /></label>'
+        + '</div>';
+
+    return '<div class="calendar-edit-form">'
+      + '<div class="calendar-edit-hint">' + escapeHtml(recurring ? 'These changes apply to every event in this recurring series.' : 'These changes apply to this event only.') + '</div>'
+      + '<div class="calendar-form-grid">'
+      + '<label class="calendar-form-field calendar-form-field-full"><span class="calendar-form-label">Title</span><input class="calendar-form-input" type="text" value="' + escapeHtml(draft.title || '') + '" oninput="CAL.updateEditField(\'title\', this.value)" /></label>'
+      + '<label class="calendar-form-field"><span class="calendar-form-label">Type</span><select class="calendar-form-select" onchange="CAL.updateEditField(\'type\', this.value)">' + typeOptions + '</select></label>'
+      + '<div class="calendar-form-field"><span class="calendar-form-label">Scope</span><div class="calendar-form-static">' + escapeHtml(recurring ? 'Every event in this daily series' : 'This event only') + '</div></div>'
+      + '</div>'
+      + scheduleFields
+      + '<label class="calendar-form-field calendar-form-field-full"><span class="calendar-form-label">Notes</span><textarea class="calendar-note-input calendar-edit-textarea" placeholder="Add notes for this meeting or reminder..." oninput="CAL.updateEditField(\'notes\', this.value)">' + escapeHtml(draft.notes || '') + '</textarea></label>'
+      + '<div class="calendar-action-row">'
+      + '<button class="calendar-btn primary tiny" onclick="CAL.saveEventEdit()">' + escapeHtml(recurring ? 'Save series' : 'Save changes') + '</button>'
+      + '<button class="calendar-btn tiny ghost" onclick="CAL.cancelEventEdit()">Cancel</button>'
+      + '</div>'
+      + '</div>';
+  }
+
   function renderDetailCard() {
     const event = selectedEvent();
     if (!event) return '<div class="calendar-empty">Select an event to see notes and quick actions.</div>';
@@ -928,21 +1087,27 @@
     const end = parseLocalIso(event.end);
     const snoozeLabel = snoozeActionLabel(event);
     const moveLabel = moveActionLabel(event);
+    const editing = isEditingSelectedEvent(event);
     return '<div class="calendar-detail-card">'
       + '<div class="calendar-detail-label">' + (event.type === 'meeting' ? 'Meeting intelligence' : 'Selected event') + '</div>'
       + '<div class="calendar-detail-top">'
       + '<div><div class="calendar-detail-title">' + escapeHtml(event.title) + '</div><div class="calendar-detail-meta">' + escapeHtml(formatLongDate(start) + ' / ' + formatRange(start, end)) + (event.location ? ' / ' + escapeHtml(event.location) : '') + '</div></div>'
       + '<span class="calendar-status-chip"><span class="calendar-chip-swatch" style="background:' + meta.dot + '"></span>' + meta.label + '</span>'
       + '</div>'
-      + '<textarea class="calendar-note-input" placeholder="Add notes for this meeting or reminder..." oninput="CAL.updateNotes(\'' + event.id + '\', this.value)">' + escapeHtml(event.notes || '') + '</textarea>'
+      + (editing
+        ? renderEventEditor(event)
+        : '<textarea class="calendar-note-input" placeholder="Add notes for this meeting or reminder..." oninput="CAL.updateNotes(\'' + event.id + '\', this.value)">' + escapeHtml(event.notes || '') + '</textarea>')
       + renderAttachments(event)
-      + '<div class="calendar-action-row">'
-      + '<button class="calendar-btn tiny" onclick="CAL.snoozeSelected(15)">' + escapeHtml(snoozeLabel) + '</button>'
-      + '<button class="calendar-btn tiny ghost" onclick="CAL.moveSelectedTomorrow()">' + escapeHtml(moveLabel) + '</button>'
-      + '<button class="calendar-btn tiny ghost" onclick="CAL.convertSelectedToTask()">Convert to task</button>'
-      + '<button class="calendar-btn tiny ghost" onclick="CAL.deleteEvent(\'' + event.id + '\')">' + escapeHtml(deleteActionLabel(event)) + '</button>'
-      + (event.type === 'meeting' ? '<button class="calendar-btn tiny" onclick="CAL.prepareBrief()">Prepare brief</button><button class="calendar-btn tiny" onclick="CAL.createRecapFor(\'' + event.id + '\')">Summarize after</button>' : '')
-      + '</div>'
+      + (editing
+        ? ''
+        : '<div class="calendar-action-row">'
+        + '<button class="calendar-btn primary tiny" onclick="CAL.openEventEditor(\'' + event.id + '\')">' + escapeHtml(editActionLabel(event)) + '</button>'
+        + '<button class="calendar-btn tiny" onclick="CAL.snoozeSelected(15)">' + escapeHtml(snoozeLabel) + '</button>'
+        + '<button class="calendar-btn tiny ghost" onclick="CAL.moveSelectedTomorrow()">' + escapeHtml(moveLabel) + '</button>'
+        + '<button class="calendar-btn tiny ghost" onclick="CAL.convertSelectedToTask()">Convert to task</button>'
+        + '<button class="calendar-btn tiny ghost" onclick="CAL.deleteEvent(\'' + event.id + '\')">' + escapeHtml(deleteActionLabel(event)) + '</button>'
+        + (event.type === 'meeting' ? '<button class="calendar-btn tiny" onclick="CAL.prepareBrief()">Prepare brief</button><button class="calendar-btn tiny" onclick="CAL.createRecapFor(\'' + event.id + '\')">Summarize after</button>' : '')
+        + '</div>')
       + '</div>';
   }
 
@@ -1001,6 +1166,7 @@
     const root = document.getElementById('calendar-app');
     if (!root) return;
     ensureSelection();
+    syncEventEditor();
     if (!state.gcalFetchStarted) {
       state.gcalFetchStarted = true;
       loadGoogleEvents();
@@ -1049,6 +1215,7 @@
   function selectEvent(id) {
     const event = findEvent(id);
     if (!event) return;
+    if (state.selectedEventId !== id) resetEventEditor();
     state.selectedEventId = id;
     state.selectedDate = parseDateKey(dateKey(event.start));
     if (state.view === 'month') state.cursorDate = state.selectedDate;
@@ -1178,6 +1345,7 @@
       attachments: [],
       notes: ''
     }, data);
+    resetEventEditor();
     state.events.push(event);
     state.events.sort(compareEvents);
     state.selectedEventId = event.id;
@@ -1456,6 +1624,7 @@
     state.tasks.sort(compareTasks);
     state.events = state.events.filter(item => item.id !== event.id);
     state.selectedEventId = null;
+    resetEventEditor();
     setFlash('Converted ' + event.title + ' into an unscheduled task.', 'info');
     render();
   }
@@ -1572,6 +1741,7 @@
       if (gEvents.length === 0) return;
 
       const converted = gEvents.map(googleEventToInternal).sort(compareEvents);
+      resetEventEditor();
       state.events = converted;
 
       const now = new Date();
@@ -1622,6 +1792,7 @@
     if (!findEvent(state.selectedEventId)) {
       state.selectedEventId = null;
     }
+    syncEventEditor();
     setFlash(deleteSeries ? 'Deleted the recurring series for ' + event.title + '.' : 'Deleted ' + event.title + '.', 'info');
     render();
   }
@@ -1646,6 +1817,10 @@
     allowTaskDrop,
     dropTask,
     updateNotes,
+    updateEditField,
+    openEventEditor,
+    cancelEventEdit,
+    saveEventEdit,
     snoozeSelected,
     moveSelectedTomorrow,
     convertSelectedToTask,

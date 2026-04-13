@@ -4,6 +4,8 @@ const fs = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
 
+process.env.TZ = process.env.APP_TIMEZONE || 'America/Vancouver';
+
 const PORT = process.env.PORT || 3000;
 const DROPS_FILE = path.join(__dirname, process.env.DROPS_FILE || 'drops.json');
 const MEMORIES_FILE = path.join(__dirname, process.env.MEMORIES_FILE || 'memories.json');
