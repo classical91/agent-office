@@ -219,7 +219,7 @@
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr) 340px;
+  grid-template-columns: 200px minmax(0, 1fr) 280px;
 }
 
 .calendar-rail,
@@ -228,6 +228,16 @@
   overflow: auto;
   scrollbar-width: thin;
   scrollbar-color: rgba(71, 85, 105, 0.9) transparent;
+}
+
+.calendar-workspace.calendar-view-week,
+.calendar-workspace.calendar-view-day {
+  grid-template-columns: minmax(0, 1fr) 280px;
+}
+
+.calendar-workspace.calendar-view-week > .calendar-rail-left,
+.calendar-workspace.calendar-view-day > .calendar-rail-left {
+  display: none;
 }
 
 .calendar-rail::-webkit-scrollbar,
@@ -815,13 +825,12 @@
 .calendar-event-block-title {
   display: block;
   margin-top: 2px;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.3;
   font-weight: 700;
   color: inherit;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .calendar-event-block-meta {
@@ -830,9 +839,8 @@
   font-size: 10px;
   color: rgba(226, 232, 240, 0.78);
   line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .calendar-agenda {
@@ -1028,7 +1036,7 @@
 
 @media (max-width: 1380px) {
   .calendar-workspace {
-    grid-template-columns: 250px minmax(0, 1fr) 310px;
+    grid-template-columns: 180px minmax(0, 1fr) 260px;
   }
 
   .calendar-priority-banner {
