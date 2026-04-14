@@ -273,6 +273,7 @@
       selectedEventId: upcoming ? upcoming.id : events[0].id,
       editingEventId: null,
       editDraft: null,
+      creatingEvent: false,
       view: 'week',
       search: '',
       command: 'call client next Tuesday at 2pm',
@@ -339,9 +340,11 @@
   function resetEventEditor() {
     state.editingEventId = null;
     state.editDraft = null;
+    state.creatingEvent = false;
   }
 
   function syncEventEditor() {
+    if (state.creatingEvent) return;
     if (!state.editingEventId) return;
     if (state.editingEventId !== state.selectedEventId || !state.editDraft || !findEvent(state.editingEventId)) {
       resetEventEditor();
@@ -963,6 +966,20 @@
   }
 
   async function saveEventEdit() {
+    if (state.creatingEvent) {
+      const draft = state.editDraft;
+      if (!draft) return;
+      const title = String(draft.title || '').trim();
+      if (!title) { setFlash('Title is required before saving.', 'warn'); render(); return; }
+      const nextStart = combineInputDateTime(draft.date, draft.startTime);
+      const nextEnd = combineInputDateTime(draft.date, draft.endTime);
+      if (!nextStart || !nextEnd) { setFlash('Choose a valid date and time before saving.', 'warn'); render(); return; }
+      if (nextEnd <= nextStart) { setFlash('End time must be after the start time.', 'warn'); render(); return; }
+      createEvent({ title, type: draft.type, notes: draft.notes || '', start: formatLocalIso(nextStart), end: formatLocalIso(nextEnd) });
+      setFlash('Created ' + title + '.', 'info');
+      render();
+      return;
+    }
     const event = state.editingEventId ? findEvent(state.editingEventId) : selectedEvent();
     const draft = state.editDraft;
     if (!event || !draft) return;
@@ -1079,7 +1096,34 @@
       + '</div>';
   }
 
+  function renderNewEventForm() {
+    const draft = state.editDraft;
+    const typeOptions = Object.keys(TYPE_META).map(key => {
+      return '<option value="' + key + '"' + (draft.type === key ? ' selected' : '') + '>' + escapeHtml(TYPE_META[key].label) + '</option>';
+    }).join('');
+    return '<div class="calendar-detail-card">'
+      + '<div class="calendar-detail-label">New event</div>'
+      + '<div class="calendar-edit-form">'
+      + '<div class="calendar-form-grid">'
+      + '<label class="calendar-form-field calendar-form-field-full"><span class="calendar-form-label">Title</span><input class="calendar-form-input" type="text" value="' + escapeHtml(draft.title || '') + '" placeholder="Event title" oninput="CAL.updateEditField(\'title\', this.value)" /></label>'
+      + '<label class="calendar-form-field"><span class="calendar-form-label">Type</span><select class="calendar-form-select" onchange="CAL.updateEditField(\'type\', this.value)">' + typeOptions + '</select></label>'
+      + '</div>'
+      + '<div class="calendar-form-grid calendar-form-grid-three">'
+      + '<label class="calendar-form-field"><span class="calendar-form-label">Date</span><input class="calendar-form-input" type="date" value="' + escapeHtml(draft.date || '') + '" onchange="CAL.updateEditField(\'date\', this.value)" /></label>'
+      + '<label class="calendar-form-field"><span class="calendar-form-label">Start time</span><input class="calendar-form-input" type="time" value="' + escapeHtml(draft.startTime || '') + '" onchange="CAL.updateEditField(\'startTime\', this.value)" /></label>'
+      + '<label class="calendar-form-field"><span class="calendar-form-label">End time</span><input class="calendar-form-input" type="time" value="' + escapeHtml(draft.endTime || '') + '" onchange="CAL.updateEditField(\'endTime\', this.value)" /></label>'
+      + '</div>'
+      + '<label class="calendar-form-field calendar-form-field-full"><span class="calendar-form-label">Notes</span><textarea class="calendar-note-input calendar-edit-textarea" placeholder="Add notes..." oninput="CAL.updateEditField(\'notes\', this.value)">' + escapeHtml(draft.notes || '') + '</textarea></label>'
+      + '<div class="calendar-action-row">'
+      + '<button class="calendar-btn primary tiny" onclick="CAL.saveEventEdit()">Create event</button>'
+      + '<button class="calendar-btn tiny ghost" onclick="CAL.cancelEventEdit()">Cancel</button>'
+      + '</div>'
+      + '</div>'
+      + '</div>';
+  }
+
   function renderDetailCard() {
+    if (state.creatingEvent) return renderNewEventForm();
     const event = selectedEvent();
     if (!event) return '<div class="calendar-empty">Select an event to see notes and quick actions.</div>';
     const meta = TYPE_META[event.type];
@@ -1434,44 +1478,15 @@
   }
   function quickAdd(kind) {
     const day = state.selectedDate;
-    if (kind === 'event') {
-      createEvent({
-        title: 'New planning session',
-        type: 'meeting',
-        start: formatLocalIso(withTime(day, 14, 0)),
-        end: formatLocalIso(withTime(day, 14, 45)),
-        notes: 'Quick added from the calendar.'
-      });
-      setFlash('Added a planning session on ' + formatShortDate(day) + '.', 'info');
-    } else if (kind === 'reminder') {
-      createEvent({
-        title: 'Quick reminder',
-        type: 'reminder',
-        start: formatLocalIso(withTime(day, 11, 0)),
-        end: formatLocalIso(withTime(day, 11, 20)),
-        notes: 'Use snooze or reschedule to tune this reminder.'
-      });
-      setFlash('Added a reminder on ' + formatShortDate(day) + '.', 'info');
-    } else if (kind === 'focus') {
-      createEvent({
-        title: 'Protected focus block',
-        type: 'focus',
-        start: formatLocalIso(withTime(day, 9, 0)),
-        end: formatLocalIso(withTime(day, 10, 30)),
-        notes: 'A clean 90 minute block for high-value work.'
-      });
-      setFlash('Protected a focus block on ' + formatShortDate(day) + '.', 'info');
-    } else {
-      createEvent({
-        title: 'Recurring workflow',
-        type: 'automation',
-        start: formatLocalIso(withTime(day, 8, 0)),
-        end: formatLocalIso(withTime(day, 8, 30)),
-        notes: 'Recurring routine ready for a future automation backend.',
-        recurring: 'Weekly'
-      });
-      setFlash('Added a recurring workflow placeholder.', 'info');
-    }
+    const defaults = {
+      event:    { type: 'meeting',    startTime: '14:00', endTime: '14:45' },
+      reminder: { type: 'reminder',   startTime: '11:00', endTime: '11:20' },
+      focus:    { type: 'focus',      startTime: '09:00', endTime: '10:30' },
+      workflow: { type: 'automation', startTime: '08:00', endTime: '08:30' }
+    };
+    const d = defaults[kind] || defaults.event;
+    state.creatingEvent = true;
+    state.editDraft = { title: '', type: d.type, date: dateKey(day), startTime: d.startTime, endTime: d.endTime, notes: '' };
     render();
   }
 
