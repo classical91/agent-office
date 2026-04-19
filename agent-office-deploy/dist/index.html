@@ -1454,11 +1454,11 @@
         <div class="nav-item" onclick="showAgentInfo('swarm')"><span class="icon">🐝</span> Swarm</div>
         <div class="nav-item" onclick="showAgentInfo('penny')"><span class="icon">🪙</span> Penny</div>
         <div class="nav-item" onclick="showAgentInfo('reaper')"><span class="icon">💀</span> Reaper</div>
-        <div class="nav-item" onclick="showAgentInfo('forge')"><span class="icon">⚙️</span> Forge</div>
         <div class="nav-item" onclick="showAgentInfo('lyra')"><span class="icon">✨</span> Lyra</div>
         <div class="nav-item" onclick="showAgentInfo('xbot')"><span class="icon">🤖</span> XBot</div>
         <div class="nav-item" onclick="showAgentInfo('guardian')"><span class="icon">🛡</span> Guardian</div>
-        <div class="nav-item" onclick="showAgentInfo('command')"><span class="icon">📡</span> Command</div>
+        <div class="nav-item" onclick="showAgentInfo('rig')"><span class="icon">⚙️</span> Rig</div>
+        <div class="nav-item" onclick="showAgentInfo('nova')"><span class="icon">🔭</span> Nova</div>
         <div class="nav-item" onclick="showAgentInfo('fatherclaw')"><span class="icon">👑</span> FatherClaw</div>
       </div>
     </div>
@@ -1703,7 +1703,7 @@
       </div>
 
       <div class="org-row-4">
-        <div class="org-card glow-cyan" onclick="showAgentInfo('forge'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('forge')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
+        <div class="org-card glow-cyan" onclick="showAgentInfo('rig'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('rig')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
           <div class="org-card-inner">
             <div class="org-avatar" style="background:rgba(6,182,212,0.15);border-color:rgba(6,182,212,0.25);">🐦</div>
             <div class="org-body">
@@ -2171,22 +2171,22 @@ const AGENTS = [
     name: 'Devin',
     emoji: '🛠️',
     color: '#6366f1',
-    role: 'Project Overseer',
+    role: 'Primary Agent',
     model: 'Claude Sonnet 4.6',
     tasks: [
-      'Reviewing project status',
-      'Coordinating agents',
-      'Updating MEMORY.md',
-      'Checking on TraderClaw',
-      'Overseeing WebClaw demo',
-      'Planning next sprint',
+      'Overseeing all projects',
+      'Coordinating agent roster',
+      'Reviewing active builds',
+      'Planning next moves',
+      'Delegating to Rig and Penny',
+      'Checking agent health',
     ],
     feed: [
-      'Updated MEMORY.md with new project notes',
-      'Reviewed TraderClaw dashboard - all green',
-      'Coordinated WebClaw demo deployment',
-      'Flagged open TODOs for Jason',
-      'Cross-checked agent activity logs',
+      'Reviewed full project roster',
+      'Delegated build tasks to Rig',
+      'Penny briefed on new strategy',
+      'Flagged TraderClaw signal for Jason',
+      'Updated agent assignments',
     ]
   },
   {
@@ -2263,43 +2263,44 @@ const AGENTS = [
     name: 'Swarm',
     emoji: '🐝',
     color: '#eab308',
-    role: 'Codex Agent',
+    role: 'Lightweight Coder',
     model: 'GPT-4o-mini',
     tasks: [
-      'Processing codex tasks',
-      'Running batch operations',
-      'Indexing project data',
-      'Syncing agent state',
+      'Running quick code tasks',
+      'Prototyping feature',
+      'Bulk refactor job',
+      'Lean task queue',
       'Idle',
     ],
     feed: [
-      'Codex batch complete - 12 tasks processed',
-      'Project index refreshed',
-      'Agent state synced across cluster',
-      'Batch queue cleared',
-      'Task pipeline healthy',
+      'Quick prototype shipped',
+      'Bulk refactor complete',
+      'Lean task batch done',
+      'Feature scaffold ready',
+      'Task queue cleared',
     ]
   },
   {
     id: 'penny',
     name: 'Penny',
-    emoji: '🪙',
+    emoji: '💡',
     color: '#f59e0b',
-    role: 'OSS Agent',
+    role: 'Research and Strategy',
     model: 'GPT-5.4',
     tasks: [
-      'Scanning open-source repos',
-      'Evaluating dependencies',
-      'Checking license compliance',
-      'Reviewing PR activity',
-      'Idle',
+      'Researching market angles',
+      'Drafting business brief',
+      'Evaluating new product ideas',
+      'Strategy review with Devin',
+      'Scoping next project',
+      'Analyzing competitor moves',
     ],
     feed: [
-      'OSS scan complete - 3 repos reviewed',
-      'License check passed for all deps',
-      'Flagged outdated dependency in trader',
-      'PR activity summary generated',
-      'Vulnerability scan clean',
+      'Business brief delivered to Devin',
+      'New product niche identified',
+      'Competitor analysis complete',
+      'Strategy session notes saved',
+      'Market research summary ready',
     ]
   },
   {
@@ -2322,28 +2323,6 @@ const AGENTS = [
       'Engagement farm cycle finished',
       'Cron job triggered - next run in 4H',
       'Content queue replenished',
-    ]
-  },
-  {
-    id: 'forge',
-    name: 'Forge',
-    emoji: '⚙️',
-    color: '#8b5cf6',
-    role: 'Dev Agent',
-    model: 'Claude Sonnet 4.6',
-    tasks: [
-      'Writing feature code',
-      'Debugging issue',
-      'Shipping to production',
-      'Code review',
-      'Idle',
-    ],
-    feed: [
-      'Feature branch merged to main',
-      'Bug fix deployed - auth flow',
-      'Code review complete on PR #47',
-      'New endpoint shipped to Railway',
-      'Test suite passing - 100%',
     ]
   },
   {
@@ -2416,45 +2395,68 @@ const AGENTS = [
     id: 'fatherclaw',
     name: 'FatherClaw',
     emoji: '👑',
-    color: '#64748b',
+    color: '#6366f1',
     role: 'Orchestrator',
     model: 'Claude Sonnet 4.6',
     tasks: [
       'Routing tasks between agents',
       'Monitoring agent health',
+      'Managing cross-agent workflows',
+      'Queuing inter-agent jobs',
       'Idle',
-      'Queuing cross-agent workflow',
-      'Logging inter-agent comms',
     ],
     feed: [
-      'Routed WebClaw brief from Swarm',
-      'All 12 agents healthy',
-      'Cross-agent workflow complete',
-      'Task queue: 2 pending',
-      'Inter-agent log updated',
+      'Task routed to Rig',
+      'Agent health check: all green',
+      'Cross-agent workflow triggered',
+      'Job queue updated',
+      'Inter-agent handoff complete',
     ]
-  }
-,
+  },
   {
-    id: 'command',
-    name: 'Command',
-    emoji: '📡',
-    color: '#64748b',
-    role: 'Orchestrator',
+    id: 'rig',
+    name: 'Rig',
+    emoji: '⚙️',
+    color: '#10b981',
+    role: 'Execution Dev',
     model: 'Claude Sonnet 4.6',
     tasks: [
-      'Routing tasks between agents',
-      'Monitoring agent health',
+      'Writing and running code',
+      'Deploying to Railway',
+      'Debugging production issue',
+      'Executing build task',
+      'Pushing to GitHub',
       'Idle',
-      'Queuing cross-agent workflow',
-      'Logging inter-agent comms',
     ],
     feed: [
-      'Routed WebClaw brief from Swarm',
-      'All 12 agents healthy',
-      'Cross-agent workflow complete',
-      'Task queue: 2 pending',
-      'Inter-agent log updated',
+      'Code written and deployed to Railway',
+      'Bug fixed and pushed to GitHub',
+      'Railway build successful',
+      'Task from Devin complete',
+      'Production deploy done',
+    ]
+  },
+  {
+    id: 'nova',
+    name: 'Nova',
+    emoji: '🔭',
+    color: '#f97316',
+    role: 'Product Researcher',
+    model: 'Claude Sonnet 4.6',
+    tasks: [
+      'Hunting niche pain points',
+      'Drafting positioning brief',
+      'Scoping new product ideas',
+      'Evaluating market size',
+      'Routing dev tasks to Rig',
+      'Writing lead magnet outline',
+    ],
+    feed: [
+      'Niche pain point identified',
+      'Positioning brief sent to Devin',
+      'New product scope drafted',
+      'Dev task routed to Rig',
+      'Market size analysis complete',
     ]
   }
 ];
@@ -2541,7 +2543,12 @@ const OFFICE_ROUTES = {
     { gx: 7.34, gy: 4.32, pose: 'stand', facing: 'S', motion: 'monitoring', tasks: ['Queuing cross-agent workflow', 'Routing tasks between agents', 'Monitoring agent health'] },
     { gx: 4.28, gy: 6.92, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Logging inter-agent comms', 'Monitoring agent health', 'Queuing cross-agent workflow'] },
   ],
-};
+  rig: [
+    { gx: 1.82, gy: 5.42, pose: 'seated', facing: 'NE', motion: 'typing', tasks: ['Writing and running code', 'Debugging production issue', 'Executing build task'] },
+    { gx: 2.64, gy: 4.68, pose: 'stand', facing: 'E', motion: 'monitoring', tasks: ['Pushing to GitHub', 'Deploying to Railway', 'Executing build task'] },
+    { gx: 4.72, gy: 8.28, pose: 'stand', facing: 'N', motion: 'reading', tasks: ['Executing build task', 'Writing and running code', 'Idle'] },
+    { gx: 3.16, gy: 6.82, pose: 'stand', facing: 'E', motion: 'typing', tasks: ['Deploying to Railway', 'Pushing to GitHub', 'Debugging production issue'] },
+  ],};
 
 function cloneRoute(route) {
   return (route || []).map(stop => ({
@@ -2966,6 +2973,9 @@ function getAgentLook(agent) {
     },
     fatherclaw: {
       skin: '#b88564', hair: '#e2e8f0', shirt: '#6366f1', pants: '#111827', chair: '#4338ca', pose: 'seated', facing: 'S', accessory: 'glasses'
+    },
+    rig: {
+      skin: '#e0b090', hair: '#1a1a2e', shirt: '#10b981', pants: '#064e3b', chair: '#059669', pose: 'seated', facing: 'NE', accessory: 'glasses'
     },
   };
   const base = looks[agent.id] || {
@@ -3950,6 +3960,8 @@ function handleFileUpload(e){
 return{render};
 })();
 const AGENT_DESCRIPTIONS = {
+  rig: { name: 'Rig', role: 'Execution Dev', model: 'Claude Sonnet 4.6', memory: 'coder workspace', desc: 'Execution arm for Devin and Penny. Writes and runs code directly on the machine, deploys to Railway, pushes to GitHub. No hand-holding needed.' },
+  nova: { name: 'Nova', role: 'Product Researcher', model: 'Claude Sonnet 4.6', memory: 'dev workspace', desc: 'Hunts niche pain points, drafts positioning briefs, scopes new product ideas across all 6 businesses. Routes dev tasks to Rig.' },
   'devin':      { name: 'Devin',      role: 'Project Overseer',    model: 'Claude Sonnet 4.6', memory: true,  desc: "The overseer. Coordinates all agents, tracks every active project, and is Jason main developer assistant. Handles new builds, cross-agent strategy, and big-picture planning." },
   'traderclaw': { name: 'TraderClaw', role: 'Trading Bot',          model: 'Claude Sonnet 4.6', memory: true,  desc: "Autonomous trading agent. Monitors BTC 1H/4H/1D signals, RSI divergence, BTC.D and USDT.D. Runs paper trades on Bitget and shadows Polymarket. Live at traderclaw-production.up.railway.app." },
   'webclaw':    { name: 'WebClaw',    role: 'Web Developer',        model: 'GPT-5.4',           memory: true,  desc: "AI web agency agent. Builds pitch-ready demo sites for local Nanaimo businesses. Generates HTML and deploys a live URL for cold-call pitches. $300-500 setup + $50-100/month." },
