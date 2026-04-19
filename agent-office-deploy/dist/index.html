@@ -3339,12 +3339,6 @@ function screenFacingFromDelta(dx, dy, fallback = 'S') {
 
 function syncAgentElement(agent) {
   const el = document.getElementById('agent-' + agent.id);
-  if (el && currentView === 'office') {
-    el.style.left = (agent.pos.x * officeArea.clientWidth) + 'px';
-    el.style.top = (agent.pos.y * officeArea.clientHeight) + 'px';
-    el.querySelector('.agent-label span').textContent = agent.currentTask;
-    el.querySelector('.status-ring').style.background =
-      agent.status === 'active' ? 'var(--green)' : 'var(--yellow)';
   if (!el) return;
 
   const look = getAgentLook(agent);
@@ -3481,9 +3475,6 @@ function updateClock() {
 
 // ─── VIEW SWITCHER ────────────────────────────────────────────
 const VIEW_HANDLERS = {
-  office: { enter: () => { resizeCanvas(); renderAgents(); }, focus: false },
-  org: { focus: false }
-};
   office: { enter: () => { resizeCanvas(); renderAgents(); centerOfficeView(); }, focus: false },
   org: { focus: false }
 };
@@ -3528,7 +3519,6 @@ function stopTickLoop() {
 }
 
 startTickLoop();
-let tickInterval = setInterval(tick, 2400);
 setInterval(updateClock, 1000);
 updateClock();
 document.addEventListener('visibilitychange', () => {
