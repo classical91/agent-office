@@ -2544,7 +2544,7 @@ const OFFICE_ROUTES = {
     { gx: 4.28, gy: 6.92, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Logging inter-agent comms', 'Monitoring agent health', 'Queuing cross-agent workflow'] },
   ],
   rig: [
-    { gx: 1.82, gy: 5.42, pose: 'seated', facing: 'NE', motion: 'typing', tasks: ['Writing and running code', 'Debugging production issue', 'Executing build task'] },
+    { gx: 1.82, gy: 3.92, pose: 'seated', facing: 'NE', motion: 'typing', tasks: ['Writing and running code', 'Debugging production issue', 'Executing build task'] },
     { gx: 2.64, gy: 4.68, pose: 'stand', facing: 'E', motion: 'monitoring', tasks: ['Pushing to GitHub', 'Deploying to Railway', 'Executing build task'] },
     { gx: 4.72, gy: 8.28, pose: 'stand', facing: 'N', motion: 'reading', tasks: ['Executing build task', 'Writing and running code', 'Idle'] },
     { gx: 3.16, gy: 6.82, pose: 'stand', facing: 'E', motion: 'typing', tasks: ['Deploying to Railway', 'Pushing to GitHub', 'Debugging production issue'] },
@@ -2882,6 +2882,8 @@ function drawOffice() {
 
   desk(1.35, 1.68, '#22c55e');
   chair(1.68, 2.5, '#22c55e');
+  desk(1.35, 3.1, '#10b981');
+  chair(1.68, 3.92, '#10b981');
   desk(1.35, 4.54, '#f97316');
   chair(1.68, 5.36, '#f97316');
   desk(9.55, 1.7, '#3b82f6');
@@ -2960,7 +2962,7 @@ function getAgentLook(agent) {
       skin: '#8e5c3b', hair: '#111827', shirt: '#14b8a6', pants: '#111827', chair: '#0891b2', pose: 'stand', facing: 'W', accessory: 'headset'
     },
     nova: {
-      skin: '#dba77d', hair: '#9a3412', shirt: '#f97316', pants: '#431407', chair: '#ea580c', pose: 'stand', facing: 'E'
+      skin: '#dba77d', hair: '#9a3412', shirt: '#f97316', pants: '#431407', chair: '#ea580c', pose: 'seated', facing: 'NE'
     },
     lyra: {
       skin: '#f0c2ab', hair: '#7c3aed', shirt: '#a855f7', pants: '#312e81', chair: '#7c3aed', pose: 'stand', facing: 'SE'
