@@ -1489,11 +1489,519 @@
   </nav>
 
   <!-- OFFICE VIEW -->
-  <div class="view active" id="view-office" style="overflow:auto; background:#0a0c11;">
-    <div class="office" id="officeArea" style="position:relative; width:100%; height:100%; min-width:1560px; min-height:1020px;">
-      <canvas id="officeCanvas"></canvas>
+  <!-- SVG ISOMETRIC OFFICE ROOM VIEW -->
+<div id="view-office" class="view active" style="overflow:auto; background:#0a0c11; flex-direction:column; align-items:center; justify-content:flex-start; padding:20px;">
+  <div style="width:100%; max-width:1400px;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding:0 4px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div style="width:22px; height:22px; background:#534AB7; border-radius:5px; display:flex; align-items:center; justify-content:center; color:white; font-size:12px; font-weight:500;">A</div>
+        <span style="font-size:14px; font-weight:500; color:#f1f5f9;">Agent Office</span>
+        <span style="font-size:12px; color:#64748b;">/</span>
+        <span style="font-size:13px; color:#94a3b8;">HQ · Floor 1</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:#94a3b8;">
+          <div style="width:7px; height:7px; background:#22c55e; border-radius:50%;"></div>
+          <span>13 online</span>
+        </div>
+        <span style="font-size:11px; padding:3px 8px; border-radius:999px; background:#1e293b; color:#94a3b8;">Main room</span>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:minmax(0,1fr) 200px; gap:12px;">
+      <div style="background:#111827; border:1px solid #1e293b; border-radius:12px; overflow:hidden; position:relative;">
+        <div style="position:absolute; top:8px; left:10px; font-size:10px; color:#64748b; letter-spacing:0.04em; z-index:2;">HQ · floor 1</div>
+        <div style="position:absolute; top:8px; right:10px; font-size:10px; color:#64748b; font-family:monospace; z-index:2;">14 × 11</div>
+        <svg id="officesvg" viewBox="0 0 1100 720" width="100%" style="display:block; shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
+
+          <!-- WALLS -->
+          <polygon points="550,60 100,295 100,180 550,0" fill="#2a2240"/>
+          <polygon points="550,60 100,295 100,210 550,30" fill="#1e1a35"/>
+          <polygon points="550,60 1000,295 1000,180 550,0" fill="#1e1a35"/>
+          <polygon points="550,60 1000,295 1000,210 550,30" fill="#17152b"/>
+          <line x1="100" y1="180" x2="550" y2="0" stroke="#3d3560" stroke-width="1"/>
+          <line x1="550" y1="0" x2="1000" y2="180" stroke="#3d3560" stroke-width="1"/>
+          <line x1="100" y1="180" x2="100" y2="295" stroke="#3d3560" stroke-width="0.8"/>
+          <line x1="1000" y1="180" x2="1000" y2="295" stroke="#3d3560" stroke-width="0.8"/>
+
+          <!-- Wall windows left -->
+          <polygon points="155,220 235,180 235,212 155,252" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+          <polygon points="155,220 235,180 235,192 155,232" fill="#1e3a5f" opacity="0.6"/>
+          <line x1="195" y1="184" x2="195" y2="248" stroke="#334155" stroke-width="0.5"/>
+          <polygon points="275,200 355,160 355,192 275,232" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+          <polygon points="275,200 355,160 355,172 275,212" fill="#1e3a5f" opacity="0.6"/>
+          <line x1="315" y1="164" x2="315" y2="228" stroke="#334155" stroke-width="0.5"/>
+
+          <!-- Wall windows right -->
+          <polygon points="745,160 825,200 825,232 745,192" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+          <polygon points="745,160 825,200 825,212 745,172" fill="#1e3a5f" opacity="0.6"/>
+          <line x1="785" y1="164" x2="785" y2="228" stroke="#334155" stroke-width="0.5"/>
+          <polygon points="865,180 945,220 945,252 865,212" fill="#0f172a" stroke="#334155" stroke-width="0.8"/>
+          <polygon points="865,180 945,220 945,232 865,192" fill="#1e3a5f" opacity="0.6"/>
+          <line x1="905" y1="184" x2="905" y2="248" stroke="#334155" stroke-width="0.5"/>
+
+          <!-- FLOOR -->
+          <polygon points="550,295 100,530 550,720 1000,530" fill="#1a1628"/>
+          <g stroke="#231d3a" stroke-width="0.6" fill="none">
+            <line x1="550" y1="295" x2="100" y2="530"/><line x1="590" y1="317" x2="140" y2="552"/>
+            <line x1="630" y1="339" x2="180" y2="574"/><line x1="670" y1="361" x2="220" y2="596"/>
+            <line x1="710" y1="383" x2="260" y2="618"/><line x1="750" y1="405" x2="300" y2="640"/>
+            <line x1="790" y1="427" x2="340" y2="662"/><line x1="830" y1="449" x2="380" y2="684"/>
+            <line x1="870" y1="471" x2="420" y2="706"/><line x1="910" y1="493" x2="460" y2="728"/>
+            <line x1="950" y1="515" x2="500" y2="750"/><line x1="1000" y1="530" x2="550" y2="765"/>
+            <line x1="550" y1="295" x2="1000" y2="530"/><line x1="510" y1="317" x2="960" y2="552"/>
+            <line x1="470" y1="339" x2="920" y2="574"/><line x1="430" y1="361" x2="880" y2="596"/>
+            <line x1="390" y1="383" x2="840" y2="618"/><line x1="350" y1="405" x2="800" y2="640"/>
+            <line x1="310" y1="427" x2="760" y2="662"/><line x1="270" y1="449" x2="720" y2="684"/>
+            <line x1="230" y1="471" x2="680" y2="706"/><line x1="190" y1="493" x2="640" y2="728"/>
+            <line x1="150" y1="515" x2="600" y2="750"/><line x1="100" y1="530" x2="550" y2="765"/>
+          </g>
+          <!-- Center rug -->
+          <polygon points="550,383 720,468 550,553 380,468" fill="#2d1f4a" opacity="0.45"/>
+
+          <!-- BOOKSHELF left wall -->
+          <polygon points="115,338 188,300 188,392 115,430" fill="#3d2b0f"/>
+          <polygon points="115,338 188,300 194,302 121,340" fill="#5c4018"/>
+          <polygon points="115,338 115,430 108,426 108,334" fill="#2a1e08"/>
+          <line x1="115" y1="355" x2="188" y2="317" stroke="#5c4018" stroke-width="1.5"/>
+          <line x1="115" y1="372" x2="188" y2="334" stroke="#5c4018" stroke-width="1.5"/>
+          <line x1="115" y1="389" x2="188" y2="351" stroke="#5c4018" stroke-width="1.5"/>
+          <rect x="122" y="307" width="7" height="14" fill="#3b82f6" transform="skewX(-26)"/>
+          <rect x="131" y="303" width="6" height="14" fill="#ef4444" transform="skewX(-26)"/>
+          <rect x="139" y="299" width="8" height="14" fill="#22c55e" transform="skewX(-26)"/>
+          <rect x="122" y="324" width="6" height="14" fill="#f59e0b" transform="skewX(-26)"/>
+          <rect x="130" y="320" width="9" height="14" fill="#a855f7" transform="skewX(-26)"/>
+
+          <!-- WHITEBOARD left -->
+          <polygon points="192,300 272,260 272,332 192,372" fill="#f8fafc" stroke="#cbd5e1" stroke-width="0.5"/>
+          <polygon points="192,300 272,260 272,270 192,310" fill="#4f46e5"/>
+          <line x1="206" y1="318" x2="258" y2="292" stroke="#3b82f6" stroke-width="1.8"/>
+          <line x1="206" y1="328" x2="248" y2="307" stroke="#22c55e" stroke-width="1.8"/>
+          <line x1="206" y1="338" x2="252" y2="316" stroke="#ef4444" stroke-width="1.8"/>
+          <circle cx="262" cy="264" r="3" fill="#f59e0b"/>
+
+          <!-- SECURITY SCREENS right wall -->
+          <polygon points="828,260 910,300 910,372 828,332" fill="#0f172a" stroke="#1e293b" stroke-width="0.5"/>
+          <polygon points="828,260 910,300 910,278 828,238" fill="#1d4ed8"/>
+          <line x1="836" y1="288" x2="902" y2="320" stroke="#38bdf8" stroke-width="1.2" opacity="0.8"/>
+          <line x1="836" y1="302" x2="902" y2="334" stroke="#38bdf8" stroke-width="1.2" opacity="0.5"/>
+          <line x1="836" y1="316" x2="902" y2="348" stroke="#38bdf8" stroke-width="1.2" opacity="0.3"/>
+          <circle cx="850" cy="282" r="4" fill="#22c55e" opacity="0.9"/>
+          <circle cx="870" cy="272" r="4" fill="#f59e0b" opacity="0.9"/>
+          <circle cx="890" cy="262" r="4" fill="#ef4444" opacity="0.9"/>
+
+          <!-- DESK 1: TraderClaw top-left (green) -->
+          <polygon points="228,418 308,378 308,404 228,444" fill="#f4efe7"/>
+          <polygon points="228,418 308,378 308,385 228,425" fill="#22c55e" opacity="0.8"/>
+          <polygon points="228,444 308,404 308,418 228,458" fill="#cbb89c"/>
+          <polygon points="228,418 228,458 218,453 218,413" fill="#b59e82"/>
+          <polygon points="254,386 282,373 282,390 254,403" fill="#111827"/>
+          <polygon points="256,388 280,376 280,389 256,401" fill="#22c55e" opacity="0.4"/>
+
+          <!-- DESK 2: Rig mid-left (teal) -->
+          <polygon points="228,488 308,448 308,474 228,514" fill="#f4efe7"/>
+          <polygon points="228,488 308,448 308,455 228,495" fill="#10b981" opacity="0.8"/>
+          <polygon points="228,514 308,474 308,488 228,528" fill="#cbb89c"/>
+          <polygon points="228,488 228,528 218,523 218,483" fill="#b59e82"/>
+          <polygon points="254,456 282,443 282,460 254,473" fill="#111827"/>
+          <polygon points="256,458 280,446 280,459 256,471" fill="#10b981" opacity="0.4"/>
+
+          <!-- DESK 3: Nova lower-left (orange) -->
+          <polygon points="228,558 308,518 308,544 228,584" fill="#f4efe7"/>
+          <polygon points="228,558 308,518 308,525 228,565" fill="#f97316" opacity="0.8"/>
+          <polygon points="228,584 308,544 308,558 228,598" fill="#cbb89c"/>
+          <polygon points="228,558 228,598 218,593 218,553" fill="#b59e82"/>
+          <polygon points="254,526 282,513 282,530 254,543" fill="#111827"/>
+          <polygon points="256,528 280,516 280,529 256,541" fill="#f97316" opacity="0.4"/>
+
+          <!-- DESK 4: WebClaw top-right (blue) -->
+          <polygon points="792,378 872,418 872,444 792,404" fill="#f4efe7"/>
+          <polygon points="792,378 872,418 872,425 792,385" fill="#3b82f6" opacity="0.8"/>
+          <polygon points="792,404 872,444 872,458 792,418" fill="#cbb89c"/>
+          <polygon points="872,418 882,413 882,458 872,458" fill="#b59e82"/>
+          <polygon points="816,386 844,401 844,419 816,404" fill="#111827"/>
+          <polygon points="818,388 842,403 842,417 818,402" fill="#3b82f6" opacity="0.4"/>
+
+          <!-- DESK 5: XHunter mid-right (cyan) -->
+          <polygon points="792,448 872,488 872,514 792,474" fill="#f4efe7"/>
+          <polygon points="792,448 872,488 872,495 792,455" fill="#06b6d4" opacity="0.8"/>
+          <polygon points="792,474 872,514 872,528 792,488" fill="#cbb89c"/>
+          <polygon points="872,488 882,483 882,528 872,528" fill="#b59e82"/>
+          <polygon points="816,456 844,471 844,489 816,474" fill="#111827"/>
+          <polygon points="818,458 842,473 842,487 818,472" fill="#06b6d4" opacity="0.4"/>
+
+          <!-- CONFERENCE TABLE center (FatherClaw) -->
+          <polygon points="430,500 550,440 670,500 550,560" fill="#9b734a" opacity="0.9"/>
+          <polygon points="440,500 550,446 660,500 550,554" fill="#bc8f62" opacity="0.7"/>
+          <!-- screens on table -->
+          <polygon points="508,464 538,450 538,462 508,476" fill="#111827"/>
+          <polygon points="510,466 536,453 536,461 510,474" fill="#6366f1" opacity="0.5"/>
+          <polygon points="562,450 592,464 592,476 562,462" fill="#111827"/>
+          <polygon points="564,452 590,466 590,474 564,460" fill="#6366f1" opacity="0.5"/>
+
+          <!-- SOFA lounge -->
+          <polygon points="358,575 438,535 438,565 358,605" fill="#991b1b"/>
+          <polygon points="358,575 358,605 348,600 348,570" fill="#7f1d1d"/>
+          <polygon points="358,605 438,565 438,577 358,617" fill="#7f1d1d"/>
+          <polygon points="438,535 478,515 478,545 438,565" fill="#991b1b"/>
+          <polygon points="364,578 430,546 430,558 364,590" fill="#f87171" opacity="0.75"/>
+
+          <!-- COFFEE TABLE -->
+          <polygon points="478,545 538,515 598,545 538,575" fill="#7a4c14" opacity="0.9"/>
+          <polygon points="486,548 538,521 590,548 538,575" fill="#9c6635" opacity="0.6"/>
+
+          <!-- PLANTS -->
+          <ellipse cx="142" cy="508" rx="18" ry="11" fill="#15803d"/>
+          <ellipse cx="135" cy="500" rx="10" ry="7" fill="#22c55e"/>
+          <polygon points="138,516 148,516 146,523 140,523" fill="#7a3e12"/>
+          <ellipse cx="958" cy="508" rx="18" ry="11" fill="#15803d"/>
+          <ellipse cx="951" cy="500" rx="10" ry="7" fill="#22c55e"/>
+          <polygon points="954,516 964,516 962,523 956,523" fill="#7a3e12"/>
+
+          <!-- LAMP -->
+          <polygon points="540,355 560,345 560,350 540,360" fill="#c0a030" opacity="0.9"/>
+          <ellipse cx="550" cy="342" rx="14" ry="5" fill="#f8e880" opacity="0.7"/>
+
+          <!-- ============ AGENTS ============ -->
+
+          <!-- TraderClaw at desk 1 -->
+          <g transform="translate(268,388)">
+            <ellipse cx="0" cy="2" rx="10" ry="2.5" fill="#000" opacity="0.2"/>
+            <rect x="-5" y="-6" width="4" height="6" fill="#14532d"/>
+            <rect x="1" y="-6" width="4" height="6" fill="#14532d"/>
+            <polygon points="-8,-20 8,-20 7,-6 -7,-6" fill="#16a34a"/>
+            <polygon points="-8,-20 -6,-20 -5.5,-6 -7,-6" fill="#0f6e3a"/>
+            <rect x="-9" y="-18" width="2" height="6" fill="#c99875"/>
+            <rect x="7" y="-18" width="2" height="6" fill="#c99875"/>
+            <rect x="-6" y="-34" width="12" height="14" fill="#c99875"/>
+            <rect x="-6" y="-34" width="1.5" height="14" fill="#b08060"/>
+            <ellipse cx="0" cy="-35" rx="8" ry="2" fill="#854f0b"/>
+            <rect x="-5" y="-41" width="10" height="6" fill="#b45309"/>
+            <rect x="-5" y="-41" width="10" height="1.5" fill="#854f0b"/>
+            <rect x="-3.5" y="-29" width="2" height="2" fill="#1a1a1a"/>
+            <rect x="1.5" y="-29" width="2" height="2" fill="#1a1a1a"/>
+            <rect x="-1.5" y="-24" width="3" height="0.8" fill="#7a4a3c"/>
+          </g>
+
+          <!-- Rig at desk 2 -->
+          <g transform="translate(268,458)">
+            <ellipse cx="0" cy="2" rx="10" ry="2.5" fill="#000" opacity="0.2"/>
+            <rect x="-5" y="-6" width="4" height="6" fill="#064e3b"/>
+            <rect x="1" y="-6" width="4" height="6" fill="#064e3b"/>
+            <polygon points="-8,-20 8,-20 7,-6 -7,-6" fill="#10b981"/>
+            <polygon points="-8,-20 -6,-20 -5.5,-6 -7,-6" fill="#059669"/>
+            <rect x="-9" y="-18" width="2" height="6" fill="#c99875"/>
+            <rect x="7" y="-18" width="2" height="6" fill="#c99875"/>
+            <rect x="-6" y="-34" width="12" height="14" fill="#e0b090"/>
+            <rect x="-6" y="-34" width="1.5" height="14" fill="#c99875"/>
+            <rect x="-7" y="-36" width="14" height="4" fill="#1a1a2e"/>
+            <rect x="-6" y="-32" width="1.5" height="4" fill="#1a1a2e"/>
+            <rect x="4.5" y="-32" width="1.5" height="4" fill="#1a1a2e"/>
+            <rect x="-5" y="-31" width="4" height="3" fill="none" stroke="#1a1a1a" stroke-width="0.7"/>
+            <rect x="1" y="-31" width="4" height="3" fill="none" stroke="#1a1a1a" stroke-width="0.7"/>
+            <line x1="-1" y1="-29.5" x2="1" y2="-29.5" stroke="#1a1a1a" stroke-width="0.6"/>
+            <rect x="-3.5" y="-30" width="2" height="1.5" fill="#1a1a1a"/>
+            <rect x="1.5" y="-30" width="2" height="1.5" fill="#1a1a1a"/>
+            <rect x="-1.5" y="-24" width="3" height="0.8" fill="#7a4a3c"/>
+          </g>
+
+          <!-- Nova at desk 3 -->
+          <g transform="translate(268,528)">
+            <ellipse cx="0" cy="2" rx="10" ry="2.5" fill="#000" opacity="0.2"/>
+            <rect x="-5" y="-6" width="4" height="6" fill="#431407"/>
+            <rect x="1" y="-6" width="4" height="6" fill="#431407"/>
+            <polygon points="-8,-20 8,-20 7,-6 -7,-6" fill="#f97316"/>
+            <polygon points="-8,-20 -6,-20 -5.5,-6 -7,-6" fill="#ea580c"/>
+            <rect x="-9" y="-18" width="2" height="6" fill="#c99875"/>
+            <rect x="7" y="-18" width="2" height="6" fill="#c99875"/>
+            <rect x="-6" y="-34" width="12" height="14" fill="#dba77d"/>
+            <rect x="-6" y="-34" width="1.5" height="14" fill="#c99875"/>
+            <rect x="-7" y="-37" width="14" height="5" fill="#9a3412"/>
+            <rect x="-7" y="-32" width="1.5" height="6" fill="#9a3412"/>
+            <rect x="5.5" y="-32" width="1.5" height="6" fill="#9a3412"/>
+            <rect x="-3.5" y="-29" width="2" height="2" fill="#1a1a1a"/>
+            <rect x="1.5" y="-29" width="2" height="2" fill="#1a1a1a"/>
+            <rect x="-1.5" y="-24" width="3" height="0.8" fill="#7a4a3c"/>
+          </g>
+
+          <!-- WebClaw at desk 4 -->
+          <g transform="translate(832,408)">
+            <ellipse cx="0" cy="2" rx="10" ry="2.5" fill="#000" opacity="0.2"/>
+            <rect x="-5" y="-6" width="4" height="6" fill="#1e293b"/>
+            <rect x="1" y="-6" width="4" height="6" fill="#1e293b"/>
+            <polygon points="-8,-20 8,-20 7,-6 -7,-6" fill="#3b82f6"/>
+            <polygon points="-8,-20 -6,-20 -5.5,-6 -7,-6" fill="#2563eb"/>
+            <rect x="-9" y="-18" width="2" height="6" fill="#c99875"/>
+            <rect x="7" y="-18" width="2" height="6" fill="#c99875"/>
+            <rect x="-6" y="-34" width="12" height="14" fill="#e8c4a0"/>
+            <rect x="-6" y="-34" width="1.5" height="14" fill="#c99875"/>
+            <rect x="-7" y="-36" width="14" height="4" fill="#1a1a1a"/>
+            <rect x="-7" y="-32" width="1.5" height="4" fill="#1a1a1a"/>
+            <rect x="1" y="-36" width="3" height="4" fill="#3b82f6"/>
+            <rect x="4.5" y="-32" width="1.5" height="4" fill="#1a1a1a"/>
+            <rect x="-3.5" y="-29" width="2" height="2" fill="#1a1a1a"/>
+            <rect x="1.5" y="-29" width="2" height="2" fill="#1a1a1a"/>
+            <rect x="-1.5" y="-24" width="3" height="0.8" fill="#7a4a3c"/>
+          </g>
+
+          <!-- XHunter at desk 5 -->
+          <g transform="translate(832,478)">
+            <ellipse cx="0" cy="2" rx="10" ry="2.5" fill="#000" opacity="0.2"/>
+            <rect x="-5" y="-6" width="4" height="6" fill="#111827"/>
+            <rect x="1" y="-6" width="4" height="6" fill="#111827"/>
+            <polygon points="-8,-20 8,-20 7,-6 -7,-6" fill="#14b8a6"/>
+            <polygon points="-8,-20 -6,-20 -5.5,-6 -7,-6" fill="#0d9488"/>
+            <rect x="-9" y="-18" width="2" height="6" fill="#c99875"/>
+            <rect x="7" y="-18" width="2" height="6" fill="#c99875"/>
+            <rect x="-6" y="-34" width="12" height="14" fill="#c99875"/>
+            <rect x="-6" y="-34" width="1.5" height="14" fill="#b08060"/>
+            <rect x="-8" y="-36" width="16" height="3" fill="#0f172a"/>
+            <rect x="-8" y="-30" width="2" height="4" fill="#0f172a"/>
+            <rect x="6" y="-30" width="2" height="4" fill="#0f172a"/>
+            <rect x="-3.5" y="-29" width="2" height="2" fill="#1a1a1a"/>
+            <rect x="1.5" y="-29" width="2" height="2" fill="#1a1a1a"/>
+            <rect x="-1.5" y="-24" width="3" height="0.8" fill="#7a4a3c"/>
+          </g>
+
+          <!-- Devin center - with speech bubble -->
+          <g transform="translate(550,420)">
+            <ellipse cx="0" cy="2" rx="11" ry="2.8" fill="#000" opacity="0.25"/>
+            <rect x="-5" y="-6" width="4" height="6" fill="#1f1d2e"/>
+            <rect x="1" y="-6" width="4" height="6" fill="#1f1d2e"/>
+            <polygon points="-9,-22 9,-22 8,-6 -8,-6" fill="#6366f1"/>
+            <polygon points="-9,-22 -7,-22 -6.5,-6 -8,-6" fill="#4f46e5"/>
+            <polygon points="-1,-22 1,-22 0,-14" fill="#f8fafc"/>
+            <rect x="-1" y="-22" width="2" height="5" fill="#f59e0b"/>
+            <rect x="-10" y="-20" width="2" height="7" fill="#c99875"/>
+            <rect x="8" y="-20" width="2" height="7" fill="#c99875"/>
+            <rect x="-6" y="-36" width="12" height="14" fill="#e8c4a0"/>
+            <rect x="-6" y="-36" width="1.5" height="14" fill="#c99875"/>
+            <rect x="-7" y="-38" width="14" height="5" fill="#1a1430"/>
+            <rect x="-6" y="-33" width="1.5" height="5" fill="#1a1430"/>
+            <rect x="4.5" y="-33" width="1.5" height="5" fill="#1a1430"/>
+            <rect x="-5" y="-32.5" width="4.5" height="3.5" fill="none" stroke="#1a1a1a" stroke-width="0.7"/>
+            <rect x="0.5" y="-32.5" width="4.5" height="3.5" fill="none" stroke="#1a1a1a" stroke-width="0.7"/>
+            <line x1="-0.5" y1="-30.7" x2="0.5" y2="-30.7" stroke="#1a1a1a" stroke-width="0.6"/>
+            <rect x="-3.5" y="-31" width="1.5" height="1.5" fill="#1a1a1a"/>
+            <rect x="2" y="-31" width="1.5" height="1.5" fill="#1a1a1a"/>
+            <rect x="-1.5" y="-24" width="3" height="0.8" fill="#7a4a3c"/>
+            <!-- speech bubble -->
+            <rect x="-56" y="-82" width="112" height="22" rx="11" fill="#1e293b" stroke="#4f46e5" stroke-width="0.8"/>
+            <path d="M -4,-61 L 0,-54 L 4,-61 Z" fill="#1e293b"/>
+            <text x="0" y="-67" text-anchor="middle" font-size="10" fill="#a5b4fc" style="font-family:sans-serif;">Coordinating agents</text>
+          </g>
+
+          <!-- FatherClaw at conference table -->
+          <g transform="translate(550,510)">
+            <ellipse cx="0" cy="2" rx="10" ry="2.5" fill="#000" opacity="0.2"/>
+            <rect x="-5" y="-6" width="4" height="6" fill="#111827"/>
+            <rect x="1" y="-6" width="4" height="6" fill="#111827"/>
+            <polygon points="-8,-20 8,-20 7,-6 -7,-6" fill="#6366f1"/>
+            <polygon points="-8,-20 -6,-20 -5.5,-6 -7,-6" fill="#4338ca"/>
+            <rect x="-9" y="-18" width="2" height="6" fill="#b88564"/>
+            <rect x="7" y="-18" width="2" height="6" fill="#b88564"/>
+            <rect x="-6" y="-34" width="12" height="14" fill="#b88564"/>
+            <rect x="-6" y="-34" width="1.5" height="14" fill="#a07050"/>
+            <rect x="-7" y="-36" width="14" height="4" fill="#e2e8f0"/>
+            <rect x="-7" y="-32" width="1.5" height="4" fill="#e2e8f0"/>
+            <rect x="5.5" y="-32" width="1.5" height="4" fill="#e2e8f0"/>
+            <rect x="-5" y="-31" width="4" height="3" fill="none" stroke="#1a1a1a" stroke-width="0.7"/>
+            <rect x="1" y="-31" width="4" height="3" fill="none" stroke="#1a1a1a" stroke-width="0.7"/>
+            <line x1="-1" y1="-29.5" x2="1" y2="-29.5" stroke="#1a1a1a" stroke-width="0.6"/>
+            <rect x="-3.5" y="-29" width="2" height="2" fill="#1a1a1a"/>
+            <rect x="1.5" y="-29" width="2" height="2" fill="#1a1a1a"/>
+            <rect x="-1.5" y="-24" width="3" height="0.8" fill="#7a4a3c"/>
+          </g>
+
+          <!-- Lyra - lounge area -->
+          <g transform="translate(400,565)">
+            <ellipse cx="0" cy="2" rx="10" ry="2.5" fill="#000" opacity="0.2"/>
+            <rect x="-5" y="-6" width="4" height="6" fill="#312e81"/>
+            <rect x="1" y="-6" width="4" height="6" fill="#312e81"/>
+            <polygon points="-8,-20 8,-20 7,-6 -7,-6" fill="#a855f7"/>
+            <polygon points="-8,-20 -6,-20 -5.5,-6 -7,-6" fill="#9333ea"/>
+            <rect x="-9" y="-18" width="2" height="6" fill="#f0c2ab"/>
+            <rect x="7" y="-18" width="2" height="6" fill="#f0c2ab"/>
+            <rect x="-6" y="-34" width="12" height="14" fill="#f0c2ab"/>
+            <rect x="-6" y="-34" width="1.5" height="14" fill="#dba090"/>
+            <rect x="-8" y="-38" width="16" height="6" fill="#7c3aed"/>
+            <rect x="-8" y="-32" width="2" height="8" fill="#7c3aed"/>
+            <rect x="6" y="-32" width="2" height="8" fill="#7c3aed"/>
+            <rect x="-10" y="-36" width="3" height="8" fill="#9333ea"/>
+            <rect x="7" y="-36" width="3" height="8" fill="#9333ea"/>
+            <circle cx="-8" cy="-26" r="1.5" fill="#f59e0b"/>
+            <circle cx="8" cy="-26" r="1.5" fill="#f59e0b"/>
+            <rect x="-3.5" y="-29" width="2" height="2" fill="#1a1a1a"/>
+            <rect x="1.5" y="-29" width="2" height="2" fill="#1a1a1a"/>
+            <rect x="-1.5" y="-24" width="3" height="0.8" fill="#7a4a3c"/>
+          </g>
+
+          <!-- Penny - mid area -->
+          <g transform="translate(680,545)">
+            <ellipse cx="0" cy="2" rx="10" ry="2.5" fill="#000" opacity="0.2"/>
+            <rect x="-5" y="-6" width="4" height="6" fill="#1c1917"/>
+            <rect x="1" y="-6" width="4" height="6" fill="#1c1917"/>
+            <polygon points="-8,-20 8,-20 7,-6 -7,-6" fill="#f59e0b"/>
+            <polygon points="-8,-20 -6,-20 -5.5,-6 -7,-6" fill="#d97706"/>
+            <rect x="-9" y="-18" width="2" height="6" fill="#f5c5a3"/>
+            <rect x="7" y="-18" width="2" height="6" fill="#f5c5a3"/>
+            <rect x="-6" y="-34" width="12" height="14" fill="#f5c5a3"/>
+            <rect x="-6" y="-34" width="1.5" height="14" fill="#dba090"/>
+            <rect x="-7" y="-38" width="14" height="6" fill="#92400e"/>
+            <rect x="-8" y="-32" width="2.5" height="8" fill="#92400e"/>
+            <rect x="5.5" y="-32" width="2.5" height="8" fill="#92400e"/>
+            <rect x="-3.5" y="-29" width="2" height="2" fill="#1a1a1a"/>
+            <rect x="1.5" y="-29" width="2" height="2" fill="#1a1a1a"/>
+            <rect x="-1.5" y="-24" width="3" height="0.8" fill="#7a4a3c"/>
+          </g>
+
+          <!-- Swarm - wandering center -->
+          <g transform="translate(460,470)">
+            <ellipse cx="0" cy="2" rx="10" ry="2.5" fill="#000" opacity="0.2"/>
+            <rect x="-5" y="-6" width="4" height="6" fill="#1a1a1a"/>
+            <rect x="1" y="-6" width="4" height="6" fill="#1a1a1a"/>
+            <polygon points="-8,-20 8,-20 7,-6 -7,-6" fill="#eab308"/>
+            <polygon points="-8,-20 -6,-20 -5.5,-6 -7,-6" fill="#ca8a04"/>
+            <rect x="-9" y="-18" width="2" height="6" fill="#c99875"/>
+            <rect x="7" y="-18" width="2" height="6" fill="#c99875"/>
+            <rect x="-6" y="-34" width="12" height="14" fill="#e8c4a0"/>
+            <rect x="-6" y="-34" width="1.5" height="14" fill="#c99875"/>
+            <rect x="-7" y="-36" width="14" height="4" fill="#ca8a04"/>
+            <rect x="-7" y="-32" width="1.5" height="4" fill="#ca8a04"/>
+            <rect x="5.5" y="-32" width="1.5" height="4" fill="#ca8a04"/>
+            <rect x="-3.5" y="-29" width="2" height="2" fill="#1a1a1a"/>
+            <rect x="1.5" y="-29" width="2" height="2" fill="#1a1a1a"/>
+            <rect x="-1.5" y="-24" width="3" height="0.8" fill="#7a4a3c"/>
+          </g>
+
+          <!-- Reaper - dark corner -->
+          <g transform="translate(330,610)">
+            <ellipse cx="0" cy="2" rx="10" ry="2.5" fill="#000" opacity="0.3"/>
+            <rect x="-5" y="-6" width="4" height="6" fill="#1c1917"/>
+            <rect x="1" y="-6" width="4" height="6" fill="#1c1917"/>
+            <polygon points="-8,-20 8,-20 7,-6 -7,-6" fill="#78716c"/>
+            <polygon points="-8,-20 -6,-20 -5.5,-6 -7,-6" fill="#57534e"/>
+            <rect x="-9" y="-18" width="2" height="6" fill="#c99875"/>
+            <rect x="7" y="-18" width="2" height="6" fill="#c99875"/>
+            <rect x="-6" y="-34" width="12" height="14" fill="#c99875"/>
+            <rect x="-6" y="-34" width="1.5" height="14" fill="#b08060"/>
+            <rect x="-8" y="-40" width="16" height="8" fill="#292524"/>
+            <rect x="-8" y="-32" width="2" height="6" fill="#292524"/>
+            <rect x="6" y="-32" width="2" height="6" fill="#292524"/>
+            <rect x="-3.5" y="-29" width="2" height="2" fill="#ef4444" opacity="0.8"/>
+            <rect x="1.5" y="-29" width="2" height="2" fill="#ef4444" opacity="0.8"/>
+            <rect x="-1.5" y="-24" width="3" height="0.8" fill="#7a4a3c"/>
+          </g>
+
+          <!-- XBot - right area -->
+          <g transform="translate(760,575)">
+            <ellipse cx="0" cy="2" rx="10" ry="2.5" fill="#000" opacity="0.2"/>
+            <rect x="-5" y="-6" width="4" height="6" fill="#4a044e"/>
+            <rect x="1" y="-6" width="4" height="6" fill="#4a044e"/>
+            <polygon points="-8,-20 8,-20 7,-6 -7,-6" fill="#ec4899"/>
+            <polygon points="-8,-20 -6,-20 -5.5,-6 -7,-6" fill="#db2777"/>
+            <rect x="-9" y="-18" width="2" height="6" fill="#f0c2ab"/>
+            <rect x="7" y="-18" width="2" height="6" fill="#f0c2ab"/>
+            <rect x="-6" y="-34" width="12" height="14" fill="#f0c2ab"/>
+            <rect x="-6" y="-34" width="1.5" height="14" fill="#dba090"/>
+            <rect x="-8" y="-38" width="16" height="6" fill="#ec4899"/>
+            <rect x="-8" y="-32" width="2" height="8" fill="#db2777"/>
+            <rect x="6" y="-32" width="2" height="8" fill="#db2777"/>
+            <circle cx="-8" cy="-26" r="1.5" fill="#fbbf24"/>
+            <circle cx="8" cy="-26" r="1.5" fill="#fbbf24"/>
+            <rect x="-3.5" y="-29" width="2" height="2" fill="#1a1a1a"/>
+            <rect x="1.5" y="-29" width="2" height="2" fill="#1a1a1a"/>
+            <rect x="-1.5" y="-24" width="3" height="0.8" fill="#7a4a3c"/>
+          </g>
+
+          <!-- Guardian - security corner -->
+          <g transform="translate(882,338)">
+            <ellipse cx="0" cy="2" rx="10" ry="2.5" fill="#000" opacity="0.25"/>
+            <rect x="-5" y="-6" width="4" height="6" fill="#020617"/>
+            <rect x="1" y="-6" width="4" height="6" fill="#020617"/>
+            <polygon points="-8,-20 8,-20 7,-6 -7,-6" fill="#475569"/>
+            <polygon points="-8,-20 -6,-20 -5.5,-6 -7,-6" fill="#334155"/>
+            <rect x="-9" y="-18" width="2" height="6" fill="#9c6b49"/>
+            <rect x="7" y="-18" width="2" height="6" fill="#9c6b49"/>
+            <rect x="-6" y="-34" width="12" height="14" fill="#9c6b49"/>
+            <rect x="-6" y="-34" width="1.5" height="14" fill="#7a4a2a"/>
+            <rect x="-7" y="-36" width="14" height="4" fill="#334155"/>
+            <rect x="-7" y="-32" width="1.5" height="4" fill="#334155"/>
+            <rect x="5.5" y="-32" width="1.5" height="4" fill="#334155"/>
+            <rect x="-4" y="-25" width="8" height="3" fill="#334155" opacity="0.6"/>
+            <rect x="-3.5" y="-29" width="2" height="2" fill="#ef4444"/>
+            <rect x="1.5" y="-29" width="2" height="2" fill="#ef4444"/>
+            <rect x="-1.5" y="-24" width="3" height="0.8" fill="#7a4a3c"/>
+          </g>
+
+          <!-- TraderClaw speech bubble -->
+          <g transform="translate(268,388)">
+            <rect x="-48" y="-88" width="96" height="20" rx="10" fill="#1e293b" stroke="#22c55e" stroke-width="0.7"/>
+            <path d="M -3,-69 L 0,-62 L 3,-69 Z" fill="#1e293b"/>
+            <text x="0" y="-75" text-anchor="middle" font-size="9.5" fill="#86efac" style="font-family:sans-serif;">Long bias · 78%</text>
+          </g>
+
+          <!-- Floor label -->
+          <text x="550" y="712" text-anchor="middle" font-size="10" fill="#3d3560" style="font-family:sans-serif; letter-spacing:0.06em; font-weight:500;">AGENT OFFICE / FLOOR 01</text>
+        </svg>
+      </div>
+
+      <!-- Side panel -->
+      <div style="background:#111827; border:1px solid #1e293b; border-radius:12px; padding:14px; font-size:12px; display:flex; flex-direction:column;">
+        <div style="display:flex; margin:-14px -14px 10px; border-bottom:1px solid #1e293b;">
+          <div style="flex:1; text-align:center; padding:10px 0; font-size:12px; color:#f1f5f9; font-weight:500; border-bottom:2px solid #6366f1;">Agents</div>
+          <div style="flex:1; text-align:center; padding:10px 0; font-size:12px; color:#64748b; cursor:pointer;">Tasks</div>
+          <div style="flex:1; text-align:center; padding:10px 0; font-size:12px; color:#64748b; cursor:pointer;">Log</div>
+        </div>
+        <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px;">In this room · 13</div>
+        <div id="svg-roster"></div>
+        <div style="border-top:1px solid #1e293b; margin-top:12px; padding-top:12px;">
+          <div style="font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px;">Active task</div>
+          <div id="svg-active-task" style="font-size:12px; font-weight:500; color:#f1f5f9; line-height:1.4;">Coordinating agents</div>
+          <div style="font-size:11px; color:#64748b; margin-top:3px;">Devin · now</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr auto auto auto; gap:6px; margin-top:10px; padding:8px; background:#111827; border:1px solid #1e293b; border-radius:10px; align-items:center;">
+      <input type="text" placeholder="Say something in the room…" style="background:#0f172a; border:1px solid #1e293b; border-radius:8px; padding:0 12px; height:32px; font-size:13px; color:#f1f5f9; outline:none;"/>
+      <button style="background:#1e293b; border:none; border-radius:8px; padding:0 14px; height:32px; font-size:12px; color:#94a3b8; cursor:pointer;">Wave</button>
+      <button style="background:#1e293b; border:none; border-radius:8px; padding:0 14px; height:32px; font-size:12px; color:#94a3b8; cursor:pointer;">Sit</button>
+      <button style="background:#334155; border:none; border-radius:8px; padding:0 14px; height:32px; font-size:12px; color:#94a3b8; cursor:pointer;">Leave</button>
     </div>
   </div>
+</div>
+<script>
+// Populate SVG roster panel
+(function() {
+  const roster = [
+    {name:'Devin', role:'Primary Agent', color:'#6366f1'},
+    {name:'FatherClaw', role:'Orchestrator', color:'#6366f1'},
+    {name:'Rig', role:'Execution Dev', color:'#10b981'},
+    {name:'Nova', role:'Product Researcher', color:'#f97316'},
+    {name:'Penny', role:'Research & Strategy', color:'#f59e0b'},
+    {name:'TraderClaw', role:'Trading Bot', color:'#22c55e'},
+    {name:'WebClaw', role:'Web Developer', color:'#3b82f6'},
+    {name:'X-Hunter', role:'Social Scout', color:'#06b6d4'},
+    {name:'Swarm', role:'Lightweight Coder', color:'#eab308'},
+    {name:'Reaper', role:'Farm Bot', color:'#78716c'},
+    {name:'Lyra', role:'Innerverse', color:'#a855f7'},
+    {name:'XBot', role:'X Publisher', color:'#ec4899'},
+    {name:'Guardian', role:'Security', color:'#ef4444'},
+  ];
+  const el = document.getElementById('svg-roster');
+  if (el) {
+    el.innerHTML = roster.map(a => `
+      <div style="display:flex; align-items:center; gap:8px; padding:4px 0;">
+        <div style="width:9px; height:9px; border-radius:50%; background:${a.color}; flex-shrink:0;"></div>
+        <div>
+          <div style="font-weight:500; color:#f1f5f9; font-size:12px; line-height:1.2;">${a.name}</div>
+          <div style="font-size:11px; color:#64748b; line-height:1.2;">${a.role}</div>
+        </div>
+      </div>`).join('');
+  }
+})();
+</script>
 
   <!-- ORG CHART VIEW -->
   <div class="view" id="view-org" style="overflow-y:auto; padding:40px 32px 60px; background:#0b0c10; flex-direction:column; align-items:center;">
