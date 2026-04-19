@@ -1342,20 +1342,100 @@
     margin-top: 18px;
   }
 
-  /* Dropbox mobile tweaks */
-  @media (max-width: 768px) {
-    #view-dropbox > div { padding: 20px 16px 80px !important; }
-    .drop-form-grid { grid-template-columns: 1fr !important; }
-    .drop-header-row { flex-direction: column; align-items: flex-start !important; gap: 12px !important; }
-    .drop-new-btn { width: 100%; justify-content: center; }
-    .drop-composer { padding: 18px; }
-    .drop-composer-head { flex-direction: column; }
-    .drop-priority-picker { grid-template-columns: 1fr; }
-    .drop-composer-footer { flex-direction: column; align-items: stretch; }
-    .drop-composer-actions { width: 100%; }
-    .drop-composer-actions button { width: 100%; }
-    .drop-card { padding: 16px; }
-    .drop-btn { padding: 10px 16px; font-size: 13px; }
+  /* ─── Dropbox v3 ─────────────────────────────────────────────────────────── */
+  .dropbox-view { padding: 24px; width: 100%; box-sizing: border-box; }
+  .dropbox-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+  .dropbox-toolbar h2 { margin: 0; font-size: 16px; font-weight: 700; color: var(--text); }
+  .dropbox-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .dropbox-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+  .dropbox-filters input[type="search"],
+  .dropbox-filters select {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    font-family: inherit;
+  }
+  .dropbox-filters input[type="search"] { min-width: 180px; }
+  .dropbox-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; }
+  .dropbox-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .dropbox-quick-capture,
+  .dropbox-table-wrap,
+  .dropbox-cards-wrap,
+  .drop-detail-panel {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 14px;
+  }
+  .dropbox-quick-capture { display: grid; gap: 10px; }
+  .dropbox-quick-capture input,
+  .dropbox-quick-capture select,
+  .dropbox-quick-capture textarea {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--text);
+    font-family: inherit;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .dropbox-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .dropbox-row select { flex: 1; min-width: 120px; }
+  .dropbox-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .dropbox-table th,
+  .dropbox-table td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.06); text-align: left; vertical-align: top; }
+  .dropbox-table th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .dropbox-table tr[data-drop-id] { cursor: pointer; }
+  .dropbox-table tr[data-drop-id]:hover { background: rgba(255,255,255,0.03); }
+  .dropbox-table tr.selected { background: rgba(124,92,255,0.12); }
+  article.drop-card { padding: 14px; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; cursor: pointer; margin-bottom: 12px; transition: background 0.15s; }
+  article.drop-card:hover { background: rgba(255,255,255,0.03); }
+  article.drop-card.selected { background: rgba(124,92,255,0.12); }
+  .drop-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .drop-card-top h3 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
+  .drop-card-badges,
+  .detail-badges,
+  .detail-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+  .drop-card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  .drop-detail-empty { color: var(--muted); font-size: 13px; padding: 20px; text-align: center; }
+  .drop-detail h3 { margin: 0 0 10px; font-size: 15px; color: var(--text); }
+  .drop-detail h4 { margin: 14px 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+  .drop-detail p { font-size: 13px; color: var(--muted); margin: 4px 0; }
+  .drop-content-view { white-space: pre-wrap; font: 13px/1.7 inherit; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; color: var(--text); word-break: break-word; margin: 0; }
+  .detail-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .dbadge { display: inline-flex; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+  .dbadge-subject  { background: rgba(124,92,255,0.18); color: #a78bfa; }
+  .dbadge-priority { background: rgba(255,140,0,0.18);  color: #fbbf24; }
+  .dbadge-status   { background: rgba(0,140,255,0.18);  color: #60a5fa; }
+  .dbadge-tag      { background: rgba(255,255,255,0.08); color: var(--muted); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: 1px solid transparent; transition: all 0.15s;
+    -webkit-tap-highlight-color: transparent; font-family: inherit;
+  }
+  .btn-primary  { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { opacity: 0.88; }
+  .btn-secondary { background: transparent; color: var(--muted); border-color: var(--border); }
+  .btn-secondary:hover,
+  .btn-secondary.active { color: var(--accent); border-color: var(--accent); background: rgba(99,102,241,0.1); }
+  .btn-danger { background: transparent; color: #f87171; border-color: rgba(248,113,113,0.35); }
+  .btn-danger:hover { background: rgba(248,113,113,0.1); }
+  .hidden { display: none !important; }
+  @media (max-width: 980px) {
+    .dropbox-layout { grid-template-columns: 1fr; }
+    .drop-detail-panel { order: -1; }
+  }
+  @media (max-width: 600px) {
+    .dropbox-view { padding: 12px; }
+    .dropbox-filters { gap: 6px; }
   }
 </style>
 <link rel="stylesheet" href="calendar-view.css"/>
@@ -1976,132 +2056,85 @@
 
   <!-- DROPBOX VIEW -->
   <div class="view" id="view-dropbox" style="flex-direction:column; background:#0a0c11; overflow-y:auto;">
-    <div id="dropbox-app" style="max-width:860px; width:100%; margin:0 auto; padding:40px 28px 80px;">
-
-      <!-- Header -->
-      <div class="drop-header-row" style="display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; gap:16px;">
-        <div>
-          <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">📥 DROPBOX</div>
-          <div style="font-size:13px; color:var(--muted);">Drop ideas, tasks, and reminders — tagged by subject.</div>
+    <section id="dropbox-view" class="dropbox-view">
+      <div class="dropbox-toolbar">
+        <h2>Dropbox</h2>
+        <div class="dropbox-actions">
+          <button id="new-drop-btn" class="btn btn-primary">New Drop</button>
+          <button id="dropbox-view-list" class="btn btn-secondary active">Table</button>
+          <button id="dropbox-view-detail" class="btn btn-secondary">Cards</button>
         </div>
-        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;"><button id="drop-auth-btn" onclick="toggleDropboxAccess()" style="background:transparent; color:var(--muted); border:1px solid var(--border); border-radius:8px; padding:11px 16px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; -webkit-tap-highlight-color:transparent;">Unlock</button><button class="drop-new-btn" onclick="showDropForm()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 20px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap; -webkit-tap-highlight-color:transparent;">
-        <button class="drop-new-btn" onclick="showDropForm(activeFilter)" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 20px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap; -webkit-tap-highlight-color:transparent;">
-          <span>＋</span> New Drop
-        </button></div>
       </div>
 
-      <div id="drop-auth-note" style="font-size:12px; color:var(--muted); margin:-18px 0 24px;"></div>
+      <div class="dropbox-filters">
+        <input id="drop-search" type="search" placeholder="Search drops..." />
+        <select id="drop-filter-subject">
+          <option value="">All Subjects</option>
+        </select>
+        <select id="drop-filter-status">
+          <option value="">All Statuses</option>
+          <option value="inbox">Inbox</option>
+          <option value="idea">Idea</option>
+          <option value="researching">Researching</option>
+          <option value="ready">Ready</option>
+          <option value="building">Building</option>
+          <option value="archived">Archived</option>
+        </select>
+        <select id="drop-filter-priority">
+          <option value="">All Priorities</option>
+          <option value="normal">Normal</option>
+          <option value="high">High</option>
+          <option value="urgent">Urgent</option>
+        </select>
+        <select id="drop-sort">
+          <option value="updated_desc">Newest</option>
+          <option value="updated_asc">Oldest</option>
+          <option value="priority_desc">Priority</option>
+          <option value="title_asc">Title</option>
+        </select>
+      </div>
 
-      <!-- Add form (hidden by default) -->
-      <div id="drop-form" class="drop-composer" style="display:none;">
-        <div class="drop-composer-head">
-          <div>
-            <div class="drop-section-kicker">Dropbox v2 composer</div>
-            <div class="drop-composer-title">Capture a drop without changing the inbox.</div>
-            <div class="drop-composer-copy">Reuse saved subjects, set urgency with one tap, and keep the same <code>{ subject, priority, content }</code> payload behind the scenes.</div>
-          </div>
-          <div class="drop-composer-badges">
-            <span class="drop-composer-badge">Same API</span>
-            <span class="drop-composer-badge">Saved subject suggestions</span>
-            <span class="drop-composer-badge">Session lock aware</span>
-          </div>
-        </div>
-        <div class="drop-form-grid" style="display:grid; grid-template-columns:1.15fr 0.85fr; gap:16px; margin-bottom:16px;">
-          <div class="drop-field drop-subject-field">
-            <label class="drop-field-label" for="drop-subject">Subject / Tag</label>
-            <div class="drop-subject-shell">
-              <input id="drop-subject" class="drop-input" type="text" placeholder="Type a subject or pick from saved tags..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="drop-subject-suggestions" />
-              <div id="drop-subject-suggestions" class="drop-subject-suggestions" role="listbox"></div>
+      <div class="dropbox-layout">
+        <div class="dropbox-main">
+          <div class="dropbox-quick-capture">
+            <input id="drop-title" type="text" placeholder="Title" />
+            <input id="drop-subject" type="text" placeholder="Subject / Category" />
+            <input id="drop-project" type="text" placeholder="Project" />
+            <input id="drop-tags" type="text" placeholder="Tags (comma separated)" />
+
+            <div class="dropbox-row">
+              <select id="drop-priority">
+                <option value="normal">Normal</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+              <select id="drop-status">
+                <option value="inbox">Inbox</option>
+                <option value="idea" selected>Idea</option>
+                <option value="researching">Researching</option>
+                <option value="ready">Ready</option>
+                <option value="building">Building</option>
+                <option value="archived">Archived</option>
+              </select>
             </div>
-            <div class="drop-field-note" id="drop-subject-note">Recent subjects from saved drops will show here while you type.</div>
-            <div id="drop-subject-pills" class="drop-quick-subjects" aria-label="Suggested subjects"></div>
-          </div>
-          <div class="drop-field">
-            <label class="drop-field-label" for="drop-priority">Priority</label>
-            <input id="drop-priority" type="hidden" value="normal" />
-            <div class="drop-priority-picker" id="drop-priority-picker" role="radiogroup" aria-label="Priority">
-              <button type="button" class="drop-priority-option priority-normal active" data-priority="normal" aria-pressed="true">
-                <div class="drop-priority-top">
-                  <span class="drop-priority-name">Normal</span>
-                  <span class="drop-priority-dot"></span>
-                </div>
-                <div class="drop-priority-note">Routine capture for notes that can wait.</div>
-              </button>
-              <button type="button" class="drop-priority-option priority-high" data-priority="high" aria-pressed="false">
-                <div class="drop-priority-top">
-                  <span class="drop-priority-name">High</span>
-                  <span class="drop-priority-dot"></span>
-                </div>
-                <div class="drop-priority-note">Needs attention soon, but not first in line.</div>
-              </button>
-              <button type="button" class="drop-priority-option priority-urgent" data-priority="urgent" aria-pressed="false">
-                <div class="drop-priority-top">
-                  <span class="drop-priority-name">Urgent</span>
-                  <span class="drop-priority-dot"></span>
-                </div>
-                <div class="drop-priority-note">Act on this first or it risks getting missed.</div>
-              </button>
+
+            <textarea id="drop-content" rows="5" placeholder="Capture your note, idea, reminder, or task... Use [[linked note]] syntax for internal links."></textarea>
+
+            <div class="dropbox-row">
+              <button id="save-drop-btn" class="btn btn-primary">Save Drop</button>
+              <button id="clear-drop-btn" class="btn btn-secondary">Clear</button>
             </div>
-            <div class="drop-field-note">Pick the signal strength before you save it to the inbox.</div>
           </div>
-        </div>
-        <div class="drop-field" style="margin-bottom:18px;">
-          <label class="drop-field-label" for="drop-content">Content</label>
-          <textarea id="drop-content" class="drop-textarea" rows="5" placeholder="Paste the note, task, reminder, or idea..."></textarea>
-          <div class="drop-field-note">This deployment keeps the same data contract and save flow, just with the server session lock in front of it.</div>
-        </div>
-        <div class="drop-composer-footer">
-          <div class="drop-composer-status">Unlock Dropbox for this browser session, then save to the same subject, priority, and content model.</div>
-          <div class="drop-composer-actions">
-            <button class="drop-secondary-action" onclick="hideDropForm()">Cancel</button>
-            <button class="drop-primary-action" onclick="saveDrop()">Save Drop</button>
-          </div>
-        </div>
-        <!-- Legacy Dropbox form kept disabled for deploy bundle sync
-        <div class="drop-form-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
-          <div>
-            <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">Subject / Tag</label>
-            <input id="drop-subject" type="text" placeholder="e.g. Affirmations, Trading, Ideas..." style="width:100%; background:#0d0f14; border:1px solid var(--border); border-radius:8px; padding:11px 12px; font-size:16px; color:var(--text); outline:none;" />
-          </div>
-          <div>
-            <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">Priority</label>
-            <select id="drop-priority" style="width:100%; background:#0d0f14; border:1px solid var(--border); border-radius:8px; padding:11px 12px; font-size:16px; color:var(--text); outline:none;">
-              <option value="normal">🔵 Normal</option>
-              <option value="high">🟡 High</option>
-              <option value="urgent">🔴 Urgent</option>
-            </select>
-          </div>
-        </div>
-        -->
-        <!-- Legacy Dropbox content/actions kept disabled for deploy bundle sync
-        <div style="margin-bottom:12px;">
-          <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">Content</label>
-          <textarea id="drop-content" rows="5" placeholder="Paste your note, ideas, task..." style="width:100%; background:#0d0f14; border:1px solid var(--border); border-radius:8px; padding:11px 12px; font-size:16px; color:var(--text); outline:none; resize:vertical; font-family:inherit;"></textarea>
-        </div>
-        -->
-        <!-- Legacy Dropbox action bar kept disabled for deploy bundle sync
-        <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
-          <button onclick="hideDropForm()" style="background:transparent; color:var(--muted); border:1px solid var(--border); border-radius:8px; padding:12px 20px; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;">Cancel</button>
-          <button onclick="saveDrop()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 22px; font-size:14px; font-weight:600; cursor:pointer; -webkit-tap-highlight-color:transparent;">Save Drop</button>
-        </div>
-        -->
-      </div>
 
-      <!-- Filter bar -->
-      <div class="drop-toolbar">
-        <div class="drop-toolbar-copy" id="drop-summary">Checking Dropbox access...</div>
-      </div>
-      <div class="drop-filter-bar" id="drop-filters">
-        <button class="drop-filter active" type="button" data-filter-subject="all">
-          <span>All</span>
-          <span class="drop-filter-count">0</span>
-        </button>
-      </div>
+          <div id="dropbox-table-wrap" class="dropbox-table-wrap"></div>
+          <div id="dropbox-cards-wrap" class="dropbox-cards-wrap hidden"></div>
+        </div>
 
-      <!-- Drops list -->
-      <div id="drops-list"></div>
-
-    </div>
+        <aside id="drop-detail-panel" class="drop-detail-panel">
+          <div class="drop-detail-empty">Select a drop to view details.</div>
+        </aside>
+      </div>
+    </section>
   </div>
 
   <!-- MEMORY VIEW -->
@@ -4129,23 +4162,14 @@ document.querySelectorAll('.nav-item').forEach(el => {
   });
 });
 
-// ─── DROPBOX ──────────────────────────────────────────────────────────────────
+// ─── DROPBOX ─────────────────────────────────────────────────────────────────
 const DROPS_API = '/api/drops';
 const DROPS_SESSION_API = '/api/session';
 let _dropsCache = null;
 let dropsAuthState = { configured: false, authenticated: false, checked: false };
 
-VIEW_HANDLERS.traderclaw = { enter: () => DE.render(), focus: true };
-VIEW_HANDLERS.lyra = { enter: () => SORA.render(), focus: true };
-VIEW_HANDLERS.dropbox = { enter: () => renderDrops(), focus: true };
-VIEW_HANDLERS.dropbox = { enter: async () => { if (await ensureDropsSession(true)) renderDrops(); }, focus: true };
-VIEW_HANDLERS.memory = { enter: () => MEM.render(), focus: true };
-
 async function requestJson(url, options = {}) {
-  const response = await fetch(url, {
-    credentials: 'same-origin',
-    ...options
-  });
+  const response = await fetch(url, { credentials: 'same-origin', ...options });
   const raw = await response.text();
   let data = null;
   try { data = raw ? JSON.parse(raw) : null; } catch (e) { data = null; }
@@ -4169,60 +4193,6 @@ async function refreshDropboxAuthState() {
   return dropsAuthState;
 }
 
-function updateDropboxAuthUI() {
-  const authBtn = document.getElementById('drop-auth-btn');
-  const authNote = document.getElementById('drop-auth-note');
-  const newBtn = document.querySelector('.drop-new-btn');
-  if (!authBtn || !authNote || !newBtn) return;
-
-  const canEdit = dropsAuthState.configured && dropsAuthState.authenticated;
-  newBtn.disabled = !canEdit;
-  newBtn.style.opacity = canEdit ? '1' : '0.55';
-  newBtn.style.cursor = canEdit ? 'pointer' : 'not-allowed';
-
-  if (!dropsAuthState.configured) {
-    authBtn.textContent = 'Auth Off';
-    authBtn.disabled = true;
-    authBtn.style.opacity = '0.55';
-    authBtn.style.cursor = 'not-allowed';
-    authBtn.style.color = 'var(--muted)';
-    authBtn.style.borderColor = 'var(--border)';
-    authBtn.style.background = 'transparent';
-    authNote.textContent = 'Server auth is not configured. Set DROPS_PASSPHRASE_HASH or DROPS_PASSPHRASE.';
-    return;
-  }
-
-  authBtn.disabled = false;
-  authBtn.style.opacity = '1';
-  authBtn.style.cursor = 'pointer';
-
-  if (dropsAuthState.authenticated) {
-    authBtn.textContent = 'Lock';
-    authBtn.style.color = 'var(--accent)';
-    authBtn.style.borderColor = 'var(--accent)';
-    authBtn.style.background = 'rgba(99,102,241,0.12)';
-    authNote.textContent = 'Unlocked for this browser session. Reads and writes now stay behind the server session cookie.';
-  } else {
-    authBtn.textContent = 'Unlock';
-    authBtn.style.color = 'var(--muted)';
-    authBtn.style.borderColor = 'var(--border)';
-    authBtn.style.background = 'transparent';
-    authNote.textContent = 'Dropbox is locked. Unlock it to load or edit drops.';
-  }
-}
-
-function renderDropsState(message, options = {}) {
-  const list = document.getElementById('drops-list');
-  const filterBar = document.getElementById('drop-filters');
-  if (!list || !filterBar) return;
-
-  filterBar.innerHTML = '';
-  const actionHtml = options.actionLabel
-    ? `<div style="margin-top:16px;"><button onclick="${options.actionOnClick}" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:10px 16px; font-size:13px; font-weight:600; cursor:pointer;">${options.actionLabel}</button></div>`
-    : '';
-  list.innerHTML = `<div style="text-align:center; padding:60px 0; color:var(--muted); font-size:13px;">${message}${actionHtml}</div>`;
-}
-
 function showPassphraseModal() {
   return new Promise((resolve) => {
     const modal = document.getElementById('passphrase-modal');
@@ -4243,19 +4213,13 @@ function showPassphraseModal() {
       cancelBtn.removeEventListener('click', onCancel);
       input.removeEventListener('keydown', onKeydown);
     }
-
     function onSubmit() {
       const val = input.value;
       if (!val) { input.focus(); return; }
       cleanup();
       resolve(val);
     }
-
-    function onCancel() {
-      cleanup();
-      resolve(null);
-    }
-
+    function onCancel() { cleanup(); resolve(null); }
     function onKeydown(e) {
       if (e.key === 'Enter') onSubmit();
       if (e.key === 'Escape') onCancel();
@@ -4286,7 +4250,6 @@ async function ensureDropsSession(interactive = true) {
     if (interactive) alert(error.message || 'Could not reach the Dropbox auth endpoint.');
     return false;
   }
-  updateDropboxAuthUI();
 
   if (!status.configured) {
     if (interactive) alert('Dropbox auth is not configured on the server. Set DROPS_PASSPHRASE_HASH or DROPS_PASSPHRASE.');
@@ -4296,7 +4259,6 @@ async function ensureDropsSession(interactive = true) {
   if (status.authenticated) return true;
   if (!interactive) return false;
 
-  const passphrase = window.prompt('Enter the Dropbox passphrase to unlock this view:');
   const passphrase = await showPassphraseModal();
   if (passphrase == null) return false;
 
@@ -4304,13 +4266,11 @@ async function ensureDropsSession(interactive = true) {
     await requestJson(DROPS_SESSION_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ passphrase })
+      body: JSON.stringify({ passphrase }),
     });
     dropsAuthState = { configured: true, authenticated: true, checked: true };
-    updateDropboxAuthUI();
     return true;
   } catch (error) {
-    alert(error.message || 'Unable to unlock Dropbox.');
     showPassphraseError(error.message || 'Incorrect passphrase. Try again.');
     return false;
   }
@@ -4329,13 +4289,16 @@ async function toggleDropboxAccess() {
     await requestJson(DROPS_SESSION_API, { method: 'DELETE' }).catch(() => null);
     dropsAuthState = { configured: status.configured, authenticated: false, checked: true };
     _dropsCache = null;
-    hideDropForm();
-    updateDropboxAuthUI();
-    renderDrops(false);
+    dropboxState.drops = [];
+    renderDropbox();
     return;
   }
 
-  if (await ensureDropsSession(true)) renderDrops();
+  if (await ensureDropsSession(true)) {
+    const drops = await loadDrops();
+    if (drops !== null) { dropboxState.drops = drops; }
+    renderDropbox();
+  }
 }
 
 async function loadDrops() {
@@ -4346,763 +4309,352 @@ async function loadDrops() {
   } catch (error) {
     if (error.status === 401) {
       dropsAuthState = { ...dropsAuthState, authenticated: false, checked: true };
-      updateDropboxAuthUI();
       return null;
     }
     throw error;
   }
 }
 
-async function showDropForm() {
-  if (!await ensureDropsSession(true)) return;
-function showDropForm(subject) {
-  document.getElementById('drop-form').style.display = 'block';
-  if (subject && subject !== 'all') {
-    document.getElementById('drop-subject').value = subject;
-    document.getElementById('drop-content').focus();
-  } else {
-    document.getElementById('drop-subject').value = '';
-    document.getElementById('drop-subject').focus();
-  }
-}
-
-function hideDropForm() {
-  document.getElementById('drop-form').style.display = 'none';
-  document.getElementById('drop-subject').value = '';
-  document.getElementById('drop-content').value = '';
-  document.getElementById('drop-priority').value = 'normal';
-}
-
 function handleDropboxRequestError(error, fallbackMessage) {
   if (error.status === 401) {
     dropsAuthState = { ...dropsAuthState, authenticated: false, checked: true };
     _dropsCache = null;
-    hideDropForm();
-    updateDropboxAuthUI();
-    renderDrops(false);
+    dropboxState.drops = [];
+    renderDropbox();
     alert('Dropbox session expired. Unlock it again to continue.');
     return;
   }
-
   alert(error.message || fallbackMessage);
 }
 
-async function saveDrop() {
+// ─── Dropbox state & rendering ───────────────────────────────────────────────
+
+const dropboxState = {
+  drops: [],
+  selectedId: null,
+  view: 'table',
+  filters: {
+    search: '',
+    subject: '',
+    status: '',
+    priority: '',
+    sort: 'updated_desc',
+  },
+};
+
+async function enterDropboxView() {
   if (!await ensureDropsSession(true)) return;
-
-  const subject = document.getElementById('drop-subject').value.trim();
-  const content = document.getElementById('drop-content').value.trim();
-  const priority = document.getElementById('drop-priority').value;
-
-  if (!subject || subject.length > 100) {
-    alert('Subject is required and must be 100 characters or fewer.');
-    return;
-  }
-
-  if (!content || content.length > 10000) {
-    alert('Content is required and must be 10,000 characters or fewer.');
-    return;
-  }
-
-  try {
-    await requestJson(DROPS_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject, priority, content })
-    });
-    hideDropForm();
-    await renderDrops();
-  } catch (error) {
-    handleDropboxRequestError(error, 'Failed to save drop.');
+  const drops = await loadDrops();
+  if (drops !== null) {
+    dropboxState.drops = drops;
+    renderDropbox();
   }
 }
 
-async function toggleDone(id) {
-  if (!await ensureDropsSession(true)) return;
+function getFilteredDrops() {
+  let items = [...dropboxState.drops];
+  const { search, subject, status, priority, sort } = dropboxState.filters;
 
-  const drops = _dropsCache || [];
-  const drop = drops.find(x => x.id === id);
-  if (!drop) return;
-
-  try {
-    await requestJson(`${DROPS_API}/${id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ done: !drop.done })
-    });
-    await renderDrops(false);
-  } catch (error) {
-    handleDropboxRequestError(error, 'Failed to update drop.');
+  if (search) {
+    const q = search.toLowerCase();
+    items = items.filter(drop =>
+      [drop.title, drop.subject, drop.project, drop.content, ...(drop.tags || []), ...(drop.links || [])]
+        .join(' ').toLowerCase().includes(q)
+    );
   }
-}
 
-async function deleteDrop(id) {
-  if (!confirm('Delete this drop?')) return;
-  if (!await ensureDropsSession(true)) return;
+  if (subject) items = items.filter(drop => (drop.subject || '') === subject);
+  if (status)  items = items.filter(drop => (drop.status  || '') === status);
+  if (priority) items = items.filter(drop => (drop.priority || '') === priority);
 
-  try {
-    await requestJson(`${DROPS_API}/${id}`, { method: 'DELETE' });
-    await renderDrops(false);
-  } catch (error) {
-    handleDropboxRequestError(error, 'Failed to delete drop.');
-  }
-}
-
-let activeFilter = 'all';
-
-async function filterDrops(subject, btn) {
-  activeFilter = subject;
-  document.querySelectorAll('.drop-filter').forEach(b => {
-    b.classList.remove('active');
-    b.style.background = 'transparent';
-    b.style.color = 'var(--muted)';
-    b.style.borderColor = 'var(--border)';
+  items.sort((a, b) => {
+    if (sort === 'updated_asc') return new Date(a.updated_at) - new Date(b.updated_at);
+    if (sort === 'priority_desc') {
+      const rank = { urgent: 3, high: 2, normal: 1 };
+      return (rank[b.priority] || 0) - (rank[a.priority] || 0);
+    }
+    if (sort === 'title_asc') return (a.title || '').localeCompare(b.title || '');
+    return new Date(b.updated_at) - new Date(a.updated_at);
   });
-  btn.classList.add('active');
-  btn.style.background = 'rgba(99,102,241,0.15)';
-  btn.style.color = 'var(--accent)';
-  btn.style.borderColor = 'var(--accent)';
-  await renderDrops(false);
-  // Pre-fill subject field after render so DOM is fresh
-  const subjectInput = document.getElementById('drop-subject');
-  if (subjectInput) subjectInput.value = subject !== 'all' ? subject : '';
+
+  return items;
 }
 
-async function renderDrops(rebuildFilters = true) {
-  const list = document.getElementById('drops-list');
-  const filterBar = document.getElementById('drop-filters');
-  if (!list || !filterBar) return;
+function renderDropbox() {
+  populateSubjectFilter();
+  if (dropboxState.view === 'table') renderDropTable();
+  else renderDropCards();
+  renderDetailPanel();
+}
 
-  list.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px;">Loading...</div>`;
-  try {
-    await refreshDropboxAuthState();
-  } catch (error) {
-    updateDropboxAuthUI();
-    hideDropForm();
-    renderDropsState('Could not reach the Dropbox auth endpoint.');
+function populateSubjectFilter() {
+  const select = document.getElementById('drop-filter-subject');
+  if (!select) return;
+  const current = select.value;
+  const subjects = [...new Set(dropboxState.drops.map(d => d.subject).filter(Boolean))].sort();
+  select.innerHTML = '<option value="">All Subjects</option>' +
+    subjects.map(s => `<option value="${escAttr(s)}">${escHTML(s)}</option>`).join('');
+  select.value = subjects.includes(current) ? current : '';
+}
+
+function dropBadge(text, type) {
+  if (!text) return '';
+  return `<span class="dbadge dbadge-${escAttr(type)}">${escHTML(String(text))}</span>`;
+}
+
+function dropFormatDate(value) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  return d.toLocaleString();
+}
+
+function renderDropTable() {
+  const wrap = document.getElementById('dropbox-table-wrap');
+  if (!wrap) return;
+  const items = getFilteredDrops();
+
+  if (!dropboxState.drops.length) {
+    wrap.innerHTML = '<div class="drop-empty"><div class="drop-empty-title">Dropbox is clear.</div><div class="drop-empty-copy">Save your first drop using the form above.</div></div>';
+    return;
+  }
+  if (!items.length) {
+    wrap.innerHTML = '<div class="drop-empty"><div class="drop-empty-title">No drops match.</div><div class="drop-empty-copy">Try adjusting the filters.</div></div>';
     return;
   }
 
-  updateDropboxAuthUI();
+  wrap.innerHTML = `
+    <table class="dropbox-table">
+      <thead><tr>
+        <th>Title</th><th>Subject</th><th>Status</th><th>Priority</th>
+        <th>Project</th><th>Tags</th><th>Updated</th>
+      </tr></thead>
+      <tbody>
+        ${items.map(drop => `
+          <tr data-drop-id="${escAttr(drop.id)}" class="${drop.id === dropboxState.selectedId ? 'selected' : ''}">
+            <td>${escHTML(drop.title || 'Untitled drop')}</td>
+            <td>${dropBadge(drop.subject, 'subject')}</td>
+            <td>${dropBadge(drop.status, 'status')}</td>
+            <td>${dropBadge(drop.priority, 'priority')}</td>
+            <td>${escHTML(drop.project || '—')}</td>
+            <td>${(drop.tags || []).slice(0, 3).map(t => dropBadge(t, 'tag')).join(' ')}</td>
+            <td>${dropFormatDate(drop.updated_at || drop.date)}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
 
-  if (!dropsAuthState.configured) {
-    hideDropForm();
-    renderDropsState('Dropbox auth is not configured on the server.');
-    return;
-  }
-
-  if (!dropsAuthState.authenticated) {
-    hideDropForm();
-    renderDropsState('Dropbox is locked.', {
-      actionLabel: 'Unlock Dropbox',
-      actionOnClick: 'toggleDropboxAccess()'
+  wrap.querySelectorAll('tr[data-drop-id]').forEach(row => {
+    row.addEventListener('click', () => {
+      dropboxState.selectedId = row.dataset.dropId;
+      renderDropbox();
     });
+  });
+}
+
+function renderDropCards() {
+  const wrap = document.getElementById('dropbox-cards-wrap');
+  if (!wrap) return;
+  const items = getFilteredDrops();
+
+  if (!items.length) {
+    wrap.innerHTML = '<div class="drop-empty"><div class="drop-empty-title">No drops match.</div><div class="drop-empty-copy">Try adjusting the filters.</div></div>';
     return;
   }
 
-  let drops;
-  try {
-    drops = await loadDrops();
-  } catch (error) {
-    renderDropsState(escHTML(error.message || 'Failed to load drops.'));
-    return;
-  }
-
-  if (drops === null) {
-    hideDropForm();
-    renderDropsState('Dropbox is locked.', {
-      actionLabel: 'Unlock Dropbox',
-      actionOnClick: 'toggleDropboxAccess()'
-    });
-    return;
-  }
-
-  if (rebuildFilters) {
-    const subjects = ['all', ...new Set(drops.map(d => d.subject))];
-    if (!subjects.includes(activeFilter)) activeFilter = 'all';
-    filterBar.innerHTML = subjects.map(s => {
-      const isActive = s === activeFilter;
-      const label = s === 'all' ? 'All' : s;
-      return `<button class="drop-filter${isActive ? ' active' : ''}" onclick="filterDrops(decodeURIComponent('${encodeURIComponent(s)}'), this)"
-        style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid ${isActive ? 'var(--accent)' : 'var(--border)'}; background:${isActive ? 'rgba(99,102,241,0.15)' : 'transparent'}; color:${isActive ? 'var(--accent)' : 'var(--muted)'}; cursor:pointer;">${escHTML(label)}</button>`;
-      const activeStyle = isActive ? 'var(--accent)' : 'var(--border)';
-      const activeBg = isActive ? 'rgba(99,102,241,0.15)' : 'transparent';
-      const activeColor = isActive ? 'var(--accent)' : 'var(--muted)';
-      const plusBtn = s !== 'all' ? '<button onclick="showDropForm(\'' + s + '\')" title="New drop in ' + s + '" style="margin-left:4px;background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 3px;line-height:1;vertical-align:middle;">+</button>' : '';
-      return '<span style="display:inline-flex;align-items:center;"><button class="drop-filter' + (isActive ? ' active' : '') + '" onclick="filterDrops(\'' + s + '\', this)" style="font-size:12px;padding:6px 14px;border-radius:20px;border:1px solid ' + activeStyle + ';background:' + activeBg + ';color:' + activeColor + ';cursor:pointer;">' + label + '</button>' + plusBtn + '</span>';
-    }).join('');
-  }
-
-  const filtered = activeFilter === 'all' ? drops : drops.filter(d => d.subject === activeFilter);
-
-  if (filtered.length === 0) {
-    list.innerHTML = `<div style="text-align:center; padding:60px 0; color:var(--muted); font-size:13px;">No drops yet. Hit <strong style="color:var(--text)">New Drop</strong> to add one.</div>`;
-    return;
-  }
-
-  const priorityLabel = { normal: '🔵', high: '🟡', urgent: '🔴' };
-
-  list.innerHTML = filtered.map(d => {
-    const date = new Date(d.date).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' });
-    return `<div class="drop-card${d.done ? ' done' : ''}">
-      <div class="drop-header">
-        <span class="drop-tag">${escHTML(d.subject)}</span>
-        <span class="drop-priority-badge">${priorityLabel[d.priority] || '🔵'}</span>
-        <span class="drop-date">${date}</span>
+  wrap.innerHTML = items.map(drop => `
+    <article class="drop-card ${drop.id === dropboxState.selectedId ? 'selected' : ''}" data-drop-id="${escAttr(drop.id)}">
+      <div class="drop-card-top">
+        <h3>${escHTML(drop.title || 'Untitled drop')}</h3>
+        <div class="drop-card-badges">
+          ${dropBadge(drop.subject, 'subject')}
+          ${dropBadge(drop.priority, 'priority')}
+          ${dropBadge(drop.status, 'status')}
+        </div>
       </div>
-      <div class="drop-content">${escHTML(d.content)}</div>
-      <div class="drop-actions">
-        <button class="drop-btn done-btn" onclick="toggleDone('${d.id}')">${d.done ? '↩ Reopen' : '✓ Done'}</button>
-        <button class="drop-btn del-btn" onclick="deleteDrop('${d.id}')">🗑 Delete</button>
+      <p>${escHTML((drop.content || '').slice(0, 180))}</p>
+      <div class="drop-card-tags">${(drop.tags || []).map(t => dropBadge(t, 'tag')).join(' ')}</div>
+    </article>`).join('');
+
+  wrap.querySelectorAll('[data-drop-id]').forEach(card => {
+    card.addEventListener('click', () => {
+      dropboxState.selectedId = card.dataset.dropId;
+      renderDropbox();
+    });
+  });
+}
+
+function renderDetailPanel() {
+  const panel = document.getElementById('drop-detail-panel');
+  if (!panel) return;
+  const drop = dropboxState.drops.find(d => d.id === dropboxState.selectedId);
+
+  if (!drop) {
+    panel.innerHTML = '<div class="drop-detail-empty">Select a drop to view details.</div>';
+    return;
+  }
+
+  const backlinks = dropboxState.drops.filter(other =>
+    other.id !== drop.id &&
+    (other.links || []).some(link => link.toLowerCase() === (drop.title || '').toLowerCase())
+  );
+
+  panel.innerHTML = `
+    <div class="drop-detail">
+      <h3>${escHTML(drop.title || 'Untitled drop')}</h3>
+      <div class="detail-badges">
+        ${dropBadge(drop.subject, 'subject')}
+        ${dropBadge(drop.priority, 'priority')}
+        ${dropBadge(drop.status, 'status')}
+      </div>
+      <p><strong>Project:</strong> ${escHTML(drop.project || '—')}</p>
+      <p><strong>Created:</strong> ${dropFormatDate(drop.date)}</p>
+      <p><strong>Updated:</strong> ${dropFormatDate(drop.updated_at || drop.date)}</p>
+      <div class="detail-tags">${(drop.tags || []).map(t => dropBadge(t, 'tag')).join(' ')}</div>
+      <h4>Content</h4>
+      <pre class="drop-content-view">${escHTML(drop.content || '')}</pre>
+      <h4>Links</h4>
+      <div>${(drop.links || []).length ? drop.links.map(l => `<div>${escHTML(l)}</div>`).join('') : 'No links'}</div>
+      <h4>Backlinks</h4>
+      <div>${backlinks.length ? backlinks.map(b => `<div>${escHTML(b.title || '')}</div>`).join('') : 'No backlinks'}</div>
+      <div class="detail-actions">
+        <button id="toggle-done-btn" class="btn btn-secondary">${drop.done ? 'Restore' : 'Archive'}</button>
+        <button id="delete-drop-btn" class="btn btn-danger">Delete</button>
       </div>
     </div>`;
-  }).join('');
-}
 
-const DROP_PRIORITY_META = {
-  normal: { label: 'Normal', className: 'priority-normal' },
-  high: { label: 'High', className: 'priority-high' },
-  urgent: { label: 'Urgent', className: 'priority-urgent' }
-};
-const dropComposerState = {
-  subjectDirectory: [],
-  suggestions: [],
-  activeSuggestionIndex: -1
-};
-
-function normalizeDropSubject(value) {
-  return String(value || '').replace(/\s+/g, ' ').trim();
-}
-
-function getDropDefaultSubject() {
-  return activeFilter === 'all' ? '' : (normalizeDropSubject(activeFilter) || '');
-}
-
-function initDropboxUI() {
-  if (initDropboxUI.done) return;
-  initDropboxUI.done = true;
-
-  const subjectInput = document.getElementById('drop-subject');
-  const subjectSuggestions = document.getElementById('drop-subject-suggestions');
-  const subjectPills = document.getElementById('drop-subject-pills');
-  const priorityPicker = document.getElementById('drop-priority-picker');
-  const filterBar = document.getElementById('drop-filters');
-
-  if (priorityPicker) {
-    priorityPicker.addEventListener('click', (event) => {
-      const button = event.target.closest('[data-priority]');
-      if (!button) return;
-      setDropPriority(button.dataset.priority);
-    });
-  }
-
-  if (subjectInput) {
-    subjectInput.addEventListener('input', () => {
-      dropComposerState.activeSuggestionIndex = -1;
-      renderDropSubjectSuggestions(true);
-    });
-    subjectInput.addEventListener('focus', () => {
-      renderDropSubjectSuggestions(true);
-    });
-    subjectInput.addEventListener('keydown', handleDropSubjectKeydown);
-    subjectInput.addEventListener('blur', () => {
-      window.setTimeout(() => {
-        const activeEl = document.activeElement;
-        if (!activeEl || !activeEl.closest('#drop-form')) closeDropSubjectSuggestions();
-      }, 100);
-    });
-  }
-
-  if (subjectSuggestions) {
-    subjectSuggestions.addEventListener('mousedown', (event) => {
-      const button = event.target.closest('[data-subject-suggestion]');
-      if (!button) return;
-      event.preventDefault();
-      selectDropSubject(button.dataset.subjectSuggestion, true);
-    });
-  }
-
-  if (subjectPills) {
-    subjectPills.addEventListener('click', (event) => {
-      const button = event.target.closest('[data-drop-pill]');
-      if (!button) return;
-      selectDropSubject(button.dataset.dropPill, true);
-    });
-  }
-
-  if (filterBar) {
-    filterBar.addEventListener('click', (event) => {
-      const button = event.target.closest('[data-filter-subject]');
-      if (!button) return;
-      filterDrops(button.dataset.filterSubject);
-    });
-  }
-
-  document.addEventListener('click', (event) => {
-    if (!event.target.closest('#drop-form')) closeDropSubjectSuggestions();
-  });
-}
-
-function syncDropboxSubjects(drops) {
-  const bySubject = new Map();
-  (drops || []).forEach(drop => {
-    const subject = normalizeDropSubject(drop.subject) || 'General';
-    const existing = bySubject.get(subject) || { label: subject, count: 0, lastSeen: 0 };
-    existing.count += 1;
-    const stamp = Number(new Date(drop.date || 0)) || 0;
-    if (stamp > existing.lastSeen) existing.lastSeen = stamp;
-    bySubject.set(subject, existing);
-  });
-
-  dropComposerState.subjectDirectory = Array.from(bySubject.values()).sort((a, b) => {
-    if (b.lastSeen !== a.lastSeen) return b.lastSeen - a.lastSeen;
-    if (b.count !== a.count) return b.count - a.count;
-    return a.label.localeCompare(b.label);
-  });
-
-  updateDropSubjectNote();
-  renderDropQuickSubjects();
-  renderDropSubjectSuggestions(false);
-}
-
-function updateDropSubjectNote() {
-  const note = document.getElementById('drop-subject-note');
-  if (!note) return;
-
-  if (!dropComposerState.subjectDirectory.length) {
-    note.textContent = 'No saved subjects yet. Type any tag you want and it will become a future suggestion.';
-    return;
-  }
-
-  const recent = dropComposerState.subjectDirectory.slice(0, 2).map(entry => entry.label);
-  note.textContent = `Recent subjects stay one tap away. Try ${recent.map(label => `"${label}"`).join(' or ')} or type your own.`;
-}
-
-function renderDropQuickSubjects() {
-  const container = document.getElementById('drop-subject-pills');
-  if (!container) return;
-
-  const quickSubjects = dropComposerState.subjectDirectory.slice(0, 5);
-  if (!quickSubjects.length) {
-    container.innerHTML = `<span class="drop-quick-empty">Saved subjects will appear here after your first few drops.</span>`;
-    return;
-  }
-
-  container.innerHTML = quickSubjects.map(entry => `<button type="button" class="drop-quick-pill" data-drop-pill="${escAttr(entry.label)}">
-    <span>${escHTML(entry.label)}</span>
-    <span class="drop-quick-pill-count">${entry.count}</span>
-  </button>`).join('');
-}
-
-function getDropSubjectSuggestions(query) {
-  const normalizedQuery = normalizeDropSubject(query).toLowerCase();
-  return dropComposerState.subjectDirectory
-    .filter(entry => {
-      const label = entry.label.toLowerCase();
-      if (normalizedQuery && label === normalizedQuery) return false;
-      return !normalizedQuery || label.includes(normalizedQuery);
-    })
-    .slice(0, 6);
-}
-
-function renderDropSubjectSuggestions(openPanel = false) {
-  const input = document.getElementById('drop-subject');
-  const panel = document.getElementById('drop-subject-suggestions');
-  if (!input || !panel) return;
-
-  const suggestions = getDropSubjectSuggestions(input.value);
-  dropComposerState.suggestions = suggestions;
-
-  if (dropComposerState.activeSuggestionIndex >= suggestions.length) {
-    dropComposerState.activeSuggestionIndex = suggestions.length - 1;
-  }
-
-  const typedValue = normalizeDropSubject(input.value);
-  const shouldShowEmpty = openPanel && typedValue && suggestions.length === 0;
-  const shouldOpen = openPanel && (suggestions.length > 0 || shouldShowEmpty);
-
-  if (!shouldOpen) {
-    closeDropSubjectSuggestions();
-    return;
-  }
-
-  panel.classList.add('open');
-  input.setAttribute('aria-expanded', 'true');
-
-  if (!suggestions.length) {
-    input.removeAttribute('aria-activedescendant');
-    panel.innerHTML = `<div class="drop-suggestion-empty">No saved subjects match "${escHTML(typedValue)}" yet. Press Enter or keep typing to save it as a new tag.</div>`;
-    return;
-  }
-
-  panel.innerHTML = suggestions.map((entry, index) => {
-    const isActive = index === dropComposerState.activeSuggestionIndex;
-    return `<button type="button" id="drop-subject-option-${index}" class="drop-suggestion-row${isActive ? ' active' : ''}" data-subject-suggestion="${escAttr(entry.label)}" role="option" aria-selected="${isActive ? 'true' : 'false'}">
-      <span class="drop-suggestion-copy">
-        <span class="drop-suggestion-label">${escHTML(entry.label)}</span>
-        <span class="drop-suggestion-meta">${entry.count} drop${entry.count === 1 ? '' : 's'}</span>
-      </span>
-      <span class="drop-suggestion-arrow">Use</span>
-    </button>`;
-  }).join('');
-
-  if (dropComposerState.activeSuggestionIndex >= 0) {
-    input.setAttribute('aria-activedescendant', `drop-subject-option-${dropComposerState.activeSuggestionIndex}`);
-  } else {
-    input.removeAttribute('aria-activedescendant');
-  }
-}
-
-function closeDropSubjectSuggestions() {
-  const input = document.getElementById('drop-subject');
-  const panel = document.getElementById('drop-subject-suggestions');
-  dropComposerState.activeSuggestionIndex = -1;
-  dropComposerState.suggestions = [];
-  if (panel) {
-    panel.classList.remove('open');
-    panel.innerHTML = '';
-  }
-  if (input) {
-    input.setAttribute('aria-expanded', 'false');
-    input.removeAttribute('aria-activedescendant');
-  }
-}
-
-function selectDropSubject(subject, moveToContent = false) {
-  const input = document.getElementById('drop-subject');
-  if (!input) return;
-
-  input.value = normalizeDropSubject(subject);
-  closeDropSubjectSuggestions();
-  input.focus();
-  input.setSelectionRange(input.value.length, input.value.length);
-
-  if (moveToContent) {
-    const contentField = document.getElementById('drop-content');
-    if (contentField) contentField.focus();
-  }
-}
-
-function handleDropSubjectKeydown(event) {
-  const suggestions = dropComposerState.suggestions;
-  if (event.key === 'ArrowDown' && suggestions.length) {
-    event.preventDefault();
-    dropComposerState.activeSuggestionIndex = Math.min(dropComposerState.activeSuggestionIndex + 1, suggestions.length - 1);
-    renderDropSubjectSuggestions(true);
-    return;
-  }
-
-  if (event.key === 'ArrowUp' && suggestions.length) {
-    event.preventDefault();
-    dropComposerState.activeSuggestionIndex = Math.max(dropComposerState.activeSuggestionIndex - 1, 0);
-    renderDropSubjectSuggestions(true);
-    return;
-  }
-
-  if (event.key === 'Enter') {
-    if (dropComposerState.activeSuggestionIndex >= 0 && suggestions[dropComposerState.activeSuggestionIndex]) {
-      event.preventDefault();
-      selectDropSubject(suggestions[dropComposerState.activeSuggestionIndex].label, true);
-      return;
+  document.getElementById('toggle-done-btn').addEventListener('click', async () => {
+    try {
+      await requestJson(`${DROPS_API}/${drop.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ done: !drop.done }),
+      });
+      const drops = await loadDrops();
+      if (drops !== null) { dropboxState.drops = drops; }
+      renderDropbox();
+    } catch (error) {
+      handleDropboxRequestError(error, 'Failed to update drop.');
     }
-    closeDropSubjectSuggestions();
-    return;
-  }
-
-  if (event.key === 'Escape') {
-    closeDropSubjectSuggestions();
-  }
-}
-
-function setDropPriority(priority) {
-  const safePriority = DROP_PRIORITY_META[priority] ? priority : 'normal';
-  const input = document.getElementById('drop-priority');
-  if (input) input.value = safePriority;
-
-  document.querySelectorAll('#drop-priority-picker [data-priority]').forEach(button => {
-    const isActive = button.dataset.priority === safePriority;
-    button.classList.toggle('active', isActive);
-    button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
   });
-}
 
-function updateDropFilterButtons() {
-  document.querySelectorAll('.drop-filter').forEach(button => {
-    button.classList.toggle('active', button.dataset.filterSubject === activeFilter);
+  document.getElementById('delete-drop-btn').addEventListener('click', async () => {
+    if (!confirm('Delete this drop?')) return;
+    try {
+      await requestJson(`${DROPS_API}/${drop.id}`, { method: 'DELETE' });
+      dropboxState.selectedId = null;
+      const drops = await loadDrops();
+      if (drops !== null) { dropboxState.drops = drops; }
+      renderDropbox();
+    } catch (error) {
+      handleDropboxRequestError(error, 'Failed to delete drop.');
+    }
   });
-}
-
-function updateDropboxAuthUI() {
-  const authBtn = document.getElementById('drop-auth-btn');
-  const authNote = document.getElementById('drop-auth-note');
-  const newBtn = document.querySelector('.drop-new-btn');
-  const summary = document.getElementById('drop-summary');
-  if (!authBtn || !authNote || !newBtn) return;
-
-  const canEdit = dropsAuthState.configured && dropsAuthState.authenticated;
-  newBtn.disabled = !canEdit;
-  newBtn.style.opacity = canEdit ? '1' : '0.55';
-  newBtn.style.cursor = canEdit ? 'pointer' : 'not-allowed';
-
-  if (!dropsAuthState.configured) {
-    authBtn.textContent = 'Auth Off';
-    authBtn.disabled = true;
-    authBtn.style.opacity = '0.55';
-    authBtn.style.cursor = 'not-allowed';
-    authBtn.style.color = 'var(--muted)';
-    authBtn.style.borderColor = 'var(--border)';
-    authBtn.style.background = 'transparent';
-    authNote.textContent = 'Server auth is not configured. Set DROPS_PASSPHRASE_HASH or DROPS_PASSPHRASE.';
-    if (summary) summary.textContent = 'Dropbox auth is not configured on the server.';
-    return;
-  }
-
-  authBtn.disabled = false;
-  authBtn.style.opacity = '1';
-  authBtn.style.cursor = 'pointer';
-
-  if (dropsAuthState.authenticated) {
-    authBtn.textContent = 'Lock';
-    authBtn.style.color = 'var(--accent)';
-    authBtn.style.borderColor = 'var(--accent)';
-    authBtn.style.background = 'rgba(99,102,241,0.12)';
-    authNote.textContent = 'Unlocked for this browser session. Reads and writes now stay behind the server session cookie.';
-  } else {
-    authBtn.textContent = 'Unlock';
-    authBtn.style.color = 'var(--muted)';
-    authBtn.style.borderColor = 'var(--border)';
-    authBtn.style.background = 'transparent';
-    authNote.textContent = 'Dropbox is locked. Unlock it to load or edit drops.';
-    if (summary) summary.textContent = 'Unlock Dropbox to load the subject filters and drop stream.';
-  }
-}
-
-function renderDropsState(message, options = {}) {
-  const list = document.getElementById('drops-list');
-  const filterBar = document.getElementById('drop-filters');
-  const summary = document.getElementById('drop-summary');
-  if (!list || !filterBar) return;
-
-  filterBar.innerHTML = '';
-  if (summary) summary.textContent = options.summary || message;
-
-  const actionHtml = options.actionLabel
-    ? `<div class="drop-empty-actions"><button type="button" class="drop-empty-action" onclick="${options.actionOnClick}">${options.actionLabel}</button></div>`
-    : '';
-
-  list.innerHTML = `<div class="drop-empty">
-    <div class="drop-empty-title">${options.title || 'Dropbox unavailable'}</div>
-    <div class="drop-empty-copy">${message}</div>
-    ${actionHtml}
-  </div>`;
-}
-
-async function showDropForm() {
-  if (!await ensureDropsSession(true)) return;
-  initDropboxUI();
-  const form = document.getElementById('drop-form');
-  const subjectInput = document.getElementById('drop-subject');
-
-  form.style.display = 'block';
-  subjectInput.value = getDropDefaultSubject();
-  syncDropboxSubjects(_dropsCache || []);
-  setDropPriority(document.getElementById('drop-priority').value || 'normal');
-  renderDropSubjectSuggestions(false);
-  subjectInput.focus();
-  subjectInput.setSelectionRange(subjectInput.value.length, subjectInput.value.length);
-}
-
-function hideDropForm() {
-  document.getElementById('drop-form').style.display = 'none';
-  document.getElementById('drop-subject').value = '';
-  document.getElementById('drop-content').value = '';
-  closeDropSubjectSuggestions();
-  setDropPriority('normal');
 }
 
 async function saveDrop() {
   if (!await ensureDropsSession(true)) return;
 
-  const subject = normalizeDropSubject(document.getElementById('drop-subject').value) || 'General';
-  const content = document.getElementById('drop-content').value.trim();
-  const priority = document.getElementById('drop-priority').value;
-
-  if (!content || content.length > 10000) {
-    alert('Content is required and must be 10,000 characters or fewer.');
-    return;
-  }
+  const payload = {
+    title:    document.getElementById('drop-title').value,
+    subject:  document.getElementById('drop-subject').value,
+    category: document.getElementById('drop-subject').value,
+    project:  document.getElementById('drop-project').value,
+    tags:     document.getElementById('drop-tags').value,
+    priority: document.getElementById('drop-priority').value,
+    status:   document.getElementById('drop-status').value,
+    content:  document.getElementById('drop-content').value,
+  };
 
   try {
     await requestJson(DROPS_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject, priority, content })
+      body: JSON.stringify(payload),
     });
-    hideDropForm();
-    await renderDrops();
+    clearDropForm();
+    const drops = await loadDrops();
+    if (drops !== null) { dropboxState.drops = drops; }
+    renderDropbox();
   } catch (error) {
     handleDropboxRequestError(error, 'Failed to save drop.');
   }
 }
 
-function filterDrops(subject) {
-  activeFilter = subject;
-  updateDropFilterButtons();
-  renderDrops(false);
+function clearDropForm() {
+  ['drop-title', 'drop-subject', 'drop-project', 'drop-tags', 'drop-content'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const p = document.getElementById('drop-priority');
+  if (p) p.value = 'normal';
+  const s = document.getElementById('drop-status');
+  if (s) s.value = 'idea';
 }
 
-function clearDropFilter() {
-  activeFilter = 'all';
-  updateDropFilterButtons();
-  renderDrops(false);
-}
+// ─── Dropbox event listeners ──────────────────────────────────────────────────
 
-async function renderDrops(rebuildFilters = true) {
-  const list = document.getElementById('drops-list');
-  const filterBar = document.getElementById('drop-filters');
-  const summary = document.getElementById('drop-summary');
-  if (!list || !filterBar) return;
+document.getElementById('save-drop-btn').addEventListener('click', async () => {
+  try { await saveDrop(); } catch (err) { alert(err.message); }
+});
 
-  initDropboxUI();
-  list.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px;">Loading...</div>`;
-  try {
-    await refreshDropboxAuthState();
-  } catch (error) {
-    updateDropboxAuthUI();
-    hideDropForm();
-    renderDropsState('Could not reach the Dropbox auth endpoint.', {
-      title: 'Auth endpoint unavailable'
-    });
-    return;
-  }
+document.getElementById('clear-drop-btn').addEventListener('click', clearDropForm);
 
-  updateDropboxAuthUI();
+document.getElementById('new-drop-btn').addEventListener('click', async () => {
+  if (!await ensureDropsSession(true)) return;
+  const el = document.getElementById('drop-title');
+  if (el) el.focus();
+});
 
-  if (!dropsAuthState.configured) {
-    hideDropForm();
-    renderDropsState('Dropbox auth is not configured on the server.', {
-      title: 'Dropbox auth is off'
-    });
-    return;
-  }
+document.getElementById('drop-search').addEventListener('input', e => {
+  dropboxState.filters.search = e.target.value.trim();
+  renderDropbox();
+});
 
-  if (!dropsAuthState.authenticated) {
-    hideDropForm();
-    renderDropsState('Unlock Dropbox to view and edit the drop stream.', {
-      title: 'Dropbox is locked',
-      actionLabel: 'Unlock Dropbox',
-      actionOnClick: 'toggleDropboxAccess()'
-    });
-    return;
-  }
+document.getElementById('drop-filter-subject').addEventListener('change', e => {
+  dropboxState.filters.subject = e.target.value;
+  renderDropbox();
+});
 
-  let drops;
-  try {
-    drops = await loadDrops();
-  } catch (error) {
-    renderDropsState(escHTML(error.message || 'Failed to load drops.'), {
-      title: 'Could not load drops'
-    });
-    return;
-  }
+document.getElementById('drop-filter-status').addEventListener('change', e => {
+  dropboxState.filters.status = e.target.value;
+  renderDropbox();
+});
 
-  if (drops === null) {
-    hideDropForm();
-    renderDropsState('Dropbox is locked.', {
-      title: 'Dropbox is locked',
-      actionLabel: 'Unlock Dropbox',
-      actionOnClick: 'toggleDropboxAccess()'
-    });
-    return;
-  }
+document.getElementById('drop-filter-priority').addEventListener('change', e => {
+  dropboxState.filters.priority = e.target.value;
+  renderDropbox();
+});
 
-  syncDropboxSubjects(drops);
-  const subjectDirectory = dropComposerState.subjectDirectory;
-  const availableSubjects = new Set(subjectDirectory.map(entry => entry.label));
-  if (activeFilter !== 'all' && !availableSubjects.has(activeFilter)) activeFilter = 'all';
+document.getElementById('drop-sort').addEventListener('change', e => {
+  dropboxState.filters.sort = e.target.value;
+  renderDropbox();
+});
 
-  if (rebuildFilters) {
-    const filterEntries = [{ subject: 'all', count: drops.length }, ...subjectDirectory.map(entry => ({ subject: entry.label, count: entry.count }))];
-    filterBar.innerHTML = filterEntries.map(entry => {
-      const label = entry.subject === 'all' ? 'All' : escHTML(entry.subject);
-      return `<button class="drop-filter" type="button" data-filter-subject="${escAttr(entry.subject)}">
-        <span>${label}</span>
-        <span class="drop-filter-count">${entry.count}</span>
-      </button>`;
-    }).join('');
-  }
+document.getElementById('dropbox-view-list').addEventListener('click', () => {
+  dropboxState.view = 'table';
+  document.getElementById('dropbox-table-wrap').classList.remove('hidden');
+  document.getElementById('dropbox-cards-wrap').classList.add('hidden');
+  document.getElementById('dropbox-view-list').classList.add('active');
+  document.getElementById('dropbox-view-detail').classList.remove('active');
+  renderDropTable();
+});
 
-  updateDropFilterButtons();
-
-  const filtered = activeFilter === 'all'
-    ? drops
-    : drops.filter(d => (normalizeDropSubject(d.subject) || 'General') === activeFilter);
-
-  if (summary) {
-    if (!drops.length) {
-      summary.textContent = 'No drops yet. Your first saved item will seed future subject suggestions automatically.';
-    } else if (activeFilter === 'all') {
-      const subjectLabel = `${subjectDirectory.length} subject${subjectDirectory.length === 1 ? '' : 's'}`;
-      summary.textContent = `${drops.length} total drop${drops.length === 1 ? '' : 's'} across ${subjectLabel}.`;
-    } else {
-      summary.textContent = `${filtered.length} drop${filtered.length === 1 ? '' : 's'} filed under ${activeFilter}.`;
-    }
-  }
-
-  if (!drops.length) {
-    list.innerHTML = `<div class="drop-empty">
-      <div class="drop-empty-title">Dropbox is clear.</div>
-      <div class="drop-empty-copy">Start the stream with your first note, task, or reminder. New subjects will become quick suggestions here automatically.</div>
-      <div class="drop-empty-actions">
-        <button type="button" class="drop-empty-action" onclick="showDropForm()">Create the first drop</button>
-      </div>
-    </div>`;
-    return;
-  }
-
-  if (filtered.length === 0) {
-    list.innerHTML = `<div class="drop-empty">
-      <div class="drop-empty-title">No drops match this filter.</div>
-      <div class="drop-empty-copy">Try another subject, clear the filter, or add a fresh drop to ${escHTML(activeFilter)}.</div>
-      <div class="drop-empty-actions">
-        <button type="button" class="drop-empty-action" onclick="clearDropFilter()">Show all drops</button>
-        <button type="button" class="drop-empty-action" onclick="showDropForm()">New drop</button>
-      </div>
-    </div>`;
-    return;
-  }
-
-  list.innerHTML = filtered.map(d => {
-    const dropSubject = normalizeDropSubject(d.subject) || 'General';
-    const priorityMeta = DROP_PRIORITY_META[d.priority] || DROP_PRIORITY_META.normal;
-    const dateValue = d.date ? new Date(d.date) : null;
-    const date = dateValue && !Number.isNaN(dateValue.valueOf())
-      ? dateValue.toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })
-      : 'Unknown date';
-    return `<div class="drop-card${d.done ? ' done' : ''}">
-      <div class="drop-header">
-        <span class="drop-tag">${escHTML(dropSubject)}</span>
-        <span class="drop-priority-badge ${priorityMeta.className}"><span class="drop-priority-badge-dot"></span>${priorityMeta.label}</span>
-        <span class="drop-date">${date}</span>
-      </div>
-      <div class="drop-content">${escHTML(d.content)}</div>
-      <div class="drop-actions">
-        <button class="drop-btn done-btn" onclick="toggleDone('${d.id}')">${d.done ? 'Reopen' : 'Done'}</button>
-        <button class="drop-btn del-btn" onclick="deleteDrop('${d.id}')">Delete</button>
-      </div>
-    </div>`;
-  }).join('');
-}
+document.getElementById('dropbox-view-detail').addEventListener('click', () => {
+  dropboxState.view = 'cards';
+  document.getElementById('dropbox-table-wrap').classList.add('hidden');
+  document.getElementById('dropbox-cards-wrap').classList.remove('hidden');
+  document.getElementById('dropbox-view-list').classList.remove('active');
+  document.getElementById('dropbox-view-detail').classList.add('active');
+  renderDropCards();
+});
 
 function escAttr(str) {
   return String(str)
-    .replace(/&/g,'&amp;')
-    .replace(/"/g,'&quot;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;');
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
-initDropboxUI();
 
 function escHTML(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -5113,7 +4665,7 @@ function escHTML(str) {
 VIEW_HANDLERS.traderclaw = { enter: () => { if (typeof DE !== 'undefined') DE.render(); }, focus: true };
 VIEW_HANDLERS.lyra       = { enter: () => { if (typeof SORA !== 'undefined') SORA.render(); }, focus: true };
 VIEW_HANDLERS.calendar   = { enter: () => { if (window.CAL) CAL.render(); }, focus: false, feedOnly: true };
-VIEW_HANDLERS.dropbox    = { enter: async () => { if (await ensureDropsSession(true)) renderDrops(); }, focus: true };
+VIEW_HANDLERS.dropbox    = { enter: () => enterDropboxView(), focus: true };
 VIEW_HANDLERS.memory     = { enter: () => { if (typeof MEM !== 'undefined') MEM.render(); }, focus: true };
 VIEW_HANDLERS.office     = { enter: null, focus: false };
 VIEW_HANDLERS.org        = { enter: null, focus: false };

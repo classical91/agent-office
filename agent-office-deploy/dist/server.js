@@ -16,6 +16,7 @@ const MAX_BODY_BYTES = 50 * 1024;
 const SESSION_COOKIE = 'agent_office_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
 const ALLOWED_PRIORITIES = new Set(['normal', 'high', 'urgent']);
+const ALLOWED_STATUSES = new Set(['inbox', 'idea', 'researching', 'ready', 'building', 'archived']);
 const ALLOWED_ORIGIN = process.env.APP_ORIGIN || process.env.PUBLIC_APP_URL || '';
 const PASSPHRASE_HASH = resolvePassphraseHash();
 const sessions = new Map();
@@ -188,27 +189,96 @@ async function readJsonBody(req) {
   });
 }
 
+function normalizeTag(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .slice(0, 40);
+}
+
+function normalizeTags(input) {
+  const raw = Array.isArray(input)
+    ? input
+    : typeof input === 'string'
+      ? input.split(',')
+      : [];
+  const tags = [];
+  const seen = new Set();
+  for (const item of raw) {
+    const tag = normalizeTag(item);
+    if (!tag || seen.has(tag)) continue;
+    seen.add(tag);
+    tags.push(tag);
+    if (tags.length >= 30) break;
+  }
+  return tags;
+}
+
+function deriveDropTitle(input) {
+  const title = typeof input.title === 'string' ? input.title.trim() : '';
+  if (title) return title.slice(0, 200);
+  const subject = typeof input.subject === 'string' ? input.subject.trim() : '';
+  if (subject) return subject.slice(0, 200);
+  const content = typeof input.content === 'string' ? input.content.trim() : '';
+  if (!content) return 'Untitled drop';
+  const firstLine = content.split('\n').find(Boolean) || content;
+  return firstLine.slice(0, 120);
+}
+
+function extractDropLinks(content) {
+  const text = typeof content === 'string' ? content : '';
+  const matches = text.match(/\[\[(.*?)\]\]/g) || [];
+  return matches
+    .map(match => match.replace(/^\[\[/, '').replace(/\]\]$/, '').trim())
+    .filter(Boolean)
+    .slice(0, 50);
+}
+
 function validateDropInput(input) {
   const subject = typeof input.subject === 'string' ? input.subject.trim() : '';
+  const category = typeof input.category === 'string' ? input.category.trim() : subject;
+  const project = typeof input.project === 'string' ? input.project.trim() : '';
   const content = typeof input.content === 'string' ? input.content.trim() : '';
   const priority = typeof input.priority === 'string' ? input.priority.trim().toLowerCase() : '';
-
-  if (!subject || subject.length > 100) {
-    return { ok: false, error: 'Subject is required and must be 100 characters or fewer.' };
-  }
+  const status = typeof input.status === 'string' ? input.status.trim().toLowerCase() : 'idea';
+  const title = deriveDropTitle(input);
+  const tags = normalizeTags(input.tags);
 
   if (!content || content.length > 10000) {
     return { ok: false, error: 'Content is required and must be 10,000 characters or fewer.' };
+  }
+
+  if (category && category.length > 100) {
+    return { ok: false, error: 'Category/subject must be 100 characters or fewer.' };
+  }
+
+  if (project.length > 100) {
+    return { ok: false, error: 'Project must be 100 characters or fewer.' };
+  }
+
+  if (!title || title.length > 200) {
+    return { ok: false, error: 'Title is required and must be 200 characters or fewer.' };
   }
 
   if (!ALLOWED_PRIORITIES.has(priority)) {
     return { ok: false, error: 'Priority must be one of normal, high, or urgent.' };
   }
 
+  if (!ALLOWED_STATUSES.has(status)) {
+    return { ok: false, error: 'Status must be one of inbox, idea, researching, ready, building, archived.' };
+  }
+
   return {
     ok: true,
     value: {
-      subject,
+      title,
+      subject: category || subject || 'General',
+      category: category || subject || 'General',
+      project,
+      tags,
+      status,
+      links: extractDropLinks(content),
       content,
       priority,
     },
@@ -292,13 +362,33 @@ function applyCorsHeaders(req, res) {
 }
 
 function toClientDrop(row) {
+  const content = row.content || '';
+  const subject = row.subject || row.category || 'General';
+  const tags = Array.isArray(row.tags)
+    ? row.tags
+    : typeof row.tags === 'string'
+      ? (() => { try { return JSON.parse(row.tags); } catch { return []; } })()
+      : [];
+  const links = Array.isArray(row.links)
+    ? row.links
+    : typeof row.links === 'string'
+      ? (() => { try { return JSON.parse(row.links); } catch { return extractDropLinks(content); } })()
+      : extractDropLinks(content);
+
   return {
     id: row.id,
-    subject: row.subject,
-    content: row.content,
+    title: row.title || subject || deriveDropTitle({ content }),
+    subject,
+    category: row.category || subject,
+    project: row.project || '',
+    tags,
+    status: row.status || (row.done ? 'archived' : 'idea'),
+    links,
+    content,
     priority: row.priority,
     done: Boolean(row.done),
     date: row.date || row.created_at || new Date().toISOString(),
+    updated_at: row.updated_at || row.date || row.created_at || new Date().toISOString(),
   };
 }
 
@@ -521,13 +611,14 @@ function buildRecurringOverridePatch(body) {
 function createFileStorage() {
   return {
     async listDrops() {
-      return loadDropsFromFile();
+      const drops = await loadDropsFromFile();
+      return drops.map(toClientDrop);
     },
     async createDrop(drop) {
       const drops = await loadDropsFromFile();
       drops.unshift(drop);
       await saveDropsToFile(drops);
-      return drop;
+      return toClientDrop(drop);
     },
     async deleteDrop(id) {
       const drops = await loadDropsFromFile();
@@ -541,8 +632,10 @@ function createFileStorage() {
       const drop = drops.find(item => item.id === id);
       if (!drop) return null;
       drop.done = done;
+      drop.status = done ? 'archived' : (drop.status === 'archived' ? 'idea' : (drop.status || 'idea'));
+      drop.updated_at = new Date().toISOString();
       await saveDropsToFile(drops);
-      return drop;
+      return toClientDrop(drop);
     },
     async listMemories() {
       return loadMemoriesFromFile();
@@ -671,6 +764,13 @@ async function createPostgresStorage() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS title VARCHAR(200)`);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS category VARCHAR(100)`);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS project VARCHAR(100) NOT NULL DEFAULT ''`);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS status VARCHAR(32) NOT NULL DEFAULT 'idea'`);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS tags JSONB NOT NULL DEFAULT '[]'::jsonb`);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS links JSONB NOT NULL DEFAULT '[]'::jsonb`);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS memories (
@@ -753,13 +853,20 @@ async function createPostgresStorage() {
         for (const drop of legacyDrops) {
           await client.query(
             `
-              INSERT INTO drops (id, subject, content, priority, done, created_at)
-              VALUES ($1, $2, $3, $4, $5, $6)
+              INSERT INTO drops (id, title, subject, category, project, status, tags, links,
+                                 content, priority, done, created_at, updated_at)
+              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$12)
               ON CONFLICT (id) DO NOTHING
             `,
             [
               drop.id,
-              drop.subject,
+              drop.title || drop.subject || 'Untitled drop',
+              drop.subject || 'General',
+              drop.category || drop.subject || 'General',
+              drop.project || '',
+              drop.status || (drop.done ? 'archived' : 'idea'),
+              JSON.stringify(Array.isArray(drop.tags) ? drop.tags : []),
+              JSON.stringify(Array.isArray(drop.links) ? drop.links : extractDropLinks(drop.content || '')),
               drop.content,
               drop.priority,
               Boolean(drop.done),
@@ -780,20 +887,27 @@ async function createPostgresStorage() {
   return {
     async listDrops() {
       const result = await pool.query(`
-        SELECT id, subject, content, priority, done, created_at AS date
+        SELECT id, title, subject, category, project, status, tags, links,
+               content, priority, done, created_at AS date, updated_at
         FROM drops
-        ORDER BY created_at DESC
+        ORDER BY updated_at DESC, created_at DESC
       `);
       return result.rows.map(toClientDrop);
     },
     async createDrop(drop) {
       const result = await pool.query(
         `
-          INSERT INTO drops (id, subject, content, priority, done, created_at)
-          VALUES ($1, $2, $3, $4, $5, $6)
-          RETURNING id, subject, content, priority, done, created_at AS date
+          INSERT INTO drops (id, title, subject, category, project, status, tags, links,
+                             content, priority, done, created_at, updated_at)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$12)
+          RETURNING id, title, subject, category, project, status, tags, links,
+                    content, priority, done, created_at AS date, updated_at
         `,
-        [drop.id, drop.subject, drop.content, drop.priority, Boolean(drop.done), drop.date]
+        [
+          drop.id, drop.title, drop.subject, drop.category, drop.project,
+          drop.status, JSON.stringify(drop.tags || []), JSON.stringify(drop.links || []),
+          drop.content, drop.priority, Boolean(drop.done), drop.date,
+        ]
       );
       return toClientDrop(result.rows[0]);
     },
@@ -802,14 +916,16 @@ async function createPostgresStorage() {
       return result.rowCount > 0;
     },
     async updateDropDone(id, done) {
+      const nextStatus = done ? 'archived' : 'idea';
       const result = await pool.query(
         `
           UPDATE drops
-          SET done = $2
+          SET done = $2, status = $3, updated_at = NOW()
           WHERE id = $1
-          RETURNING id, subject, content, priority, done, created_at AS date
+          RETURNING id, title, subject, category, project, status, tags, links,
+                    content, priority, done, created_at AS date, updated_at
         `,
-        [id, done]
+        [id, done, nextStatus]
       );
       return result.rows[0] ? toClientDrop(result.rows[0]) : null;
     },
