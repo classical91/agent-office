@@ -1490,7 +1490,7 @@
 
   <!-- OFFICE VIEW -->
   <!-- SVG ISOMETRIC OFFICE ROOM VIEW -->
-<div class="view active" id="view-office" style="overflow:auto; background:#0a0c11;">
+<div class="view active" id="view-office" style="overflow:hidden; background:#0a0c11; height:100%;">
     <div class="office" id="officeArea" style="position:relative; width:100%; height:100%; min-width:1560px; min-height:1020px;">
       <canvas id="officeCanvas"></canvas>
     </div>
@@ -2499,8 +2499,8 @@ const POSITIONS = [
 const OFFICE_SCENE = {
   gridW: 14,
   gridH: 11,
-  tileRatio: 0.06,
-  maxTileW: 84,
+  tileRatio: 0.055,
+  maxTileW: 60,
   originXRatio: 0.5,
   originYRatio: 0.14,
   platformLiftRatio: 1.55,
@@ -2635,8 +2635,11 @@ function projectAgentPosition(agent, metrics = getOfficeMetrics(officeArea.clien
 }
 
 function resizeCanvas() {
+  const parent = officeArea.parentElement;
+  const h = parent ? parent.clientHeight : window.innerHeight;
+  officeArea.style.height = h + 'px';
   canvas.width = officeArea.clientWidth;
-  canvas.height = officeArea.clientHeight;
+  canvas.height = Math.max(officeArea.clientHeight, 320);
   drawOffice();
 }
 
