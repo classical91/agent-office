@@ -3141,12 +3141,30 @@ const canvas = {
   get height() { return officesvg ? officesvg.clientHeight || 720 : 720; }
 };
 const ctx = null; // SVG mode - no canvas context
+// SVG floor is drawn in viewBox coords (see gen_room.js):
+//   tile (gx, gy) top point = (550 + (gx - gy) * 40, 295 + (gx + gy) * 20)
+//   tile rhombus is 80 wide × 40 tall; center = top + (0, 20)
+// The agent <div> is positioned in CSS px relative to officeArea, so we scale
+// viewBox → CSS px by (clientWidth / viewBoxWidth).
+const SVG_VB_W = 1100;
+const SVG_VB_H = 720;
+const SVG_OX = 550;   // viewBox x of tile (0,0) top
+const SVG_OY = 295;   // viewBox y of tile (0,0) top
+const SVG_HW = 40;    // half tile width  (viewBox)
+const SVG_HH = 20;    // half tile height (viewBox)
+
+// The pixel-art avatar inside .agent-char has its feet ~10 CSS px above the
+// bottom of its wrapper (agent-pixel sits at bottom:8px, shoes occupy 2 more
+// CSS px above the canvas bottom). Shift the projection down by that much so
+// the feet actually plant on the tile instead of floating above it.
+const AGENT_FOOT_OFFSET_PX = 10;
+
 function getOfficeMetrics(width = canvas.width, height = canvas.height) {
-  const tileW = Math.min(width * OFFICE_SCENE.tileRatio, OFFICE_SCENE.maxTileW);
-  const tileH = tileW * 0.5;
-  const originX = width * OFFICE_SCENE.originXRatio;
-  const originY = Math.max(148, height * OFFICE_SCENE.originYRatio);
-  const platformLift = tileH * OFFICE_SCENE.platformLiftRatio;
+  const scale = width / SVG_VB_W;
+  const tileW = 2 * SVG_HW * scale;
+  const tileH = 2 * SVG_HH * scale;
+  const originX = SVG_OX * scale;
+  const originY = (SVG_OY + SVG_HH) * scale; // tile (0,0) center, CSS px
   const iso = (gx, gy, z = 0) => ({
     x: originX + (gx - gy) * tileW / 2,
     y: originY + (gx + gy) * tileH / 2 - z,
@@ -3160,15 +3178,19 @@ function getOfficeMetrics(width = canvas.width, height = canvas.height) {
     originY,
     gridW: OFFICE_SCENE.gridW,
     gridH: OFFICE_SCENE.gridH,
-    platformLift,
+    platformLift: 0,
+    scale,
     iso,
   };
 }
 
 function projectAgentPosition(agent, metrics = getOfficeMetrics(officeArea.clientWidth, officeArea.clientHeight)) {
-  const point = metrics.iso(agent.pos.gx, agent.pos.gy, metrics.platformLift + 2);
+  const point = metrics.iso(agent.pos.gx, agent.pos.gy, 0);
   const depth = Math.max(0.08, Math.min(0.96, (agent.pos.gx + agent.pos.gy) / (metrics.gridW + metrics.gridH)));
-  return { x: point.x, y: point.y, depth };
+  // AGENT_FOOT_OFFSET_PX is measured on an unscaled avatar. The avatar gets
+  // scaled by depthScale(depth) via --agent-scale (transform-origin bottom),
+  // so compensate here to keep feet glued to the tile at every depth.
+  return { x: point.x, y: point.y + AGENT_FOOT_OFFSET_PX * depthScale(depth), depth };
 }
 
 function resizeCanvas() {
