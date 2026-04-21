@@ -3548,7 +3548,446 @@ let agentState = AGENTS.map((agent) => {
 
 let feedItems = [];
 let feedCount = 0;
-</script>
+
+
+// SVG office shims (compatibility with canvas-based movement engine)
+const officesvg = document.getElementById('officesvg');
+const officeArea = officesvg ? officesvg.parentElement : document.getElementById('view-office');
+const canvas = {
+  get width() { return officesvg ? officesvg.clientWidth || 1100 : 1100; },
+  get height() { return officesvg ? officesvg.clientHeight || 720 : 720; }
+};
+const ctx = null; // SVG mode - no canvas context
+function getOfficeMetrics(width = canvas.width, height = canvas.height) {
+  const tileW = Math.min(width * OFFICE_SCENE.tileRatio, OFFICE_SCENE.maxTileW);
+  const tileH = tileW * 0.5;
+  const originX = width * OFFICE_SCENE.originXRatio;
+  const originY = Math.max(148, height * OFFICE_SCENE.originYRatio);
+  const platformLift = tileH * OFFICE_SCENE.platformLiftRatio;
+  const iso = (gx, gy, z = 0) => ({
+    x: originX + (gx - gy) * tileW / 2,
+    y: originY + (gx + gy) * tileH / 2 - z,
+  });
+  return {
+    width,
+    height,
+    tileW,
+    tileH,
+    originX,
+    originY,
+    gridW: OFFICE_SCENE.gridW,
+    gridH: OFFICE_SCENE.gridH,
+    platformLift,
+    iso,
+  };
+}
+
+function projectAgentPosition(agent, metrics = getOfficeMetrics(officeArea.clientWidth, officeArea.clientHeight)) {
+  const point = metrics.iso(agent.pos.gx, agent.pos.gy, metrics.platformLift + 2);
+  const depth = Math.max(0.08, Math.min(0.96, (agent.pos.gx + agent.pos.gy) / (metrics.gridW + metrics.gridH)));
+  return { x: point.x, y: point.y, depth };
+}
+
+function resizeCanvas() {
+  canvas.width = officeArea.clientWidth;
+  canvas.height = officeArea.clientHeight;
+  drawOffice();
+}
+
+function drawOffice() { /* SVG mode: rendering handled by renderAgents() */ }
+
+function depthScale(yNorm) {
+  return 0.78 + (yNorm * 0.5);
+}
+
+function applyAgentDepth(el, yNorm) {
+  const scale = depthScale(yNorm);
+  el.style.setProperty('--agent-scale', scale.toFixed(2));
+  el.style.setProperty('--agent-z', String(100 + Math.round(yNorm * 100)));
+  el.style.filter = `drop-shadow(0 ${Math.round(14 * scale)}px ${Math.round(24 * scale)}px rgba(0,0,0,0.42))`;
+  const label = el.querySelector('.agent-label');
+  if (label) label.style.opacity = (0.84 + yNorm * 0.18).toFixed(2);
+}
+
+function getAgentLook(agent) {
+  const looks = {
+    devin: {
+      skin: '#f1c8a1', hair: '#47311f', shirt: '#2563eb', pants: '#111827', chair: '#475569', pose: 'stand', facing: 'S', accessory: 'glasses'
+    },
+    traderclaw: {
+      skin: '#9f6a43', hair: '#151515', shirt: '#16a34a', pants: '#14532d', chair: '#166534', pose: 'seated', facing: 'SE', accessory: 'beard'
+    },
+    webclaw: {
+      skin: '#e4b78f', hair: '#2a2a2a', shirt: '#3b82f6', pants: '#1e293b', chair: '#2563eb', pose: 'seated', facing: 'SW', accessory: 'glasses'
+    },
+    xhunter: {
+      skin: '#8e5c3b', hair: '#111827', shirt: '#14b8a6', pants: '#111827', chair: '#0891b2', pose: 'stand', facing: 'W', accessory: 'headset'
+    },
+    nova: {
+      skin: '#dba77d', hair: '#9a3412', shirt: '#f97316', pants: '#431407', chair: '#ea580c', pose: 'seated', facing: 'NE'
+    },
+    lyra: {
+      skin: '#f0c2ab', hair: '#7c3aed', shirt: '#a855f7', pants: '#312e81', chair: '#7c3aed', pose: 'stand', facing: 'SE'
+    },
+    xbot: {
+      skin: '#d8ab8b', hair: '#ec4899', shirt: '#ec4899', pants: '#4a044e', chair: '#db2777', pose: 'stand', facing: 'S', accessory: 'headset'
+    },
+    guardian: {
+      skin: '#9c6b49', hair: '#334155', shirt: '#475569', pants: '#020617', chair: '#334155', pose: 'stand', facing: 'W', accessory: 'beard'
+    },
+    fatherclaw: {
+      skin: '#b88564', hair: '#e2e8f0', shirt: '#6366f1', pants: '#111827', chair: '#4338ca', pose: 'seated', facing: 'S', accessory: 'glasses'
+    },
+    rig: {
+      skin: '#e0b090', hair: '#1a1a2e', shirt: '#10b981', pants: '#064e3b', chair: '#059669', pose: 'seated', facing: 'NE', accessory: 'glasses'
+    },
+  };
+  const base = looks[agent.id] || {
+    skin: '#d9ab89', hair: '#334155', shirt: agent.color, pants: '#1f2937', chair: agent.color, pose: 'stand', facing: 'S'
+  };
+  return {
+    ...base,
+    ...(agent.lookState || {}),
+  };
+}
+
+function hexToRgb(hex) {
+  const clean = hex.replace('#', '');
+  return [0, 2, 4].map(i => parseInt(clean.slice(i, i + 2), 16));
+}
+
+function shadeHex(hex, amount = 0) {
+  const [r, g, b] = hexToRgb(hex);
+  const mix = (v) => amount >= 0 ? v + (255 - v) * amount : v * (1 + amount);
+  return `rgb(${Math.max(0, Math.min(255, Math.round(mix(r))))}, ${Math.max(0, Math.min(255, Math.round(mix(g))))}, ${Math.max(0, Math.min(255, Math.round(mix(b))))})`;
+}
+
+function drawPixelAgent(canvasEl, look, agent) {
+  if (!canvasEl) return;
+  const agentId = agent ? agent.id : null;
+  const spriteKey = agentId && HABBO_SPRITES[agentId] ? agentId : null;
+
+  if (spriteKey) {
+    // Use real Habbo sprite
+    const c = canvasEl.getContext('2d', { willReadFrequently: true });
+    c.imageSmoothingEnabled = false;
+    c.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    const img = new Image();
+    img.onload = () => {
+      c.clearRect(0, 0, canvasEl.width, canvasEl.height);
+      // Scale to fit canvas maintaining aspect ratio
+      const scale = Math.min(canvasEl.width / img.width, canvasEl.height / img.height);
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const x = Math.round((canvasEl.width - w) / 2);
+      const y = canvasEl.height - h;
+      c.drawImage(img, x, y, w, h);
+    };
+    img.src = HABBO_SPRITES[spriteKey];
+    return;
+  }
+
+  // Fallback: original pixel art renderer
+  const c = canvasEl.getContext('2d', { willReadFrequently: true });
+  c.imageSmoothingEnabled = false;
+  c.clearRect(0, 0, canvasEl.width, canvasEl.height);
+  const dot = (x, y, color) => { c.fillStyle = color; c.fillRect(x, y, 1, 1); };
+  const bx = (x, y, w, h, color) => { c.fillStyle = color; c.fillRect(x, y, w, h); };
+  const sk = look.skin || '#f1c8a1';
+  const hr = look.hair || '#334155';
+  const sh = look.shirt || '#3b82f6';
+  const pnt = look.pants || '#1f2937';
+  bx(8, 2, 10, 10, sk);
+  bx(6, 12, 14, 10, sh);
+  bx(8, 22, 5, 8, pnt);
+  bx(13, 22, 5, 8, pnt);
+  bx(5, 2, 16, 5, hr);
+}
+
+function renderAgents() {
+  document.querySelectorAll('.agent-char').forEach(el => el.remove());
+
+  agentState.forEach(agent => {
+    const el = document.createElement('div');
+    el.className = 'agent-char';
+    el.id = 'agent-' + agent.id;
+
+    el.innerHTML = `
+      <div class="agent-label">
+        <strong>${agent.name}</strong>
+        <span>${agent.currentTask}</span>
+      </div>
+      <div class="agent-avatar">
+        <div class="agent-shadow"></div>
+        <div class="agent-chair"></div>
+        <canvas class="agent-pixel" width="26" height="36"></canvas>
+        <div class="status-ring"></div>
+      </div>
+    `;
+
+    officeArea.appendChild(el);
+    syncAgentElement(agent);
+  });
+}
+
+let officeHasAutoCentered = false;
+
+function centerOfficeView(force = false) {
+  if (officeHasAutoCentered && !force) return;
+  const officeView = document.getElementById('view-office');
+  if (!officeView) return;
+
+  officeView.scrollLeft = Math.max(0, Math.round((officeArea.scrollWidth - officeView.clientWidth) / 2));
+  officeView.scrollTop = Math.max(0, Math.round((officeArea.scrollHeight - officeView.clientHeight) * 0.08));
+  officeHasAutoCentered = true;
+}
+
+// ─── STATUS BAR ───────────────────────────────────────────────
+function renderStatusBar() {
+  const bar = document.getElementById('statusbar');
+  bar.innerHTML = agentState.map(agent => `
+    <div class="status-card">
+      <div class="status-card-avatar" style="background: ${agent.color}33; border: 1px solid ${agent.color}55;">
+        ${agent.emoji}
+      </div>
+      <div class="status-card-info">
+        <div class="status-card-name">${agent.name}</div>
+        <div class="status-card-task">${agent.currentTask}</div>
+      </div>
+      <div class="status-dot ${agent.status === 'active' ? 'dot-active' : agent.status === 'idle' ? 'dot-idle' : 'dot-offline'}"></div>
+    </div>
+  `).join('');
+}
+
+// ─── ACTIVITY FEED ────────────────────────────────────────────
+function addFeedItem(agent, msg) {
+  feedCount++;
+  const now = new Date();
+  const time = 'just now';
+
+  const item = document.createElement('div');
+  item.className = 'feed-item';
+  item.innerHTML = `
+    <div class="feed-item-top">
+      <div class="feed-avatar" style="background: ${agent.color}33; border: 1px solid ${agent.color}44;">
+        ${agent.emoji}
+      </div>
+      <span class="feed-name" style="color: ${agent.color}">${agent.name}</span>
+      <span class="feed-tag">${agent.role}</span>
+    </div>
+    <div class="feed-msg">${msg}</div>
+    <div class="feed-time">${time}</div>
+  `;
+
+  const list = document.getElementById('feedList');
+  list.insertBefore(item, list.firstChild);
+
+  // Keep max 30 items
+  while (list.children.length > 30) list.removeChild(list.lastChild);
+
+  feedCount = list.children.length;
+  document.getElementById('feedCount').textContent = feedCount;
+}
+
+// ─── AUTO-UPDATE LOOP ─────────────────────────────────────────
+function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function screenFacingFromDelta(dx, dy, fallback = 'S') {
+  const vertical = Math.abs(dy) < 6 ? '' : (dy < 0 ? 'N' : 'S');
+  const horizontal = Math.abs(dx) < 6 ? '' : (dx < 0 ? 'W' : 'E');
+  return (vertical + horizontal) || fallback;
+}
+
+function syncAgentElement(agent) {
+  const el = document.getElementById('agent-' + agent.id);
+  if (!el) return;
+
+  const look = getAgentLook(agent);
+  const projected = projectAgentPosition(agent);
+  el.style.left = projected.x + 'px';
+  el.style.top = projected.y + 'px';
+  el.style.setProperty('--travel-ms', `${agent.travelMs || 2200}ms`);
+  el.classList.toggle('agent-moving', look.motion === 'walking');
+
+  const labelName = el.querySelector('.agent-label strong');
+  const labelTask = el.querySelector('.agent-label span');
+  if (labelName) labelName.textContent = agent.name;
+  if (labelTask) labelTask.textContent = agent.currentTask;
+
+  const avatar = el.querySelector('.agent-avatar');
+  if (avatar) {
+    const classes = ['agent-avatar'];
+    if (look.pose === 'seated') classes.push('seated');
+    if (look.motion) classes.push(`motion-${look.motion}`);
+    avatar.className = classes.join(' ');
+    avatar.style.setProperty('--chair', look.chair);
+  }
+
+  const ring = el.querySelector('.status-ring');
+  if (ring) {
+    ring.style.background = agent.status === 'active'
+      ? 'var(--green)'
+      : agent.status === 'idle'
+        ? 'var(--yellow)'
+        : 'var(--muted)';
+  }
+
+  applyAgentDepth(el, projected.depth);
+  drawPixelAgent(el.querySelector('.agent-pixel'), look, agent);
+}
+
+function nextWorkStop(agent) {
+  const route = agent.route || [];
+  if (!route.length) {
+    return { gx: agent.pos.gx, gy: agent.pos.gy, pose: 'stand', facing: agent.lookState?.facing || 'S', motion: 'monitoring', tasks: agent.tasks };
+  }
+
+  if (Math.random() < 0.24) {
+    return route[agent.routeIndex];
+  }
+
+  const stride = route.length > 3 && Math.random() > 0.78 ? 2 : 1;
+  agent.routeIndex = (agent.routeIndex + stride) % route.length;
+  return route[agent.routeIndex];
+}
+
+function updateAgentTask(agent) {
+  const now = Date.now();
+  if (agent.availableAt && now < agent.availableAt) return false;
+
+  const stop = nextWorkStop(agent);
+  const metrics = getOfficeMetrics(officeArea.clientWidth, officeArea.clientHeight);
+  const fromPoint = projectAgentPosition({ pos: { gx: agent.pos.gx, gy: agent.pos.gy } }, metrics);
+  const toPoint = projectAgentPosition({ pos: { gx: stop.gx, gy: stop.gy } }, metrics);
+  const dx = toPoint.x - fromPoint.x;
+  const dy = toPoint.y - fromPoint.y;
+  const taskPool = stop.tasks && stop.tasks.length ? stop.tasks : agent.tasks;
+  const nextTask = randomFrom(taskPool);
+  const isIdleTask = nextTask.toLowerCase().includes('idle');
+  const isMoving = Math.hypot(dx, dy) > 10;
+
+  window.clearTimeout(agent.arrivalTimer);
+  agent.currentTask = nextTask;
+  agent.status = isIdleTask ? 'idle' : (stop.status || (Math.random() > 0.18 ? 'active' : 'idle'));
+  agent.pos = { gx: stop.gx, gy: stop.gy };
+
+  if (!isMoving) {
+    agent.lookState = {
+      pose: stop.pose || 'stand',
+      facing: stop.facing || agent.lookState?.facing || 'S',
+      motion: stop.motion || (stop.pose === 'seated' ? 'typing' : 'monitoring'),
+    };
+    agent.travelMs = 1000;
+    agent.availableAt = now + 900;
+    syncAgentElement(agent);
+    return true;
+  }
+
+  agent.travelMs = Math.max(1450, Math.min(3200, Math.round(900 + Math.hypot(dx, dy) * 3.15)));
+  agent.availableAt = now + agent.travelMs + 260;
+  agent.lookState = {
+    pose: 'stand',
+    facing: screenFacingFromDelta(dx, dy, stop.facing || agent.lookState?.facing || 'S'),
+    motion: 'walking',
+  };
+  syncAgentElement(agent);
+
+  agent.arrivalTimer = window.setTimeout(() => {
+    agent.lookState = {
+      pose: stop.pose || 'stand',
+      facing: stop.facing || screenFacingFromDelta(dx, dy, agent.lookState?.facing || 'S'),
+      motion: stop.motion || (stop.pose === 'seated' ? 'typing' : 'monitoring'),
+    };
+    syncAgentElement(agent);
+  }, Math.max(240, agent.travelMs - 180));
+
+  return true;
+}
+
+function tick() {
+  const available = agentState.filter(agent => !agent.availableAt || Date.now() >= agent.availableAt);
+  if (!available.length) return;
+
+  const desired = Math.max(1, Math.min(available.length, Math.random() > 0.55 ? 3 : 2));
+  const selected = [];
+  while (selected.length < desired) {
+    const candidate = randomFrom(available);
+    if (!selected.includes(candidate)) selected.push(candidate);
+  }
+
+  selected.forEach(agent => {
+    if (updateAgentTask(agent) && Math.random() > 0.38) {
+      addFeedItem(agent, randomFrom(agent.feed));
+    }
+  });
+
+  renderStatusBar();
+
+  const activeCount = agentState.filter(a => a.status === 'active').length;
+  document.getElementById('onlineCount').textContent = activeCount;
+}
+
+// ─── CLOCK ────────────────────────────────────────────────────
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-CA', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  });
+}
+
+// ─── VIEW SWITCHER ────────────────────────────────────────────
+const VIEW_HANDLERS = {
+  office: { enter: () => { resizeCanvas(); renderAgents(); centerOfficeView(); }, focus: false },
+  org: { focus: false }
+};
+VIEW_HANDLERS.calendar = { enter: () => { if (window.CAL) window.CAL.render(); }, focus: false };
+let currentView = 'office';
+
+function switchView(view, navEl) {
+  closeMobileNav();
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  if (navEl) navEl.classList.add('active');
+  const handler = VIEW_HANDLERS[view];
+  if (handler && typeof handler.enter === 'function') handler.enter();
+  currentView = view;
+}
+
+// ─── INIT ─────────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  officeHasAutoCentered = false;
+  resizeCanvas();
+  renderAgents();
+  centerOfficeView(true);
+});
+resizeCanvas();
+renderAgents();
+centerOfficeView(true);
+renderStatusBar();
+
+// Seed initial feed
+agentState.forEach(agent => addFeedItem(agent, randomFrom(agent.feed)));
+
+// Kick off loops
+let tickInterval = null;
+function startTickLoop() {
+  if (!tickInterval) tickInterval = setInterval(tick, 3500);
+}
+function stopTickLoop() {
+  if (!tickInterval) return;
+  clearInterval(tickInterval);
+  tickInterval = null;
+}
+
+startTickLoop();
+
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stopTickLoop();
+  else startTickLoop();
+});
+
+</script>
 
 <!-- ── DECISION ENGINE ─────────────────────────────────────── -->
 <script>
