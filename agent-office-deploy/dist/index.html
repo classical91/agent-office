@@ -3671,14 +3671,14 @@ function switchView(view, navEl) {
 // ─── INIT ─────────────────────────────────────────────────────
 window.addEventListener('resize', () => {
   officeHasAutoCentered = false;
-  resizeCanvas();
-  renderAgents();
+  // resizeCanvas n/a
+  // resizeCanvas n/a - SVG room
   centerOfficeView(true);
 });
 resizeCanvas();
-renderAgents();
-centerOfficeView(true);
-renderStatusBar();
+// init below
+  document.addEventListener('DOMContentLoaded', function() { renderAgents(); centerOfficeView(true); renderStatusBar(); });
+} else { renderAgents(); centerOfficeView(true); renderStatusBar(); }
 
 // Seed initial feed
 agentState.forEach(agent => addFeedItem(agent, randomFrom(agent.feed)));
