@@ -1515,7 +1515,7 @@
         <div class="nav-item" onclick="switchView('dropbox', this)"><span class="icon">📥</span> Dropbox</div>
         <div class="nav-item active" onclick="switchView('office', this)"><span class="icon">🏢</span> Office</div>
         <div class="nav-item" onclick="switchView('org', this)"><span class="icon">🗂️</span> Org Chart</div>
-        <div class="nav-item" onclick="switchView('memory', this)"><span class="icon">🧠</span> Memory</div>
+        <div class="nav-item" onclick="switchView('memory', this)"><span class="icon">🧠</span> Agent Brain</div>
         <div class="nav-item" onclick="switchView('calendar', this)"><span class="icon">📅</span> Calendar</div>
       </div>
     </div>
@@ -2665,12 +2665,17 @@
       <!-- Header -->
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; gap:16px;">
         <div>
-          <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">🧠 MEMORY</div>
+          <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">🧠 AGENT BRAIN</div>
           <div style="font-size:13px; color:var(--muted);">Agent memory banks — notes, learnings, and context per bot.</div>
         </div>
         <button onclick="MEM.showForm()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 20px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap; -webkit-tap-highlight-color:transparent;">
           <span>＋</span> New Memory
         </button>
+      </div>
+      <!-- Brain Tab Bar -->
+      <div id="brain-tabs" style="display:flex;gap:4px;margin-bottom:28px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:4px;">
+        <button id="brain-tab-memory" onclick="BRAIN.switchTab('memory')" style="flex:1;padding:9px 16px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff;transition:all 0.15s;font-family:inherit;">🧠 Memory</button>
+        <button id="brain-tab-config" onclick="BRAIN.switchTab('config')" style="flex:1;padding:9px 16px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);transition:all 0.15s;font-family:inherit;">📄 Config Files</button>
       </div>
 
       <!-- Add form (hidden by default) -->
@@ -2700,6 +2705,10 @@
 
       <!-- Memory list -->
       <div id="mem-list"></div>
+      <!-- Config Files Panel -->
+      <div id="brain-config-panel" style="display:none;">
+        <div id="brain-config-content"></div>
+      </div>
 
     </div>
   </div>
@@ -4689,7 +4698,62 @@ VIEW_HANDLERS.traderclaw = { enter: () => { if (typeof DE !== 'undefined') DE.re
 VIEW_HANDLERS.lyra       = { enter: () => { if (typeof SORA !== 'undefined') SORA.render(); }, focus: true };
 VIEW_HANDLERS.calendar   = { enter: () => { if (window.CAL) CAL.render(); }, focus: false, feedOnly: true };
 VIEW_HANDLERS.dropbox    = { enter: () => enterDropboxView(), focus: true };
-VIEW_HANDLERS.memory     = { enter: () => { if (typeof MEM !== 'undefined') MEM.render(); }, focus: true };
+// ─── BRAIN (Agent Brain tabs) ────────────────────────────────────────────────
+const BRAIN = {
+  activeTab: 'memory',
+  configLoaded: false,
+
+  switchTab(tab) {
+    this.activeTab = tab;
+    const memPanel  = document.getElementById('memory-app').querySelector('#mem-form').parentElement;
+    const memSections = ['mem-form','mem-roster','mem-filters','mem-list'].map(id => document.getElementById(id)).filter(Boolean);
+    const configPanel = document.getElementById('brain-config-panel');
+    const tabMemBtn   = document.getElementById('brain-tab-memory');
+    const tabCfgBtn   = document.getElementById('brain-tab-config');
+
+    const ON  = 'background:var(--accent);color:#fff;';
+    const OFF = 'background:transparent;color:var(--muted);';
+
+    if (tab === 'memory') {
+      memSections.forEach(el => el.style.display = '');
+      configPanel.style.display = 'none';
+      tabMemBtn.style.cssText += ON;
+      tabCfgBtn.style.cssText += OFF;
+    } else {
+      memSections.forEach(el => el.style.display = 'none');
+      configPanel.style.display = 'block';
+      tabMemBtn.style.cssText += OFF;
+      tabCfgBtn.style.cssText += ON;
+      if (!this.configLoaded) this.loadConfig();
+    }
+  },
+
+  async loadConfig() {
+    const wrap = document.getElementById('brain-config-content');
+    wrap.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center;">Loading config files...</div>';
+    try {
+      const res = await fetch('/api/config-files');
+      const data = await res.json();
+      const FILES = ['AGENTS.md','SOUL.md','IDENTITY.md','USER.md','TOOLS.md','HEARTBEAT.md','MEMORY.md'];
+      wrap.innerHTML = FILES.map(name => {
+        const content = data[name];
+        return `
+          <div style="margin-bottom:20px;background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02);">
+              <span style="font-family:'Press Start 2P',monospace;font-size:10px;color:var(--accent);">${name}</span>
+              ${content ? '<span style="font-size:11px;color:var(--muted);">' + content.split('\n').length + ' lines</span>' : '<span style="font-size:11px;color:var(--red);">NOT FOUND</span>'}
+            </div>
+            <pre style="margin:0;padding:16px 18px;font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-word;max-height:400px;overflow-y:auto;font-family:''IBM Plex Mono'',monospace;">${content ? content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '<span style="color:var(--muted);">File not found on server. Upload via CONFIG_FILES_DIR env var.</span>'}</pre>
+          </div>`;
+      }).join('');
+      this.configLoaded = true;
+    } catch(e) {
+      wrap.innerHTML = '<div style="color:var(--red);padding:40px;text-align:center;">Failed to load config files: ' + e.message + '</div>';
+    }
+  }
+};
+
+VIEW_HANDLERS.memory     = { enter: () => { if (typeof MEM !== 'undefined') MEM.render(); BRAIN.switchTab(BRAIN.activeTab); }, focus: true };
 VIEW_HANDLERS.office     = { enter: null, focus: false };
 VIEW_HANDLERS.org        = { enter: null, focus: false };
 

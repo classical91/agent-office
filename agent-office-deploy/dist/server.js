@@ -1475,6 +1475,19 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // ── Config files (workspace markdown) ──────────────────────
+    if (req.method === 'GET' && pathname === '/api/config-files') {
+      const CONFIG_DIR = process.env.CONFIG_FILES_DIR || path.join(__dirname, 'config-files');
+      const FILE_NAMES = ['AGENTS.md','SOUL.md','TOOLS.md','IDENTITY.md','USER.md','HEARTBEAT.md','MEMORY.md'];
+      const results = {};
+      await Promise.all(FILE_NAMES.map(async name => {
+        try { results[name] = await fs.readFile(path.join(CONFIG_DIR, name), 'utf8'); }
+        catch { results[name] = null; }
+      }));
+      sendJson(res, 200, results);
+      return;
+    }
+
     // ------------------------------------------------------------
 
     await handleStatic(req, res, pathname);
