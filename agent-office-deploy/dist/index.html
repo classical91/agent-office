@@ -4638,6 +4638,8 @@ document.getElementById('new-drop-btn').addEventListener('click', async () => {
   if (!isOpen) {
     const el = document.getElementById('drop-title');
     if (el) el.focus();
+    const subjectEl = document.getElementById('drop-subject');
+    if (subjectEl && dropboxState.filters.subject) subjectEl.value = dropboxState.filters.subject;
   }
 });
 
