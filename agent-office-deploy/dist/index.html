@@ -4705,27 +4705,17 @@ const BRAIN = {
   agentCache: {},
 
   switchTab(tab) {
+  switchTab(tab) {
     this.activeTab = tab;
     const memSections = ['mem-form','mem-roster','mem-filters','mem-list'].map(id => document.getElementById(id)).filter(Boolean);
     const newMemBtn = document.querySelector('[onclick="MEM.showForm()"]');
     const configPanel = document.getElementById('brain-config-panel');
-
     const tabCfgBtn = document.getElementById('brain-tab-config');
-
-
-
-
-
-
-
-    } else {
-      memSections.forEach(el => { el.style.display = 'none'; });
-      if (newMemBtn) newMemBtn.style.display = 'none';
-      configPanel.style.display = 'block';
-
-      tabCfgBtn.style.background = 'var(--accent)'; tabCfgBtn.style.color = '#fff';
-      if (!this.activeAgent) this.loadAgentList();
-    }
+    memSections.forEach(el => { el.style.display = 'none'; });
+    if (newMemBtn) newMemBtn.style.display = 'none';
+    configPanel.style.display = 'block';
+    if (tabCfgBtn) { tabCfgBtn.style.background = 'var(--accent)'; tabCfgBtn.style.color = '#fff'; }
+    if (!this.activeAgent) this.loadAgentList();
   },
 
   async loadAgentList() {
