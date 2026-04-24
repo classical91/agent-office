@@ -2674,8 +2674,8 @@
       </div>
       <!-- Brain Tab Bar -->
       <div id="brain-tabs" style="display:flex;gap:4px;margin-bottom:28px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:4px;">
-        <button id="brain-tab-memory" onclick="BRAIN.switchTab('memory')" style="flex:1;padding:9px 16px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff;transition:all 0.15s;font-family:inherit;">🧠 Memory</button>
-        <button id="brain-tab-config" onclick="BRAIN.switchTab('config')" style="flex:1;padding:9px 16px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--muted);transition:all 0.15s;font-family:inherit;">📄 Config Files</button>
+
+        <button id="brain-tab-config" onclick="BRAIN.switchTab('config')" style="flex:1;padding:9px 16px;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;background:var(--accent);color:#fff;transition:all 0.15s;font-family:inherit;">📄 Config Files</button>
       </div>
 
       <!-- Add form (hidden by default) -->
@@ -2695,16 +2695,16 @@
       </div>
 
       <!-- Agent Roster Cards -->
-      <div id="mem-roster" style="margin-bottom:32px;">
+      <div id="mem-roster" style="display:none;" style="margin-bottom:32px;">
         <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin-bottom:14px;">Agent Roster</div>
         <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px;" id="mem-roster-grid"></div>
       </div>
 
       <!-- Agent filter tabs -->
-      <div id="mem-filters" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px;"></div>
+      <div id="mem-filters" style="display:none;" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px;"></div>
 
       <!-- Memory list -->
-      <div id="mem-list"></div>
+      <div id="mem-list" style="display:none;"></div>
       <!-- Config Files Panel -->
       <div id="brain-config-panel" style="display:none;">
         <div id="brain-config-content"></div>
@@ -4700,7 +4700,7 @@ VIEW_HANDLERS.calendar   = { enter: () => { if (window.CAL) CAL.render(); }, foc
 VIEW_HANDLERS.dropbox    = { enter: () => enterDropboxView(), focus: true };
 // ─── BRAIN (Agent Brain tabs) ────────────────────────────────────────────────
 const BRAIN = {
-  activeTab: 'memory',
+  activeTab: 'config',
   activeAgent: null,
   agentCache: {},
 
@@ -4709,20 +4709,20 @@ const BRAIN = {
     const memSections = ['mem-form','mem-roster','mem-filters','mem-list'].map(id => document.getElementById(id)).filter(Boolean);
     const newMemBtn = document.querySelector('[onclick="MEM.showForm()"]');
     const configPanel = document.getElementById('brain-config-panel');
-    const tabMemBtn = document.getElementById('brain-tab-memory');
+
     const tabCfgBtn = document.getElementById('brain-tab-config');
 
-    if (tab === 'memory') {
-      memSections.forEach(el => { el.style.display = ''; });
-      if (newMemBtn) newMemBtn.style.display = '';
-      configPanel.style.display = 'none';
-      tabMemBtn.style.background = 'var(--accent)'; tabMemBtn.style.color = '#fff';
-      tabCfgBtn.style.background = 'transparent'; tabCfgBtn.style.color = 'var(--muted)';
+
+
+
+
+
+
     } else {
       memSections.forEach(el => { el.style.display = 'none'; });
       if (newMemBtn) newMemBtn.style.display = 'none';
       configPanel.style.display = 'block';
-      tabMemBtn.style.background = 'transparent'; tabMemBtn.style.color = 'var(--muted)';
+
       tabCfgBtn.style.background = 'var(--accent)'; tabCfgBtn.style.color = '#fff';
       if (!this.activeAgent) this.loadAgentList();
     }
