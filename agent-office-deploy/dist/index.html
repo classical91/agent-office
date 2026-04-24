@@ -1342,100 +1342,143 @@
     margin-top: 18px;
   }
 
-  /* ─── Dropbox v3 ─────────────────────────────────────────────────────────── */
-  .dropbox-view { padding: 24px; width: 100%; box-sizing: border-box; }
-  .dropbox-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
-  .dropbox-toolbar h2 { margin: 0; font-size: 16px; font-weight: 700; color: var(--text); }
+  /* ─── Dropbox v4 — light modern ────────────────────────────────────────── */
+  #view-dropbox { background: #f4f6fa !important; }
+  .dropbox-view { padding: 28px 32px; width: 100%; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  .dropbox-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+  .dropbox-toolbar h2 { margin: 0; font-size: 22px; font-weight: 800; color: #111827; letter-spacing: -0.3px; }
   .dropbox-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-  .dropbox-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+
+  /* Filters card */
+  .dropbox-filters {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
   .dropbox-filters input[type="search"],
   .dropbox-filters select {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.12);
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
     border-radius: 8px;
     padding: 8px 12px;
     font-size: 13px;
-    color: var(--text);
+    color: #374151;
     outline: none;
     font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
-  .dropbox-filters input[type="search"] { min-width: 180px; }
-  .dropbox-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; }
-  .dropbox-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-  .dropbox-quick-capture,
-  .dropbox-table-wrap,
-  .dropbox-cards-wrap,
-  .drop-detail-panel {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 14px;
-    padding: 14px;
+  .dropbox-filters input[type="search"]:focus,
+  .dropbox-filters select:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+  .dropbox-filters input[type="search"] { min-width: 200px; flex: 1; }
+
+  /* Composer panel */
+  #drop-composer-panel .dropbox-quick-capture {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    display: grid;
+    gap: 12px;
   }
-  .dropbox-quick-capture { display: grid; gap: 10px; }
-  .dropbox-quick-capture input,
-  .dropbox-quick-capture select,
-  .dropbox-quick-capture textarea {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.10);
-    border-radius: 8px;
-    padding: 10px 12px;
+  #drop-composer-panel input,
+  #drop-composer-panel select,
+  #drop-composer-panel textarea {
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-radius: 9px;
+    padding: 11px 14px;
     font-size: 14px;
-    color: var(--text);
+    color: #111827;
     font-family: inherit;
     outline: none;
     width: 100%;
     box-sizing: border-box;
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
+  #drop-composer-panel input:focus,
+  #drop-composer-panel select:focus,
+  #drop-composer-panel textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+
+  /* Layout */
+  .dropbox-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; }
+  .dropbox-main { display: flex; flex-direction: column; gap: 0; min-width: 0; }
   .dropbox-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .dropbox-row select { flex: 1; min-width: 120px; }
-  .dropbox-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .dropbox-table th,
-  .dropbox-table td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.06); text-align: left; vertical-align: top; }
-  .dropbox-table th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
-  .dropbox-table tr[data-drop-id] { cursor: pointer; }
-  .dropbox-table tr[data-drop-id]:hover { background: rgba(255,255,255,0.03); }
-  .dropbox-table tr.selected { background: rgba(124,92,255,0.12); }
-  article.drop-card { padding: 14px; border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; cursor: pointer; margin-bottom: 12px; transition: background 0.15s; }
-  article.drop-card:hover { background: rgba(255,255,255,0.03); }
-  article.drop-card.selected { background: rgba(124,92,255,0.12); }
+
+  /* Cards */
+  .dropbox-cards-wrap { display: flex; flex-direction: column; gap: 10px; }
+  article.drop-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 16px 18px;
+    cursor: pointer;
+    transition: box-shadow 0.15s, border-color 0.15s, transform 0.1s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  article.drop-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.09); border-color: #c7d2fe; transform: translateY(-1px); }
+  article.drop-card.selected { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15); }
   .drop-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-  .drop-card-top h3 { margin: 0; font-size: 14px; font-weight: 600; color: var(--text); }
-  .drop-card-badges,
-  .detail-badges,
-  .detail-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+  .drop-card-top h3 { margin: 0; font-size: 14px; font-weight: 700; color: #111827; }
+  .drop-card-badges, .detail-badges, .detail-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
   .drop-card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
-  .drop-detail-empty { color: var(--muted); font-size: 13px; padding: 20px; text-align: center; }
-  .drop-detail h3 { margin: 0 0 10px; font-size: 15px; color: var(--text); }
-  .drop-detail h4 { margin: 14px 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
-  .drop-detail p { font-size: 13px; color: var(--muted); margin: 4px 0; }
-  .drop-content-view { white-space: pre-wrap; font: 13px/1.7 inherit; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; color: var(--text); word-break: break-word; margin: 0; }
+
+  /* Detail panel */
+  .drop-detail-panel {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    height: fit-content;
+    position: sticky;
+    top: 16px;
+  }
+  .drop-detail-empty { color: #9ca3af; font-size: 13px; padding: 30px 0; text-align: center; }
+  .drop-detail h3 { margin: 0 0 12px; font-size: 16px; font-weight: 700; color: #111827; }
+  .drop-detail h4 { margin: 14px 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: #9ca3af; font-weight: 600; }
+  .drop-detail p { font-size: 13px; color: #6b7280; margin: 4px 0; }
+  .drop-content-view { white-space: pre-wrap; font: 13px/1.75 inherit; background: #f9fafb; padding: 12px 14px; border-radius: 10px; color: #374151; word-break: break-word; margin: 0; border: 1px solid #e5e7eb; }
   .detail-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
-  .dbadge { display: inline-flex; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; white-space: nowrap; }
-  .dbadge-subject  { background: rgba(124,92,255,0.18); color: #a78bfa; }
-  .dbadge-priority { background: rgba(255,140,0,0.18);  color: #fbbf24; }
-  .dbadge-status   { background: rgba(0,140,255,0.18);  color: #60a5fa; }
-  .dbadge-tag      { background: rgba(255,255,255,0.08); color: var(--muted); }
+
+  /* Badges */
+  .dbadge { display: inline-flex; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .dbadge-subject  { background: #ede9fe; color: #6d28d9; }
+  .dbadge-priority { background: #fef3c7; color: #d97706; }
+  .dbadge-status   { background: #dbeafe; color: #1d4ed8; }
+  .dbadge-tag      { background: #f3f4f6; color: #6b7280; }
+
+  /* Buttons */
   .btn {
     display: inline-flex; align-items: center; gap: 6px;
-    padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    padding: 9px 18px; border-radius: 9px; font-size: 13px; font-weight: 600;
     cursor: pointer; border: 1px solid transparent; transition: all 0.15s;
     -webkit-tap-highlight-color: transparent; font-family: inherit;
   }
-  .btn-primary  { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .btn-primary:hover { opacity: 0.88; }
-  .btn-secondary { background: transparent; color: var(--muted); border-color: var(--border); }
-  .btn-secondary:hover,
-  .btn-secondary.active { color: var(--accent); border-color: var(--accent); background: rgba(99,102,241,0.1); }
-  .btn-danger { background: transparent; color: #f87171; border-color: rgba(248,113,113,0.35); }
-  .btn-danger:hover { background: rgba(248,113,113,0.1); }
+  .btn-primary  { background: #6366f1; color: #fff; border-color: #6366f1; box-shadow: 0 1px 4px rgba(99,102,241,0.3); }
+  .btn-primary:hover { background: #4f46e5; border-color: #4f46e5; box-shadow: 0 2px 8px rgba(99,102,241,0.4); }
+  .btn-secondary { background: #fff; color: #6b7280; border-color: #d1d5db; }
+  .btn-secondary:hover { color: #6366f1; border-color: #6366f1; background: #f5f3ff; }
+  .btn-danger { background: #fff; color: #ef4444; border-color: #fca5a5; }
+  .btn-danger:hover { background: #fef2f2; }
+
+  /* Empty state */
+  .drop-empty { text-align: center; padding: 60px 20px; color: #9ca3af; }
+  .drop-empty-title { font-size: 15px; font-weight: 600; color: #6b7280; margin-bottom: 6px; }
+
   .hidden { display: none !important; }
   @media (max-width: 980px) {
     .dropbox-layout { grid-template-columns: 1fr; }
-    .drop-detail-panel { order: -1; }
+    .drop-detail-panel { order: -1; position: static; }
   }
   @media (max-width: 600px) {
-    .dropbox-view { padding: 12px; }
-    .dropbox-filters { gap: 6px; }
+    .dropbox-view { padding: 14px 12px; }
+    .dropbox-filters { gap: 8px; padding: 12px; }
   }
 </style>
 <link rel="stylesheet" href="calendar-view.css"/>
@@ -1466,11 +1509,11 @@
     <div class="nav-section">
       <div class="nav-label" onclick="toggleNav(this)">Workspace <span class="nav-chevron">▾</span></div>
       <div class="nav-items-wrap">
+        <div class="nav-item" onclick="switchView('dropbox', this)"><span class="icon">📥</span> Dropbox</div>
         <div class="nav-item active" onclick="switchView('office', this)"><span class="icon">🏢</span> Office</div>
         <div class="nav-item" onclick="switchView('org', this)"><span class="icon">🗂️</span> Org Chart</div>
         <div class="nav-item" onclick="switchView('memory', this)"><span class="icon">🧠</span> Memory</div>
         <div class="nav-item" onclick="switchView('calendar', this)"><span class="icon">📅</span> Calendar</div>
-        <div class="nav-item" onclick="switchView('dropbox', this)"><span class="icon">📥</span> Dropbox</div>
       </div>
     </div>
 
@@ -2541,7 +2584,7 @@
   </div>
 
   <!-- DROPBOX VIEW -->
-  <div class="view" id="view-dropbox" style="flex-direction:column; background:#0a0c11; overflow-y:auto;">
+  <div class="view" id="view-dropbox" style="flex-direction:column; overflow-y:auto;">
     <section id="dropbox-view" class="dropbox-view">
       <div class="dropbox-toolbar">
         <h2>Dropbox</h2>
@@ -2551,7 +2594,7 @@
       </div>
 
       <!-- Filters card - always visible -->
-      <div class="dropbox-filters" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+      <div class="dropbox-filters">
         <input id="drop-search" type="search" placeholder="Search..." style="flex:1;min-width:140px;" />
         <select id="drop-filter-subject"><option value="">All Subjects</option></select>
         <select id="drop-filter-status">
@@ -2578,8 +2621,8 @@
       </div>
 
       <!-- New Drop composer - hidden by default, shown on button click -->
-      <div id="drop-composer-panel" style="display:none;margin-bottom:16px;">
-        <div class="dropbox-quick-capture" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px;">
+      <div id="drop-composer-panel" style="display:none;margin-bottom:20px;">
+        <div class="dropbox-quick-capture">
           <input id="drop-title" type="text" placeholder="Title" />
           <input id="drop-subject" type="text" placeholder="Subject / Category" />
           <input id="drop-project" type="text" placeholder="Project" />
