@@ -1404,8 +1404,8 @@
   #drop-composer-panel select option { background: #0d0f14; color: var(--text); }
 
   /* Layout */
-  .dropbox-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; }
-  .dropbox-main { display: flex; flex-direction: column; gap: 0; min-width: 0; }
+  .dropbox-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .dropbox-row select { flex: 1; min-width: 120px; }
   .dropbox-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .dropbox-row select { flex: 1; min-width: 120px; }
 
@@ -1425,9 +1425,15 @@
   .drop-card-top h3 { margin: 0; font-size: 14px; font-weight: 700; color: var(--text); }
   .drop-card-badges, .detail-badges, .detail-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
   .drop-card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  .drop-card-meta { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .drop-card-content { white-space: pre-wrap; font: 13px/1.7 inherit; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 10px 12px; color: var(--text); margin: 8px 0; word-break: break-word; }
+  .drop-card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); flex-wrap: wrap; gap: 8px; }
+  .drop-card-date { font-size: 11px; color: var(--muted); }
+  .drop-card-actions { display: flex; gap: 6px; }
+  .btn-sm { padding: 5px 12px !important; font-size: 12px !important; }
 
   /* Detail panel */
-  .drop-detail-panel {
+
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 14px;
@@ -1436,12 +1442,12 @@
     position: sticky;
     top: 16px;
   }
-  .drop-detail-empty { color: var(--muted); font-size: 13px; padding: 30px 0; text-align: center; }
-  .drop-detail h3 { margin: 0 0 12px; font-size: 16px; font-weight: 700; color: var(--text); }
-  .drop-detail h4 { margin: 14px 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
-  .drop-detail p { font-size: 13px; color: var(--muted); margin: 4px 0; }
-  .drop-content-view { white-space: pre-wrap; font: 13px/1.75 inherit; background: rgba(255,255,255,0.03); padding: 12px 14px; border-radius: 10px; color: var(--text); word-break: break-word; margin: 0; border: 1px solid rgba(255,255,255,0.08); }
-  .detail-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+
+
+
+
+
+
 
   /* Badges */
   .dbadge { display: inline-flex; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
@@ -1470,8 +1476,8 @@
 
   .hidden { display: none !important; }
   @media (max-width: 980px) {
-    .dropbox-layout { grid-template-columns: 1fr; }
-    .drop-detail-panel { order: -1; position: static; }
+  @media (max-width: 980px) { }
+
   }
   @media (max-width: 600px) {
     .dropbox-view { padding: 14px 12px; }
@@ -2647,16 +2653,8 @@
         </div>
       </div>
 
-      <div class="dropbox-layout">
-        <div class="dropbox-main">
-          <div id="dropbox-table-wrap" class="dropbox-table-wrap hidden"></div>
-          <div id="dropbox-cards-wrap" class="dropbox-cards-wrap"></div>
-        </div>
-
-        <aside id="drop-detail-panel" class="drop-detail-panel">
-          <div class="drop-detail-empty">Select a drop to view details.</div>
-        </aside>
-      </div>
+      <div id="dropbox-table-wrap" class="dropbox-table-wrap hidden"></div>
+      <div id="dropbox-cards-wrap" class="dropbox-cards-wrap"></div>
     </section>
   </div>
 
@@ -4516,17 +4514,16 @@ function renderDropTable() {
 }
 
 function renderDropCards() {
+function renderDropCards() {
   const wrap = document.getElementById('dropbox-cards-wrap');
   if (!wrap) return;
   const items = getFilteredDrops();
-
   if (!items.length) {
     wrap.innerHTML = '<div class="drop-empty"><div class="drop-empty-title">No drops match.</div><div class="drop-empty-copy">Try adjusting the filters.</div></div>';
     return;
   }
-
   wrap.innerHTML = items.map(drop => `
-    <article class="drop-card ${drop.id === dropboxState.selectedId ? 'selected' : ''}" data-drop-id="${escAttr(drop.id)}">
+    <article class="drop-card" data-drop-id="${escAttr(drop.id)}">
       <div class="drop-card-top">
         <h3>${escHTML(drop.title || 'Untitled drop')}</h3>
         <div class="drop-card-badges">
@@ -4535,85 +4532,43 @@ function renderDropCards() {
           ${dropBadge(drop.status, 'status')}
         </div>
       </div>
-      <p>${escHTML((drop.content || '').slice(0, 180))}</p>
-      <div class="drop-card-tags">${(drop.tags || []).map(t => dropBadge(t, 'tag')).join(' ')}</div>
+      ${drop.project ? '<div class="drop-card-meta">📁 ' + escHTML(drop.project) + '</div>' : ''}
+      ${drop.content ? '<pre class="drop-card-content">' + escHTML(drop.content) + '</pre>' : ''}
+      ${(drop.tags||[]).length ? '<div class="drop-card-tags">' + drop.tags.map(t=>dropBadge(t,'tag')).join(' ') + '</div>' : ''}
+      <div class="drop-card-footer">
+        <span class="drop-card-date">${dropFormatDate(drop.updated_at || drop.date)}</span>
+        <div class="drop-card-actions">
+          <button class="btn btn-secondary btn-sm drop-archive-btn" data-id="${escAttr(drop.id)}">${drop.done ? 'Restore' : 'Archive'}</button>
+          <button class="btn btn-danger btn-sm drop-delete-btn" data-id="${escAttr(drop.id)}">Delete</button>
+        </div>
+      </div>
     </article>`).join('');
 
-  wrap.querySelectorAll('[data-drop-id]').forEach(card => {
-    card.addEventListener('click', () => {
-      dropboxState.selectedId = card.dataset.dropId;
-      renderDropbox();
+  wrap.querySelectorAll('.drop-archive-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const drop = dropboxState.drops.find(d => d.id === btn.dataset.id);
+      if (!drop) return;
+      try {
+        await requestJson(DROPS_API + '/' + drop.id, { method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ done: !drop.done }) });
+        const drops = await loadDrops(); if (drops !== null) dropboxState.drops = drops; renderDropbox();
+      } catch(e) { handleDropboxRequestError(e, 'Failed to update drop.'); }
+    });
+  });
+
+  wrap.querySelectorAll('.drop-delete-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Delete this drop?')) return;
+      try {
+        await requestJson(DROPS_API + '/' + btn.dataset.id, { method: 'DELETE' });
+        dropboxState.selectedId = null;
+        const drops = await loadDrops(); if (drops !== null) dropboxState.drops = drops; renderDropbox();
+      } catch(e) { handleDropboxRequestError(e, 'Failed to delete drop.'); }
     });
   });
 }
 
-function renderDetailPanel() {
-  const panel = document.getElementById('drop-detail-panel');
-  if (!panel) return;
-  const drop = dropboxState.drops.find(d => d.id === dropboxState.selectedId);
+function renderDetailPanel() { /* no-op: detail panel removed */ }
 
-  if (!drop) {
-    panel.innerHTML = '<div class="drop-detail-empty">Select a drop to view details.</div>';
-    return;
-  }
-
-  const backlinks = dropboxState.drops.filter(other =>
-    other.id !== drop.id &&
-    (other.links || []).some(link => link.toLowerCase() === (drop.title || '').toLowerCase())
-  );
-
-  panel.innerHTML = `
-    <div class="drop-detail">
-      <h3>${escHTML(drop.title || 'Untitled drop')}</h3>
-      <div class="detail-badges">
-        ${dropBadge(drop.subject, 'subject')}
-        ${dropBadge(drop.priority, 'priority')}
-        ${dropBadge(drop.status, 'status')}
-      </div>
-      <p><strong>Project:</strong> ${escHTML(drop.project || '—')}</p>
-      <p><strong>Created:</strong> ${dropFormatDate(drop.date)}</p>
-      <p><strong>Updated:</strong> ${dropFormatDate(drop.updated_at || drop.date)}</p>
-      <div class="detail-tags">${(drop.tags || []).map(t => dropBadge(t, 'tag')).join(' ')}</div>
-      <h4>Content</h4>
-      <pre class="drop-content-view">${escHTML(drop.content || '')}</pre>
-      <h4>Links</h4>
-      <div>${(drop.links || []).length ? drop.links.map(l => `<div>${escHTML(l)}</div>`).join('') : 'No links'}</div>
-      <h4>Backlinks</h4>
-      <div>${backlinks.length ? backlinks.map(b => `<div>${escHTML(b.title || '')}</div>`).join('') : 'No backlinks'}</div>
-      <div class="detail-actions">
-        <button id="toggle-done-btn" class="btn btn-secondary">${drop.done ? 'Restore' : 'Archive'}</button>
-        <button id="delete-drop-btn" class="btn btn-danger">Delete</button>
-      </div>
-    </div>`;
-
-  document.getElementById('toggle-done-btn').addEventListener('click', async () => {
-    try {
-      await requestJson(`${DROPS_API}/${drop.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ done: !drop.done }),
-      });
-      const drops = await loadDrops();
-      if (drops !== null) { dropboxState.drops = drops; }
-      renderDropbox();
-    } catch (error) {
-      handleDropboxRequestError(error, 'Failed to update drop.');
-    }
-  });
-
-  document.getElementById('delete-drop-btn').addEventListener('click', async () => {
-    if (!confirm('Delete this drop?')) return;
-    try {
-      await requestJson(`${DROPS_API}/${drop.id}`, { method: 'DELETE' });
-      dropboxState.selectedId = null;
-      const drops = await loadDrops();
-      if (drops !== null) { dropboxState.drops = drops; }
-      renderDropbox();
-    } catch (error) {
-      handleDropboxRequestError(error, 'Failed to delete drop.');
-    }
-  });
-}
 
 async function saveDrop() {
   if (!await ensureDropsSession(true)) return;
