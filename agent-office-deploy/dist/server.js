@@ -1475,13 +1475,28 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // ── Config files (workspace markdown) ──────────────────────
-    if (req.method === 'GET' && pathname === '/api/config-files') {
+    // ── Config files (per-agent workspace markdown) ────────────────
+    if (req.method === 'GET' && pathname.startsWith('/api/config-files')) {
       const CONFIG_DIR = process.env.CONFIG_FILES_DIR || path.join(__dirname, 'config-files');
-      const FILE_NAMES = ['AGENTS.md','SOUL.md','TOOLS.md','IDENTITY.md','USER.md','HEARTBEAT.md','MEMORY.md'];
+      const FILE_NAMES = ['SOUL.md','IDENTITY.md','USER.md','AGENTS.md','TOOLS.md','HEARTBEAT.md','MEMORY.md'];
+      const agentParam = pathname.slice('/api/config-files'.length).replace(/^\//, '').split('/')[0];
+
+      if (!agentParam) {
+        // List available agents (subdirectories)
+        try {
+          const entries = await fs.readdir(CONFIG_DIR, { withFileTypes: true });
+          const agents = entries.filter(e => e.isDirectory()).map(e => e.name);
+          sendJson(res, 200, { agents });
+        } catch { sendJson(res, 200, { agents: [] }); }
+        return;
+      }
+
+      // Sanitize agent name
+      const safeAgent = agentParam.replace(/[^a-zA-Z0-9_-]/g, '');
+      const agentDir = path.join(CONFIG_DIR, safeAgent);
       const results = {};
       await Promise.all(FILE_NAMES.map(async name => {
-        try { results[name] = await fs.readFile(path.join(CONFIG_DIR, name), 'utf8'); }
+        try { results[name] = await fs.readFile(path.join(agentDir, name), 'utf8'); }
         catch { results[name] = null; }
       }));
       sendJson(res, 200, results);

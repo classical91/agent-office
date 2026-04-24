@@ -1,0 +1,1 @@
+Devin's instruction: When running the morning pipeline cron job, reply with exactly one line: ✅ Morning run complete.

@@ -4701,57 +4701,107 @@ VIEW_HANDLERS.dropbox    = { enter: () => enterDropboxView(), focus: true };
 // ─── BRAIN (Agent Brain tabs) ────────────────────────────────────────────────
 const BRAIN = {
   activeTab: 'memory',
-  configLoaded: false,
+  activeAgent: null,
+  agentCache: {},
 
   switchTab(tab) {
     this.activeTab = tab;
-    const memPanel  = document.getElementById('memory-app').querySelector('#mem-form').parentElement;
     const memSections = ['mem-form','mem-roster','mem-filters','mem-list'].map(id => document.getElementById(id)).filter(Boolean);
+    const newMemBtn = document.querySelector('[onclick="MEM.showForm()"]');
     const configPanel = document.getElementById('brain-config-panel');
-    const tabMemBtn   = document.getElementById('brain-tab-memory');
-    const tabCfgBtn   = document.getElementById('brain-tab-config');
-
-    const ON  = 'background:var(--accent);color:#fff;';
-    const OFF = 'background:transparent;color:var(--muted);';
+    const tabMemBtn = document.getElementById('brain-tab-memory');
+    const tabCfgBtn = document.getElementById('brain-tab-config');
 
     if (tab === 'memory') {
-      memSections.forEach(el => el.style.display = '');
+      memSections.forEach(el => { el.style.display = ''; });
+      if (newMemBtn) newMemBtn.style.display = '';
       configPanel.style.display = 'none';
-      tabMemBtn.style.cssText += ON;
-      tabCfgBtn.style.cssText += OFF;
+      tabMemBtn.style.background = 'var(--accent)'; tabMemBtn.style.color = '#fff';
+      tabCfgBtn.style.background = 'transparent'; tabCfgBtn.style.color = 'var(--muted)';
     } else {
-      memSections.forEach(el => el.style.display = 'none');
+      memSections.forEach(el => { el.style.display = 'none'; });
+      if (newMemBtn) newMemBtn.style.display = 'none';
       configPanel.style.display = 'block';
-      tabMemBtn.style.cssText += OFF;
-      tabCfgBtn.style.cssText += ON;
-      if (!this.configLoaded) this.loadConfig();
+      tabMemBtn.style.background = 'transparent'; tabMemBtn.style.color = 'var(--muted)';
+      tabCfgBtn.style.background = 'var(--accent)'; tabCfgBtn.style.color = '#fff';
+      if (!this.activeAgent) this.loadAgentList();
     }
   },
 
-  async loadConfig() {
+  async loadAgentList() {
     const wrap = document.getElementById('brain-config-content');
-    wrap.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center;">Loading config files...</div>';
+    wrap.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center;">Loading agents...</div>';
     try {
       const res = await fetch('/api/config-files');
       const data = await res.json();
-      const FILES = ['AGENTS.md','SOUL.md','IDENTITY.md','USER.md','TOOLS.md','HEARTBEAT.md','MEMORY.md'];
-      wrap.innerHTML = FILES.map(name => {
-        const content = data[name];
-        return `
-          <div style="margin-bottom:20px;background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02);">
-              <span style="font-family:'Press Start 2P',monospace;font-size:10px;color:var(--accent);">${name}</span>
-              ${content ? '<span style="font-size:11px;color:var(--muted);">' + content.split('\n').length + ' lines</span>' : '<span style="font-size:11px;color:var(--red);">NOT FOUND</span>'}
-            </div>
-            <pre style="margin:0;padding:16px 18px;font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-word;max-height:400px;overflow-y:auto;font-family:''IBM Plex Mono'',monospace;">${content ? content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '<span style="color:var(--muted);">File not found on server. Upload via CONFIG_FILES_DIR env var.</span>'}</pre>
-          </div>`;
-      }).join('');
-      this.configLoaded = true;
+      const agentLabels = {
+        coder: { name: 'Devin', icon: '🛠️' }, trader: { name: 'TraderClaw', icon: '📈' },
+        webclaw: { name: 'WebClaw', icon: '🌐' }, main: { name: 'X-Hunter', icon: '🐦' },
+        farmbot: { name: 'Reaper', icon: '💀' }, oss: { name: 'Penny', icon: '🪙' },
+        codex: { name: 'Swarm', icon: '🐝' }, xbot: { name: 'XBot', icon: '🤖' },
+        dev: { name: 'Forge', icon: '⚙️' }, sora: { name: 'Lyra', icon: '✨' },
+        security: { name: 'Guardian', icon: '🛡' }, orchestrator: { name: 'Command', icon: '📡' }
+      };
+      wrap.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:24px;">' +
+        data.agents.map(a => {
+          const lbl = agentLabels[a] || { name: a, icon: '🤖' };
+          return `<button onclick="BRAIN.loadAgent('${a}')" style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 12px;cursor:pointer;text-align:center;transition:all 0.15s;font-family:inherit;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-size:22px;margin-bottom:6px;">${lbl.icon}</div>
+            <div style="font-size:12px;font-weight:700;color:var(--text);">${lbl.name}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px;">${a}</div>
+          </button>`;
+        }).join('') +
+        '</div>';
     } catch(e) {
-      wrap.innerHTML = '<div style="color:var(--red);padding:40px;text-align:center;">Failed to load config files: ' + e.message + '</div>';
+      wrap.innerHTML = '<div style="color:var(--red);padding:40px;text-align:center;">Failed to load agents: ' + e.message + '</div>';
+    }
+  },
+
+  async loadAgent(agentId) {
+    this.activeAgent = agentId;
+    const wrap = document.getElementById('brain-config-content');
+    const agentLabels = {
+      coder: { name: 'Devin', icon: '🛠️' }, trader: { name: 'TraderClaw', icon: '📈' },
+      webclaw: { name: 'WebClaw', icon: '🌐' }, main: { name: 'X-Hunter', icon: '🐦' },
+      farmbot: { name: 'Reaper', icon: '💀' }, oss: { name: 'Penny', icon: '🪙' },
+      codex: { name: 'Swarm', icon: '🐝' }, xbot: { name: 'XBot', icon: '🤖' },
+      dev: { name: 'Forge', icon: '⚙️' }, sora: { name: 'Lyra', icon: '✨' },
+      security: { name: 'Guardian', icon: '🛡' }, orchestrator: { name: 'Command', icon: '📡' }
+    };
+    const lbl = agentLabels[agentId] || { name: agentId, icon: '🤖' };
+
+    wrap.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+        <button onclick="BRAIN.activeAgent=null;BRAIN.loadAgentList()" style="background:transparent;border:1px solid var(--border);border-radius:8px;padding:7px 14px;color:var(--muted);font-size:12px;cursor:pointer;font-family:inherit;">← Back</button>
+        <span style="font-size:20px;">${lbl.icon}</span>
+        <span style="font-size:16px;font-weight:700;color:var(--text);">${lbl.name}</span>
+        <span style="font-size:11px;color:var(--muted);">workspace-${agentId}</span>
+      </div>
+      <div id="brain-files-wrap"><div style="color:var(--muted);padding:20px;text-align:center;">Loading files...</div></div>`;
+
+    try {
+      const res = await fetch('/api/config-files/' + agentId);
+      const data = await res.json();
+      const FILES = ['SOUL.md','IDENTITY.md','USER.md','AGENTS.md','TOOLS.md','HEARTBEAT.md','MEMORY.md'];
+      document.getElementById('brain-files-wrap').innerHTML = FILES.map(name => {
+        const content = data[name];
+        const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        return `<div style="margin-bottom:16px;background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02);">
+            <span style="font-size:11px;font-weight:700;color:var(--accent);font-family:'IBM Plex Mono',monospace;">${name}</span>
+            ${content ? '<span style="font-size:11px;color:var(--muted);">' + content.split('\n').length + ' lines</span>' : '<span style="font-size:11px;color:var(--red);">not found</span>'}
+          </div>
+          ${content
+            ? '<pre style="margin:0;padding:14px 16px;font-size:12px;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-word;max-height:360px;overflow-y:auto;font-family:\'IBM Plex Mono\',monospace;">' + esc(content) + '</pre>'
+            : '<div style="padding:14px 16px;font-size:12px;color:var(--muted);font-style:italic;">File not found</div>'}
+        </div>`;
+      }).join('');
+    } catch(e) {
+      document.getElementById('brain-files-wrap').innerHTML = '<div style="color:var(--red);padding:20px;">Failed: ' + e.message + '</div>';
     }
   }
 };
+
 
 VIEW_HANDLERS.memory     = { enter: () => { if (typeof MEM !== 'undefined') MEM.render(); BRAIN.switchTab(BRAIN.activeTab); }, focus: true };
 VIEW_HANDLERS.office     = { enter: null, focus: false };
