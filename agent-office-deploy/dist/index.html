@@ -2546,17 +2546,14 @@
       <div class="dropbox-toolbar">
         <h2>Dropbox</h2>
         <div class="dropbox-actions">
-          <button id="new-drop-btn" class="btn btn-primary">New Drop</button>
-          <button id="dropbox-view-list" class="btn btn-secondary active">Table</button>
-          <button id="dropbox-view-detail" class="btn btn-secondary">Cards</button>
+          <button id="new-drop-btn" class="btn btn-primary">+ New Drop</button>
         </div>
       </div>
 
-      <div class="dropbox-filters">
-        <input id="drop-search" type="search" placeholder="Search drops..." />
-        <select id="drop-filter-subject">
-          <option value="">All Subjects</option>
-        </select>
+      <!-- Filters card - always visible -->
+      <div class="dropbox-filters" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+        <input id="drop-search" type="search" placeholder="Search..." style="flex:1;min-width:140px;" />
+        <select id="drop-filter-subject"><option value="">All Subjects</option></select>
         <select id="drop-filter-status">
           <option value="">All Statuses</option>
           <option value="inbox">Inbox</option>
@@ -2575,45 +2572,45 @@
         <select id="drop-sort">
           <option value="updated_desc">Newest</option>
           <option value="updated_asc">Oldest</option>
-          <option value="priority_desc">Priority</option>
-          <option value="title_asc">Title</option>
+          <option value="priority_desc">Priority ↓</option>
+          <option value="title_asc">Title A–Z</option>
         </select>
+      </div>
+
+      <!-- New Drop composer - hidden by default, shown on button click -->
+      <div id="drop-composer-panel" style="display:none;margin-bottom:16px;">
+        <div class="dropbox-quick-capture" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px;">
+          <input id="drop-title" type="text" placeholder="Title" />
+          <input id="drop-subject" type="text" placeholder="Subject / Category" />
+          <input id="drop-project" type="text" placeholder="Project" />
+          <input id="drop-tags" type="text" placeholder="Tags (comma separated)" />
+          <div class="dropbox-row">
+            <select id="drop-priority">
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+            <select id="drop-status">
+              <option value="inbox">Inbox</option>
+              <option value="idea" selected>Idea</option>
+              <option value="researching">Researching</option>
+              <option value="ready">Ready</option>
+              <option value="building">Building</option>
+              <option value="archived">Archived</option>
+            </select>
+          </div>
+          <textarea id="drop-content" rows="5" placeholder="Capture your note, idea, reminder, or task..."></textarea>
+          <div class="dropbox-row">
+            <button id="save-drop-btn" class="btn btn-primary">Save Drop</button>
+            <button id="clear-drop-btn" class="btn btn-secondary">Cancel</button>
+          </div>
+        </div>
       </div>
 
       <div class="dropbox-layout">
         <div class="dropbox-main">
-          <div class="dropbox-quick-capture">
-            <input id="drop-title" type="text" placeholder="Title" />
-            <input id="drop-subject" type="text" placeholder="Subject / Category" />
-            <input id="drop-project" type="text" placeholder="Project" />
-            <input id="drop-tags" type="text" placeholder="Tags (comma separated)" />
-
-            <div class="dropbox-row">
-              <select id="drop-priority">
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
-              <select id="drop-status">
-                <option value="inbox">Inbox</option>
-                <option value="idea" selected>Idea</option>
-                <option value="researching">Researching</option>
-                <option value="ready">Ready</option>
-                <option value="building">Building</option>
-                <option value="archived">Archived</option>
-              </select>
-            </div>
-
-            <textarea id="drop-content" rows="5" placeholder="Capture your note, idea, reminder, or task... Use [[linked note]] syntax for internal links."></textarea>
-
-            <div class="dropbox-row">
-              <button id="save-drop-btn" class="btn btn-primary">Save Drop</button>
-              <button id="clear-drop-btn" class="btn btn-secondary">Clear</button>
-            </div>
-          </div>
-
-          <div id="dropbox-table-wrap" class="dropbox-table-wrap"></div>
-          <div id="dropbox-cards-wrap" class="dropbox-cards-wrap hidden"></div>
+          <div id="dropbox-table-wrap" class="dropbox-table-wrap hidden"></div>
+          <div id="dropbox-cards-wrap" class="dropbox-cards-wrap"></div>
         </div>
 
         <aside id="drop-detail-panel" class="drop-detail-panel">
@@ -4360,7 +4357,7 @@ function handleDropboxRequestError(error, fallbackMessage) {
 const dropboxState = {
   drops: [],
   selectedId: null,
-  view: 'table',
+  view: 'cards',
   filters: {
     search: '',
     subject: '',
@@ -4599,6 +4596,10 @@ async function saveDrop() {
       body: JSON.stringify(payload),
     });
     clearDropForm();
+    const panel = document.getElementById('drop-composer-panel');
+    if (panel) panel.style.display = 'none';
+    const btn = document.getElementById('new-drop-btn');
+    if (btn) btn.textContent = '+ New Drop';
     const drops = await loadDrops();
     if (drops !== null) { dropboxState.drops = drops; }
     renderDropbox();
@@ -4624,12 +4625,25 @@ document.getElementById('save-drop-btn').addEventListener('click', async () => {
   try { await saveDrop(); } catch (err) { alert(err.message); }
 });
 
-document.getElementById('clear-drop-btn').addEventListener('click', clearDropForm);
+document.getElementById('clear-drop-btn').addEventListener('click', () => {
+  clearDropForm();
+  const panel = document.getElementById('drop-composer-panel');
+  if (panel) panel.style.display = 'none';
+  const btn = document.getElementById('new-drop-btn');
+  if (btn) btn.textContent = '+ New Drop';
+});
 
 document.getElementById('new-drop-btn').addEventListener('click', async () => {
   if (!await ensureDropsSession(true)) return;
-  const el = document.getElementById('drop-title');
-  if (el) el.focus();
+  const panel = document.getElementById('drop-composer-panel');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  const btn = document.getElementById('new-drop-btn');
+  btn.textContent = isOpen ? '+ New Drop' : '✕ Cancel';
+  if (!isOpen) {
+    const el = document.getElementById('drop-title');
+    if (el) el.focus();
+  }
 });
 
 document.getElementById('drop-search').addEventListener('input', e => {
@@ -4657,23 +4671,7 @@ document.getElementById('drop-sort').addEventListener('change', e => {
   renderDropbox();
 });
 
-document.getElementById('dropbox-view-list').addEventListener('click', () => {
-  dropboxState.view = 'table';
-  document.getElementById('dropbox-table-wrap').classList.remove('hidden');
-  document.getElementById('dropbox-cards-wrap').classList.add('hidden');
-  document.getElementById('dropbox-view-list').classList.add('active');
-  document.getElementById('dropbox-view-detail').classList.remove('active');
-  renderDropTable();
-});
-
-document.getElementById('dropbox-view-detail').addEventListener('click', () => {
-  dropboxState.view = 'cards';
-  document.getElementById('dropbox-table-wrap').classList.add('hidden');
-  document.getElementById('dropbox-cards-wrap').classList.remove('hidden');
-  document.getElementById('dropbox-view-list').classList.remove('active');
-  document.getElementById('dropbox-view-detail').classList.add('active');
-  renderDropCards();
-});
+// View toggle removed — always cards
 
 function escAttr(str) {
   return String(str)
