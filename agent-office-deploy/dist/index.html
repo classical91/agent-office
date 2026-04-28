@@ -4462,11 +4462,17 @@ function renderDropbox() {
 function populateSubjectFilter() {
   const select = document.getElementById('drop-filter-subject');
   if (!select) return;
-  const current = select.value;
+  const current = dropboxState.filters.subject;
   const subjects = [...new Set(dropboxState.drops.map(d => d.subject).filter(Boolean))].sort();
   select.innerHTML = '<option value="">All Subjects</option>' +
     subjects.map(s => `<option value="${escAttr(s)}">${escHTML(s)}</option>`).join('');
-  select.value = subjects.includes(current) ? current : '';
+  const resolved = subjects.includes(current) ? current : '';
+  select.value = resolved;
+  dropboxState.filters.subject = resolved;
+  const subjectEl = document.getElementById('drop-subject');
+  if (subjectEl && document.activeElement !== subjectEl) {
+    subjectEl.value = resolved;
+  }
 }
 
 function dropBadge(text, type) {
@@ -4648,7 +4654,7 @@ document.getElementById('new-drop-btn').addEventListener('click', async () => {
     const el = document.getElementById('drop-title');
     if (el) el.focus();
     const subjectEl = document.getElementById('drop-subject');
-    if (subjectEl && dropboxState.filters.subject) subjectEl.value = dropboxState.filters.subject;
+    if (subjectEl) subjectEl.value = dropboxState.filters.subject || '';
   }
 });
 
@@ -4659,6 +4665,8 @@ document.getElementById('drop-search').addEventListener('input', e => {
 
 document.getElementById('drop-filter-subject').addEventListener('change', e => {
   dropboxState.filters.subject = e.target.value;
+  const subjectEl = document.getElementById('drop-subject');
+  if (subjectEl) subjectEl.value = e.target.value;
   renderDropbox();
 });
 
