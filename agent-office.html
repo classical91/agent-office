@@ -4418,11 +4418,17 @@ function renderDropbox() {
 function populateSubjectFilter() {
   const select = document.getElementById('drop-filter-subject');
   if (!select) return;
-  const current = select.value;
+  const current = dropboxState.filters.subject;
   const subjects = [...new Set(dropboxState.drops.map(d => d.subject).filter(Boolean))].sort();
   select.innerHTML = '<option value="">All Subjects</option>' +
     subjects.map(s => `<option value="${escAttr(s)}">${escHTML(s)}</option>`).join('');
-  select.value = subjects.includes(current) ? current : '';
+  const resolved = subjects.includes(current) ? current : '';
+  select.value = resolved;
+  if (resolved !== current) {
+    dropboxState.filters.subject = resolved;
+    const subjectEl = document.getElementById('drop-subject');
+    if (subjectEl) subjectEl.value = resolved;
+  }
 }
 
 function dropBadge(text, type) {
