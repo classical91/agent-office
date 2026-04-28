@@ -63,6 +63,35 @@
   }
   .topbar-logo:hover { opacity: 0.75; }
 
+  /* ── Settings / Themes ─────────────────────────────────────────── */
+  .settings-view { max-width: 760px; width: 100%; margin: 0 auto; padding: 40px 28px 80px; }
+  .settings-view h1 { font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 32px; letter-spacing: -0.3px; }
+  .settings-section-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; }
+  .theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+  .theme-card {
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.1s;
+    user-select: none;
+  }
+  .theme-card:hover { border-color: rgba(255,255,255,0.25); transform: translateY(-1px); }
+  .theme-card.active { border-color: var(--accent); }
+  .theme-card-swatch {
+    width: 100%;
+    height: 52px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: flex-end;
+    padding: 6px;
+    overflow: hidden;
+  }
+  .theme-card-accent-dot { width: 14px; height: 14px; border-radius: 50%; }
+  .theme-card-name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .theme-card.active .theme-card-name::after { content: ' ✓'; color: var(--accent); }
+
   .topbar-meta {
     display: flex;
     gap: 20px;
@@ -1607,7 +1636,7 @@
     <div class="nav-section">
       <div class="nav-label" onclick="toggleNav(this)">System <span class="nav-chevron">▾</span></div>
       <div class="nav-items-wrap">
-        <div class="nav-item"><span class="icon">⚙️</span> Settings</div>
+        <div class="nav-item" onclick="switchView('settings', this)"><span class="icon">⚙️</span> Settings</div>
         <a class="nav-link" data-dev-only="true" href="http://localhost:18789" target="_blank">
           <div class="link-dot" style="background:#6366f1;"></div> Gateway (local) <span class="link-ext">↗</span>
         </a>
@@ -2750,6 +2779,15 @@
     </div>
     <div class="feed-list" id="feedList"></div>
   </aside>
+
+  <!-- SETTINGS VIEW -->
+  <div class="view" id="view-settings" style="flex-direction:column; overflow-y:auto;">
+    <div class="settings-view">
+      <h1>⚙️ Settings</h1>
+      <div class="settings-section-title">Theme</div>
+      <div class="theme-grid" id="theme-grid"></div>
+    </div>
+  </div>
 
 </div>
 
@@ -4817,6 +4855,42 @@ const BRAIN = {
 VIEW_HANDLERS.memory     = { enter: () => { if (typeof MEM !== 'undefined') MEM.render(); BRAIN.switchTab(BRAIN.activeTab); }, focus: true };
 VIEW_HANDLERS.office     = { enter: null, focus: false };
 VIEW_HANDLERS.org        = { enter: null, focus: false };
+
+// ── Themes ────────────────────────────────────────────────────────────────
+const THEMES = {
+  midnight: { name: 'Midnight', bg: '#0d0f14', panel: '#13161d', border: '#1e2330', accent: '#6366f1' },
+  abyss:    { name: 'Abyss',    bg: '#060810', panel: '#0d1221', border: '#182038', accent: '#3b82f6' },
+  forest:   { name: 'Forest',   bg: '#0a0f0b', panel: '#111a12', border: '#1c2e1e', accent: '#22c55e' },
+  ember:    { name: 'Ember',    bg: '#110d0a', panel: '#1c1410', border: '#2d1f18', accent: '#f97316' },
+  rose:     { name: 'Rose',     bg: '#0f0a0d', panel: '#1a1016', border: '#2c1b24', accent: '#ec4899' },
+  mono:     { name: 'Mono',     bg: '#0a0a0a', panel: '#141414', border: '#242424', accent: '#94a3b8' },
+};
+let currentTheme = localStorage.getItem('ao-theme') || 'midnight';
+function applyTheme(id) {
+  const t = THEMES[id]; if (!t) return;
+  const r = document.documentElement.style;
+  r.setProperty('--bg', t.bg);
+  r.setProperty('--panel', t.panel);
+  r.setProperty('--border', t.border);
+  r.setProperty('--accent', t.accent);
+  currentTheme = id;
+  localStorage.setItem('ao-theme', id);
+  const grid = document.getElementById('theme-grid');
+  if (grid) renderThemeGrid();
+}
+function renderThemeGrid() {
+  const grid = document.getElementById('theme-grid'); if (!grid) return;
+  grid.innerHTML = Object.entries(THEMES).map(([id, t]) => `
+    <div class="theme-card ${id === currentTheme ? 'active' : ''}" onclick="applyTheme('${id}')">
+      <div class="theme-card-swatch" style="background:${t.bg};">
+        <div class="theme-card-accent-dot" style="background:${t.accent};"></div>
+      </div>
+      <div class="theme-card-name">${t.name}</div>
+    </div>`).join('');
+}
+applyTheme(currentTheme);
+VIEW_HANDLERS.settings = { enter: () => renderThemeGrid(), focus: false };
+// ─────────────────────────────────────────────────────────────────────────
 
 const _baseSwitchView = switchView;
 window.switchView = function(view, navEl) {
