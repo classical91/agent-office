@@ -4424,10 +4424,10 @@ function populateSubjectFilter() {
     subjects.map(s => `<option value="${escAttr(s)}">${escHTML(s)}</option>`).join('');
   const resolved = subjects.includes(current) ? current : '';
   select.value = resolved;
-  if (resolved !== current) {
-    dropboxState.filters.subject = resolved;
-    const subjectEl = document.getElementById('drop-subject');
-    if (subjectEl) subjectEl.value = resolved;
+  dropboxState.filters.subject = resolved;
+  const subjectEl = document.getElementById('drop-subject');
+  if (subjectEl && document.activeElement !== subjectEl) {
+    subjectEl.value = resolved;
   }
 }
 
