@@ -7,7 +7,11 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap');
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.12) transparent; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
 
   :root {
     --bg: #0d0f14;
@@ -53,7 +57,11 @@
     font-size: 11px;
     color: var(--accent);
     letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    user-select: none;
   }
+  .topbar-logo:hover { opacity: 0.75; }
 
   .topbar-meta {
     display: flex;
@@ -1514,7 +1522,7 @@
 <div class="topbar">
   <div style="display:flex; align-items:center; gap:12px;">
     <button class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu" aria-label="Open navigation">&#9776;</button>
-    <div class="topbar-logo">⬡ AGENT OFFICE</div>
+    <div class="topbar-logo" onclick="switchView('office', document.querySelector('.nav-item[onclick*=\'office\']'))" title="Home">⬡ AGENT OFFICE</div>
   </div>
   <div class="topbar-meta">
     <span><span class="online-dot"></span><span id="onlineCount">9</span> agents online</span>
