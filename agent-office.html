@@ -4608,10 +4608,12 @@ async function saveDrop() {
 }
 
 function clearDropForm() {
-  ['drop-title', 'drop-subject', 'drop-project', 'drop-tags', 'drop-content'].forEach(id => {
+  ['drop-title', 'drop-project', 'drop-tags', 'drop-content'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  const subjectEl = document.getElementById('drop-subject');
+  if (subjectEl) subjectEl.value = dropboxState.filters.subject || '';
   const p = document.getElementById('drop-priority');
   if (p) p.value = 'normal';
   const s = document.getElementById('drop-status');
@@ -4639,6 +4641,8 @@ document.getElementById('drop-search').addEventListener('input', e => {
 
 document.getElementById('drop-filter-subject').addEventListener('change', e => {
   dropboxState.filters.subject = e.target.value;
+  const subjectEl = document.getElementById('drop-subject');
+  if (subjectEl) subjectEl.value = e.target.value;
   renderDropbox();
 });
 
