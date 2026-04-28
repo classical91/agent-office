@@ -1540,6 +1540,48 @@
     .dropbox-view { padding: 14px 12px; }
     .dropbox-filters { gap: 8px; padding: 12px; }
   }
+
+  /* RESET COUNTDOWNS */
+  .resets-view { width: 100%; max-width: 1240px; margin: 0 auto; padding: 32px 28px 80px; color: var(--text); }
+  .resets-hero { border: 1px solid var(--border); background: linear-gradient(180deg, rgba(99,102,241,0.10), rgba(19,22,29,0.76)); border-radius: 18px; padding: 22px; margin-bottom: 18px; }
+  .resets-kicker { color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
+  .resets-hero h2 { margin: 0 0 8px; font-size: clamp(26px, 4vw, 42px); letter-spacing: -0.03em; }
+  .resets-sub { color: var(--muted); line-height: 1.55; max-width: 780px; font-size: 14px; }
+  .resets-controls { display: grid; grid-template-columns: minmax(220px, 1.1fr) minmax(190px, 0.8fr) minmax(150px, 0.5fr); gap: 10px; margin-top: 18px; align-items: start; }
+  .resets-input, .resets-select { width: 100%; border: 1px solid var(--border); border-radius: 10px; background: #0f1219; color: var(--text); padding: 11px 12px; font: inherit; font-size: 14px; outline: none; }
+  .resets-input::placeholder { color: #586174; }
+  .resets-btn { border: 1px solid var(--border); border-radius: 10px; background: linear-gradient(180deg, #202638, #141824); color: var(--text); padding: 11px 12px; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; transition: transform 0.12s ease, border-color 0.12s ease; }
+  .resets-btn:hover { transform: translateY(-1px); border-color: rgba(99,102,241,0.75); }
+  .resets-btn.danger:hover { border-color: rgba(239,68,68,0.85); }
+  .resets-picked-label { margin-top: 7px; color: var(--muted); font-size: 12px; min-height: 16px; }
+  .resets-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+  .reset-card { border: 1px solid var(--border); background: linear-gradient(180deg, rgba(255,255,255,0.035), transparent), rgba(19,22,29,0.84); border-radius: 16px; padding: 16px; box-shadow: 0 18px 48px rgba(0,0,0,0.22); }
+  .reset-card-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 12px; }
+  .reset-card-title { font-size: 18px; font-weight: 900; margin-bottom: 4px; }
+  .reset-card-time { color: var(--muted); font-size: 12px; }
+  .reset-chip { font-size: 11px; color: #67e8f9; border: 1px solid rgba(6,182,212,0.25); background: rgba(6,182,212,0.08); padding: 5px 8px; border-radius: 999px; white-space: nowrap; }
+  .reset-timer { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 14px 0; }
+  .reset-unit { background: #0c0f16; border: 1px solid #242b3a; border-radius: 12px; padding: 10px 6px; text-align: center; min-width: 0; }
+  .reset-num { font-size: 25px; font-weight: 950; color: #fff; text-shadow: 0 0 18px rgba(99,102,241,0.4); }
+  .reset-label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; margin-top: 3px; }
+  .reset-card .resets-input { margin-bottom: 8px; }
+  .reset-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .reset-row .resets-btn { flex: 1; min-width: 92px; padding: 10px; }
+  .reset-message { margin-top: 10px; color: var(--muted); font-size: 12px; min-height: 18px; }
+  .reset-modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.65); display: none; align-items: center; justify-content: center; z-index: 1200; padding: 18px; }
+  .reset-modal-backdrop.open { display: flex; }
+  .reset-date-modal { width: min(430px, 100%); border: 1px solid var(--border); background: #11151f; border-radius: 18px; padding: 18px; box-shadow: 0 30px 90px rgba(0,0,0,0.55); }
+  .reset-date-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+  .reset-date-modal-title { flex: 1; text-align: center; font-weight: 900; }
+  .reset-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px; margin-bottom: 14px; }
+  .reset-day-name { color: var(--muted); font-size: 11px; text-align: center; font-weight: 800; }
+  .reset-day-btn { padding: 10px 0; border-radius: 10px; font-size: 13px; }
+  .reset-day-btn.selected { border-color: var(--accent); color: #fff; box-shadow: 0 0 18px rgba(99,102,241,0.35); }
+  .reset-day-btn.blank { opacity: 0; pointer-events: none; }
+  .reset-time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .reset-modal-actions { display: flex; gap: 10px; margin-top: 14px; }
+  .reset-modal-actions .resets-btn { flex: 1; }
+  @media (max-width: 760px) { .resets-view { padding: 18px 12px 70px; } .resets-controls { grid-template-columns: 1fr; } .reset-timer { grid-template-columns: repeat(2, 1fr); } }
 </style>
 <link rel="stylesheet" href="calendar-view.css"/>
 </head>
@@ -1574,6 +1616,7 @@
         <div class="nav-item" onclick="switchView('org', this)"><span class="icon">🗂️</span> Org Chart</div>
         <div class="nav-item" onclick="switchView('memory', this)"><span class="icon">🧠</span> Agent Brain</div>
         <div class="nav-item" onclick="switchView('calendar', this)"><span class="icon">📅</span> Calendar</div>
+        <div class="nav-item" onclick="switchView('resets', this)"><span class="icon">&#9201;</span> Resets</div>
       </div>
     </div>
 
@@ -2643,6 +2686,47 @@
     </div>
   </div>
 
+  <!-- RESET COUNTDOWNS VIEW -->
+  <div class="view" id="view-resets" style="flex-direction:column; background:#0a0c11; overflow-y:auto;">
+    <section class="resets-view">
+      <div class="resets-hero">
+        <div class="resets-kicker">Reset Signals</div>
+        <h2>API Reset Countdown</h2>
+        <div class="resets-sub">
+          Track separate usage reset windows and attach a different Pushcut webhook to each card.
+          Webhook URLs are saved only in this browser's localStorage.
+        </div>
+        <div class="resets-controls">
+          <input id="reset-new-title" class="resets-input" placeholder="New countdown name, e.g. Gemini API Reset" />
+          <div>
+            <button type="button" class="resets-btn" onclick="AOResets.openNewPicker()">Pick date and time</button>
+            <div id="reset-new-time-label" class="resets-picked-label">No time selected</div>
+          </div>
+          <button type="button" class="resets-btn" onclick="AOResets.addCard()">Add Countdown</button>
+        </div>
+      </div>
+      <main class="resets-grid" id="reset-cards"></main>
+    </section>
+    <div id="reset-date-picker-modal" class="reset-modal-backdrop">
+      <div class="reset-date-modal">
+        <div class="reset-date-modal-head">
+          <button type="button" class="resets-btn" onclick="AOResets.changePickerMonth(-1)">&lt;</button>
+          <div id="reset-picker-month-label" class="reset-date-modal-title"></div>
+          <button type="button" class="resets-btn" onclick="AOResets.changePickerMonth(1)">&gt;</button>
+        </div>
+        <div id="reset-calendar-grid" class="reset-calendar-grid"></div>
+        <div class="reset-time-row">
+          <select id="reset-picker-hour" class="resets-select"></select>
+          <select id="reset-picker-minute" class="resets-select"></select>
+        </div>
+        <div class="reset-modal-actions">
+          <button type="button" class="resets-btn" onclick="AOResets.closePicker()">Cancel</button>
+          <button type="button" class="resets-btn" onclick="AOResets.applyPicker()">Use this time</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- DROPBOX VIEW -->
   <div class="view" id="view-dropbox" style="flex-direction:column; overflow-y:auto;">
     <section id="dropbox-view" class="dropbox-view">
@@ -3634,6 +3718,7 @@ const VIEW_HANDLERS = {
   org: { focus: false }
 };
 VIEW_HANDLERS.calendar = { enter: () => { if (window.CAL) window.CAL.render(); }, focus: false };
+VIEW_HANDLERS.resets = { enter: () => { if (window.AOResets) window.AOResets.init(); }, focus: false };
 let currentView = 'office';
 
 function switchView(view, navEl) {
@@ -3680,6 +3765,347 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) stopTickLoop();
   else startTickLoop();
 });
+
+window.AOResets = (() => {
+  const STORAGE_KEY = 'agent-office-per-card-countdowns-v2';
+  let initialized = false;
+  let intervalId = null;
+  let newResetAt = '';
+  let pickerDate = new Date();
+  let selectedPickerDate = new Date();
+  let cards = [];
+
+  function tomorrowAt(hour = 9) {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(hour, 0, 0, 0);
+    return d.toISOString();
+  }
+
+  function nextWeekAt(hour = 9) {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    d.setHours(hour, 0, 0, 0);
+    return d.toISOString();
+  }
+
+  function randomId() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+    return 'reset-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+  }
+
+  function loadCards() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (err) {}
+    }
+    return [
+      {
+        id: randomId(),
+        title: 'Claude Code Usage Reset',
+        resetAt: nextWeekAt(9),
+        webhookUrl: '',
+        fired: false,
+        message: 'Example: resets next week.'
+      },
+      {
+        id: randomId(),
+        title: 'Codex Usage Reset',
+        resetAt: tomorrowAt(9),
+        webhookUrl: '',
+        fired: false,
+        message: 'Example: resets tomorrow.'
+      }
+    ];
+  }
+
+  function saveCards() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cards));
+  }
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  function formatLocalInput(iso) {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function fromLocalInput(value) {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+  }
+
+  function remaining(resetAt) {
+    const target = new Date(resetAt).getTime();
+    const diff = Math.max(0, target - Date.now());
+    return {
+      total: diff,
+      days: Math.floor(diff / 86400000),
+      hours: Math.floor((diff % 86400000) / 3600000),
+      minutes: Math.floor((diff % 3600000) / 60000),
+      seconds: Math.floor((diff % 60000) / 1000)
+    };
+  }
+
+  function render() {
+    const wrap = document.getElementById('reset-cards');
+    if (!wrap) return;
+    wrap.innerHTML = '';
+
+    cards.forEach(card => {
+      const r = remaining(card.resetAt);
+      const reached = r.total <= 0;
+      const el = document.createElement('section');
+      el.className = 'reset-card';
+      el.innerHTML = `
+        <div class="reset-card-head">
+          <div>
+            <div class="reset-card-title">${escapeHtml(card.title)}</div>
+            <div class="reset-card-time">Target: ${new Date(card.resetAt).toLocaleString()}</div>
+          </div>
+          <div class="reset-chip">${reached ? 'Reset window reached' : 'Counting down'}</div>
+        </div>
+        <div class="reset-timer">
+          <div class="reset-unit"><div class="reset-num">${r.days}</div><div class="reset-label">Days</div></div>
+          <div class="reset-unit"><div class="reset-num">${r.hours}</div><div class="reset-label">Hours</div></div>
+          <div class="reset-unit"><div class="reset-num">${r.minutes}</div><div class="reset-label">Mins</div></div>
+          <div class="reset-unit"><div class="reset-num">${r.seconds}</div><div class="reset-label">Secs</div></div>
+        </div>
+        <input class="resets-input" value="${escapeHtml(card.title)}" onchange="AOResets.updateCard('${card.id}', 'title', this.value)" />
+        <input class="resets-input" type="datetime-local" value="${formatLocalInput(card.resetAt)}" onchange="AOResets.updateCard('${card.id}', 'resetAt', AOResets.fromLocalInput(this.value))" />
+        <input class="resets-input" placeholder="Paste this card's Pushcut webhook URL" value="${escapeHtml(card.webhookUrl || '')}" onchange="AOResets.updateCard('${card.id}', 'webhookUrl', this.value)" />
+        <div class="reset-row">
+          <button type="button" class="resets-btn" onclick="AOResets.testWebhook('${card.id}')">Test Pushcut</button>
+          <button type="button" class="resets-btn" onclick="AOResets.clearWebhook('${card.id}')">Clear Webhook</button>
+          <button type="button" class="resets-btn danger" onclick="AOResets.deleteCard('${card.id}')">Delete</button>
+        </div>
+        <div class="reset-message">${escapeHtml(card.message || '')}</div>
+      `;
+      wrap.appendChild(el);
+      if (reached && !card.fired && card.webhookUrl) fireWebhook(card.id, true);
+    });
+  }
+
+  function init() {
+    if (!initialized) {
+      cards = loadCards();
+      setupTimeSelects();
+      initialized = true;
+    }
+    render();
+    if (!intervalId) intervalId = setInterval(render, 1000);
+  }
+
+  function setupTimeSelects() {
+    const hour = document.getElementById('reset-picker-hour');
+    const minute = document.getElementById('reset-picker-minute');
+    if (!hour || !minute || hour.options.length) return;
+    for (let h = 0; h < 24; h++) {
+      const opt = document.createElement('option');
+      opt.value = h;
+      opt.textContent = String(h).padStart(2, '0') + ':00';
+      hour.appendChild(opt);
+    }
+    for (let m = 0; m < 60; m += 5) {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = String(m).padStart(2, '0');
+      minute.appendChild(opt);
+    }
+  }
+
+  function tomorrowAtDate(hour = 9) {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(hour, 0, 0, 0);
+    return d;
+  }
+
+  function openNewPicker() {
+    init();
+    const base = newResetAt ? new Date(newResetAt) : tomorrowAtDate(9);
+    pickerDate = new Date(base);
+    selectedPickerDate = new Date(base);
+    document.getElementById('reset-picker-hour').value = selectedPickerDate.getHours();
+    document.getElementById('reset-picker-minute').value = Math.round(selectedPickerDate.getMinutes() / 5) * 5;
+    renderCalendar();
+    document.getElementById('reset-date-picker-modal').classList.add('open');
+  }
+
+  function closePicker() {
+    const modal = document.getElementById('reset-date-picker-modal');
+    if (modal) modal.classList.remove('open');
+  }
+
+  function changePickerMonth(direction) {
+    pickerDate.setMonth(pickerDate.getMonth() + direction);
+    renderCalendar();
+  }
+
+  function renderCalendar() {
+    const grid = document.getElementById('reset-calendar-grid');
+    const label = document.getElementById('reset-picker-month-label');
+    if (!grid || !label) return;
+    grid.innerHTML = '';
+    const month = pickerDate.getMonth();
+    const year = pickerDate.getFullYear();
+    label.textContent = pickerDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(day => {
+      const div = document.createElement('div');
+      div.className = 'reset-day-name';
+      div.textContent = day;
+      grid.appendChild(div);
+    });
+    const startDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    for (let i = 0; i < startDay; i++) {
+      const blank = document.createElement('button');
+      blank.type = 'button';
+      blank.className = 'resets-btn reset-day-btn blank';
+      blank.textContent = '.';
+      grid.appendChild(blank);
+    }
+    for (let day = 1; day <= daysInMonth; day++) {
+      const btn = document.createElement('button');
+      const thisDate = new Date(year, month, day);
+      btn.type = 'button';
+      btn.className = 'resets-btn reset-day-btn';
+      btn.textContent = day;
+      if (
+        selectedPickerDate &&
+        thisDate.getFullYear() === selectedPickerDate.getFullYear() &&
+        thisDate.getMonth() === selectedPickerDate.getMonth() &&
+        thisDate.getDate() === selectedPickerDate.getDate()
+      ) {
+        btn.classList.add('selected');
+      }
+      btn.onclick = () => {
+        selectedPickerDate = new Date(year, month, day);
+        renderCalendar();
+      };
+      grid.appendChild(btn);
+    }
+  }
+
+  function applyPicker() {
+    const hour = Number(document.getElementById('reset-picker-hour').value);
+    const minute = Number(document.getElementById('reset-picker-minute').value);
+    selectedPickerDate.setHours(hour, minute, 0, 0);
+    newResetAt = selectedPickerDate.toISOString();
+    document.getElementById('reset-new-time-label').textContent = selectedPickerDate.toLocaleString();
+    closePicker();
+  }
+
+  function addCard() {
+    init();
+    const titleInput = document.getElementById('reset-new-title');
+    const title = titleInput.value.trim() || 'Custom API Reset';
+    cards.push({
+      id: randomId(),
+      title,
+      resetAt: newResetAt || tomorrowAt(9),
+      webhookUrl: '',
+      fired: false,
+      message: 'New countdown added.'
+    });
+    titleInput.value = '';
+    newResetAt = '';
+    document.getElementById('reset-new-time-label').textContent = 'No time selected';
+    saveCards();
+    render();
+  }
+
+  function updateCard(id, key, value) {
+    const card = cards.find(c => c.id === id);
+    if (!card) return;
+    card[key] = value;
+    if (key === 'resetAt') {
+      card.fired = false;
+      card.message = 'Reset time updated. Webhook firing re-armed.';
+    } else if (key === 'webhookUrl') {
+      card.message = value ? 'Webhook URL saved locally.' : 'Webhook URL removed.';
+    } else {
+      card.message = 'Card updated.';
+    }
+    saveCards();
+    render();
+  }
+
+  function deleteCard(id) {
+    cards = cards.filter(c => c.id !== id);
+    saveCards();
+    render();
+  }
+
+  function clearWebhook(id) {
+    const card = cards.find(c => c.id === id);
+    if (!card) return;
+    card.webhookUrl = '';
+    card.message = 'Webhook cleared.';
+    saveCards();
+    render();
+  }
+
+  async function testWebhook(id) {
+    await fireWebhook(id, false);
+  }
+
+  async function fireWebhook(id, auto) {
+    const card = cards.find(c => c.id === id);
+    if (!card) return;
+    if (!card.webhookUrl) {
+      card.message = 'No Pushcut webhook URL set for this card.';
+      saveCards();
+      render();
+      return;
+    }
+    try {
+      card.message = auto ? 'Reset reached - firing webhook...' : 'Testing webhook...';
+      saveCards();
+      await fetch(card.webhookUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: JSON.stringify({
+          title: card.title,
+          resetAt: card.resetAt,
+          event: auto ? 'countdown_reached_zero' : 'manual_test'
+        })
+      });
+      card.fired = auto ? true : card.fired;
+      card.message = auto ? 'Webhook fired when countdown reached zero.' : 'Webhook test sent.';
+    } catch (err) {
+      card.message = 'Webhook failed. Check the URL or browser/network permissions.';
+    }
+    saveCards();
+    render();
+  }
+
+  return {
+    init,
+    openNewPicker,
+    closePicker,
+    changePickerMonth,
+    applyPicker,
+    addCard,
+    updateCard,
+    deleteCard,
+    clearWebhook,
+    testWebhook,
+    fromLocalInput
+  };
+})();
 
 </script>
 
