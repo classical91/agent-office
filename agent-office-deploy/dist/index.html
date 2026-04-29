@@ -1662,7 +1662,8 @@
         <div class="nav-item" onclick="showAgentInfo('xbot')"><span class="icon">🤖</span> XBot</div>
         <div class="nav-item" onclick="showAgentInfo('guardian')"><span class="icon">🛡</span> Guardian</div>
         <div class="nav-item" onclick="showAgentInfo('command')"><span class="icon">📡</span> Command</div>
-        <div class="nav-item" onclick="showAgentInfo('fatherclaw')"><span class="icon">👑</span> FatherClaw</div>
+        <div class="nav-item" onclick="showAgentInfo('nova')"><span class="icon">🔭</span> Nova</div>
+        <div class="nav-item" style="opacity:0.35;pointer-events:none;text-decoration:line-through;" title="Retired - role absorbed by Nova"><span class="icon">👑</span> FatherClaw</div>
       </div>
     </div>
 
@@ -2179,9 +2180,8 @@
 (function() {
   const roster = [
     {name:'Devin', role:'Primary Agent', color:'#6366f1'},
-    {name:'FatherClaw', role:'Orchestrator', color:'#6366f1'},
+    {name:'Nova', role:'Orchestrator', color:'#6366f1'},
     {name:'Rig', role:'Execution Dev', color:'#10b981'},
-    {name:'Nova', role:'Product Researcher', color:'#f97316'},
     {name:'Penny', role:'Research & Strategy', color:'#f59e0b'},
     {name:'TraderClaw', role:'Trading Bot', color:'#22c55e'},
     {name:'WebClaw', role:'Web Developer', color:'#3b82f6'},
@@ -2233,21 +2233,21 @@
       <div class="org-connector-v"></div>
 
       <div class="org-row-center">
-        <div class="org-card org-card-wide" style="border-color:rgba(100,116,139,0.2);">
+        <div class="org-card org-card-wide glow-indigo" onclick="showAgentInfo('nova'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('nova')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(100,116,139,0.15);border-color:rgba(100,116,139,0.25);">👑</div>
+            <div class="org-avatar" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.25);">🔭</div>
             <div class="org-body">
-              <div class="org-name">FatherClaw</div>
+              <div class="org-name">Nova</div>
               <div class="org-title">Orchestrator</div>
-              <div class="org-desc">Routes tasks between all agents, monitors agent health, and manages cross-agent workflows. Jason's system-wide air traffic control.</div>
+              <div class="org-desc">Routes tasks between all agents, monitors agent health, and manages cross-agent workflows. Nova is Jason's primary system orchestrator and default OpenClaw agent.</div>
               <div class="org-tags">
                 <span class="org-tag org-tag-indigo">Routing</span>
-                <span class="org-tag org-tag-teal">Health</span>
-                <span class="org-tag org-tag-indigo">Workflows</span>
+                <span class="org-tag org-tag-teal">Strategy</span>
+                <span class="org-tag org-tag-indigo">Default</span>
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">VIEW AGENT →</div>
         </div>
       </div>
 
@@ -2539,12 +2539,12 @@
             <div class="org-avatar" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.25);">🔭</div>
             <div class="org-body">
               <div class="org-name">Nova</div>
-              <div class="org-title">Product Researcher</div>
-              <div class="org-desc">OpenClaw <code>dev</code> agent. Hunts niche pain points, drafts positioning briefs, scopes new product ideas.</div>
+              <div class="org-title">Orchestrator</div>
+              <div class="org-desc">System orchestrator. Routes tasks, monitors all agents, and coordinates cross-agent strategy. Jason's top-level coordinator and strategic brain.</div>
               <div class="org-tags">
-                <span class="org-tag org-tag-indigo">Research</span>
-                <span class="org-tag org-tag-teal">Briefs</span>
-                <span class="org-tag org-tag-indigo">Discovery</span>
+                <span class="org-tag org-tag-indigo">Orchestrator</span>
+                <span class="org-tag org-tag-teal">Strategy</span>
+                <span class="org-tag org-tag-indigo">Routing</span>
               </div>
             </div>
           </div>
@@ -3128,18 +3128,18 @@ const AGENTS = [
     ]
   },
   {
-    id: 'fatherclaw',
-    name: 'FatherClaw',
-    emoji: '👑',
-    color: '#64748b',
+    id: 'nova',
+    name: 'Nova',
+    emoji: '🔭',
+    color: '#6366f1',
     role: 'Orchestrator',
     model: 'Claude Sonnet 4.6',
     tasks: [
       'Routing tasks between agents',
       'Monitoring agent health',
-      'Idle',
       'Queuing cross-agent workflow',
       'Logging inter-agent comms',
+      'Coordinating product strategy',
     ],
     feed: [
       'Routed WebClaw brief from Swarm',
@@ -3227,10 +3227,10 @@ const OFFICE_ROUTES = {
     { gx: 8.78, gy: 4.58, pose: 'stand', facing: 'W', motion: 'reading', tasks: ['Drafting reply to @BitcoinMagazine', 'Scanning trending crypto posts', 'Monitoring @CoinDesk feed'] },
   ],
   nova: [
-    { gx: 1.84, gy: 5.42, pose: 'seated', facing: 'NE', motion: 'typing', tasks: ['Researching niche pain points', 'Analyzing competitor products', 'Drafting positioning brief'] },
-    { gx: 1.24, gy: 7.18, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Analyzing competitor products', 'Evaluating market size', 'Researching niche pain points'] },
-    { gx: 4.96, gy: 5.54, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Drafting positioning brief', 'Evaluating market size', 'Writing lead magnet outline'] },
-    { gx: 3.42, gy: 8.48, pose: 'stand', facing: 'N', motion: 'monitoring', tasks: ['Writing lead magnet outline', 'Researching niche pain points', 'Drafting positioning brief'] },
+    { gx: 6.9, gy: 8.32, pose: 'seated', facing: 'N', motion: 'typing', tasks: ['Routing tasks between agents', 'Monitoring agent health', 'Queuing cross-agent workflow'] },
+    { gx: 7.04, gy: 6.56, pose: 'stand', facing: 'N', motion: 'monitoring', tasks: ['Monitoring agent health', 'Routing tasks between agents', 'Logging inter-agent comms'] },
+    { gx: 7.34, gy: 4.32, pose: 'stand', facing: 'S', motion: 'monitoring', tasks: ['Queuing cross-agent workflow', 'Routing tasks between agents', 'Coordinating product strategy'] },
+    { gx: 4.28, gy: 6.92, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Logging inter-agent comms', 'Monitoring agent health', 'Queuing cross-agent workflow'] },
   ],
   lyra: [
     { gx: 4.46, gy: 7.46, pose: 'stand', facing: 'NE', motion: 'reading', tasks: ['Working on Innerverse...', 'Crafting narrative', 'Building world lore'] },
@@ -4576,7 +4576,8 @@ const AGENT_DESCRIPTIONS = {
   'xbot':       { name: 'XBot',      role: 'X Posting Bot',        model: 'GPT-5',             memory: false, desc: "Automated posting bot for @DiamondHands811. Handles scheduled X posts, content queuing, and crypto narrative amplification. Stateless - no memory, just executes the post queue." },
   'guardian':   { name: 'Guardian',  role: 'Security Agent',       model: 'Claude Sonnet 4.6', memory: true,  desc: "Security and hardening agent. Monitors OpenClaw gateway access, reviews auth logs, scans for anomalies, and hardens firewall and SSH rules. Quiet by default - speaks up when something is wrong." },
   'command':    { name: 'Command',   role: 'Orchestrator',         model: 'Claude Sonnet 4.6', memory: true,  desc: "Cross-agent orchestration layer. Routes tasks between agents, monitors agent health, and manages multi-agent workflows. The system internal air traffic control." },
-  'fatherclaw': { name: 'FatherClaw',role: 'Orchestrator',         model: 'Claude Sonnet 4.6', memory: true,  desc: "Senior orchestrator. Jason top-level system coordinator. Oversees all agents, manages inter-agent dependencies, and handles escalations." },
+  'nova':       { name: 'Nova',       role: 'Orchestrator',         model: 'Claude Sonnet 4.6', memory: true,  desc: "System orchestrator. Routes tasks between all agents, monitors agent health, and manages cross-agent workflows. Jason's primary strategic coordinator. Default OpenClaw agent." },
+  'fatherclaw': { name: 'FatherClaw',role: 'Retired',              model: 'Claude Sonnet 4.6', memory: false, desc: "Role absorbed by Nova. Orchestration duties and memory have been transferred to Nova, who now serves as Jason's primary system orchestrator." },
 };
 
 function showAgentInfo(id) {
