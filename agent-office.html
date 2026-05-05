@@ -609,18 +609,29 @@
     border-radius: 50%;
   }
 
-  .agent-eye:first-child { left: 2px; }
-  .agent-eye:last-child { right: 2px; }
+  .agent-eye:nth-child(1) { left: 2px; }
+  .agent-eye:nth-child(2) { right: 2px; }
+
+  .agent-nose {
+    position: absolute;
+    left: 50%;
+    top: 5px;
+    width: 3px;
+    height: 2px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: rgba(0,0,0,0.18);
+  }
 
   .agent-mouth {
     position: absolute;
     left: 50%;
-    bottom: 0;
-    width: 8px;
+    bottom: 1px;
+    width: 7px;
     height: 3px;
     transform: translateX(-50%);
-    border-radius: 999px;
-    background: rgba(127,29,29,0.38);
+    border-radius: 0 0 999px 999px;
+    background: rgba(100,30,30,0.55);
   }
 
   .agent-badge {
@@ -678,10 +689,48 @@
 
   @keyframes walkBob {
     0%, 100% { transform: translateY(0) scale(var(--agent-scale, 1)); }
-    50% { transform: translateY(-6px) scale(var(--agent-scale, 1)); }
+    50% { transform: translateY(-2px) scale(var(--agent-scale, 1)); }
   }
 
+  @keyframes walkStepLeft {
+    0%, 49% { transform: skewX(-5deg) translateY(0); }
+    50%, 100% { transform: skewX(-5deg) translateY(-5px); }
+  }
+  @keyframes walkStepRight {
+    0%, 49% { transform: skewX(5deg) translateY(-5px); }
+    50%, 100% { transform: skewX(5deg) translateY(0); }
+  }
+  @keyframes walkShoeLeft {
+    0%, 49% { transform: none; }
+    50%, 100% { transform: translateY(-5px); }
+  }
+  @keyframes walkShoeRight {
+    0%, 49% { transform: translateY(-5px); }
+    50%, 100% { transform: none; }
+  }
+  @keyframes walkArmLeft {
+    0%, 49% { transform: rotate(30deg); }
+    50%, 100% { transform: rotate(-5deg); }
+  }
+  @keyframes walkArmRight {
+    0%, 49% { transform: rotate(-5deg); }
+    50%, 100% { transform: rotate(-30deg); }
+  }
+
+  .agent-avatar.motion-walking .agent-leg.left  { animation: walkStepLeft  0.44s steps(1, end) infinite; }
+  .agent-avatar.motion-walking .agent-leg.right { animation: walkStepRight 0.44s steps(1, end) infinite; }
+  .agent-avatar.motion-walking .agent-shoe.left  { animation: walkShoeLeft  0.44s steps(1, end) infinite; }
+  .agent-avatar.motion-walking .agent-shoe.right { animation: walkShoeRight 0.44s steps(1, end) infinite; }
+  .agent-avatar.motion-walking .agent-arm.left  { animation: walkArmLeft  0.44s steps(1, end) infinite; }
+  .agent-avatar.motion-walking .agent-arm.right { animation: walkArmRight 0.44s steps(1, end) infinite; }
+
   .agent-char:nth-child(odd) .agent-avatar { animation-delay: -0.9s; }
+  .agent-char:nth-child(odd) .agent-avatar.motion-walking .agent-leg.left,
+  .agent-char:nth-child(odd) .agent-avatar.motion-walking .agent-shoe.left,
+  .agent-char:nth-child(odd) .agent-avatar.motion-walking .agent-arm.left  { animation-delay: -0.22s; }
+  .agent-char:nth-child(odd) .agent-avatar.motion-walking .agent-leg.right,
+  .agent-char:nth-child(odd) .agent-avatar.motion-walking .agent-shoe.right,
+  .agent-char:nth-child(odd) .agent-avatar.motion-walking .agent-arm.right { animation-delay: -0.22s; }
 
   /* RIGHT FEED */
   .feed {
@@ -3541,7 +3590,24 @@ function renderAgents() {
       <div class="agent-avatar">
         <div class="agent-shadow"></div>
         <div class="agent-chair"></div>
-        <canvas class="agent-pixel" width="26" height="36"></canvas>
+        <div class="agent-person">
+          <div class="agent-head">
+            <div class="agent-hair"></div>
+            <div class="agent-face">
+              <div class="agent-eye"></div>
+              <div class="agent-eye"></div>
+              <div class="agent-nose"></div>
+              <div class="agent-mouth"></div>
+            </div>
+          </div>
+          <div class="agent-body"></div>
+          <div class="agent-arm left"></div>
+          <div class="agent-arm right"></div>
+          <div class="agent-leg left"></div>
+          <div class="agent-leg right"></div>
+          <div class="agent-shoe left"></div>
+          <div class="agent-shoe right"></div>
+        </div>
         <div class="status-ring"></div>
       </div>
     `;
@@ -3642,6 +3708,14 @@ function syncAgentElement(agent) {
     if (look.motion) classes.push(`motion-${look.motion}`);
     avatar.className = classes.join(' ');
     avatar.style.setProperty('--chair', look.chair);
+    avatar.style.setProperty('--skin', look.skin || '#f1c8a1');
+    avatar.style.setProperty('--skin-light', shadeHex(look.skin || '#f1c8a1', 0.22));
+    avatar.style.setProperty('--hair', look.hair || '#334155');
+    avatar.style.setProperty('--hair-light', shadeHex(look.hair || '#334155', 0.28));
+    avatar.style.setProperty('--shirt', look.shirt || '#3b82f6');
+    avatar.style.setProperty('--shirt-light', shadeHex(look.shirt || '#3b82f6', 0.32));
+    avatar.style.setProperty('--pants', look.pants || '#1f2937');
+    avatar.style.setProperty('--pants-light', shadeHex(look.pants || '#1f2937', 0.22));
   }
 
   const ring = el.querySelector('.status-ring');
