@@ -420,12 +420,12 @@
     position: absolute;
     left: 50%;
     bottom: 2px;
-    width: 38px;
-    height: 12px;
+    width: 48px;
+    height: 14px;
     transform: translateX(-50%);
-    background: radial-gradient(ellipse at center, rgba(2,6,23,0.60), rgba(2,6,23,0));
+    background: radial-gradient(ellipse at center, rgba(2,6,23,0.70), rgba(2,6,23,0));
     border-radius: 50%;
-    filter: blur(3px);
+    filter: blur(4px);
   }
 
   .agent-chair {
@@ -3429,11 +3429,10 @@ const SVG_OY = 295;   // viewBox y of tile (0,0) top
 const SVG_HW = 40;    // half tile width  (viewBox)
 const SVG_HH = 20;    // half tile height (viewBox)
 
-// The pixel-art avatar inside .agent-char has its feet ~10 CSS px above the
-// bottom of its wrapper (agent-pixel sits at bottom:8px, shoes occupy 2 more
-// CSS px above the canvas bottom). Shift the projection down by that much so
-// the feet actually plant on the tile instead of floating above it.
-const AGENT_FOOT_OFFSET_PX = 10;
+// CSS person sits at bottom:0 of the avatar; shoes are at bottom:2px within
+// the person, so feet are 2px above the avatar's bottom edge. Shift the
+// projection down by that amount so feet plant on the tile surface.
+const AGENT_FOOT_OFFSET_PX = 2;
 
 function getOfficeMetrics(width = canvas.width, height = canvas.height) {
   const scale = width / SVG_VB_W;
@@ -3485,7 +3484,7 @@ function applyAgentDepth(el, yNorm) {
   const scale = depthScale(yNorm);
   el.style.setProperty('--agent-scale', scale.toFixed(2));
   el.style.setProperty('--agent-z', String(100 + Math.round(yNorm * 100)));
-  el.style.filter = `drop-shadow(0 ${Math.round(14 * scale)}px ${Math.round(24 * scale)}px rgba(0,0,0,0.42))`;
+  el.style.filter = `drop-shadow(0 1px ${Math.round(5 * scale)}px rgba(0,0,0,0.35))`;
   const label = el.querySelector('.agent-label');
   if (label) label.style.opacity = (0.84 + yNorm * 0.18).toFixed(2);
 }
