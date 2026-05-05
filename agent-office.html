@@ -393,7 +393,6 @@
     height: 102px;
     transform-origin: 50% 100%;
     transform: scale(var(--agent-scale, 1));
-    animation: officeBob 2.15s ease-in-out infinite;
   }
 
   .agent-char.agent-moving .agent-label {
@@ -668,28 +667,28 @@
 
   @keyframes officeBob {
     0%, 100% { transform: translateY(0) scale(var(--agent-scale, 1)); }
-    50% { transform: translateY(-4px) scale(var(--agent-scale, 1)); }
+    50% { transform: translateY(-1px) scale(var(--agent-scale, 1)); }
   }
 
   @keyframes typingBob {
-    0%, 100% { transform: translateY(0) scale(var(--agent-scale, 1)) rotate(0deg); }
-    35% { transform: translateY(-2px) scale(var(--agent-scale, 1)) rotate(-1.4deg); }
-    68% { transform: translateY(-4px) scale(var(--agent-scale, 1)) rotate(1.25deg); }
+    0%, 100% { transform: scale(var(--agent-scale, 1)) rotate(0deg); }
+    35% { transform: scale(var(--agent-scale, 1)) rotate(-1.2deg); }
+    68% { transform: scale(var(--agent-scale, 1)) rotate(1deg); }
   }
 
   @keyframes readingLean {
-    0%, 100% { transform: translateY(0) scale(var(--agent-scale, 1)) rotate(0deg); }
-    50% { transform: translateY(-2px) scale(var(--agent-scale, 1)) rotate(-2.4deg); }
+    0%, 100% { transform: scale(var(--agent-scale, 1)) rotate(0deg); }
+    50% { transform: scale(var(--agent-scale, 1)) rotate(-1.8deg); }
   }
 
   @keyframes monitorShift {
-    0%, 100% { transform: translateY(0) scale(var(--agent-scale, 1)) rotate(0deg); }
-    50% { transform: translateY(-2px) scale(var(--agent-scale, 1)) rotate(1.6deg); }
+    0%, 100% { transform: scale(var(--agent-scale, 1)) rotate(0deg); }
+    50% { transform: scale(var(--agent-scale, 1)) rotate(1.4deg); }
   }
 
   @keyframes walkBob {
-    0%, 100% { transform: translateY(0) scale(var(--agent-scale, 1)); }
-    50% { transform: translateY(-2px) scale(var(--agent-scale, 1)); }
+    0%, 100% { transform: scale(var(--agent-scale, 1)); }
+    50% { transform: scale(var(--agent-scale, 1)); }
   }
 
   @keyframes walkStepLeft {
