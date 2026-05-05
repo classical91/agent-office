@@ -1660,11 +1660,12 @@
   <div class="topbar-meta">
     <span><span class="online-dot"></span><span id="onlineCount">9</span> agents online</span>
     <span id="clock">--:--:--</span>
+    <button id="feed-toggle-btn" onclick="toggleFeedPanel()" title="Toggle activity panel" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">☰ Agents</button>
     <button id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode — hide panels" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">⛶ Focus</button>
   </div>
 </div>
 
-<div class="layout">
+<div class="layout feed-collapsed">
 
   <!-- LEFT NAV -->
   <nav class="nav">
@@ -1826,7 +1827,6 @@
 <line x1="286" y1="392.6" x2="198" y2="394.6" stroke="#00ff88" stroke-width="0.8" opacity="0.7"/>
 <line x1="286" y1="399.8" x2="198" y2="401.8" stroke="#00ff88" stroke-width="0.8" opacity="0.7"/>
 <polygon points="282,345 202,381 202,389 282,353" fill="#6366f1" opacity="0.7"/>
-<text x="242" y="333" text-anchor="middle" font-size="8" fill="#a090c8" style="font-family:sans-serif;">MAIN DISPLAY</text>
 <circle cx="790" cy="360" r="14" fill="#1e1a2e" stroke="#5040a0" stroke-width="1.5"/>
 <circle cx="790" cy="360" r="11" fill="#2a2444"/>
 <line x1="790" y1="360" x2="790" y2="352" stroke="#c0b0e0" stroke-width="1.5" stroke-linecap="round"/>
@@ -2206,7 +2206,6 @@
 <ellipse cx="222" cy="454" rx="6.8" ry="4.25" fill="#4a8a3d"/>
 <ellipse cx="219.45" cy="455.7" rx="3.4" ry="2.55" fill="#5aaa4d" opacity="0.5"/>
 <ellipse cx="222" cy="474.4" rx="6.8" ry="2.55" fill="url(#shadowGrad)"/>
-<text x="394" y="581" text-anchor="middle" font-size="10" fill="#5a5080" style="font-family:sans-serif; letter-spacing:0.08em; font-weight:500; text-transform:uppercase;">AGENT OFFICE / FLOOR 01</text>
 
         </svg>
       </div>
@@ -2927,7 +2926,7 @@
   <!-- ACTIVITY FEED -->
   <aside class="feed">
     <div class="feed-header">
-      Live Activity <span class="badge" id="feedCount">0</span>
+      Activity <span class="badge" id="feedCount">0</span>
     </div>
     <div class="feed-list" id="feedList"></div>
   </aside>
@@ -3803,10 +3802,7 @@ renderAgents();
 centerOfficeView(true);
 renderStatusBar();
 
-// Seed initial feed
-agentState.forEach(agent => addFeedItem(agent, randomFrom(agent.feed)));
-
-// Kick off loops
+// Kick off loops (demo tick disabled — real activity only)
 let tickInterval = null;
 function startTickLoop() {
   if (!tickInterval) tickInterval = setInterval(tick, 3500);
@@ -3816,14 +3812,6 @@ function stopTickLoop() {
   clearInterval(tickInterval);
   tickInterval = null;
 }
-
-startTickLoop();
-
-
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) stopTickLoop();
-  else startTickLoop();
-});
 
 window.AOResets = (() => {
   const STORAGE_KEY = 'agent-office-per-card-countdowns-v2';
@@ -4724,6 +4712,21 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ─── PANEL COLLAPSE ───────────────────────────────────────────────────────────
+let feedPanelOpen = false;
+
+function toggleFeedPanel() {
+  feedPanelOpen = !feedPanelOpen;
+  const layout = document.querySelector('.layout');
+  const btn = document.getElementById('feed-toggle-btn');
+  if (feedPanelOpen) {
+    layout.classList.remove('feed-collapsed');
+    if (btn) { btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(99,102,241,0.12)'; }
+  } else {
+    layout.classList.add('feed-collapsed');
+    if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
+  }
+}
+
 let focusMode = false;
 
 function setFocusMode(enabled) {
@@ -4737,7 +4740,9 @@ function setFocusMode(enabled) {
     btn.style.background = 'rgba(99,102,241,0.12)';
     btn.textContent = '⛶ Focus';
   } else {
-    layout.classList.remove('nav-collapsed', 'feed-collapsed');
+    layout.classList.remove('nav-collapsed');
+    if (!feedPanelOpen) layout.classList.add('feed-collapsed');
+    else layout.classList.remove('feed-collapsed');
     btn.style.color = 'var(--muted)';
     btn.style.borderColor = 'var(--border)';
     btn.style.background = 'transparent';
@@ -5323,7 +5328,9 @@ window.switchView = function(view, navEl) {
     focusMode = false;
     if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
   } else {
-    layout.classList.remove('nav-collapsed', 'feed-collapsed');
+    layout.classList.remove('nav-collapsed');
+    if (!feedPanelOpen) layout.classList.add('feed-collapsed');
+    else layout.classList.remove('feed-collapsed');
     focusMode = false;
     if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
   }
