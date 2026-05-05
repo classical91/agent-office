@@ -471,17 +471,17 @@
   .agent-person {
     position: absolute;
     left: 50%;
-    bottom: 8px;
+    bottom: 0;
     width: 54px;
     height: 86px;
     transform: translateX(-50%);
   }
 
-  .agent-avatar.seated .agent-person { bottom: 10px; }
+  .agent-avatar.seated .agent-person { bottom: 2px; }
 
   .agent-leg {
     position: absolute;
-    bottom: 10px;
+    bottom: 7px;
     width: 10px;
     height: 28px;
     background: linear-gradient(180deg, var(--pants-light), var(--pants));
@@ -491,11 +491,11 @@
 
   .agent-leg.left { left: 16px; transform: skewX(-5deg); }
   .agent-leg.right { right: 16px; transform: skewX(5deg); }
-  .agent-avatar.seated .agent-leg { height: 18px; bottom: 14px; }
+  .agent-avatar.seated .agent-leg { height: 18px; bottom: 10px; }
 
   .agent-shoe {
     position: absolute;
-    bottom: 8px;
+    bottom: 2px;
     width: 12px;
     height: 5px;
     background: #111827;
@@ -504,12 +504,12 @@
 
   .agent-shoe.left { left: 15px; }
   .agent-shoe.right { right: 15px; }
-  .agent-avatar.seated .agent-shoe { bottom: 12px; }
+  .agent-avatar.seated .agent-shoe { bottom: 6px; }
 
   .agent-body {
     position: absolute;
     left: 50%;
-    bottom: 30px;
+    bottom: 27px;
     width: 32px;
     height: 34px;
     transform: translateX(-50%);
@@ -550,9 +550,9 @@
   .agent-head {
     position: absolute;
     left: 50%;
-    top: 4px;
-    width: 30px;
-    height: 31px;
+    top: 2px;
+    width: 32px;
+    height: 34px;
     transform: translateX(-50%);
     border-radius: 10px 10px 12px 12px;
     background: linear-gradient(180deg, var(--skin-light), var(--skin));
@@ -566,7 +566,7 @@
     left: -2px;
     right: -2px;
     top: -3px;
-    height: 15px;
+    height: 11px;
     background: linear-gradient(180deg, var(--hair-light), var(--hair));
     border-radius: 55% 55% 30% 30%;
   }
@@ -593,18 +593,29 @@
   .agent-face {
     position: absolute;
     left: 50%;
-    top: 11px;
-    width: 16px;
-    height: 11px;
+    top: 13px;
+    width: 22px;
+    height: 13px;
     transform: translateX(-50%);
   }
 
   .agent-eye {
     position: absolute;
     top: 1px;
-    width: 3px;
-    height: 3px;
-    background: #111827;
+    width: 4px;
+    height: 4px;
+    background: #000;
+    border-radius: 1px;
+  }
+
+  .agent-eye::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    background: rgba(255,255,255,0.7);
     border-radius: 50%;
   }
 
@@ -614,23 +625,24 @@
   .agent-nose {
     position: absolute;
     left: 50%;
-    top: 5px;
+    top: 6px;
     width: 3px;
     height: 2px;
     transform: translateX(-50%);
     border-radius: 50%;
-    background: rgba(0,0,0,0.18);
+    background: rgba(0,0,0,0.28);
   }
 
   .agent-mouth {
     position: absolute;
     left: 50%;
-    bottom: 1px;
-    width: 7px;
+    bottom: 0;
+    width: 9px;
     height: 3px;
     transform: translateX(-50%);
-    border-radius: 0 0 999px 999px;
-    background: rgba(100,30,30,0.55);
+    border-radius: 0 0 6px 6px;
+    background: #b04040;
+    border-top: 1px solid rgba(0,0,0,0.2);
   }
 
   .agent-badge {
