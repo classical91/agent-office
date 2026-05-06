@@ -360,7 +360,7 @@
     background: linear-gradient(180deg, rgba(17,24,39,0.95), rgba(7,10,18,0.88));
     border: 1px solid rgba(148,163,184,0.22);
     border-radius: 11px;
-    padding: 6px 10px;
+    padding: 6px 10px 6px 8px;
     font-size: 9px;
     color: #dbe6f4;
     white-space: nowrap;
@@ -372,6 +372,14 @@
     text-overflow: ellipsis;
     text-align: center;
     transition: opacity 0.2s ease, transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .agent-label-text {
+    display: flex;
+    flex-direction: column;
   }
 
   .agent-label strong {
@@ -385,6 +393,14 @@
   .agent-label span {
     color: #a5b4fc;
     font-size: 8px;
+  }
+
+  .agent-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 1px solid rgba(0,0,0,0.3);
   }
 
   .agent-avatar {
@@ -668,16 +684,7 @@
 
   .agent-avatar.seated .agent-badge { top: 42px; }
 
-  .status-ring {
-    position: absolute;
-    right: 7px;
-    top: 42px;
-    width: 11px;
-    height: 11px;
-    border-radius: 50%;
-    border: 2px solid rgba(10,12,17,0.95);
-    box-shadow: 0 0 0 3px rgba(15,23,42,0.55), 0 0 10px rgba(255,255,255,0.15);
-  }
+  .status-ring { display: none; }
 
   @keyframes officeBob {
     0%, 100% { transform: translateY(0) scale(var(--agent-scale, 1)); }
@@ -3464,10 +3471,12 @@ function getOfficeMetrics(width = canvas.width, height = canvas.height) {
 function projectAgentPosition(agent, metrics = getOfficeMetrics(officeArea.clientWidth, officeArea.clientHeight)) {
   const point = metrics.iso(agent.pos.gx, agent.pos.gy, 0);
   const depth = Math.max(0.08, Math.min(0.96, (agent.pos.gx + agent.pos.gy) / (metrics.gridW + metrics.gridH)));
-  // AGENT_FOOT_OFFSET_PX is measured on an unscaled avatar. The avatar gets
-  // scaled by depthScale(depth) via --agent-scale (transform-origin bottom),
-  // so compensate here to keep feet glued to the tile at every depth.
-  return { x: point.x, y: point.y + AGENT_FOOT_OFFSET_PX * depthScale(depth), depth };
+  const ds = depthScale(depth);
+  // The canvas sits at bottom:8px inside the avatar; after the avatar is
+  // scaled by ds (transform-origin: bottom), the canvas visual bottom lands
+  // at projected.y − 8*ds.  We want that to equal the tile's front vertex
+  // (iso.y + tileH/2), so projected.y = iso.y + tileH/2 + 8*ds.
+  return { x: point.x, y: point.y + metrics.tileH / 2 + 8 * ds, depth };
 }
 
 function resizeCanvas() {
@@ -3596,14 +3605,16 @@ function renderAgents() {
 
     el.innerHTML = `
       <div class="agent-label">
-        <strong>${agent.name}</strong>
-        <span>${agent.currentTask}</span>
+        <div class="agent-status-dot"></div>
+        <div class="agent-label-text">
+          <strong>${agent.name}</strong>
+          <span>${agent.currentTask}</span>
+        </div>
       </div>
       <div class="agent-avatar">
         <div class="agent-shadow"></div>
         <div class="agent-chair"></div>
         <canvas class="agent-pixel" width="26" height="36"></canvas>
-        <div class="status-ring"></div>
       </div>
     `;
 
@@ -3713,9 +3724,9 @@ function syncAgentElement(agent) {
     avatar.style.setProperty('--pants-light', shadeHex(look.pants || '#1f2937', 0.22));
   }
 
-  const ring = el.querySelector('.status-ring');
-  if (ring) {
-    ring.style.background = agent.status === 'active'
+  const dot = el.querySelector('.agent-status-dot');
+  if (dot) {
+    dot.style.background = agent.status === 'active'
       ? 'var(--green)'
       : agent.status === 'idle'
         ? 'var(--yellow)'
