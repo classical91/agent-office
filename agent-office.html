@@ -474,7 +474,8 @@
     bottom: 0;
     width: 54px;
     height: 86px;
-    transform: translateX(-50%);
+    transform-origin: 50% 100%;
+    transform: translateX(-50%) perspective(220px) rotateX(-14deg);
   }
 
   .agent-avatar.seated .agent-person { bottom: 2px; }
@@ -3429,10 +3430,10 @@ const SVG_OY = 295;   // viewBox y of tile (0,0) top
 const SVG_HW = 40;    // half tile width  (viewBox)
 const SVG_HH = 20;    // half tile height (viewBox)
 
-// CSS person sits at bottom:0 of the avatar; shoes are at bottom:2px within
-// the person, so feet are 2px above the avatar's bottom edge. Shift the
-// projection down by that amount so feet plant on the tile surface.
-const AGENT_FOOT_OFFSET_PX = 2;
+// Shoe bottom is 2px above the avatar's bottom edge. The offset compensates so
+// that feet land on the front-face of the isometric tile (iso() returns the tile
+// centroid; +16 pushes feet ~14px into the visible front half of the diamond).
+const AGENT_FOOT_OFFSET_PX = 16;
 
 function getOfficeMetrics(width = canvas.width, height = canvas.height) {
   const scale = width / SVG_VB_W;
