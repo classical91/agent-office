@@ -419,13 +419,13 @@
   .agent-shadow {
     position: absolute;
     left: 50%;
-    bottom: -6px;
-    width: 60px;
-    height: 18px;
+    bottom: 4px;
+    width: 44px;
+    height: 14px;
     transform: translateX(-50%);
-    background: radial-gradient(ellipse at center, rgba(2,6,23,0.85), rgba(2,6,23,0));
+    background: radial-gradient(ellipse at center, rgba(2,6,23,0.75), rgba(2,6,23,0));
     border-radius: 50%;
-    filter: blur(5px);
+    filter: blur(4px);
     z-index: 1;
   }
 
@@ -3431,12 +3431,10 @@ const SVG_OY = 295;   // viewBox y of tile (0,0) top
 const SVG_HW = 40;    // half tile width  (viewBox)
 const SVG_HH = 20;    // half tile height (viewBox)
 
-// The shadow ellipse sits 6px below the avatar's bottom edge (bottom: -6px).
-// To place the shadow center at the iso() target point (tile centroid), the
-// avatar bottom must be 6px above iso.y, i.e. AGENT_FOOT_OFFSET_PX = -6. Shoes
-// then sit ~10px above the shadow, giving a clear "standing on the ground"
-// silhouette where the shadow is visibly under the character's feet.
-const AGENT_FOOT_OFFSET_PX = -6;
+// Habbo sprite canvas sits at bottom:8px and the sprite's feet land near the
+// canvas bottom, so feet are ~10px above the avatar's bottom edge. Shift the
+// projection down by that amount so the feet plant on the tile.
+const AGENT_FOOT_OFFSET_PX = 10;
 
 function getOfficeMetrics(width = canvas.width, height = canvas.height) {
   const scale = width / SVG_VB_W;
@@ -3604,24 +3602,7 @@ function renderAgents() {
       <div class="agent-avatar">
         <div class="agent-shadow"></div>
         <div class="agent-chair"></div>
-        <div class="agent-person">
-          <div class="agent-head">
-            <div class="agent-hair"></div>
-            <div class="agent-face">
-              <div class="agent-eye"></div>
-              <div class="agent-eye"></div>
-              <div class="agent-nose"></div>
-              <div class="agent-mouth"></div>
-            </div>
-          </div>
-          <div class="agent-body"></div>
-          <div class="agent-arm left"></div>
-          <div class="agent-arm right"></div>
-          <div class="agent-leg left"></div>
-          <div class="agent-leg right"></div>
-          <div class="agent-shoe left"></div>
-          <div class="agent-shoe right"></div>
-        </div>
+        <canvas class="agent-pixel" width="26" height="36"></canvas>
         <div class="status-ring"></div>
       </div>
     `;
