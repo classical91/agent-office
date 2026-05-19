@@ -1851,7 +1851,7 @@
     <div class="nav-section">
       <div class="nav-label" onclick="toggleNav(this)">System <span class="nav-chevron">▾</span></div>
       <div class="nav-items-wrap">
-        <div class="nav-item"><span class="icon">⚙️</span> Settings</div>
+        <div class="nav-item" onclick="switchView('settings', this)"><span class="icon">⚙️</span> Settings</div>
         <a class="nav-link" data-dev-only="true" href="http://localhost:18789" target="_blank">
           <div class="link-dot" style="background:#6366f1;"></div> Gateway (local) <span class="link-ext">↗</span>
         </a>
@@ -3027,6 +3027,79 @@
 
 </div>
 
+<!-- SETTINGS VIEW -->
+<div class="view" id="view-settings" style="flex-direction:column; background:#0a0c11; overflow-y:auto;">
+  <div style="max-width:720px; width:100%; margin:0 auto; padding:40px 28px 80px;">
+
+    <div style="margin-bottom:36px;">
+      <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">⚙️ SETTINGS</div>
+      <div style="font-size:13px; color:var(--muted);">Configure Agent Office preferences and manage local data.</div>
+    </div>
+
+    <!-- Gateway URLs -->
+    <div style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:20px;">
+      <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px;">Gateway URLs</div>
+      <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">Set custom gateway endpoints. Saved to this browser's localStorage.</div>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">Local Gateway</label>
+        <input id="settings-gateway-local" type="url" placeholder="http://localhost:18789" style="width:100%; background:#0d0f14; border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:13px; color:var(--text); outline:none; box-sizing:border-box;" />
+      </div>
+      <div style="margin-bottom:18px;">
+        <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">LAN Gateway</label>
+        <input id="settings-gateway-lan" type="url" placeholder="http://10.0.0.106:18789" style="width:100%; background:#0d0f14; border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:13px; color:var(--text); outline:none; box-sizing:border-box;" />
+      </div>
+      <button onclick="SETTINGS.saveGateway()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:10px 20px; font-size:13px; font-weight:600; cursor:pointer;">Save Gateway URLs</button>
+      <span id="settings-gateway-msg" style="font-size:12px; color:#22c55e; margin-left:14px; display:none;">Saved.</span>
+    </div>
+
+    <!-- Data Management -->
+    <div style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:20px;">
+      <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px;">Local Data</div>
+      <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">All data is stored in this browser's localStorage. Nothing is sent to any server.</div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:#0d0f14; border-radius:8px; border:1px solid var(--border);">
+          <div>
+            <div style="font-size:13px; color:var(--text); margin-bottom:2px;">Reset Countdowns</div>
+            <div style="font-size:11px; color:var(--muted);">Clears all API reset countdown cards</div>
+          </div>
+          <button onclick="SETTINGS.clearKey('agent-office-per-card-countdowns-v2', this)" style="background:transparent; color:#ef4444; border:1px solid #ef4444; border-radius:6px; padding:7px 14px; font-size:12px; cursor:pointer;">Clear</button>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:#0d0f14; border-radius:8px; border:1px solid var(--border);">
+          <div>
+            <div style="font-size:13px; color:var(--text); margin-bottom:2px;">Memory Entries</div>
+            <div style="font-size:11px; color:var(--muted);">Clears all saved agent memory entries</div>
+          </div>
+          <button onclick="SETTINGS.clearKey('ao-memory', this)" style="background:transparent; color:#ef4444; border:1px solid #ef4444; border-radius:6px; padding:7px 14px; font-size:12px; cursor:pointer;">Clear</button>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:#0d0f14; border-radius:8px; border:1px solid var(--border);">
+          <div>
+            <div style="font-size:13px; color:var(--text); margin-bottom:2px;">Nav Layout</div>
+            <div style="font-size:11px; color:var(--muted);">Resets sidebar collapsed/expanded state</div>
+          </div>
+          <button onclick="SETTINGS.clearKey('nav-collapsed-state', this)" style="background:transparent; color:#ef4444; border:1px solid #ef4444; border-radius:6px; padding:7px 14px; font-size:12px; cursor:pointer;">Clear</button>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:#0d0f14; border-radius:8px; border:1px solid var(--border);">
+          <div>
+            <div style="font-size:13px; color:var(--text); margin-bottom:2px;">All Local Data</div>
+            <div style="font-size:11px; color:var(--muted);">Wipes everything stored by this app</div>
+          </div>
+          <button onclick="SETTINGS.clearAll()" style="background:#ef4444; color:#fff; border:none; border-radius:6px; padding:7px 14px; font-size:12px; font-weight:600; cursor:pointer;">Clear All</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- About -->
+    <div style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px;">
+      <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:12px;">About</div>
+      <div style="font-size:12px; color:var(--muted); line-height:1.7;">
+        <div>Agent Office — AI agent management dashboard</div>
+        <div style="margin-top:4px; color:#4b5563;">All data is local. No telemetry. No account required.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <!-- BOTTOM STATUS BAR -->
 <div class="statusbar" id="statusbar"></div>
 
@@ -3882,6 +3955,45 @@ const VIEW_HANDLERS = {
 };
 VIEW_HANDLERS.calendar = { enter: () => { if (window.CAL) window.CAL.render(); }, focus: false };
 VIEW_HANDLERS.resets = { enter: () => { if (window.AOResets) window.AOResets.init(); }, focus: false };
+VIEW_HANDLERS.settings = { enter: () => { if (window.SETTINGS) window.SETTINGS.load(); }, focus: false };
+
+window.SETTINGS = (() => {
+  const GW_LOCAL_KEY = 'ao-gateway-local';
+  const GW_LAN_KEY   = 'ao-gateway-lan';
+
+  function load() {
+    const local = localStorage.getItem(GW_LOCAL_KEY);
+    const lan   = localStorage.getItem(GW_LAN_KEY);
+    const inpLocal = document.getElementById('settings-gateway-local');
+    const inpLan   = document.getElementById('settings-gateway-lan');
+    if (inpLocal) inpLocal.value = local || '';
+    if (inpLan)   inpLan.value   = lan   || '';
+  }
+
+  function saveGateway() {
+    const local = (document.getElementById('settings-gateway-local').value || '').trim();
+    const lan   = (document.getElementById('settings-gateway-lan').value   || '').trim();
+    if (local) localStorage.setItem(GW_LOCAL_KEY, local); else localStorage.removeItem(GW_LOCAL_KEY);
+    if (lan)   localStorage.setItem(GW_LAN_KEY,   lan);   else localStorage.removeItem(GW_LAN_KEY);
+    const msg = document.getElementById('settings-gateway-msg');
+    if (msg) { msg.style.display = 'inline'; setTimeout(() => { msg.style.display = 'none'; }, 2000); }
+  }
+
+  function clearKey(key, btn) {
+    if (!confirm('Clear "' + key + '" from localStorage?')) return;
+    localStorage.removeItem(key);
+    if (btn) { btn.textContent = 'Cleared'; btn.disabled = true; setTimeout(() => { btn.textContent = 'Clear'; btn.disabled = false; }, 2000); }
+  }
+
+  function clearAll() {
+    if (!confirm('Wipe ALL local data for Agent Office? This cannot be undone.')) return;
+    localStorage.clear();
+    location.reload();
+  }
+
+  return { load, saveGateway, clearKey, clearAll };
+})();
+
 let currentView = 'office';
 
 function switchView(view, navEl) {
