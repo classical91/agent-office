@@ -1509,9 +1509,13 @@
   .btn-danger { background: transparent; color: #f87171; border-color: rgba(248,113,113,0.35); }
   .btn-danger:hover { background: rgba(248,113,113,0.1); }
   .hidden { display: none !important; }
+  .drop-detail-back { display: none; align-items: center; gap: 6px; margin-bottom: 14px; font-size: 14px; color: var(--accent); cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; font-weight: 500; }
   @media (max-width: 980px) {
     .dropbox-layout { grid-template-columns: 1fr; }
     .drop-detail-panel { order: -1; }
+    .drop-detail-back { display: flex; }
+    .dropbox-layout.has-selection .dropbox-main { display: none; }
+    .dropbox-layout.has-selection .drop-detail-panel { order: 0; }
   }
   @media (max-width: 600px) {
     .dropbox-view { padding: 12px; }
@@ -5194,7 +5198,7 @@ function renderDropCards() {
         <h3 class="drop-card-title">${escHTML(drop.title || 'Untitled drop')}</h3>
         <span class="drop-card-date">${dropFormatShortDate(drop.updated_at || drop.date)}</span>
       </div>
-      <p class="drop-card-preview">${escHTML(preview || 'No content')}</p>
+      ${preview ? `<p class="drop-card-preview">${escHTML(preview)}</p>` : ''}
       ${hasMeta ? `<div class="drop-card-meta">
         ${dropBadge(drop.status, 'status')}
         ${dropBadge(drop.subject, 'subject')}
@@ -5216,10 +5220,13 @@ function renderDetailPanel() {
   if (!panel) return;
   const drop = dropboxState.drops.find(d => d.id === dropboxState.selectedId);
 
+  const layout = document.querySelector('.dropbox-layout');
   if (!drop) {
     panel.innerHTML = '<div class="drop-detail-empty">Select a drop to view details.</div>';
+    layout?.classList.remove('has-selection');
     return;
   }
+  layout?.classList.add('has-selection');
 
   const backlinks = dropboxState.drops.filter(other =>
     other.id !== drop.id &&
@@ -5244,6 +5251,7 @@ function renderDetailPanel() {
 
   panel.innerHTML = `
     <div class="drop-detail">
+      <button class="drop-detail-back" id="drop-detail-back">← Notes</button>
       <div class="drop-detail-header">
         <h2 class="drop-detail-title">${escHTML(drop.title || 'Untitled drop')}</h2>
         <div class="drop-detail-meta-row">
@@ -5258,6 +5266,12 @@ function renderDetailPanel() {
         <button id="delete-drop-btn" class="btn btn-danger">Delete</button>
       </div>
     </div>`;
+
+  document.getElementById('drop-detail-back')?.addEventListener('click', () => {
+    dropboxState.selectedId = null;
+    document.querySelector('.dropbox-layout')?.classList.remove('has-selection');
+    renderDropbox();
+  });
 
   document.getElementById('toggle-done-btn').addEventListener('click', async () => {
     try {
