@@ -3036,6 +3036,13 @@
       <div style="font-size:13px; color:var(--muted);">Configure Agent Office preferences and manage local data.</div>
     </div>
 
+    <!-- Theme -->
+    <div style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:20px;">
+      <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px;">Theme</div>
+      <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">Choose a color theme. Saved to this browser's localStorage.</div>
+      <div id="settings-theme-grid" style="display:flex; gap:12px; flex-wrap:wrap;"></div>
+    </div>
+
     <!-- Gateway URLs -->
     <div style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:20px;">
       <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px;">Gateway URLs</div>
@@ -3960,6 +3967,48 @@ VIEW_HANDLERS.settings = { enter: () => { if (window.SETTINGS) window.SETTINGS.l
 window.SETTINGS = (() => {
   const GW_LOCAL_KEY = 'ao-gateway-local';
   const GW_LAN_KEY   = 'ao-gateway-lan';
+  const THEME_KEY    = 'ao-theme';
+
+  const THEMES = {
+    dark:     { label: 'Dark',     bg: '#0d0f14', panel: '#13161d', border: '#1e2330', text: '#e2e8f0', muted: '#64748b', accent: '#6366f1', viewBg: '#0a0c11' },
+    midnight: { label: 'Midnight', bg: '#000000', panel: '#0e0e0e', border: '#1c1c1c', text: '#f1f5f9', muted: '#52525b', accent: '#10b981', viewBg: '#000000' },
+    ocean:    { label: 'Ocean',    bg: '#050e1c', panel: '#091626', border: '#0f2540', text: '#e0f2fe', muted: '#4a7090', accent: '#38bdf8', viewBg: '#050e1c' },
+    crimson:  { label: 'Crimson',  bg: '#0f0808', panel: '#160c0c', border: '#2c1212', text: '#fef2f2', muted: '#7a5050', accent: '#ef4444', viewBg: '#0f0808' },
+    forest:   { label: 'Forest',   bg: '#060e08', panel: '#09160b', border: '#122818', text: '#f0fdf4', muted: '#4a7055', accent: '#22c55e', viewBg: '#060e08' },
+    amber:    { label: 'Amber',    bg: '#0f0c05', panel: '#17120a', border: '#2e2010', text: '#fefce8', muted: '#7a6535', accent: '#f59e0b', viewBg: '#0f0c05' },
+  };
+
+  function applyTheme(name) {
+    const t = THEMES[name] || THEMES.dark;
+    const s = document.documentElement.style;
+    s.setProperty('--bg',     t.bg);
+    s.setProperty('--panel',  t.panel);
+    s.setProperty('--border', t.border);
+    s.setProperty('--text',   t.text);
+    s.setProperty('--muted',  t.muted);
+    s.setProperty('--accent', t.accent);
+    document.body.style.background = t.bg;
+    document.querySelectorAll('.view').forEach(el => { el.style.background = t.viewBg; });
+    localStorage.setItem(THEME_KEY, name);
+    const grid = document.getElementById('settings-theme-grid');
+    if (grid) renderThemePicker(grid, name);
+  }
+
+  function renderThemePicker(grid, active) {
+    active = active || localStorage.getItem(THEME_KEY) || 'dark';
+    grid.innerHTML = Object.entries(THEMES).map(([key, t]) => {
+      const on = key === active;
+      return `<button onclick="SETTINGS.applyTheme('${key}')" style="display:flex;flex-direction:column;align-items:center;gap:8px;background:${t.panel};border:2px solid ${on ? t.accent : t.border};border-radius:12px;padding:14px 16px;cursor:pointer;min-width:76px;transition:border-color 0.15s;">
+        <div style="display:flex;gap:4px;">
+          <div style="width:13px;height:13px;border-radius:50%;background:${t.bg};border:1px solid ${t.border};"></div>
+          <div style="width:13px;height:13px;border-radius:50%;background:${t.panel};border:1px solid ${t.border};"></div>
+          <div style="width:13px;height:13px;border-radius:50%;background:${t.accent};"></div>
+        </div>
+        <div style="font-size:11px;color:${t.text};font-weight:${on ? 600 : 400};">${t.label}</div>
+        ${on ? `<div style="font-size:9px;color:${t.accent};">✓ Active</div>` : '<div style="font-size:9px;color:transparent;">·</div>'}
+      </button>`;
+    }).join('');
+  }
 
   function load() {
     const local = localStorage.getItem(GW_LOCAL_KEY);
@@ -3968,6 +4017,8 @@ window.SETTINGS = (() => {
     const inpLan   = document.getElementById('settings-gateway-lan');
     if (inpLocal) inpLocal.value = local || '';
     if (inpLan)   inpLan.value   = lan   || '';
+    const grid = document.getElementById('settings-theme-grid');
+    if (grid) renderThemePicker(grid);
   }
 
   function saveGateway() {
@@ -3991,8 +4042,11 @@ window.SETTINGS = (() => {
     location.reload();
   }
 
-  return { load, saveGateway, clearKey, clearAll };
+  return { load, saveGateway, clearKey, clearAll, applyTheme };
 })();
+
+// Apply saved theme immediately so there's no flash on load
+(function() { const t = localStorage.getItem('ao-theme'); if (t && window.SETTINGS) window.SETTINGS.applyTheme(t); })();
 
 let currentView = 'office';
 
