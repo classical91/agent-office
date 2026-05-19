@@ -5237,17 +5237,18 @@ function renderDropCards() {
   });
 }
 
+function closeNoteModal() {
+  document.getElementById('note-detail-modal')?.remove();
+}
+
 function renderDetailPanel() {
   const panel = document.getElementById('drop-detail-panel');
-  if (!panel) return;
-  const drop = dropboxState.drops.find(d => d.id === dropboxState.selectedId);
+  if (panel) panel.innerHTML = '<div class="drop-detail-empty">Select a drop to view details.</div>';
 
-  if (!drop) {
-    panel.innerHTML = '<div class="drop-detail-empty">Select a drop to view details.</div>';
-    panel.classList.remove('detail-open');
-    return;
-  }
-  panel.classList.add('detail-open');
+  closeNoteModal();
+
+  const drop = dropboxState.drops.find(d => d.id === dropboxState.selectedId);
+  if (!drop) return;
 
   const backlinks = dropboxState.drops.filter(other =>
     other.id !== drop.id &&
@@ -5270,8 +5271,16 @@ function renderDetailPanel() {
     ? `<div class="drop-detail-section-label">Tags</div><div class="detail-tags">${drop.tags.map(t => dropBadge(t, 'tag')).join(' ')}</div>`
     : '';
 
-  panel.innerHTML = `
-    <div class="drop-detail">
+  const modal = document.createElement('div');
+  modal.id = 'note-detail-modal';
+  modal.style.cssText = [
+    'position:fixed', 'top:0', 'left:0', 'width:100%', 'height:100%',
+    'z-index:99999', 'overflow-y:auto', 'background:#0f1117',
+    'box-sizing:border-box', 'padding:0',
+  ].join(';');
+
+  modal.innerHTML = `
+    <div class="drop-detail" style="max-width:720px;margin:0 auto;padding:24px 20px 60px;">
       <button class="drop-detail-back" id="drop-detail-back">← Notes</button>
       <div class="drop-detail-header">
         <h2 class="drop-detail-title">${escHTML(drop.title || 'Untitled drop')}</h2>
@@ -5288,13 +5297,15 @@ function renderDetailPanel() {
       </div>
     </div>`;
 
-  document.getElementById('drop-detail-back')?.addEventListener('click', () => {
+  document.body.appendChild(modal);
+
+  modal.querySelector('#drop-detail-back').addEventListener('click', () => {
     dropboxState.selectedId = null;
-    panel.classList.remove('detail-open');
+    closeNoteModal();
     renderDropbox();
   });
 
-  document.getElementById('toggle-done-btn').addEventListener('click', async () => {
+  modal.querySelector('#toggle-done-btn').addEventListener('click', async () => {
     try {
       await requestJson(`${DROPS_API}/${drop.id}`, {
         method: 'PATCH',
@@ -5303,19 +5314,21 @@ function renderDetailPanel() {
       });
       const drops = await loadDrops();
       if (drops !== null) { dropboxState.drops = drops; }
+      closeNoteModal();
       renderDropbox();
     } catch (error) {
       handleDropboxRequestError(error, 'Failed to update drop.');
     }
   });
 
-  document.getElementById('delete-drop-btn').addEventListener('click', async () => {
+  modal.querySelector('#delete-drop-btn').addEventListener('click', async () => {
     if (!confirm('Delete this drop?')) return;
     try {
       await requestJson(`${DROPS_API}/${drop.id}`, { method: 'DELETE' });
       dropboxState.selectedId = null;
       const drops = await loadDrops();
       if (drops !== null) { dropboxState.drops = drops; }
+      closeNoteModal();
       renderDropbox();
     } catch (error) {
       handleDropboxRequestError(error, 'Failed to delete drop.');
