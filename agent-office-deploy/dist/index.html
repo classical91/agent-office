@@ -1754,6 +1754,7 @@
     .reset-timer { grid-template-columns: repeat(2, 1fr); }
   }
 </style>
+<link rel="stylesheet" href="ai-landscape.css"/>
 <link rel="stylesheet" href="calendar-view.css"/>
 </head>
 <body>
@@ -3015,6 +3016,11 @@
       <div id="mem-list"></div>
 
     </div>
+  </div>
+
+  <!-- AI LANDSCAPE VIEW -->
+  <div class="view" id="view-ai-landscape" style="flex-direction:column; background:#0a0c11; overflow:hidden;">
+    <div id="ai-landscape-root" class="ai-landscape"></div>
   </div>
 
   <!-- SETTINGS VIEW -->
@@ -5853,6 +5859,7 @@ const MEM = (() => {
 })();
 
 </script>
+<script src="ai-landscape.js"></script>
 <script src="calendar-view.js"></script>
 </body>
 </html>
