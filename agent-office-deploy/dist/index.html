@@ -1861,7 +1861,7 @@
       <div style="display:flex; align-items:center; gap:10px;">
         <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:#94a3b8;">
           <div style="width:7px; height:7px; background:#22c55e; border-radius:50%;"></div>
-          <span>13 online</span>
+          <span><span id="office-online-top">13</span> online</span>
         </div>
         <span style="font-size:11px; padding:3px 8px; border-radius:999px; background:#1e293b; color:#94a3b8;">Main room</span>
       </div>
@@ -2306,11 +2306,23 @@
 
     </div>
 
-    <div style="display:grid; grid-template-columns:1fr auto auto auto; gap:6px; margin-top:10px; padding:8px; background:#111827; border:1px solid #1e293b; border-radius:10px; align-items:center;">
-      <input type="text" placeholder="Say something in the room…" style="background:#0f172a; border:1px solid #1e293b; border-radius:8px; padding:0 12px; height:32px; font-size:13px; color:#f1f5f9; outline:none;"/>
-      <button style="background:#1e293b; border:none; border-radius:8px; padding:0 14px; height:32px; font-size:12px; color:#94a3b8; cursor:pointer;">Wave</button>
-      <button style="background:#1e293b; border:none; border-radius:8px; padding:0 14px; height:32px; font-size:12px; color:#94a3b8; cursor:pointer;">Sit</button>
-      <button style="background:#334155; border:none; border-radius:8px; padding:0 14px; height:32px; font-size:12px; color:#94a3b8; cursor:pointer;">Leave</button>
+    <!-- HABBO-STYLE ROOM STATUS BAR -->
+    <div style="margin-top:10px; background:#111827; border:1px solid #1e293b; border-radius:10px; overflow:hidden;">
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:9px 12px; border-bottom:1px solid #1e293b;">
+        <div style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:#f1f5f9;"><span style="font-size:15px;">🏢</span> Agent Office <span style="font-size:11px; font-weight:500; color:#64748b;">· Main room</span></div>
+        <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:#94a3b8;"><span style="width:7px; height:7px; background:#22c55e; border-radius:50%; box-shadow:0 0 6px #22c55e;"></span><span id="room-online-count">0</span>&nbsp;online</div>
+        <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:#94a3b8; flex:1 1 200px; min-width:160px; overflow:hidden;"><span style="color:#64748b; flex-shrink:0;">Task:</span><span id="room-task-ticker" style="color:#cbd5e1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">—</span></div>
+        <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
+          <button onclick="roomComingSoon('Furniture catalog')" title="Furniture catalog — coming soon" style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:0 12px; height:30px; font-size:12px; color:#cbd5e1; cursor:pointer;">🪑 Catalog</button>
+          <button onclick="roomComingSoon('Build mode')" title="Build mode — coming soon" style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:0 12px; height:30px; font-size:12px; color:#cbd5e1; cursor:pointer;">🔨 Build</button>
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr auto auto auto; gap:6px; padding:8px; align-items:center;">
+        <input type="text" placeholder="Say something in the room…" style="background:#0f172a; border:1px solid #1e293b; border-radius:8px; padding:0 12px; height:32px; font-size:13px; color:#f1f5f9; outline:none;"/>
+        <button style="background:#1e293b; border:none; border-radius:8px; padding:0 14px; height:32px; font-size:12px; color:#94a3b8; cursor:pointer;">Wave</button>
+        <button style="background:#1e293b; border:none; border-radius:8px; padding:0 14px; height:32px; font-size:12px; color:#94a3b8; cursor:pointer;">Sit</button>
+        <button style="background:#334155; border:none; border-radius:8px; padding:0 14px; height:32px; font-size:12px; color:#94a3b8; cursor:pointer;">Leave</button>
+      </div>
     </div>
   </div>
 </div>
@@ -3704,6 +3716,44 @@ function drawPixelAgent(canvasEl, look, agent) {
   bx(13, 22, 5, 8, pnt);
   bx(5, 2, 16, 5, hr);
 }
+
+// ─── HABBO ROOM STATUS BAR ────────────────────────────────────
+function updateRoomStatusBar() {
+  if (typeof agentState === 'undefined') return;
+  const online = agentState.filter(a => a.status !== 'offline').length;
+  ['room-online-count', 'office-online-top', 'onlineCount'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = online;
+  });
+}
+let _roomTickerIdx = -1;
+function cycleRoomTicker() {
+  const el = document.getElementById('room-task-ticker');
+  if (!el || typeof agentState === 'undefined') return;
+  const active = agentState.filter(a => a.currentTask && a.status !== 'offline');
+  if (!active.length) { el.textContent = '—'; return; }
+  _roomTickerIdx = (_roomTickerIdx + 1) % active.length;
+  const a = active[_roomTickerIdx];
+  el.textContent = a.name + ': ' + a.currentTask;
+}
+function roomComingSoon(name) {
+  let t = document.getElementById('room-toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'room-toast';
+    t.style.cssText = 'position:fixed; left:50%; bottom:32px; transform:translateX(-50%); background:#111827; color:#f1f5f9; border:1px solid #334155; border-radius:10px; padding:10px 16px; font-size:13px; z-index:9999; box-shadow:0 8px 24px rgba(0,0,0,0.4); transition:opacity 0.3s; pointer-events:none;';
+    document.body.appendChild(t);
+  }
+  t.textContent = name + ' is coming next 🚧';
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2200);
+}
+try {
+  updateRoomStatusBar();
+  cycleRoomTicker();
+  setInterval(() => { updateRoomStatusBar(); cycleRoomTicker(); }, 3000);
+} catch (e) { /* agentState not ready yet */ }
 
 function renderAgents() {
   document.querySelectorAll('.agent-char').forEach(el => el.remove());
