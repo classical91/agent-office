@@ -129,19 +129,17 @@
   }
   .nav-label.collapsed .nav-chevron { transform: rotate(-90deg); }
   /* MAIN APPS & SITES DROPDOWN (prominent, button-like) */
-  .nav-label.nav-label-dd {
-    font-size: 12px;
-    text-transform: none;
-    letter-spacing: 0.02em;
-    color: var(--text);
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.09);
-    border-radius: 8px;
-    margin: 6px 12px;
-    padding: 11px 12px;
-  }
-  .nav-label.nav-label-dd:hover { background: rgba(255,255,255,0.08); }
+  /* The single Apps & Sites dropdown: brighter header + clearly visible chevron */
+  .nav-label.nav-label-dd { color: var(--text); }
+  .nav-label.nav-label-dd:hover { color: var(--text); }
   .nav-label.nav-label-dd .nav-chevron { font-size: 11px; color: var(--text); }
+  /* Plain, non-collapsible section headings (everything except Apps & Sites) */
+  .nav-heading {
+    font-size: 9px; text-transform: uppercase; letter-spacing: 0.15em;
+    color: var(--muted); padding: 8px 16px 4px; font-weight: 700;
+  }
+  /* Always-expanded section bodies (only Apps & Sites collapses) */
+  .nav-items-wrap.nav-open { max-height: none; }
 
   .nav-items-wrap {
     overflow: hidden;
@@ -1796,8 +1794,8 @@
 
     <!-- WORKSPACE -->
     <div class="nav-section">
-      <div class="nav-label" onclick="toggleNav(this)">Workspace <span class="nav-chevron">▾</span></div>
-      <div class="nav-items-wrap">
+      <div class="nav-heading">Workspace</div>
+      <div class="nav-items-wrap nav-open">
         <div class="nav-item active" onclick="switchView('office', this)"><span class="icon">🏢</span> Office</div>
         <div class="nav-item" onclick="switchView('org', this)"><span class="icon">🗂️</span> Org Chart</div>
         <div class="nav-item" onclick="switchView('memory', this)"><span class="icon">🧠</span> Memory</div>
@@ -1836,8 +1834,8 @@
     </div>
 <!-- AGENTS -->
     <div class="nav-section">
-      <div class="nav-label" onclick="toggleNav(this)">Agents <span class="nav-chevron">▾</span></div>
-      <div class="nav-items-wrap">
+      <div class="nav-heading">Agents</div>
+      <div class="nav-items-wrap nav-open">
         <div class="nav-item" onclick="showAgentInfo('devin')"><span class="icon">🛠️</span> Devin</div>
         <div class="nav-item" onclick="showAgentInfo('traderclaw')"><span class="icon">📈</span> TraderClaw</div>
         <div class="nav-item" onclick="showAgentInfo('webclaw')"><span class="icon">🌐</span> WebClaw</div>
@@ -1865,8 +1863,8 @@
 
     <!-- SYSTEM -->
     <div class="nav-section">
-      <div class="nav-label" onclick="toggleNav(this)">System <span class="nav-chevron">▾</span></div>
-      <div class="nav-items-wrap">
+      <div class="nav-heading">System</div>
+      <div class="nav-items-wrap nav-open">
         <div class="nav-item" onclick="switchView('settings', this)"><span class="icon">⚙️</span> Settings</div>
         <a class="nav-link" data-dev-only="true" href="http://localhost:18789" target="_blank">
           <div class="link-dot" style="background:#6366f1;"></div> Gateway (local) <span class="link-ext">↗</span>
@@ -5066,10 +5064,7 @@ function toggleMobileNav() {
   var overlay = document.getElementById('mobile-overlay');
   var isOpen = nav.classList.toggle('mobile-open');
   if (overlay) overlay.style.display = isOpen ? 'block' : 'none';
-  if (isOpen) {
-    nav.querySelectorAll('.nav-items-wrap').forEach(function(w) { w.style.maxHeight = 'none'; });
-    nav.querySelectorAll('.nav-label').forEach(function(l) { l.classList.remove('collapsed'); });
-  }
+  // Other sections are always-visible headings; the Apps & Sites dropdown keeps its own state.
 }
 function closeMobileNav() {
   var nav = document.querySelector('.nav');
