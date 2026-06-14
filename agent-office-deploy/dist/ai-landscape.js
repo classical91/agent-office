@@ -580,7 +580,10 @@
   }
 
   function boot() {
-    consolidateSiteMenu();
+    // Only add the AI Landscape nav item; do NOT consolidate the whole sidebar
+    // into one "Site Menu" — the nav keeps its own structure (Apps & Sites is the
+    // single dropdown, with per-site Railway/GitHub sub-dropdowns).
+    addAiNavItem();
     try {
       if (typeof VIEW_HANDLERS !== "undefined") {
         VIEW_HANDLERS["ai-landscape"] = { enter: () => render(), focus: false };
