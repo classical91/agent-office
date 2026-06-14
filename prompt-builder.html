@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prompt Builder</title>
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #020617;
+      --border: #1f2937;
+      --border-2: #334155;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --green: #10b981;
+      --red: #dc2626;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      min-height: 100vh;
+    }
+
+    .builder {
+      padding: 32px;
+      max-width: 920px;
+    }
+
+    .sidebar {
+      background: var(--panel-2);
+      border-left: 1px solid #1e293b;
+      padding: 24px;
+      overflow-y: auto;
+      max-height: 100vh;
+      position: sticky;
+      top: 0;
+    }
+
+    h1, h2 {
+      margin-top: 0;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .topbar h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+    }
+
+    .topbar .subtitle {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 20px;
+      margin-bottom: 18px;
+      box-shadow: 0 20px 40px rgba(0,0,0,.25);
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field .label-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .field .label-row label {
+      margin-bottom: 8px;
+    }
+
+    .char-count {
+      font-size: 12px;
+      color: #475569;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      background: var(--panel-2);
+      color: #f8fafc;
+      border: 1px solid var(--border-2);
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-size: 15px;
+      outline: none;
+      transition: border-color .15s ease, box-shadow .15s ease;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, .15);
+    }
+
+    .field input, .field textarea, .field select {
+      margin-bottom: 0;
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      color: white;
+      background: var(--accent);
+      transition: background .15s ease, opacity .15s ease, transform .05s ease;
+    }
+
+    button:hover {
+      background: var(--accent-hover);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .secondary {
+      background: #334155;
+    }
+    .secondary:hover {
+      background: #475569;
+    }
+
+    .danger {
+      background: var(--red);
+    }
+    .danger:hover {
+      background: #b91c1c;
+    }
+
+    .ghost {
+      background: transparent;
+      border: 1px solid var(--border-2);
+      color: var(--muted);
+    }
+    .ghost:hover {
+      background: #1e293b;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .actions .spacer {
+      flex: 1;
+    }
+
+    .editing-badge {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #fbbf24;
+      background: rgba(120, 53, 15, .35);
+      border: 1px solid rgba(245, 158, 11, .4);
+      border-radius: 999px;
+      padding: 6px 12px;
+    }
+
+    .editing-badge.show {
+      display: inline-flex;
+    }
+
+    .output-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+
+    .output-head h2 {
+      margin: 0;
+    }
+
+    .output-meta {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      gap: 14px;
+    }
+
+    .output {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: var(--panel-2);
+      border: 1px solid var(--border-2);
+      border-radius: 16px;
+      padding: 18px;
+      min-height: 180px;
+      line-height: 1.65;
+      font-size: 14px;
+    }
+
+    .output.placeholder {
+      color: #475569;
+      font-style: italic;
+    }
+
+    .sidebar-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .sidebar-head h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .count-pill {
+      font-size: 12px;
+      color: var(--muted);
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 999px;
+      padding: 4px 10px;
+    }
+
+    .search {
+      margin-bottom: 16px;
+    }
+    .search input {
+      font-size: 14px;
+      padding: 10px 12px;
+    }
+
+    .saved-item {
+      background: var(--panel);
+      border: 1px solid #1e293b;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 12px;
+      transition: border-color .15s ease;
+    }
+
+    .saved-item:hover {
+      border-color: var(--border-2);
+    }
+
+    .saved-item.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+
+    .saved-item h3 {
+      margin: 0 0 4px;
+      font-size: 16px;
+      word-break: break-word;
+    }
+
+    .saved-item .preview {
+      color: #cbd5e1;
+      font-size: 12px;
+      margin: 0 0 8px;
+      max-height: 48px;
+      overflow: hidden;
+      line-height: 1.5;
+      opacity: .8;
+    }
+
+    .saved-item .date {
+      color: var(--muted);
+      font-size: 12px;
+      margin: 0 0 12px;
+    }
+
+    .saved-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .saved-actions button {
+      padding: 8px 10px;
+      font-size: 12px;
+      flex: 1;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center;
+      padding: 24px 8px;
+      border: 1px dashed #1e293b;
+      border-radius: 14px;
+    }
+
+    .io-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 18px;
+    }
+    .io-row button {
+      flex: 1;
+      font-size: 12px;
+      padding: 9px 10px;
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #1e293b;
+      border: 1px solid var(--border-2);
+      color: #f8fafc;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 12px 30px rgba(0,0,0,.45);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease;
+      z-index: 50;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast.success { border-color: var(--green); }
+    .toast.error { border-color: var(--red); }
+
+    .hint {
+      color: #475569;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    kbd {
+      background: #1e293b;
+      border: 1px solid var(--border-2);
+      border-bottom-width: 2px;
+      border-radius: 6px;
+      padding: 1px 6px;
+      font-size: 11px;
+      font-family: inherit;
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        border-left: none;
+        border-top: 1px solid #1e293b;
+        position: static;
+        max-height: none;
+      }
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .builder {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <main class="builder">
+      <div class="topbar">
+        <div>
+          <h1>Prompt Builder</h1>
+          <div class="subtitle">Assemble structured, reusable prompts — preview updates live.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="field">
+          <label for="promptName">Prompt Name</label>
+          <input id="promptName" placeholder="Example: Crypto News Brief" autocomplete="off" />
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label for="role">Role</label>
+            <input id="role" placeholder="Example: You are an expert research assistant" autocomplete="off" />
+          </div>
+
+          <div class="field">
+            <label for="tone">Tone</label>
+            <select id="tone">
+              <option>Clear and direct</option>
+              <option>Friendly</option>
+              <option>Professional</option>
+              <option>Creative</option>
+              <option>Academic</option>
+              <option>Concise</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label-row">
+            <label for="task">Task</label>
+            <span class="char-count" id="taskCount">0</span>
+          </div>
+          <textarea id="task" placeholder="What should the AI do?"></textarea>
+        </div>
+
+        <div class="field">
+          <div class="label-row">
+            <label for="context">Context</label>
+            <span class="char-count" id="contextCount">0</span>
+          </div>
+          <textarea id="context" placeholder="Add background info, audience, or goal..."></textarea>
+        </div>
+
+        <div class="field">
+          <div class="label-row">
+            <label for="rules">Rules / Constraints</label>
+            <span class="char-count" id="rulesCount">0</span>
+          </div>
+          <textarea id="rules" placeholder="Example: Use exactly 10 items. No long paragraphs."></textarea>
+        </div>
+
+        <div class="field">
+          <div class="label-row">
+            <label for="format">Output Format</label>
+            <span class="char-count" id="formatCount">0</span>
+          </div>
+          <textarea id="format" placeholder="Example: Title, bullets, summary, table, JSON..."></textarea>
+        </div>
+
+        <div class="actions">
+          <button id="saveBtn" onclick="savePrompt()">Save Prompt</button>
+          <button class="secondary" onclick="copyPrompt()">Copy</button>
+          <span class="editing-badge" id="editingBadge">
+            Editing saved prompt
+            <button class="ghost" style="padding:2px 8px;font-size:11px;" onclick="cancelEdit()">New</button>
+          </span>
+          <span class="spacer"></span>
+          <button class="danger" onclick="clearForm()">Clear</button>
+        </div>
+        <div class="hint">Tip: <kbd>Ctrl</kbd>+<kbd>S</kbd> to save · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> to copy</div>
+      </div>
+
+      <div class="card">
+        <div class="output-head">
+          <h2>Generated Prompt</h2>
+          <div class="output-meta">
+            <span id="wordCount">0 words</span>
+            <span id="charCountOut">0 chars</span>
+            <span id="tokenCount">~0 tokens</span>
+          </div>
+        </div>
+        <div id="output" class="output placeholder">Start filling in the fields — your prompt builds itself here.</div>
+      </div>
+    </main>
+
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <h2>Saved Prompts</h2>
+        <span class="count-pill" id="savedCount">0</span>
+      </div>
+
+      <div class="search">
+        <input id="searchBox" placeholder="Search saved prompts..." oninput="renderSavedPrompts()" autocomplete="off" />
+      </div>
+
+      <div id="savedPrompts"></div>
+
+      <div class="io-row">
+        <button class="ghost" onclick="exportPrompts()">Export</button>
+        <button class="ghost" onclick="document.getElementById('importFile').click()">Import</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importPrompts(event)" />
+      </div>
+    </aside>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    "use strict";
+
+    const STORAGE_KEY = "savedPrompts";
+    let savedPrompts = loadSaved();
+    let editingId = null;
+
+    const fields = ["promptName", "role", "tone", "task", "context", "rules", "format"];
+
+    function loadSaved() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        return Array.isArray(raw) ? raw : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function persist() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(savedPrompts));
+    }
+
+    function $(id) {
+      return document.getElementById(id);
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+
+    function buildPrompt() {
+      const role = $("role").value.trim();
+      const tone = $("tone").value;
+      const task = $("task").value.trim();
+      const context = $("context").value.trim();
+      const rules = $("rules").value.trim();
+      const format = $("format").value.trim();
+
+      // Only include sections that have content; role and tone always render.
+      const sections = [];
+      sections.push(role ? (role.endsWith(".") ? role : role + ".") : "You are a helpful assistant.");
+
+      if (task) sections.push("Task:\n" + task);
+      if (context) sections.push("Context:\n" + context);
+      sections.push("Tone:\n" + tone);
+      if (rules) sections.push("Rules:\n" + rules);
+      if (format) sections.push("Output Format:\n" + format);
+
+      return sections.join("\n\n").trim();
+    }
+
+    function hasAnyInput() {
+      return ["role", "task", "context", "rules", "format"]
+        .some(id => $(id).value.trim() !== "");
+    }
+
+    function renderOutput() {
+      const out = $("output");
+      if (!hasAnyInput()) {
+        out.className = "output placeholder";
+        out.textContent = "Start filling in the fields — your prompt builds itself here.";
+        updateStats("");
+        return "";
+      }
+      const prompt = buildPrompt();
+      out.className = "output";
+      out.textContent = prompt;
+      updateStats(prompt);
+      return prompt;
+    }
+
+    function updateStats(text) {
+      const chars = text.length;
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      const tokens = Math.ceil(chars / 4); // rough heuristic
+      $("wordCount").textContent = words + (words === 1 ? " word" : " words");
+      $("charCountOut").textContent = chars + " chars";
+      $("tokenCount").textContent = "~" + tokens + " tokens";
+    }
+
+    function updateCharCounts() {
+      [["task", "taskCount"], ["context", "contextCount"],
+       ["rules", "rulesCount"], ["format", "formatCount"]].forEach(([f, c]) => {
+        $(c).textContent = $(f).value.length;
+      });
+    }
+
+    function onInput() {
+      updateCharCounts();
+      renderOutput();
+    }
+
+    function savePrompt() {
+      if (!hasAnyInput()) {
+        toast("Add some content before saving.", "error");
+        return;
+      }
+      const name = $("promptName").value.trim() || "Untitled Prompt";
+      const prompt = buildPrompt();
+
+      const snapshot = {
+        name,
+        prompt,
+        fields: {
+          role: $("role").value,
+          tone: $("tone").value,
+          task: $("task").value,
+          context: $("context").value,
+          rules: $("rules").value,
+          format: $("format").value
+        }
+      };
+
+      if (editingId !== null) {
+        const idx = savedPrompts.findIndex(p => p.id === editingId);
+        if (idx !== -1) {
+          savedPrompts[idx] = {
+            ...savedPrompts[idx],
+            ...snapshot,
+            updatedAt: new Date().toLocaleString()
+          };
+          persist();
+          renderSavedPrompts();
+          toast("Prompt updated.", "success");
+          return;
+        }
+      }
+
+      const entry = {
+        id: Date.now(),
+        ...snapshot,
+        createdAt: new Date().toLocaleString()
+      };
+      savedPrompts.unshift(entry);
+      editingId = entry.id;
+      persist();
+      renderSavedPrompts();
+      updateEditingBadge();
+      toast("Prompt saved.", "success");
+    }
+
+    function renderSavedPrompts() {
+      const container = $("savedPrompts");
+      const query = $("searchBox").value.trim().toLowerCase();
+      container.innerHTML = "";
+
+      $("savedCount").textContent = savedPrompts.length;
+
+      const list = query
+        ? savedPrompts.filter(p =>
+            p.name.toLowerCase().includes(query) ||
+            (p.prompt || "").toLowerCase().includes(query))
+        : savedPrompts;
+
+      if (list.length === 0) {
+        container.innerHTML = savedPrompts.length === 0
+          ? '<div class="empty">No saved prompts yet.<br />Build one and hit Save.</div>'
+          : '<div class="empty">No matches for your search.</div>';
+        return;
+      }
+
+      list.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "saved-item" + (item.id === editingId ? " active" : "");
+
+        const preview = (item.prompt || "").slice(0, 120);
+        const stamp = item.updatedAt
+          ? "Updated " + item.updatedAt
+          : (item.createdAt || "");
+
+        div.innerHTML = `
+          <h3>${escapeHtml(item.name)}</h3>
+          <p class="preview">${escapeHtml(preview)}</p>
+          <p class="date">${escapeHtml(stamp)}</p>
+          <div class="saved-actions">
+            <button onclick="loadPrompt(${item.id})">Load</button>
+            <button class="secondary" onclick="copySaved(${item.id})">Copy</button>
+            <button class="danger" onclick="deletePrompt(${item.id})">Delete</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function loadPrompt(id) {
+      const item = savedPrompts.find(p => p.id === id);
+      if (!item) return;
+
+      $("promptName").value = item.name || "";
+      const f = item.fields || {};
+      $("role").value = f.role || "";
+      $("tone").value = f.tone || "Clear and direct";
+      $("task").value = f.task || "";
+      $("context").value = f.context || "";
+      $("rules").value = f.rules || "";
+      $("format").value = f.format || "";
+
+      editingId = id;
+      updateEditingBadge();
+      onInput();
+      // If older entries had no field snapshot, fall back to the stored text.
+      if (!item.fields && item.prompt) {
+        $("output").className = "output";
+        $("output").textContent = item.prompt;
+        updateStats(item.prompt);
+      }
+      renderSavedPrompts();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      toast("Loaded \"" + item.name + "\".");
+    }
+
+    function deletePrompt(id) {
+      const item = savedPrompts.find(p => p.id === id);
+      if (!item) return;
+      if (!confirm("Delete \"" + item.name + "\"? This can't be undone.")) return;
+
+      savedPrompts = savedPrompts.filter(p => p.id !== id);
+      if (editingId === id) {
+        editingId = null;
+        updateEditingBadge();
+      }
+      persist();
+      renderSavedPrompts();
+      toast("Prompt deleted.", "success");
+    }
+
+    async function copyToClipboard(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (e) {
+        // Fallback for non-secure contexts.
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          return true;
+        } catch (err) {
+          return false;
+        }
+      }
+    }
+
+    async function copyPrompt() {
+      if (!hasAnyInput()) {
+        toast("Nothing to copy yet.", "error");
+        return;
+      }
+      const ok = await copyToClipboard(buildPrompt());
+      toast(ok ? "Copied to clipboard." : "Copy failed.", ok ? "success" : "error");
+    }
+
+    async function copySaved(id) {
+      const item = savedPrompts.find(p => p.id === id);
+      if (!item) return;
+      const ok = await copyToClipboard(item.prompt || "");
+      toast(ok ? "Copied to clipboard." : "Copy failed.", ok ? "success" : "error");
+    }
+
+    function clearForm() {
+      fields.forEach(id => {
+        const el = $(id);
+        if (el.tagName === "SELECT") el.selectedIndex = 0;
+        else el.value = "";
+      });
+      editingId = null;
+      updateEditingBadge();
+      onInput();
+    }
+
+    function cancelEdit() {
+      editingId = null;
+      updateEditingBadge();
+      renderSavedPrompts();
+    }
+
+    function updateEditingBadge() {
+      const badge = $("editingBadge");
+      const saveBtn = $("saveBtn");
+      if (editingId !== null) {
+        badge.classList.add("show");
+        saveBtn.textContent = "Update Prompt";
+      } else {
+        badge.classList.remove("show");
+        saveBtn.textContent = "Save Prompt";
+      }
+    }
+
+    function exportPrompts() {
+      if (savedPrompts.length === 0) {
+        toast("No prompts to export.", "error");
+        return;
+      }
+      const blob = new Blob([JSON.stringify(savedPrompts, null, 2)],
+        { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "prompts-" + new Date().toISOString().slice(0, 10) + ".json";
+      a.click();
+      URL.revokeObjectURL(url);
+      toast("Exported " + savedPrompts.length + " prompt(s).", "success");
+    }
+
+    function importPrompts(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!Array.isArray(data)) throw new Error("bad format");
+          const existing = new Set(savedPrompts.map(p => p.id));
+          let added = 0;
+          data.forEach(p => {
+            if (p && p.name && !existing.has(p.id)) {
+              savedPrompts.push({
+                id: p.id || Date.now() + Math.floor(Math.random() * 1000),
+                name: String(p.name),
+                prompt: String(p.prompt || ""),
+                fields: p.fields || null,
+                createdAt: p.createdAt || new Date().toLocaleString()
+              });
+              added++;
+            }
+          });
+          persist();
+          renderSavedPrompts();
+          toast("Imported " + added + " prompt(s).", "success");
+        } catch (err) {
+          toast("Invalid file.", "error");
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = "";
+    }
+
+    let toastTimer;
+    function toast(message, type) {
+      const el = $("toast");
+      el.textContent = message;
+      el.className = "toast show" + (type ? " " + type : "");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        el.className = "toast" + (type ? " " + type : "");
+      }, 2200);
+    }
+
+    // -- wiring --
+    fields.forEach(id => {
+      $(id).addEventListener("input", onInput);
+      $(id).addEventListener("change", onInput);
+    });
+
+    document.addEventListener("keydown", e => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        savePrompt();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "c") {
+        e.preventDefault();
+        copyPrompt();
+      }
+    });
+
+    updateCharCounts();
+    renderOutput();
+    renderSavedPrompts();
+    updateEditingBadge();
+  </script>
+</body>
+</html>

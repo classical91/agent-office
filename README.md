@@ -9,6 +9,7 @@ A single-page web app that acts as a personal "office" for AI agents — a place
 - **Calendar** — calendar view with Google Calendar OAuth, recurring events, and quick-add.
 - **Org chart** — a visual layout of the agent team.
 - **Office view** — a "room" view with each agent's avatar and current status.
+- **Prompt Builder** — a standalone page (`/prompt-builder.html`) for assembling structured, reusable prompts with a live preview, saved-prompt library, search, and JSON import/export.
 
 ## Tech stack
 
