@@ -33,13 +33,13 @@
 
     .app {
       display: grid;
-      grid-template-columns: 1fr 380px;
+      grid-template-columns: 1fr 400px;
       min-height: 100vh;
     }
 
     .builder {
       padding: 32px;
-      max-width: 920px;
+      max-width: 760px;
     }
 
     .sidebar {
@@ -56,15 +56,6 @@
       margin-top: 0;
     }
 
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-    }
-
     .topbar h1 {
       margin: 0;
       font-size: 28px;
@@ -74,7 +65,7 @@
     .topbar .subtitle {
       color: var(--muted);
       font-size: 14px;
-      margin-top: 4px;
+      margin: 4px 0 24px;
     }
 
     .card {
@@ -97,22 +88,7 @@
       margin-bottom: 16px;
     }
 
-    .field .label-row {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-    }
-
-    .field .label-row label {
-      margin-bottom: 8px;
-    }
-
-    .char-count {
-      font-size: 12px;
-      color: #475569;
-    }
-
-    input, textarea, select {
+    input, textarea {
       width: 100%;
       background: var(--panel-2);
       color: #f8fafc;
@@ -124,25 +100,15 @@
       transition: border-color .15s ease, box-shadow .15s ease;
     }
 
-    input:focus, textarea:focus, select:focus {
+    input:focus, textarea:focus {
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(37, 99, 235, .15);
     }
 
-    .field input, .field textarea, .field select {
-      margin-bottom: 0;
-    }
-
     textarea {
-      min-height: 90px;
+      min-height: 160px;
       resize: vertical;
-      line-height: 1.5;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      line-height: 1.55;
     }
 
     button {
@@ -154,39 +120,22 @@
       cursor: pointer;
       color: white;
       background: var(--accent);
-      transition: background .15s ease, opacity .15s ease, transform .05s ease;
+      transition: background .15s ease, transform .05s ease;
     }
 
-    button:hover {
-      background: var(--accent-hover);
-    }
+    button:hover { background: var(--accent-hover); }
+    button:active { transform: translateY(1px); }
 
-    button:active {
-      transform: translateY(1px);
-    }
-
-    .secondary {
-      background: #334155;
-    }
-    .secondary:hover {
-      background: #475569;
-    }
-
-    .danger {
-      background: var(--red);
-    }
-    .danger:hover {
-      background: #b91c1c;
-    }
-
+    .secondary { background: #334155; }
+    .secondary:hover { background: #475569; }
+    .danger { background: var(--red); }
+    .danger:hover { background: #b91c1c; }
     .ghost {
       background: transparent;
       border: 1px solid var(--border-2);
       color: var(--muted);
     }
-    .ghost:hover {
-      background: #1e293b;
-    }
+    .ghost:hover { background: #1e293b; }
 
     .actions {
       display: flex;
@@ -194,10 +143,7 @@
       flex-wrap: wrap;
       align-items: center;
     }
-
-    .actions .spacer {
-      flex: 1;
-    }
+    .actions .spacer { flex: 1; }
 
     .editing-badge {
       display: none;
@@ -210,47 +156,7 @@
       border-radius: 999px;
       padding: 6px 12px;
     }
-
-    .editing-badge.show {
-      display: inline-flex;
-    }
-
-    .output-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 14px;
-      flex-wrap: wrap;
-    }
-
-    .output-head h2 {
-      margin: 0;
-    }
-
-    .output-meta {
-      font-size: 12px;
-      color: var(--muted);
-      display: flex;
-      gap: 14px;
-    }
-
-    .output {
-      white-space: pre-wrap;
-      word-break: break-word;
-      background: var(--panel-2);
-      border: 1px solid var(--border-2);
-      border-radius: 16px;
-      padding: 18px;
-      min-height: 180px;
-      line-height: 1.65;
-      font-size: 14px;
-    }
-
-    .output.placeholder {
-      color: #475569;
-      font-style: italic;
-    }
+    .editing-badge.show { display: inline-flex; }
 
     .sidebar-head {
       display: flex;
@@ -258,11 +164,7 @@
       justify-content: space-between;
       margin-bottom: 14px;
     }
-
-    .sidebar-head h2 {
-      margin: 0;
-      font-size: 18px;
-    }
+    .sidebar-head h2 { margin: 0; font-size: 18px; }
 
     .count-pill {
       font-size: 12px;
@@ -273,13 +175,8 @@
       padding: 4px 10px;
     }
 
-    .search {
-      margin-bottom: 16px;
-    }
-    .search input {
-      font-size: 14px;
-      padding: 10px 12px;
-    }
+    .search { margin-bottom: 16px; }
+    .search input { font-size: 14px; padding: 10px 12px; }
 
     .saved-item {
       background: var(--panel);
@@ -289,45 +186,47 @@
       margin-bottom: 12px;
       transition: border-color .15s ease;
     }
+    .saved-item:hover { border-color: var(--border-2); }
+    .saved-item.active { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 
-    .saved-item:hover {
-      border-color: var(--border-2);
+    /* name + subtitle on the left, Copy button beside it */
+    .saved-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
     }
 
-    .saved-item.active {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 1px var(--accent);
-    }
+    .saved-info { min-width: 0; flex: 1; }
 
-    .saved-item h3 {
-      margin: 0 0 4px;
+    .saved-info h3 {
+      margin: 0 0 2px;
       font-size: 16px;
       word-break: break-word;
     }
 
-    .saved-item .preview {
-      color: #cbd5e1;
-      font-size: 12px;
-      margin: 0 0 8px;
-      max-height: 48px;
-      overflow: hidden;
-      line-height: 1.5;
-      opacity: .8;
-    }
-
-    .saved-item .date {
+    .saved-info .sub {
+      margin: 0;
+      font-size: 13px;
+      font-style: italic;
       color: var(--muted);
-      font-size: 12px;
-      margin: 0 0 12px;
+      word-break: break-word;
     }
 
-    .saved-actions {
+    .copy-btn {
+      flex-shrink: 0;
+      padding: 8px 14px;
+      font-size: 13px;
+    }
+    .copy-btn.done { background: var(--green); }
+
+    .saved-sub-actions {
       display: flex;
       gap: 8px;
+      margin-top: 12px;
     }
-
-    .saved-actions button {
-      padding: 8px 10px;
+    .saved-sub-actions button {
+      padding: 6px 10px;
       font-size: 12px;
       flex: 1;
     }
@@ -341,18 +240,9 @@
       border-radius: 14px;
     }
 
-    .io-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 18px;
-    }
-    .io-row button {
-      flex: 1;
-      font-size: 12px;
-      padding: 9px 10px;
-    }
+    .io-row { display: flex; gap: 8px; margin-top: 18px; }
+    .io-row button { flex: 1; font-size: 12px; padding: 9px 10px; }
 
-    /* Toast */
     .toast {
       position: fixed;
       bottom: 24px;
@@ -371,47 +261,19 @@
       transition: opacity .2s ease, transform .2s ease;
       z-index: 50;
     }
-
-    .toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .toast.success { border-color: var(--green); }
     .toast.error { border-color: var(--red); }
 
-    .hint {
-      color: #475569;
-      font-size: 12px;
-      margin-top: 4px;
-    }
-
-    kbd {
-      background: #1e293b;
-      border: 1px solid var(--border-2);
-      border-bottom-width: 2px;
-      border-radius: 6px;
-      padding: 1px 6px;
-      font-size: 11px;
-      font-family: inherit;
-    }
-
     @media (max-width: 900px) {
-      .app {
-        grid-template-columns: 1fr;
-      }
+      .app { grid-template-columns: 1fr; }
       .sidebar {
         border-left: none;
         border-top: 1px solid #1e293b;
         position: static;
         max-height: none;
       }
-      .grid {
-        grid-template-columns: 1fr;
-      }
-      .builder {
-        padding: 20px;
-      }
+      .builder { padding: 20px; }
     }
   </style>
 </head>
@@ -420,10 +282,8 @@
   <div class="app">
     <main class="builder">
       <div class="topbar">
-        <div>
-          <h1>Prompt Builder</h1>
-          <div class="subtitle">Assemble structured, reusable prompts — preview updates live.</div>
-        </div>
+        <h1>Prompt Builder</h1>
+        <div class="subtitle">Save a prompt with a name, a subtitle, and its instructions — then copy it anytime.</div>
       </div>
 
       <div class="card">
@@ -432,80 +292,26 @@
           <input id="promptName" placeholder="Example: Crypto News Brief" autocomplete="off" />
         </div>
 
-        <div class="grid">
-          <div class="field">
-            <label for="role">Role</label>
-            <input id="role" placeholder="Example: You are an expert research assistant" autocomplete="off" />
-          </div>
-
-          <div class="field">
-            <label for="tone">Tone</label>
-            <select id="tone">
-              <option>Clear and direct</option>
-              <option>Friendly</option>
-              <option>Professional</option>
-              <option>Creative</option>
-              <option>Academic</option>
-              <option>Concise</option>
-            </select>
-          </div>
+        <div class="field">
+          <label for="subtitle">Subtitle <span style="font-style:italic;">(shown in italics)</span></label>
+          <input id="subtitle" placeholder="Example: A daily 10-item market digest" autocomplete="off" />
         </div>
 
         <div class="field">
-          <div class="label-row">
-            <label for="task">Task</label>
-            <span class="char-count" id="taskCount">0</span>
-          </div>
-          <textarea id="task" placeholder="What should the AI do?"></textarea>
-        </div>
-
-        <div class="field">
-          <div class="label-row">
-            <label for="context">Context</label>
-            <span class="char-count" id="contextCount">0</span>
-          </div>
-          <textarea id="context" placeholder="Add background info, audience, or goal..."></textarea>
-        </div>
-
-        <div class="field">
-          <div class="label-row">
-            <label for="rules">Rules / Constraints</label>
-            <span class="char-count" id="rulesCount">0</span>
-          </div>
-          <textarea id="rules" placeholder="Example: Use exactly 10 items. No long paragraphs."></textarea>
-        </div>
-
-        <div class="field">
-          <div class="label-row">
-            <label for="format">Output Format</label>
-            <span class="char-count" id="formatCount">0</span>
-          </div>
-          <textarea id="format" placeholder="Example: Title, bullets, summary, table, JSON..."></textarea>
+          <label for="instructions">Instructions</label>
+          <textarea id="instructions" placeholder="Write the prompt instructions here..."></textarea>
         </div>
 
         <div class="actions">
           <button id="saveBtn" onclick="savePrompt()">Save Prompt</button>
-          <button class="secondary" onclick="copyPrompt()">Copy</button>
+          <button class="secondary" onclick="copyCurrent()">Copy</button>
           <span class="editing-badge" id="editingBadge">
-            Editing saved prompt
+            Editing
             <button class="ghost" style="padding:2px 8px;font-size:11px;" onclick="cancelEdit()">New</button>
           </span>
           <span class="spacer"></span>
           <button class="danger" onclick="clearForm()">Clear</button>
         </div>
-        <div class="hint">Tip: <kbd>Ctrl</kbd>+<kbd>S</kbd> to save · <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> to copy</div>
-      </div>
-
-      <div class="card">
-        <div class="output-head">
-          <h2>Generated Prompt</h2>
-          <div class="output-meta">
-            <span id="wordCount">0 words</span>
-            <span id="charCountOut">0 chars</span>
-            <span id="tokenCount">~0 tokens</span>
-          </div>
-        </div>
-        <div id="output" class="output placeholder">Start filling in the fields — your prompt builds itself here.</div>
       </div>
     </main>
 
@@ -538,8 +344,6 @@
     let savedPrompts = loadSaved();
     let editingId = null;
 
-    const fields = ["promptName", "role", "tone", "task", "context", "rules", "format"];
-
     function loadSaved() {
       try {
         const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -553,9 +357,7 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(savedPrompts));
     }
 
-    function $(id) {
-      return document.getElementById(id);
-    }
+    function $(id) { return document.getElementById(id); }
 
     function escapeHtml(str) {
       return String(str).replace(/[&<>"']/g, c => ({
@@ -563,95 +365,27 @@
       }[c]));
     }
 
-    function buildPrompt() {
-      const role = $("role").value.trim();
-      const tone = $("tone").value;
-      const task = $("task").value.trim();
-      const context = $("context").value.trim();
-      const rules = $("rules").value.trim();
-      const format = $("format").value.trim();
-
-      // Only include sections that have content; role and tone always render.
-      const sections = [];
-      sections.push(role ? (role.endsWith(".") ? role : role + ".") : "You are a helpful assistant.");
-
-      if (task) sections.push("Task:\n" + task);
-      if (context) sections.push("Context:\n" + context);
-      sections.push("Tone:\n" + tone);
-      if (rules) sections.push("Rules:\n" + rules);
-      if (format) sections.push("Output Format:\n" + format);
-
-      return sections.join("\n\n").trim();
-    }
-
-    function hasAnyInput() {
-      return ["role", "task", "context", "rules", "format"]
-        .some(id => $(id).value.trim() !== "");
-    }
-
-    function renderOutput() {
-      const out = $("output");
-      if (!hasAnyInput()) {
-        out.className = "output placeholder";
-        out.textContent = "Start filling in the fields — your prompt builds itself here.";
-        updateStats("");
-        return "";
-      }
-      const prompt = buildPrompt();
-      out.className = "output";
-      out.textContent = prompt;
-      updateStats(prompt);
-      return prompt;
-    }
-
-    function updateStats(text) {
-      const chars = text.length;
-      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-      const tokens = Math.ceil(chars / 4); // rough heuristic
-      $("wordCount").textContent = words + (words === 1 ? " word" : " words");
-      $("charCountOut").textContent = chars + " chars";
-      $("tokenCount").textContent = "~" + tokens + " tokens";
-    }
-
-    function updateCharCounts() {
-      [["task", "taskCount"], ["context", "contextCount"],
-       ["rules", "rulesCount"], ["format", "formatCount"]].forEach(([f, c]) => {
-        $(c).textContent = $(f).value.length;
-      });
-    }
-
-    function onInput() {
-      updateCharCounts();
-      renderOutput();
+    // The instructions are the prompt body that gets copied.
+    function promptBody(item) {
+      return item.instructions != null ? item.instructions : (item.prompt || "");
     }
 
     function savePrompt() {
-      if (!hasAnyInput()) {
-        toast("Add some content before saving.", "error");
+      const name = $("promptName").value.trim() || "Untitled Prompt";
+      const subtitle = $("subtitle").value.trim();
+      const instructions = $("instructions").value.trim();
+
+      if (!instructions) {
+        toast("Add some instructions before saving.", "error");
         return;
       }
-      const name = $("promptName").value.trim() || "Untitled Prompt";
-      const prompt = buildPrompt();
-
-      const snapshot = {
-        name,
-        prompt,
-        fields: {
-          role: $("role").value,
-          tone: $("tone").value,
-          task: $("task").value,
-          context: $("context").value,
-          rules: $("rules").value,
-          format: $("format").value
-        }
-      };
 
       if (editingId !== null) {
         const idx = savedPrompts.findIndex(p => p.id === editingId);
         if (idx !== -1) {
           savedPrompts[idx] = {
             ...savedPrompts[idx],
-            ...snapshot,
+            name, subtitle, instructions,
             updatedAt: new Date().toLocaleString()
           };
           persist();
@@ -663,7 +397,7 @@
 
       const entry = {
         id: Date.now(),
-        ...snapshot,
+        name, subtitle, instructions,
         createdAt: new Date().toLocaleString()
       };
       savedPrompts.unshift(entry);
@@ -678,18 +412,18 @@
       const container = $("savedPrompts");
       const query = $("searchBox").value.trim().toLowerCase();
       container.innerHTML = "";
-
       $("savedCount").textContent = savedPrompts.length;
 
       const list = query
         ? savedPrompts.filter(p =>
-            p.name.toLowerCase().includes(query) ||
-            (p.prompt || "").toLowerCase().includes(query))
+            (p.name || "").toLowerCase().includes(query) ||
+            (p.subtitle || "").toLowerCase().includes(query) ||
+            promptBody(p).toLowerCase().includes(query))
         : savedPrompts;
 
       if (list.length === 0) {
         container.innerHTML = savedPrompts.length === 0
-          ? '<div class="empty">No saved prompts yet.<br />Build one and hit Save.</div>'
+          ? '<div class="empty">No saved prompts yet.<br />Fill in the form and hit Save.</div>'
           : '<div class="empty">No matches for your search.</div>';
         return;
       }
@@ -698,18 +432,20 @@
         const div = document.createElement("div");
         div.className = "saved-item" + (item.id === editingId ? " active" : "");
 
-        const preview = (item.prompt || "").slice(0, 120);
-        const stamp = item.updatedAt
-          ? "Updated " + item.updatedAt
-          : (item.createdAt || "");
+        const subHtml = item.subtitle
+          ? `<p class="sub">${escapeHtml(item.subtitle)}</p>`
+          : "";
 
         div.innerHTML = `
-          <h3>${escapeHtml(item.name)}</h3>
-          <p class="preview">${escapeHtml(preview)}</p>
-          <p class="date">${escapeHtml(stamp)}</p>
-          <div class="saved-actions">
-            <button onclick="loadPrompt(${item.id})">Load</button>
-            <button class="secondary" onclick="copySaved(${item.id})">Copy</button>
+          <div class="saved-top">
+            <div class="saved-info">
+              <h3>${escapeHtml(item.name || "Untitled Prompt")}</h3>
+              ${subHtml}
+            </div>
+            <button class="copy-btn" onclick="copySaved(${item.id}, this)">Copy</button>
+          </div>
+          <div class="saved-sub-actions">
+            <button class="secondary" onclick="loadPrompt(${item.id})">Edit</button>
             <button class="danger" onclick="deletePrompt(${item.id})">Delete</button>
           </div>
         `;
@@ -720,40 +456,21 @@
     function loadPrompt(id) {
       const item = savedPrompts.find(p => p.id === id);
       if (!item) return;
-
       $("promptName").value = item.name || "";
-      const f = item.fields || {};
-      $("role").value = f.role || "";
-      $("tone").value = f.tone || "Clear and direct";
-      $("task").value = f.task || "";
-      $("context").value = f.context || "";
-      $("rules").value = f.rules || "";
-      $("format").value = f.format || "";
-
+      $("subtitle").value = item.subtitle || "";
+      $("instructions").value = promptBody(item);
       editingId = id;
       updateEditingBadge();
-      onInput();
-      // If older entries had no field snapshot, fall back to the stored text.
-      if (!item.fields && item.prompt) {
-        $("output").className = "output";
-        $("output").textContent = item.prompt;
-        updateStats(item.prompt);
-      }
       renderSavedPrompts();
       window.scrollTo({ top: 0, behavior: "smooth" });
-      toast("Loaded \"" + item.name + "\".");
     }
 
     function deletePrompt(id) {
       const item = savedPrompts.find(p => p.id === id);
       if (!item) return;
-      if (!confirm("Delete \"" + item.name + "\"? This can't be undone.")) return;
-
+      if (!confirm("Delete \"" + (item.name || "Untitled Prompt") + "\"?")) return;
       savedPrompts = savedPrompts.filter(p => p.id !== id);
-      if (editingId === id) {
-        editingId = null;
-        updateEditingBadge();
-      }
+      if (editingId === id) { editingId = null; updateEditingBadge(); }
       persist();
       renderSavedPrompts();
       toast("Prompt deleted.", "success");
@@ -764,7 +481,6 @@
         await navigator.clipboard.writeText(text);
         return true;
       } catch (e) {
-        // Fallback for non-secure contexts.
         try {
           const ta = document.createElement("textarea");
           ta.value = text;
@@ -781,31 +497,32 @@
       }
     }
 
-    async function copyPrompt() {
-      if (!hasAnyInput()) {
-        toast("Nothing to copy yet.", "error");
-        return;
-      }
-      const ok = await copyToClipboard(buildPrompt());
+    async function copyCurrent() {
+      const text = $("instructions").value.trim();
+      if (!text) { toast("Nothing to copy yet.", "error"); return; }
+      const ok = await copyToClipboard(text);
       toast(ok ? "Copied to clipboard." : "Copy failed.", ok ? "success" : "error");
     }
 
-    async function copySaved(id) {
+    async function copySaved(id, btn) {
       const item = savedPrompts.find(p => p.id === id);
       if (!item) return;
-      const ok = await copyToClipboard(item.prompt || "");
+      const ok = await copyToClipboard(promptBody(item));
+      if (ok && btn) {
+        const original = btn.textContent;
+        btn.textContent = "Copied!";
+        btn.classList.add("done");
+        setTimeout(() => { btn.textContent = original; btn.classList.remove("done"); }, 1200);
+      }
       toast(ok ? "Copied to clipboard." : "Copy failed.", ok ? "success" : "error");
     }
 
     function clearForm() {
-      fields.forEach(id => {
-        const el = $(id);
-        if (el.tagName === "SELECT") el.selectedIndex = 0;
-        else el.value = "";
-      });
+      $("promptName").value = "";
+      $("subtitle").value = "";
+      $("instructions").value = "";
       editingId = null;
       updateEditingBadge();
-      onInput();
     }
 
     function cancelEdit() {
@@ -827,12 +544,8 @@
     }
 
     function exportPrompts() {
-      if (savedPrompts.length === 0) {
-        toast("No prompts to export.", "error");
-        return;
-      }
-      const blob = new Blob([JSON.stringify(savedPrompts, null, 2)],
-        { type: "application/json" });
+      if (savedPrompts.length === 0) { toast("No prompts to export.", "error"); return; }
+      const blob = new Blob([JSON.stringify(savedPrompts, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -853,12 +566,12 @@
           const existing = new Set(savedPrompts.map(p => p.id));
           let added = 0;
           data.forEach(p => {
-            if (p && p.name && !existing.has(p.id)) {
+            if (p && (p.name || p.instructions || p.prompt) && !existing.has(p.id)) {
               savedPrompts.push({
                 id: p.id || Date.now() + Math.floor(Math.random() * 1000),
-                name: String(p.name),
-                prompt: String(p.prompt || ""),
-                fields: p.fields || null,
+                name: String(p.name || "Untitled Prompt"),
+                subtitle: String(p.subtitle || ""),
+                instructions: String(p.instructions != null ? p.instructions : (p.prompt || "")),
                 createdAt: p.createdAt || new Date().toLocaleString()
               });
               added++;
@@ -883,28 +596,16 @@
       clearTimeout(toastTimer);
       toastTimer = setTimeout(() => {
         el.className = "toast" + (type ? " " + type : "");
-      }, 2200);
+      }, 2000);
     }
-
-    // -- wiring --
-    fields.forEach(id => {
-      $(id).addEventListener("input", onInput);
-      $(id).addEventListener("change", onInput);
-    });
 
     document.addEventListener("keydown", e => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
         e.preventDefault();
         savePrompt();
       }
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "c") {
-        e.preventDefault();
-        copyPrompt();
-      }
     });
 
-    updateCharCounts();
-    renderOutput();
     renderSavedPrompts();
     updateEditingBadge();
   </script>
