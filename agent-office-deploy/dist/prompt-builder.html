@@ -34,12 +34,27 @@
     .app {
       display: grid;
       grid-template-columns: 1fr 400px;
+      grid-template-rows: auto 1fr;
+      grid-template-areas:
+        "header  sidebar"
+        "builder sidebar";
       min-height: 100vh;
     }
 
-    .builder {
-      padding: 32px;
+    .topbar-wrap {
+      grid-area: header;
+      padding: 32px 32px 0;
       max-width: 760px;
+    }
+
+    .builder {
+      grid-area: builder;
+      padding: 24px 32px 32px;
+      max-width: 760px;
+      display: flex;
+      flex-direction: column;
+      /* Push the form card to the bottom of the page. */
+      justify-content: flex-end;
     }
 
     .sidebar {
@@ -288,27 +303,41 @@
     .toast.error { border-color: var(--red); }
 
     @media (max-width: 900px) {
-      .app { grid-template-columns: 1fr; }
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+        grid-template-areas:
+          "header"
+          "sidebar"
+          "builder";
+      }
       .sidebar {
         border-left: none;
         border-top: 1px solid #1e293b;
         position: static;
         max-height: none;
       }
-      .builder { padding: 20px; }
+      .topbar-wrap { padding: 20px 20px 0; }
+      .builder {
+        padding: 16px 20px 20px;
+        /* Card already sits last in the stack on narrow screens. */
+        justify-content: flex-start;
+      }
     }
   </style>
 </head>
 
 <body>
   <div class="app">
-    <main class="builder">
+    <header class="topbar-wrap">
       <a class="back-link" href="/"><span class="arrow">&#8592;</span> Back to Agent Office</a>
       <div class="topbar">
         <h1>Prompt Builder</h1>
         <div class="subtitle">Save a prompt with a name, a subtitle, and its instructions — then copy it anytime.</div>
       </div>
+    </header>
 
+    <main class="builder">
       <div class="card">
         <div class="field">
           <label for="promptName">Prompt Name</label>
