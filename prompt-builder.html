@@ -393,8 +393,41 @@
     "use strict";
 
     const STORAGE_KEY = "savedPrompts";
+    const API_BASE = "/api/prompts";
     let savedPrompts = loadSaved();
     let editingId = null;
+    // When the backend is reachable, prompts sync across devices via the API.
+    // localStorage is kept as an offline cache / fallback.
+    let apiOnline = false;
+
+    async function apiList() {
+      const res = await fetch(API_BASE, { headers: { "Accept": "application/json" } });
+      if (!res.ok) throw new Error("Failed to load prompts");
+      return res.json();
+    }
+    async function apiCreate(data) {
+      const res = await fetch(API_BASE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to save prompt");
+      return res.json();
+    }
+    async function apiUpdate(id, data) {
+      const res = await fetch(API_BASE + "/" + encodeURIComponent(id), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update prompt");
+      return res.json();
+    }
+    async function apiDelete(id) {
+      const res = await fetch(API_BASE + "/" + encodeURIComponent(id), { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to delete prompt");
+      return res.json();
+    }
 
     function loadSaved() {
       try {
@@ -422,7 +455,7 @@
       return item.instructions != null ? item.instructions : (item.prompt || "");
     }
 
-    function savePrompt() {
+    async function savePrompt() {
       const name = $("promptName").value.trim() || "Untitled Prompt";
       const subtitle = $("subtitle").value.trim();
       const instructions = $("instructions").value.trim();
@@ -432,32 +465,65 @@
         return;
       }
 
+      const data = { name, subtitle, instructions };
+
+      // Update an existing prompt.
       if (editingId !== null) {
+        if (apiOnline) {
+          try {
+            const updated = await apiUpdate(editingId, data);
+            const idx = savedPrompts.findIndex(p => p.id === editingId);
+            if (idx !== -1) savedPrompts[idx] = updated;
+            else savedPrompts.unshift(updated);
+            persist();
+            renderSavedPrompts();
+            toast("Prompt updated.", "success");
+            return;
+          } catch (e) {
+            toast("Couldn't reach the server — saved locally.", "error");
+          }
+        }
         const idx = savedPrompts.findIndex(p => p.id === editingId);
         if (idx !== -1) {
           savedPrompts[idx] = {
             ...savedPrompts[idx],
             name, subtitle, instructions,
-            updatedAt: new Date().toLocaleString()
+            updatedAt: new Date().toISOString()
           };
           persist();
           renderSavedPrompts();
-          toast("Prompt updated.", "success");
+          if (!apiOnline) toast("Prompt updated.", "success");
           return;
         }
       }
 
+      // Create a new prompt.
+      if (apiOnline) {
+        try {
+          const created = await apiCreate(data);
+          savedPrompts.unshift(created);
+          editingId = created.id;
+          persist();
+          renderSavedPrompts();
+          updateEditingBadge();
+          toast("Prompt saved.", "success");
+          return;
+        } catch (e) {
+          toast("Couldn't reach the server — saved locally.", "error");
+        }
+      }
+
       const entry = {
-        id: Date.now(),
+        id: "local-" + Date.now(),
         name, subtitle, instructions,
-        createdAt: new Date().toLocaleString()
+        createdAt: new Date().toISOString()
       };
       savedPrompts.unshift(entry);
       editingId = entry.id;
       persist();
       renderSavedPrompts();
       updateEditingBadge();
-      toast("Prompt saved.", "success");
+      if (!apiOnline) toast("Prompt saved.", "success");
     }
 
     function renderSavedPrompts() {
@@ -494,11 +560,11 @@
               <h3>${escapeHtml(item.name || "Untitled Prompt")}</h3>
               ${subHtml}
             </div>
-            <button class="copy-btn" onclick="copySaved(${item.id}, this)">Copy</button>
+            <button class="copy-btn" onclick="copySaved('${item.id}', this)">Copy</button>
           </div>
           <div class="saved-sub-actions">
-            <button class="secondary" onclick="loadPrompt(${item.id})">Edit</button>
-            <button class="danger" onclick="deletePrompt(${item.id})">Delete</button>
+            <button class="secondary" onclick="loadPrompt('${item.id}')">Edit</button>
+            <button class="danger" onclick="deletePrompt('${item.id}')">Delete</button>
           </div>
         `;
         container.appendChild(div);
@@ -517,15 +583,26 @@
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
-    function deletePrompt(id) {
+    async function deletePrompt(id) {
       const item = savedPrompts.find(p => p.id === id);
       if (!item) return;
       if (!confirm("Delete \"" + (item.name || "Untitled Prompt") + "\"?")) return;
+
+      let ok = true;
+      if (apiOnline) {
+        try {
+          await apiDelete(id);
+        } catch (e) {
+          ok = false;
+          toast("Couldn't reach the server — deleted locally.", "error");
+        }
+      }
+
       savedPrompts = savedPrompts.filter(p => p.id !== id);
       if (editingId === id) { editingId = null; updateEditingBadge(); }
       persist();
       renderSavedPrompts();
-      toast("Prompt deleted.", "success");
+      if (ok) toast("Prompt deleted.", "success");
     }
 
     async function copyToClipboard(text) {
@@ -611,24 +688,36 @@
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = e => {
+      reader.onload = async e => {
         try {
           const data = JSON.parse(e.target.result);
           if (!Array.isArray(data)) throw new Error("bad format");
-          const existing = new Set(savedPrompts.map(p => p.id));
           let added = 0;
-          data.forEach(p => {
-            if (p && (p.name || p.instructions || p.prompt) && !existing.has(p.id)) {
-              savedPrompts.push({
-                id: p.id || Date.now() + Math.floor(Math.random() * 1000),
-                name: String(p.name || "Untitled Prompt"),
-                subtitle: String(p.subtitle || ""),
-                instructions: String(p.instructions != null ? p.instructions : (p.prompt || "")),
-                createdAt: p.createdAt || new Date().toLocaleString()
+          for (const p of data) {
+            if (!p || !(p.name || p.instructions || p.prompt)) continue;
+            const payload = {
+              name: String(p.name || "Untitled Prompt"),
+              subtitle: String(p.subtitle || ""),
+              instructions: String(p.instructions != null ? p.instructions : (p.prompt || "")),
+            };
+            if (!payload.instructions.trim()) continue;
+            if (apiOnline) {
+              try {
+                const created = await apiCreate(payload);
+                savedPrompts.unshift(created);
+                added++;
+              } catch (err) {
+                // Skip prompts that fail to upload; keep importing the rest.
+              }
+            } else {
+              savedPrompts.unshift({
+                id: "local-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+                ...payload,
+                createdAt: new Date().toISOString()
               });
               added++;
             }
-          });
+          }
           persist();
           renderSavedPrompts();
           toast("Imported " + added + " prompt(s).", "success");
@@ -658,8 +747,24 @@
       }
     });
 
-    renderSavedPrompts();
-    updateEditingBadge();
+    async function init() {
+      // Show cached prompts instantly, then sync from the server so the
+      // list matches what was saved on other devices.
+      renderSavedPrompts();
+      updateEditingBadge();
+      try {
+        const remote = await apiList();
+        savedPrompts = Array.isArray(remote) ? remote : [];
+        apiOnline = true;
+        persist();
+        renderSavedPrompts();
+      } catch (e) {
+        apiOnline = false;
+        // Server unreachable — stay in local-only mode using cached prompts.
+      }
+    }
+
+    init();
   </script>
 </body>
 </html>
