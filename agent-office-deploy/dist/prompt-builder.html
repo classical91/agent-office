@@ -209,6 +209,50 @@
     }
     .sidebar-head h2 { margin: 0; font-size: 18px; }
 
+    .folder-group {
+      margin-bottom: 14px;
+    }
+    .folder-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      padding: 6px 4px;
+      border-radius: 8px;
+      user-select: none;
+    }
+    .folder-head:hover { background: #1e293b; }
+    .folder-head .chevron {
+      font-size: 11px;
+      color: var(--muted);
+      transition: transform .15s ease;
+      flex-shrink: 0;
+    }
+    .folder-group.collapsed .chevron { transform: rotate(-90deg); }
+    .folder-head .folder-name {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .02em;
+      text-transform: uppercase;
+      color: var(--muted);
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .folder-head .folder-count {
+      font-size: 11px;
+      color: var(--muted);
+      background: #111827;
+      border: 1px solid #1e293b;
+      border-radius: 999px;
+      padding: 2px 8px;
+      flex-shrink: 0;
+    }
+    .folder-items { margin-top: 8px; }
+    .folder-group.collapsed .folder-items { display: none; }
+
     .count-pill {
       font-size: 12px;
       color: var(--muted);
@@ -427,6 +471,12 @@
           </div>
 
           <div class="field">
+            <label for="folder">Folder <span style="font-style:italic;">(optional, for organizing the sidebar)</span></label>
+            <input id="folder" list="folderOptions" placeholder="Example: Marketing" autocomplete="off" />
+            <datalist id="folderOptions"></datalist>
+          </div>
+
+          <div class="field">
             <label for="instructions">Instructions</label>
             <textarea id="instructions" placeholder="Write the prompt instructions here..."></textarea>
           </div>
@@ -484,9 +534,11 @@
     "use strict";
 
     const STORAGE_KEY = "savedPrompts";
+    const COLLAPSED_KEY = "savedPromptsCollapsedFolders";
     const API_BASE = "/api/prompts";
     let savedPrompts = loadSaved();
     let editingId = null;
+    let collapsedFolders = loadCollapsed();
     // When the backend is reachable, prompts sync across devices via the API.
     // localStorage is kept as an offline cache / fallback.
     let apiOnline = false;
@@ -533,6 +585,36 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(savedPrompts));
     }
 
+    function loadCollapsed() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(COLLAPSED_KEY));
+        return new Set(Array.isArray(raw) ? raw : []);
+      } catch (e) {
+        return new Set();
+      }
+    }
+
+    function persistCollapsed() {
+      localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...collapsedFolders]));
+    }
+
+    function folderOf(item) {
+      return (item.folder || "").trim();
+    }
+
+    function toggleFolder(name) {
+      if (collapsedFolders.has(name)) collapsedFolders.delete(name);
+      else collapsedFolders.add(name);
+      persistCollapsed();
+      renderSavedPrompts();
+    }
+
+    function updateFolderOptions() {
+      const names = [...new Set(savedPrompts.map(folderOf).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+      const list = $("folderOptions");
+      list.innerHTML = names.map(n => `<option value="${escapeHtml(n)}"></option>`).join("");
+    }
+
     function $(id) { return document.getElementById(id); }
 
     function escapeHtml(str) {
@@ -549,6 +631,7 @@
     async function savePrompt() {
       const name = $("promptName").value.trim() || "Untitled Prompt";
       const subtitle = $("subtitle").value.trim();
+      const folder = $("folder").value.trim();
       const instructions = $("instructions").value.trim();
 
       if (!instructions) {
@@ -556,7 +639,7 @@
         return;
       }
 
-      const data = { name, subtitle, instructions };
+      const data = { name, subtitle, folder, instructions };
 
       // Update an existing prompt.
       if (editingId !== null) {
@@ -578,7 +661,7 @@
         if (idx !== -1) {
           savedPrompts[idx] = {
             ...savedPrompts[idx],
-            name, subtitle, instructions,
+            name, subtitle, folder, instructions,
             updatedAt: new Date().toISOString()
           };
           persist();
@@ -606,7 +689,7 @@
 
       const entry = {
         id: "local-" + Date.now(),
-        name, subtitle, instructions,
+        name, subtitle, folder, instructions,
         createdAt: new Date().toISOString()
       };
       savedPrompts.unshift(entry);
@@ -617,16 +700,45 @@
       if (!apiOnline) toast("Prompt saved.", "success");
     }
 
+    function renderSavedItem(item) {
+      const div = document.createElement("div");
+      div.className = "saved-item" + (item.id === editingId ? " active" : "");
+
+      const subHtml = item.subtitle
+        ? `<p class="sub">${escapeHtml(item.subtitle)}</p>`
+        : "";
+
+      div.innerHTML = `
+        <div class="saved-top">
+          <div class="saved-info">
+            <h3>${escapeHtml(item.name || "Untitled Prompt")}</h3>
+            ${subHtml}
+          </div>
+          <div class="saved-actions-right">
+            <button class="help-btn" onclick="showInstructions('${item.id}')" title="Show instructions" aria-label="Show instructions">?</button>
+            <button class="copy-btn" onclick="copySaved('${item.id}', this)">Copy</button>
+          </div>
+        </div>
+        <div class="saved-sub-actions">
+          <button class="secondary" onclick="loadPrompt('${item.id}')">Edit</button>
+          <button class="danger" onclick="deletePrompt('${item.id}')">Delete</button>
+        </div>
+      `;
+      return div;
+    }
+
     function renderSavedPrompts() {
       const container = $("savedPrompts");
       const query = $("searchBox").value.trim().toLowerCase();
       container.innerHTML = "";
       $("savedCount").textContent = savedPrompts.length;
+      updateFolderOptions();
 
       const list = query
         ? savedPrompts.filter(p =>
             (p.name || "").toLowerCase().includes(query) ||
             (p.subtitle || "").toLowerCase().includes(query) ||
+            (p.folder || "").toLowerCase().includes(query) ||
             promptBody(p).toLowerCase().includes(query))
         : savedPrompts;
 
@@ -637,31 +749,40 @@
         return;
       }
 
+      const groups = new Map();
       list.forEach(item => {
-        const div = document.createElement("div");
-        div.className = "saved-item" + (item.id === editingId ? " active" : "");
+        const name = folderOf(item) || "Uncategorized";
+        if (!groups.has(name)) groups.set(name, []);
+        groups.get(name).push(item);
+      });
 
-        const subHtml = item.subtitle
-          ? `<p class="sub">${escapeHtml(item.subtitle)}</p>`
-          : "";
+      const names = [...groups.keys()].sort((a, b) => {
+        if (a === "Uncategorized") return 1;
+        if (b === "Uncategorized") return -1;
+        return a.localeCompare(b);
+      });
 
-        div.innerHTML = `
-          <div class="saved-top">
-            <div class="saved-info">
-              <h3>${escapeHtml(item.name || "Untitled Prompt")}</h3>
-              ${subHtml}
-            </div>
-            <div class="saved-actions-right">
-              <button class="help-btn" onclick="showInstructions('${item.id}')" title="Show instructions" aria-label="Show instructions">?</button>
-              <button class="copy-btn" onclick="copySaved('${item.id}', this)">Copy</button>
-            </div>
-          </div>
-          <div class="saved-sub-actions">
-            <button class="secondary" onclick="loadPrompt('${item.id}')">Edit</button>
-            <button class="danger" onclick="deletePrompt('${item.id}')">Delete</button>
-          </div>
+      names.forEach(name => {
+        const items = groups.get(name);
+        const groupEl = document.createElement("div");
+        groupEl.className = "folder-group" + (collapsedFolders.has(name) ? " collapsed" : "");
+
+        const head = document.createElement("div");
+        head.className = "folder-head";
+        head.onclick = () => toggleFolder(name);
+        head.innerHTML = `
+          <span class="chevron">&#9660;</span>
+          <span class="folder-name">${escapeHtml(name)}</span>
+          <span class="folder-count">${items.length}</span>
         `;
-        container.appendChild(div);
+        groupEl.appendChild(head);
+
+        const itemsEl = document.createElement("div");
+        itemsEl.className = "folder-items";
+        items.forEach(item => itemsEl.appendChild(renderSavedItem(item)));
+        groupEl.appendChild(itemsEl);
+
+        container.appendChild(groupEl);
       });
     }
 
@@ -670,6 +791,7 @@
       if (!item) return;
       $("promptName").value = item.name || "";
       $("subtitle").value = item.subtitle || "";
+      $("folder").value = item.folder || "";
       $("instructions").value = promptBody(item);
       editingId = id;
       updateEditingBadge();
@@ -743,6 +865,7 @@
     function clearForm() {
       $("promptName").value = "";
       $("subtitle").value = "";
+      $("folder").value = "";
       $("instructions").value = "";
       editingId = null;
       updateEditingBadge();
@@ -792,6 +915,7 @@
             const payload = {
               name: String(p.name || "Untitled Prompt"),
               subtitle: String(p.subtitle || ""),
+              folder: String(p.folder || ""),
               instructions: String(p.instructions != null ? p.instructions : (p.prompt || "")),
             };
             if (!payload.instructions.trim()) continue;

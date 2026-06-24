@@ -316,6 +316,7 @@ function validatePromptInput(input) {
   }
   const name = typeof input.name === 'string' ? input.name.trim() : '';
   const subtitle = typeof input.subtitle === 'string' ? input.subtitle.trim() : '';
+  const folder = typeof input.folder === 'string' ? input.folder.trim() : '';
   const instructions = typeof input.instructions === 'string' ? input.instructions.trim() : '';
 
   if (!instructions || instructions.length > 50000) {
@@ -327,7 +328,10 @@ function validatePromptInput(input) {
   if (subtitle.length > 300) {
     return { ok: false, error: 'Subtitle must be 300 characters or fewer.' };
   }
-  return { ok: true, value: { name: name || 'Untitled Prompt', subtitle, instructions } };
+  if (folder.length > 200) {
+    return { ok: false, error: 'Folder must be 200 characters or fewer.' };
+  }
+  return { ok: true, value: { name: name || 'Untitled Prompt', subtitle, folder, instructions } };
 }
 
 function validatePatchInput(input) {
@@ -558,6 +562,7 @@ function toClientPrompt(row) {
     id: row.id,
     name: row.name || 'Untitled Prompt',
     subtitle: row.subtitle || '',
+    folder: row.folder || '',
     instructions: row.instructions || '',
     createdAt: row.createdAt || row.created_at || new Date().toISOString(),
     updatedAt: row.updatedAt || row.updated_at || row.createdAt || row.created_at || new Date().toISOString(),
@@ -728,6 +733,7 @@ function createFileStorage() {
       if (!prompt) return null;
       prompt.name = fields.name;
       prompt.subtitle = fields.subtitle;
+      prompt.folder = fields.folder;
       prompt.instructions = fields.instructions;
       prompt.updatedAt = new Date().toISOString();
       await savePromptsToFile(prompts);
@@ -865,11 +871,13 @@ async function createPostgresStorage() {
       id TEXT PRIMARY KEY,
       name VARCHAR(200) NOT NULL DEFAULT 'Untitled Prompt',
       subtitle VARCHAR(300) NOT NULL DEFAULT '',
+      folder VARCHAR(200) NOT NULL DEFAULT '',
       instructions TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+  await pool.query(`ALTER TABLE prompts ADD COLUMN IF NOT EXISTS folder VARCHAR(200) NOT NULL DEFAULT ''`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS calendar_events (
@@ -1055,7 +1063,7 @@ async function createPostgresStorage() {
     },
     async listPrompts() {
       const result = await pool.query(`
-        SELECT id, name, subtitle, instructions, created_at, updated_at
+        SELECT id, name, subtitle, folder, instructions, created_at, updated_at
         FROM prompts
         ORDER BY created_at DESC
       `);
@@ -1064,11 +1072,11 @@ async function createPostgresStorage() {
     async createPrompt(prompt) {
       const result = await pool.query(
         `
-          INSERT INTO prompts (id, name, subtitle, instructions, created_at, updated_at)
-          VALUES ($1, $2, $3, $4, $5, $5)
-          RETURNING id, name, subtitle, instructions, created_at, updated_at
+          INSERT INTO prompts (id, name, subtitle, folder, instructions, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $6)
+          RETURNING id, name, subtitle, folder, instructions, created_at, updated_at
         `,
-        [prompt.id, prompt.name, prompt.subtitle, prompt.instructions, prompt.createdAt]
+        [prompt.id, prompt.name, prompt.subtitle, prompt.folder, prompt.instructions, prompt.createdAt]
       );
       return toClientPrompt(result.rows[0]);
     },
@@ -1076,11 +1084,11 @@ async function createPostgresStorage() {
       const result = await pool.query(
         `
           UPDATE prompts
-          SET name = $2, subtitle = $3, instructions = $4, updated_at = NOW()
+          SET name = $2, subtitle = $3, folder = $4, instructions = $5, updated_at = NOW()
           WHERE id = $1
-          RETURNING id, name, subtitle, instructions, created_at, updated_at
+          RETURNING id, name, subtitle, folder, instructions, created_at, updated_at
         `,
-        [id, fields.name, fields.subtitle, fields.instructions]
+        [id, fields.name, fields.subtitle, fields.folder, fields.instructions]
       );
       return result.rows[0] ? toClientPrompt(result.rows[0]) : null;
     },
@@ -1500,6 +1508,7 @@ const server = http.createServer(async (req, res) => {
         id: `prompt-${typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now()}`,
         name: payload.value.name,
         subtitle: payload.value.subtitle,
+        folder: payload.value.folder,
         instructions: payload.value.instructions,
         createdAt: now,
         updatedAt: now,
