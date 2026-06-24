@@ -34,21 +34,22 @@
     .app {
       display: grid;
       grid-template-columns: 1fr 400px;
-      grid-template-rows: auto 1fr;
-      grid-template-areas:
-        "header  sidebar"
-        "builder sidebar";
+      grid-template-areas: "main sidebar";
       min-height: 100vh;
     }
 
+    .main-col {
+      grid-area: main;
+      display: flex;
+      flex-direction: column;
+    }
+
     .topbar-wrap {
-      grid-area: header;
       padding: 32px 32px 0;
       max-width: 760px;
     }
 
     .builder {
-      grid-area: builder;
       padding: 24px 32px 32px;
       max-width: 760px;
       display: flex;
@@ -374,11 +375,9 @@
     @media (max-width: 900px) {
       .app {
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto;
         grid-template-areas:
-          "header"
-          "sidebar"
-          "builder";
+          "main"
+          "sidebar";
       }
       .sidebar {
         border-left: none;
@@ -397,43 +396,45 @@
 
 <body>
   <div class="app">
-    <header class="topbar-wrap">
-      <a class="back-link" href="/"><span class="arrow">&#8592;</span> Back to Agent Office</a>
-      <div class="topbar">
-        <h1>Prompt Builder</h1>
-        <div class="subtitle">Save a prompt with a name, a subtitle, and its instructions — then copy it anytime.</div>
-      </div>
-    </header>
-
-    <main class="builder">
-      <div class="card">
-        <div class="field">
-          <label for="promptName">Prompt Name</label>
-          <input id="promptName" placeholder="Example: Crypto News Brief" autocomplete="off" />
+    <div class="main-col">
+      <header class="topbar-wrap">
+        <a class="back-link" href="/"><span class="arrow">&#8592;</span> Back to Agent Office</a>
+        <div class="topbar">
+          <h1>Prompt Builder</h1>
+          <div class="subtitle">Save a prompt with a name, a subtitle, and its instructions — then copy it anytime.</div>
         </div>
+      </header>
 
-        <div class="field">
-          <label for="subtitle">Subtitle <span style="font-style:italic;">(shown in italics)</span></label>
-          <input id="subtitle" placeholder="Example: A daily 10-item market digest" autocomplete="off" />
-        </div>
+      <main class="builder">
+        <div class="card">
+          <div class="field">
+            <label for="promptName">Prompt Name</label>
+            <input id="promptName" placeholder="Example: Crypto News Brief" autocomplete="off" />
+          </div>
 
-        <div class="field">
-          <label for="instructions">Instructions</label>
-          <textarea id="instructions" placeholder="Write the prompt instructions here..."></textarea>
-        </div>
+          <div class="field">
+            <label for="subtitle">Subtitle <span style="font-style:italic;">(shown in italics)</span></label>
+            <input id="subtitle" placeholder="Example: A daily 10-item market digest" autocomplete="off" />
+          </div>
 
-        <div class="actions">
-          <button id="saveBtn" onclick="savePrompt()">Save Prompt</button>
-          <button class="secondary" onclick="copyCurrent()">Copy</button>
-          <span class="editing-badge" id="editingBadge">
-            Editing
-            <button class="ghost" style="padding:2px 8px;font-size:11px;" onclick="cancelEdit()">New</button>
-          </span>
-          <span class="spacer"></span>
-          <button class="danger" onclick="clearForm()">Clear</button>
+          <div class="field">
+            <label for="instructions">Instructions</label>
+            <textarea id="instructions" placeholder="Write the prompt instructions here..."></textarea>
+          </div>
+
+          <div class="actions">
+            <button id="saveBtn" onclick="savePrompt()">Save Prompt</button>
+            <button class="secondary" onclick="copyCurrent()">Copy</button>
+            <span class="editing-badge" id="editingBadge">
+              Editing
+              <button class="ghost" style="padding:2px 8px;font-size:11px;" onclick="cancelEdit()">New</button>
+            </span>
+            <span class="spacer"></span>
+            <button class="danger" onclick="clearForm()">Clear</button>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
 
     <aside class="sidebar">
       <div class="sidebar-head">
