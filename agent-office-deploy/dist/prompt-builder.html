@@ -53,8 +53,7 @@
       max-width: 760px;
       display: flex;
       flex-direction: column;
-      /* Push the form card to the bottom of the page. */
-      justify-content: flex-end;
+      justify-content: flex-start;
     }
 
     .sidebar {
@@ -257,6 +256,76 @@
     }
     .copy-btn.done { background: var(--green); }
 
+    .saved-actions-right {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .help-btn {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border-radius: 999px;
+      background: #334155;
+      font-size: 14px;
+      line-height: 1;
+    }
+    .help-btn:hover { background: #475569; }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, .7);
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 100;
+    }
+    .modal-overlay.show { display: flex; }
+
+    .modal-box {
+      background: var(--panel);
+      border: 1px solid var(--border-2);
+      border-radius: 18px;
+      padding: 24px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .modal-head h3 { margin: 0; font-size: 18px; word-break: break-word; }
+    .modal-head .sub { margin: 4px 0 0; font-size: 13px; font-style: italic; color: var(--muted); }
+
+    .modal-close {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border-radius: 999px;
+      background: #334155;
+    }
+    .modal-close:hover { background: #475569; }
+
+    .modal-body {
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
     .saved-sub-actions {
       display: flex;
       gap: 8px;
@@ -320,7 +389,6 @@
       .topbar-wrap { padding: 20px 20px 0; }
       .builder {
         padding: 16px 20px 20px;
-        /* Card already sits last in the stack on narrow screens. */
         justify-content: flex-start;
       }
     }
@@ -388,6 +456,19 @@
   </div>
 
   <div id="toast" class="toast"></div>
+
+  <div id="instructionsModal" class="modal-overlay" onclick="if (event.target === this) closeInstructions();">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div>
+          <h3 id="modalName"></h3>
+          <p class="sub" id="modalSub"></p>
+        </div>
+        <button class="modal-close" onclick="closeInstructions()" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
 
   <script>
     "use strict";
@@ -560,7 +641,10 @@
               <h3>${escapeHtml(item.name || "Untitled Prompt")}</h3>
               ${subHtml}
             </div>
-            <button class="copy-btn" onclick="copySaved('${item.id}', this)">Copy</button>
+            <div class="saved-actions-right">
+              <button class="help-btn" onclick="showInstructions('${item.id}')" title="Show instructions" aria-label="Show instructions">?</button>
+              <button class="copy-btn" onclick="copySaved('${item.id}', this)">Copy</button>
+            </div>
           </div>
           <div class="saved-sub-actions">
             <button class="secondary" onclick="loadPrompt('${item.id}')">Edit</button>
@@ -740,11 +824,31 @@
       }, 2000);
     }
 
+    function showInstructions(id) {
+      const item = savedPrompts.find(p => p.id === id);
+      if (!item) return;
+      $("modalName").textContent = item.name || "Untitled Prompt";
+      const sub = $("modalSub");
+      if (item.subtitle) {
+        sub.textContent = item.subtitle;
+        sub.style.display = "";
+      } else {
+        sub.style.display = "none";
+      }
+      $("modalBody").textContent = promptBody(item) || "(No instructions.)";
+      $("instructionsModal").classList.add("show");
+    }
+
+    function closeInstructions() {
+      $("instructionsModal").classList.remove("show");
+    }
+
     document.addEventListener("keydown", e => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
         e.preventDefault();
         savePrompt();
       }
+      if (e.key === "Escape") closeInstructions();
     });
 
     async function init() {
