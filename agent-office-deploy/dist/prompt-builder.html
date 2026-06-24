@@ -108,8 +108,10 @@
     .topbar .subtitle {
       color: var(--muted);
       font-size: 14px;
-      margin: 4px 0 24px;
+      margin: 4px 0 16px;
     }
+
+    #newPromptBtn { margin-bottom: 24px; }
 
     .card {
       background: var(--panel);
@@ -455,11 +457,15 @@
         <div class="topbar">
           <h1>Prompt Builder</h1>
           <div class="subtitle">Save a prompt with a name, a subtitle, and its instructions — then copy it anytime.</div>
+          <button id="newPromptBtn" onclick="showBuilder()">+ Create a Prompt</button>
         </div>
       </header>
 
       <main class="builder">
-        <div class="card">
+        <div class="card" id="builderCard" style="display:none;">
+          <div class="actions" style="justify-content:flex-end;margin-bottom:8px;">
+            <button class="ghost" style="padding:6px 10px;font-size:12px;" onclick="hideBuilder()">Close</button>
+          </div>
           <div class="field">
             <label for="promptName">Prompt Name</label>
             <input id="promptName" placeholder="Example: Crypto News Brief" autocomplete="off" />
@@ -796,7 +802,17 @@
       editingId = id;
       updateEditingBadge();
       renderSavedPrompts();
+      showBuilder();
       window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function showBuilder() {
+      $("builderCard").style.display = "";
+    }
+
+    function hideBuilder() {
+      $("builderCard").style.display = "none";
+      clearForm();
     }
 
     async function deletePrompt(id) {
