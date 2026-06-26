@@ -1768,6 +1768,7 @@
 </style>
 <link rel="stylesheet" href="ai-landscape.css"/>
 <link rel="stylesheet" href="calendar-view.css"/>
+<link rel="stylesheet" href="workspace-systems.css"/>
 </head>
 <body>
 
@@ -1801,7 +1802,9 @@
         <div class="nav-item" onclick="switchView('memory', this)"><span class="icon">🧠</span> Memory</div>
         <div class="nav-item" onclick="switchView('calendar', this)"><span class="icon">📅</span> Calendar</div>
         <div class="nav-item" onclick="switchView('resets', this)"><span class="icon">&#9201;</span> Resets</div>
-        <div class="nav-item" onclick="switchView('dropbox', this)"><span class="icon">📥</span> Dropbox</div>
+        <div class="nav-item" onclick="switchView('dropbox', this)"><span class="icon">📥</span> Mission Board</div>
+        <div class="nav-item" onclick="switchView('projects', this)"><span class="icon">▣</span> Project Rooms</div>
+        <div class="nav-item" onclick="switchView('agents', this)"><span class="icon">◎</span> Agent Registry</div>
         <div class="nav-item" onclick="window.open('/prompt-builder.html', '_blank')"><span class="icon">📝</span> Prompt Builder</div>
       </div>
     </div>
@@ -1812,7 +1815,7 @@
       <div class="nav-items-wrap">
 
         <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">📈 TraderClaw</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://traderclaw-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/dc5c9acb-2c73-4a1c-b4c9-82a81e2efe9f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/trading-strategy" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
-        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#eab308;"></div><span class="nav-proj-name">🧠 Decision Engine</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://trading-strategy-production-1b41.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/b1ffc05e-c74a-4b24-94a2-ef6239bc5bf5" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/decide-engine" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#eab308;"></div><span class="nav-proj-name">🧠 Decision Engine</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://trading-strategy-production-1b41.up.railway.app/" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/b1ffc05e-c74a-4b24-94a2-ef6239bc5bf5" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/decide-engine" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
         <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#3b82f6;"></div><span class="nav-proj-name">🌐 WebClaw</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/3ac94b97-cca3-4550-9f53-2c8bdbc3f2ca" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/webclaw-service-hub" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
         <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#6366f1;"></div><span class="nav-proj-name">🏢 Agent Office</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://agent-office-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/016e0c7d-696f-4bde-8461-17980bd04a7e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
         <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#6366f1;"></div><span class="nav-proj-name">🎯 Mission Control</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://mission-control-standalone-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/8da6b690-445e-4d54-832f-548c32cb8fad" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
@@ -2966,6 +2969,16 @@
         </aside>
       </div>
     </section>
+  </div>
+
+  <!-- PROJECT ROOMS VIEW -->
+  <div class="view" id="view-projects" style="flex-direction:column; background:#0a0c11; overflow:hidden;">
+    <div id="project-rooms-app" class="ops-view"></div>
+  </div>
+
+  <!-- AGENT REGISTRY VIEW -->
+  <div class="view" id="view-agents" style="flex-direction:column; background:#0a0c11; overflow:hidden;">
+    <div id="agent-registry-app" class="ops-view"></div>
   </div>
 
   <!-- MEMORY VIEW -->
@@ -5551,6 +5564,7 @@ async function saveDrop() {
     subject:  document.getElementById('drop-subject').value,
     category: document.getElementById('drop-subject').value,
     project:  document.getElementById('drop-project').value,
+    agent:    document.getElementById('drop-agent') ? document.getElementById('drop-agent').value : '',
     tags:     document.getElementById('drop-tags').value,
     priority: document.getElementById('drop-priority').value,
     status:   document.getElementById('drop-status').value,
@@ -5663,6 +5677,8 @@ VIEW_HANDLERS.traderclaw = { enter: () => { if (typeof DE !== 'undefined') DE.re
 VIEW_HANDLERS.lyra       = { enter: () => { if (typeof SORA !== 'undefined') SORA.render(); }, focus: true };
 VIEW_HANDLERS.calendar   = { enter: () => { if (window.CAL) CAL.render(); }, focus: false, feedOnly: true };
 VIEW_HANDLERS.dropbox    = { enter: () => enterDropboxView(), focus: true };
+VIEW_HANDLERS.projects   = { enter: () => { if (window.ProjectRooms) ProjectRooms.render(); }, focus: true };
+VIEW_HANDLERS.agents     = { enter: () => { if (window.AgentRegistry) AgentRegistry.render(); }, focus: true };
 VIEW_HANDLERS.memory     = { enter: () => { if (typeof MEM !== 'undefined') MEM.render(); }, focus: true };
 VIEW_HANDLERS.office     = { enter: null, focus: false };
 VIEW_HANDLERS.org        = { enter: null, focus: false };
@@ -5892,5 +5908,8 @@ const MEM = (() => {
 </script>
 <script src="ai-landscape.js"></script>
 <script src="calendar-view.js"></script>
+<script src="mission-board.js"></script>
+<script src="project-rooms.js"></script>
+<script src="agent-registry.js"></script>
 </body>
 </html>

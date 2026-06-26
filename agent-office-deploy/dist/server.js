@@ -9,6 +9,8 @@ process.env.TZ = process.env.APP_TIMEZONE || 'America/Vancouver';
 const PORT = process.env.PORT || 3000;
 const DROPS_FILE = path.join(__dirname, process.env.DROPS_FILE || 'drops.json');
 const MEMORIES_FILE = path.join(__dirname, process.env.MEMORIES_FILE || 'memories.json');
+const PROJECTS_FILE = path.join(__dirname, process.env.PROJECTS_FILE || 'projects.json');
+const AGENTS_FILE = path.join(__dirname, process.env.AGENTS_FILE || 'agents.json');
 const CALENDAR_EVENTS_FILE = path.join(__dirname, process.env.CALENDAR_EVENTS_FILE || 'calendar-events.json');
 const CALENDAR_DISABLED_RECURRING_FILE = path.join(__dirname, process.env.CALENDAR_DISABLED_RECURRING_FILE || 'calendar-disabled-recurring.json');
 const CALENDAR_RECURRING_OVERRIDES_FILE = path.join(__dirname, process.env.CALENDAR_RECURRING_OVERRIDES_FILE || 'calendar-recurring-overrides.json');
@@ -17,7 +19,25 @@ const MAX_BODY_BYTES = 50 * 1024;
 const SESSION_COOKIE = 'agent_office_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
 const ALLOWED_PRIORITIES = new Set(['normal', 'high', 'urgent']);
-const ALLOWED_STATUSES = new Set(['inbox', 'idea', 'researching', 'ready', 'building', 'archived']);
+const ALLOWED_STATUSES = new Set(['inbox', 'idea', 'researching', 'coding', 'reviewing', 'ready_to_deploy', 'done', 'archived']);
+const LEGACY_STATUS_MAP = new Map([
+  ['ready', 'ready_to_deploy'],
+  ['building', 'coding'],
+]);
+const ALLOWED_AGENT_STATUSES = new Set(['idle', 'running', 'blocked', 'failed', 'needs_input', 'offline']);
+const DEFAULT_AGENTS = [
+  { id: 'codex', name: 'Codex', role: 'Coding Agent', model: 'GPT-5', status: 'idle', source: 'Codex', notes: 'Repo work, reviews, implementation, and local verification.' },
+  { id: 'claude-code', name: 'Claude Code', role: 'Coding Agent', model: 'Claude Sonnet', status: 'idle', source: 'CLI', notes: 'Parallel coding and refactor support.' },
+  { id: 'openclaw', name: 'OpenClaw', role: 'Agent Harness', model: 'Mixed', status: 'idle', source: 'OpenClaw', notes: 'Routes low-cost and specialized agent runs.' },
+  { id: 'reaper', name: 'Reaper', role: 'Farm Bot', model: 'GPT-4o-mini', status: 'idle', source: 'OpenClaw', notes: 'CommentFarm discover, posting, and engagement cycles.' },
+  { id: 'traderclaw', name: 'TraderClaw', role: 'Trading Bot', model: 'Claude Sonnet', status: 'running', source: 'Railway', notes: 'BTC, market dashboard, and trading analysis.' },
+  { id: 'webclaw', name: 'WebClaw', role: 'Web Developer', model: 'GPT-5.4', status: 'idle', source: 'Railway', notes: 'Demo sites, client landing pages, and pitch assets.' },
+  { id: 'researcher', name: 'Researcher', role: 'Research Agent', model: 'GPT-5', status: 'idle', source: 'Manual', notes: 'Briefs, scans, and source gathering.' },
+  { id: 'guardian', name: 'Guardian', role: 'Security Agent', model: 'Claude Sonnet', status: 'idle', source: 'Manual', notes: 'Security checklist, deployment risk, and auth review.' },
+  { id: 'farmbot', name: 'FarmBot', role: 'Outreach Agent', model: 'Qwen', status: 'idle', source: 'OpenClaw', notes: 'Scheduled farm sessions and engagement automation.' },
+  { id: 'rankforge', name: 'RankForge', role: 'SEO Agent', model: 'Claude Sonnet', status: 'idle', source: 'Railway', notes: 'SEO scans, local search, and content positioning.' },
+  { id: 'world-monitor', name: 'World Monitor', role: 'Monitoring Agent', model: 'GPT-5', status: 'idle', source: 'Railway', notes: 'World events and geopolitical watch loops.' },
+];
 const ALLOWED_ORIGIN = process.env.APP_ORIGIN || process.env.PUBLIC_APP_URL || '';
 const PASSPHRASE_HASH = resolvePassphraseHash();
 const sessions = new Map();
@@ -216,6 +236,25 @@ function normalizeTags(input) {
   return tags;
 }
 
+function normalizeStatus(value, fallback = 'idea') {
+  const raw = String(value || '').trim().toLowerCase();
+  const mapped = LEGACY_STATUS_MAP.get(raw) || raw || fallback;
+  return ALLOWED_STATUSES.has(mapped) ? mapped : fallback;
+}
+
+function normalizeIdPart(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+}
+
+function cleanText(value, max = 500) {
+  return typeof value === 'string' ? value.trim().slice(0, max) : '';
+}
+
 function deriveDropTitle(input) {
   const title = typeof input.title === 'string' ? input.title.trim() : '';
   if (title) return title.slice(0, 200);
@@ -240,9 +279,10 @@ function validateDropInput(input) {
   const subject = typeof input.subject === 'string' ? input.subject.trim() : '';
   const category = typeof input.category === 'string' ? input.category.trim() : subject;
   const project = typeof input.project === 'string' ? input.project.trim() : '';
+  const agent = typeof input.agent === 'string' ? input.agent.trim() : '';
   const content = typeof input.content === 'string' ? input.content.trim() : '';
   const priority = typeof input.priority === 'string' ? input.priority.trim().toLowerCase() : '';
-  const status = typeof input.status === 'string' ? input.status.trim().toLowerCase() : 'idea';
+  const status = normalizeStatus(input.status, 'idea');
   const title = deriveDropTitle(input);
   const tags = normalizeTags(input.tags);
 
@@ -258,6 +298,10 @@ function validateDropInput(input) {
     return { ok: false, error: 'Project must be 100 characters or fewer.' };
   }
 
+  if (agent.length > 100) {
+    return { ok: false, error: 'Agent must be 100 characters or fewer.' };
+  }
+
   if (!title || title.length > 200) {
     return { ok: false, error: 'Title is required and must be 200 characters or fewer.' };
   }
@@ -267,7 +311,7 @@ function validateDropInput(input) {
   }
 
   if (!ALLOWED_STATUSES.has(status)) {
-    return { ok: false, error: 'Status must be one of inbox, idea, researching, ready, building, archived.' };
+    return { ok: false, error: 'Status must be one of inbox, idea, researching, coding, reviewing, ready_to_deploy, done, or archived.' };
   }
 
   return {
@@ -277,6 +321,7 @@ function validateDropInput(input) {
       subject: category || subject || 'General',
       category: category || subject || 'General',
       project,
+      agent,
       tags,
       status,
       links: extractDropLinks(content),
@@ -339,12 +384,86 @@ function validatePatchInput(input) {
     return { ok: false, error: 'PATCH body must be a JSON object.' };
   }
 
-  const keys = Object.keys(input);
-  if (keys.length !== 1 || keys[0] !== 'done' || typeof input.done !== 'boolean') {
-    return { ok: false, error: 'Only the "done" boolean can be updated.' };
+  const patch = {};
+  if (input.done !== undefined) {
+    if (typeof input.done !== 'boolean') return { ok: false, error: 'Done must be a boolean.' };
+    patch.done = input.done;
+  }
+  if (input.title !== undefined) {
+    const title = cleanText(input.title, 200);
+    if (!title) return { ok: false, error: 'Title cannot be empty.' };
+    patch.title = title;
+  }
+  if (input.subject !== undefined || input.category !== undefined) {
+    const subject = cleanText(input.subject !== undefined ? input.subject : input.category, 100);
+    patch.subject = subject || 'General';
+    patch.category = patch.subject;
+  }
+  if (input.project !== undefined) patch.project = cleanText(input.project, 100);
+  if (input.agent !== undefined) patch.agent = cleanText(input.agent, 100);
+  if (input.content !== undefined) {
+    const content = cleanText(input.content, 10000);
+    if (!content) return { ok: false, error: 'Content cannot be empty.' };
+    patch.content = content;
+    patch.links = extractDropLinks(content);
+  }
+  if (input.priority !== undefined) {
+    const priority = cleanText(input.priority, 16).toLowerCase();
+    if (!ALLOWED_PRIORITIES.has(priority)) return { ok: false, error: 'Priority must be one of normal, high, or urgent.' };
+    patch.priority = priority;
+  }
+  if (input.status !== undefined) {
+    const status = normalizeStatus(input.status, '');
+    if (!status) return { ok: false, error: 'Status must be one of inbox, idea, researching, coding, reviewing, ready_to_deploy, done, or archived.' };
+    patch.status = status;
+    patch.done = status === 'done' || status === 'archived';
+  }
+  if (input.tags !== undefined) patch.tags = normalizeTags(input.tags);
+
+  if (Object.keys(patch).length === 0) {
+    return { ok: false, error: 'No supported fields were provided.' };
   }
 
-  return { ok: true, value: { done: input.done } };
+  return { ok: true, value: patch };
+}
+
+function validateProjectInput(input, partial = false) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return { ok: false, error: 'Project body must be a JSON object.' };
+  const name = cleanText(input.name, 120);
+  if (!partial && !name) return { ok: false, error: 'Project name is required.' };
+  const value = {};
+  if (name) {
+    value.name = name;
+    value.slug = cleanText(input.slug, 120) || normalizeIdPart(name);
+  }
+  ['description', 'github_repo', 'railway_url', 'local_path', 'status', 'current_branch', 'last_commit', 'next_action'].forEach(key => {
+    if (input[key] !== undefined) value[key] = cleanText(input[key], key === 'description' ? 2000 : 500);
+  });
+  if (!partial && !value.slug) value.slug = normalizeIdPart(name);
+  return { ok: true, value };
+}
+
+function validateAgentInput(input, partial = false) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) return { ok: false, error: 'Agent body must be a JSON object.' };
+  const name = cleanText(input.name, 100);
+  if (!partial && !name) return { ok: false, error: 'Agent name is required.' };
+  const value = {};
+  if (name) {
+    value.name = name;
+    value.id = cleanText(input.id, 100) || normalizeIdPart(name);
+  }
+  ['role', 'model', 'current_task_id', 'current_project_id', 'source', 'notes'].forEach(key => {
+    if (input[key] !== undefined) value[key] = cleanText(input[key], key === 'notes' ? 2000 : 500);
+  });
+  if (input.status !== undefined) {
+    const status = cleanText(input.status, 30).toLowerCase();
+    if (!ALLOWED_AGENT_STATUSES.has(status)) return { ok: false, error: 'Agent status must be idle, running, blocked, failed, needs_input, or offline.' };
+    value.status = status;
+  }
+  if (input.cost_tokens_today !== undefined) value.cost_tokens_today = Number(input.cost_tokens_today) || 0;
+  if (!partial && !value.status) value.status = 'idle';
+  if (!partial && !value.id) value.id = normalizeIdPart(name);
+  return { ok: true, value };
 }
 
 function requireDropsAuth(res, req) {
@@ -406,8 +525,9 @@ function toClientDrop(row) {
     subject,
     category: row.category || subject,
     project: row.project || '',
+    agent: row.agent || '',
     tags,
-    status: row.status || (row.done ? 'archived' : 'idea'),
+    status: normalizeStatus(row.status || (row.done ? 'archived' : 'idea'), 'idea'),
     links,
     content,
     priority: row.priority,
@@ -464,9 +584,45 @@ async function loadPromptsFromFile() {
   }
 }
 
+async function loadProjectsFromFile() {
+  try {
+    const raw = await fs.readFile(PROJECTS_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
+}
+
 async function savePromptsToFile(prompts) {
   writeQueue = writeQueue.then(() =>
     fs.writeFile(PROMPTS_FILE, JSON.stringify(prompts, null, 2), 'utf8')
+  );
+  await writeQueue;
+}
+
+async function saveProjectsToFile(projects) {
+  writeQueue = writeQueue.then(() =>
+    fs.writeFile(PROJECTS_FILE, JSON.stringify(projects, null, 2), 'utf8')
+  );
+  await writeQueue;
+}
+
+async function loadAgentsFromFile() {
+  try {
+    const raw = await fs.readFile(AGENTS_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    if (error.code === 'ENOENT') return DEFAULT_AGENTS.map(agent => ({ ...agent }));
+    throw error;
+  }
+}
+
+async function saveAgentsToFile(agents) {
+  writeQueue = writeQueue.then(() =>
+    fs.writeFile(AGENTS_FILE, JSON.stringify(agents, null, 2), 'utf8')
   );
   await writeQueue;
 }
@@ -687,10 +843,86 @@ function createFileStorage() {
       const drop = drops.find(item => item.id === id);
       if (!drop) return null;
       drop.done = done;
-      drop.status = done ? 'archived' : (drop.status === 'archived' ? 'idea' : (drop.status || 'idea'));
+      drop.status = done ? 'archived' : (drop.status === 'archived' || drop.status === 'done' ? 'idea' : normalizeStatus(drop.status, 'idea'));
       drop.updated_at = new Date().toISOString();
       await saveDropsToFile(drops);
       return toClientDrop(drop);
+    },
+    async updateDrop(id, patch) {
+      const drops = await loadDropsFromFile();
+      const drop = drops.find(item => item.id === id);
+      if (!drop) return null;
+      Object.assign(drop, patch);
+      if (patch.done !== undefined && patch.status === undefined) {
+        drop.status = patch.done ? 'archived' : (drop.status === 'archived' || drop.status === 'done' ? 'idea' : normalizeStatus(drop.status, 'idea'));
+      }
+      drop.updated_at = new Date().toISOString();
+      await saveDropsToFile(drops);
+      return toClientDrop(drop);
+    },
+    async listProjects() {
+      const projects = await loadProjectsFromFile();
+      return projects.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+    },
+    async createProject(project) {
+      const projects = await loadProjectsFromFile();
+      const now = new Date().toISOString();
+      const row = { id: `proj-${typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now()}`, created_at: now, updated_at: now, ...project };
+      projects.unshift(row);
+      await saveProjectsToFile(projects);
+      return row;
+    },
+    async updateProject(id, patch) {
+      const projects = await loadProjectsFromFile();
+      const project = projects.find(item => item.id === id);
+      if (!project) return null;
+      Object.assign(project, patch, { updated_at: new Date().toISOString() });
+      await saveProjectsToFile(projects);
+      return project;
+    },
+    async deleteProject(id) {
+      const projects = await loadProjectsFromFile();
+      const next = projects.filter(item => item.id !== id);
+      const deleted = next.length !== projects.length;
+      if (deleted) await saveProjectsToFile(next);
+      return deleted;
+    },
+    async getProjectOverview(id) {
+      const projects = await loadProjectsFromFile();
+      const project = projects.find(item => item.id === id || item.slug === id);
+      if (!project) return null;
+      const drops = (await loadDropsFromFile()).map(toClientDrop).filter(drop => drop.project === project.name || drop.project === project.slug);
+      const memories = (await loadMemoriesFromFile()).filter(mem => String(mem.content || '').toLowerCase().includes(String(project.name || '').toLowerCase()));
+      return { project, drops, memories, prompts: [], links: [project.github_repo, project.railway_url].filter(Boolean) };
+    },
+    async listAgents() {
+      return loadAgentsFromFile();
+    },
+    async createAgent(agent) {
+      const agents = await loadAgentsFromFile();
+      const now = new Date().toISOString();
+      const row = { created_at: now, updated_at: now, last_heartbeat: '', cost_tokens_today: 0, ...agent };
+      agents.unshift(row);
+      await saveAgentsToFile(agents);
+      return row;
+    },
+    async updateAgent(id, patch) {
+      const agents = await loadAgentsFromFile();
+      const agent = agents.find(item => item.id === id);
+      if (!agent) return null;
+      Object.assign(agent, patch, { updated_at: new Date().toISOString() });
+      await saveAgentsToFile(agents);
+      return agent;
+    },
+    async heartbeatAgent(id) {
+      return this.updateAgent(id, { last_heartbeat: new Date().toISOString(), status: 'running' });
+    },
+    async assignAgent(id, assignment) {
+      return this.updateAgent(id, {
+        current_task_id: cleanText(assignment.taskId || assignment.task_id, 200),
+        current_project_id: cleanText(assignment.projectId || assignment.project_id, 200),
+        status: cleanText(assignment.status, 30).toLowerCase() || 'running',
+      });
     },
     async listMemories() {
       return loadMemoriesFromFile();
@@ -851,10 +1083,47 @@ async function createPostgresStorage() {
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS title VARCHAR(200)`);
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS category VARCHAR(100)`);
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS project VARCHAR(100) NOT NULL DEFAULT ''`);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS agent VARCHAR(100) NOT NULL DEFAULT ''`);
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS status VARCHAR(32) NOT NULL DEFAULT 'idea'`);
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS tags JSONB NOT NULL DEFAULT '[]'::jsonb`);
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS links JSONB NOT NULL DEFAULT '[]'::jsonb`);
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS projects (
+      id TEXT PRIMARY KEY,
+      name VARCHAR(120) NOT NULL,
+      slug VARCHAR(120) NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      github_repo TEXT NOT NULL DEFAULT '',
+      railway_url TEXT NOT NULL DEFAULT '',
+      local_path TEXT NOT NULL DEFAULT '',
+      status VARCHAR(50) NOT NULL DEFAULT '',
+      current_branch VARCHAR(120) NOT NULL DEFAULT '',
+      last_commit TEXT NOT NULL DEFAULT '',
+      next_action TEXT NOT NULL DEFAULT '',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS agents (
+      id TEXT PRIMARY KEY,
+      name VARCHAR(100) NOT NULL,
+      role VARCHAR(120) NOT NULL DEFAULT '',
+      model VARCHAR(120) NOT NULL DEFAULT '',
+      status VARCHAR(30) NOT NULL DEFAULT 'idle',
+      current_task_id TEXT NOT NULL DEFAULT '',
+      current_project_id TEXT NOT NULL DEFAULT '',
+      last_heartbeat TIMESTAMPTZ,
+      source VARCHAR(120) NOT NULL DEFAULT '',
+      cost_tokens_today NUMERIC NOT NULL DEFAULT 0,
+      notes TEXT NOT NULL DEFAULT '',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS memories (
@@ -950,9 +1219,9 @@ async function createPostgresStorage() {
         for (const drop of legacyDrops) {
           await client.query(
             `
-              INSERT INTO drops (id, title, subject, category, project, status, tags, links,
+              INSERT INTO drops (id, title, subject, category, project, agent, status, tags, links,
                                  content, priority, done, created_at, updated_at)
-              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$12)
+              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$13)
               ON CONFLICT (id) DO NOTHING
             `,
             [
@@ -961,7 +1230,8 @@ async function createPostgresStorage() {
               drop.subject || 'General',
               drop.category || drop.subject || 'General',
               drop.project || '',
-              drop.status || (drop.done ? 'archived' : 'idea'),
+              drop.agent || '',
+              normalizeStatus(drop.status || (drop.done ? 'archived' : 'idea'), 'idea'),
               JSON.stringify(Array.isArray(drop.tags) ? drop.tags : []),
               JSON.stringify(Array.isArray(drop.links) ? drop.links : extractDropLinks(drop.content || '')),
               drop.content,
@@ -981,10 +1251,21 @@ async function createPostgresStorage() {
     }
   }
 
+  for (const agent of DEFAULT_AGENTS) {
+    await pool.query(
+      `
+        INSERT INTO agents (id, name, role, model, status, source, notes)
+        VALUES ($1,$2,$3,$4,$5,$6,$7)
+        ON CONFLICT (id) DO NOTHING
+      `,
+      [agent.id, agent.name, agent.role, agent.model, agent.status, agent.source, agent.notes]
+    );
+  }
+
   return {
     async listDrops() {
       const result = await pool.query(`
-        SELECT id, title, subject, category, project, status, tags, links,
+        SELECT id, title, subject, category, project, agent, status, tags, links,
                content, priority, done, created_at AS date, updated_at
         FROM drops
         ORDER BY updated_at DESC, created_at DESC
@@ -994,15 +1275,15 @@ async function createPostgresStorage() {
     async createDrop(drop) {
       const result = await pool.query(
         `
-          INSERT INTO drops (id, title, subject, category, project, status, tags, links,
+          INSERT INTO drops (id, title, subject, category, project, agent, status, tags, links,
                              content, priority, done, created_at, updated_at)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$12)
-          RETURNING id, title, subject, category, project, status, tags, links,
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$13)
+          RETURNING id, title, subject, category, project, agent, status, tags, links,
                     content, priority, done, created_at AS date, updated_at
         `,
         [
-          drop.id, drop.title, drop.subject, drop.category, drop.project,
-          drop.status, JSON.stringify(drop.tags || []), JSON.stringify(drop.links || []),
+          drop.id, drop.title, drop.subject, drop.category, drop.project, drop.agent || '',
+          normalizeStatus(drop.status, 'idea'), JSON.stringify(drop.tags || []), JSON.stringify(drop.links || []),
           drop.content, drop.priority, Boolean(drop.done), drop.date,
         ]
       );
@@ -1019,12 +1300,160 @@ async function createPostgresStorage() {
           UPDATE drops
           SET done = $2, status = $3, updated_at = NOW()
           WHERE id = $1
-          RETURNING id, title, subject, category, project, status, tags, links,
+          RETURNING id, title, subject, category, project, agent, status, tags, links,
                     content, priority, done, created_at AS date, updated_at
         `,
         [id, done, nextStatus]
       );
       return result.rows[0] ? toClientDrop(result.rows[0]) : null;
+    },
+    async updateDrop(id, patch) {
+      const allowed = {
+        title: 'title',
+        subject: 'subject',
+        category: 'category',
+        project: 'project',
+        agent: 'agent',
+        status: 'status',
+        tags: 'tags',
+        links: 'links',
+        content: 'content',
+        priority: 'priority',
+        done: 'done',
+      };
+      const sets = [];
+      const values = [id];
+      for (const [key, column] of Object.entries(allowed)) {
+        if (patch[key] === undefined) continue;
+        values.push(key === 'tags' || key === 'links' ? JSON.stringify(patch[key] || []) : patch[key]);
+        sets.push(`${column} = $${values.length}`);
+      }
+      if (!sets.length) return null;
+      const result = await pool.query(
+        `
+          UPDATE drops
+          SET ${sets.join(', ')}, updated_at = NOW()
+          WHERE id = $1
+          RETURNING id, title, subject, category, project, agent, status, tags, links,
+                    content, priority, done, created_at AS date, updated_at
+        `,
+        values
+      );
+      return result.rows[0] ? toClientDrop(result.rows[0]) : null;
+    },
+    async listProjects() {
+      const result = await pool.query('SELECT * FROM projects ORDER BY name ASC');
+      return result.rows;
+    },
+    async createProject(project) {
+      const id = `proj-${typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now()}`;
+      const result = await pool.query(
+        `
+          INSERT INTO projects (id, name, slug, description, github_repo, railway_url, local_path, status, current_branch, last_commit, next_action)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+          RETURNING *
+        `,
+        [
+          id, project.name, project.slug, project.description || '', project.github_repo || '',
+          project.railway_url || '', project.local_path || '', project.status || '',
+          project.current_branch || '', project.last_commit || '', project.next_action || ''
+        ]
+      );
+      return result.rows[0];
+    },
+    async updateProject(id, patch) {
+      const allowed = ['name', 'slug', 'description', 'github_repo', 'railway_url', 'local_path', 'status', 'current_branch', 'last_commit', 'next_action'];
+      const sets = [];
+      const values = [id];
+      for (const key of allowed) {
+        if (patch[key] === undefined) continue;
+        values.push(patch[key]);
+        sets.push(`${key} = $${values.length}`);
+      }
+      if (!sets.length) return null;
+      const result = await pool.query(`UPDATE projects SET ${sets.join(', ')}, updated_at = NOW() WHERE id = $1 RETURNING *`, values);
+      return result.rows[0] || null;
+    },
+    async deleteProject(id) {
+      const result = await pool.query('DELETE FROM projects WHERE id = $1', [id]);
+      return result.rowCount > 0;
+    },
+    async getProjectOverview(id) {
+      const projectResult = await pool.query('SELECT * FROM projects WHERE id = $1 OR slug = $1', [id]);
+      const project = projectResult.rows[0];
+      if (!project) return null;
+      const dropsResult = await pool.query(
+        `SELECT id, title, subject, category, project, agent, status, tags, links, content, priority, done, created_at AS date, updated_at
+         FROM drops WHERE project = $1 OR project = $2 ORDER BY updated_at DESC`,
+        [project.name, project.slug]
+      );
+      const memoriesResult = await pool.query(
+        'SELECT id, agent, content, created_at AS date, updated_at FROM memories WHERE content ILIKE $1 ORDER BY created_at DESC LIMIT 25',
+        [`%${project.name}%`]
+      );
+      return {
+        project,
+        drops: dropsResult.rows.map(toClientDrop),
+        memories: memoriesResult.rows,
+        prompts: [],
+        links: [project.github_repo, project.railway_url].filter(Boolean),
+      };
+    },
+    async listAgents() {
+      const result = await pool.query('SELECT * FROM agents ORDER BY name ASC');
+      return result.rows;
+    },
+    async createAgent(agent) {
+      const result = await pool.query(
+        `
+          INSERT INTO agents (id, name, role, model, status, current_task_id, current_project_id, source, cost_tokens_today, notes)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+          RETURNING *
+        `,
+        [
+          agent.id, agent.name, agent.role || '', agent.model || '', agent.status || 'idle',
+          agent.current_task_id || '', agent.current_project_id || '', agent.source || '',
+          agent.cost_tokens_today || 0, agent.notes || ''
+        ]
+      );
+      return result.rows[0];
+    },
+    async updateAgent(id, patch) {
+      const allowed = ['name', 'role', 'model', 'status', 'current_task_id', 'current_project_id', 'source', 'cost_tokens_today', 'notes'];
+      const sets = [];
+      const values = [id];
+      for (const key of allowed) {
+        if (patch[key] === undefined) continue;
+        values.push(patch[key]);
+        sets.push(`${key} = $${values.length}`);
+      }
+      if (!sets.length) return null;
+      const result = await pool.query(`UPDATE agents SET ${sets.join(', ')}, updated_at = NOW() WHERE id = $1 RETURNING *`, values);
+      return result.rows[0] || null;
+    },
+    async heartbeatAgent(id) {
+      const result = await pool.query(
+        `UPDATE agents SET last_heartbeat = NOW(), status = 'running', updated_at = NOW() WHERE id = $1 RETURNING *`,
+        [id]
+      );
+      return result.rows[0] || null;
+    },
+    async assignAgent(id, assignment) {
+      const result = await pool.query(
+        `
+          UPDATE agents
+          SET current_task_id = $2, current_project_id = $3, status = $4, updated_at = NOW()
+          WHERE id = $1
+          RETURNING *
+        `,
+        [
+          id,
+          cleanText(assignment.taskId || assignment.task_id, 200),
+          cleanText(assignment.projectId || assignment.project_id, 200),
+          cleanText(assignment.status, 30).toLowerCase() || 'running'
+        ]
+      );
+      return result.rows[0] || null;
     },
     async listMemories() {
       const result = await pool.query(`
@@ -1410,13 +1839,129 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      const drop = await storage.updateDropDone(id, payload.value.done);
+      const drop = await storage.updateDrop(id, payload.value);
       if (!drop) {
         sendJson(res, 404, { error: 'Drop not found.' });
         return;
       }
 
       sendJson(res, 200, drop);
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/api/projects') {
+      if (!requireDropsAuth(res, req)) return;
+      sendJson(res, 200, await storage.listProjects());
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/projects') {
+      if (!requireDropsAuth(res, req)) return;
+      const payload = validateProjectInput(await readJsonBody(req));
+      if (!payload.ok) {
+        sendJson(res, 400, { error: payload.error });
+        return;
+      }
+      sendJson(res, 201, await storage.createProject(payload.value));
+      return;
+    }
+
+    if (req.method === 'GET' && pathname.startsWith('/api/projects/') && pathname.endsWith('/overview')) {
+      if (!requireDropsAuth(res, req)) return;
+      const id = pathname.slice('/api/projects/'.length, -'/overview'.length).trim();
+      const overview = await storage.getProjectOverview(id);
+      if (!overview) {
+        sendJson(res, 404, { error: 'Project not found.' });
+        return;
+      }
+      sendJson(res, 200, overview);
+      return;
+    }
+
+    if (req.method === 'PATCH' && pathname.startsWith('/api/projects/')) {
+      if (!requireDropsAuth(res, req)) return;
+      const id = pathname.slice('/api/projects/'.length).trim();
+      const payload = validateProjectInput(await readJsonBody(req), true);
+      if (!payload.ok) {
+        sendJson(res, 400, { error: payload.error });
+        return;
+      }
+      const project = await storage.updateProject(id, payload.value);
+      if (!project) {
+        sendJson(res, 404, { error: 'Project not found.' });
+        return;
+      }
+      sendJson(res, 200, project);
+      return;
+    }
+
+    if (req.method === 'DELETE' && pathname.startsWith('/api/projects/')) {
+      if (!requireDropsAuth(res, req)) return;
+      const id = pathname.slice('/api/projects/'.length).trim();
+      const deleted = await storage.deleteProject(id);
+      if (!deleted) {
+        sendJson(res, 404, { error: 'Project not found.' });
+        return;
+      }
+      sendJson(res, 200, { ok: true });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/api/agents') {
+      if (!requireDropsAuth(res, req)) return;
+      sendJson(res, 200, await storage.listAgents());
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/agents') {
+      if (!requireDropsAuth(res, req)) return;
+      const payload = validateAgentInput(await readJsonBody(req));
+      if (!payload.ok) {
+        sendJson(res, 400, { error: payload.error });
+        return;
+      }
+      sendJson(res, 201, await storage.createAgent(payload.value));
+      return;
+    }
+
+    if (req.method === 'POST' && pathname.startsWith('/api/agents/') && pathname.endsWith('/heartbeat')) {
+      if (!requireDropsAuth(res, req)) return;
+      const id = pathname.slice('/api/agents/'.length, -'/heartbeat'.length).trim();
+      const agent = await storage.heartbeatAgent(id);
+      if (!agent) {
+        sendJson(res, 404, { error: 'Agent not found.' });
+        return;
+      }
+      sendJson(res, 200, agent);
+      return;
+    }
+
+    if (req.method === 'POST' && pathname.startsWith('/api/agents/') && pathname.endsWith('/assign')) {
+      if (!requireDropsAuth(res, req)) return;
+      const id = pathname.slice('/api/agents/'.length, -'/assign'.length).trim();
+      const agent = await storage.assignAgent(id, await readJsonBody(req));
+      if (!agent) {
+        sendJson(res, 404, { error: 'Agent not found.' });
+        return;
+      }
+      sendJson(res, 200, agent);
+      return;
+    }
+
+    if (req.method === 'PATCH' && pathname.startsWith('/api/agents/')) {
+      if (!requireDropsAuth(res, req)) return;
+      const id = pathname.slice('/api/agents/'.length).trim();
+      const payload = validateAgentInput(await readJsonBody(req), true);
+      if (!payload.ok) {
+        sendJson(res, 400, { error: payload.error });
+        return;
+      }
+      const agent = await storage.updateAgent(id, payload.value);
+      if (!agent) {
+        sendJson(res, 404, { error: 'Agent not found.' });
+        return;
+      }
+      sendJson(res, 200, agent);
       return;
     }
 

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -932,7 +932,7 @@
   .dot-idle { background: var(--yellow); }
   .dot-offline { background: var(--muted); }
 
-  /* ── MOBILE RESPONSIVE ─────────────────────────────── */
+  /* -- MOBILE RESPONSIVE ------------------------------- */
   @media (max-width: 768px) {
     body { overflow: auto; }
     .layout { grid-template-columns: 1fr !important; overflow: visible; }
@@ -1426,7 +1426,7 @@
     margin-top: 18px;
   }
 
-  /* ─── Dropbox v3 ─────────────────────────────────────────────────────────── */
+  /* --- Dropbox v3 ----------------------------------------------------------- */
   .dropbox-view { padding: 24px; width: 100%; box-sizing: border-box; }
   .dropbox-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
   .dropbox-toolbar h2 { margin: 0; font-size: 16px; font-weight: 700; color: var(--text); }
@@ -1777,13 +1777,13 @@
 <div class="topbar">
   <div style="display:flex; align-items:center; gap:12px;">
     <button class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu" aria-label="Open navigation">&#9776;</button>
-    <div class="topbar-logo">⬡ AGENT OFFICE</div>
+    <div class="topbar-logo">? AGENT OFFICE</div>
   </div>
   <div class="topbar-meta">
     <span><span class="online-dot"></span><span id="onlineCount">9</span> agents online</span>
     <span id="clock">--:--:--</span>
-    <button id="feed-toggle-btn" onclick="toggleFeedPanel()" title="Toggle activity panel" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">☰ Agents</button>
-    <button id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode — hide panels" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">⛶ Focus</button>
+    <button id="feed-toggle-btn" onclick="toggleFeedPanel()" title="Toggle activity panel" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">? Agents</button>
+    <button id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode � hide panels" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">? Focus</button>
   </div>
 </div>
 
@@ -1796,39 +1796,39 @@
     <div class="nav-section">
       <div class="nav-heading">Workspace</div>
       <div class="nav-items-wrap nav-open">
-        <div class="nav-item active" onclick="switchView('office', this)"><span class="icon">🏢</span> Office</div>
-        <div class="nav-item" onclick="switchView('org', this)"><span class="icon">🗂️</span> Org Chart</div>
-        <div class="nav-item" onclick="switchView('memory', this)"><span class="icon">🧠</span> Memory</div>
-        <div class="nav-item" onclick="switchView('calendar', this)"><span class="icon">📅</span> Calendar</div>
+        <div class="nav-item active" onclick="switchView('office', this)"><span class="icon">??</span> Office</div>
+        <div class="nav-item" onclick="switchView('org', this)"><span class="icon">???</span> Org Chart</div>
+        <div class="nav-item" onclick="switchView('memory', this)"><span class="icon">??</span> Memory</div>
+        <div class="nav-item" onclick="switchView('calendar', this)"><span class="icon">??</span> Calendar</div>
         <div class="nav-item" onclick="switchView('resets', this)"><span class="icon">&#9201;</span> Resets</div>
-        <div class="nav-item" onclick="switchView('dropbox', this)"><span class="icon">📥</span> Dropbox</div>
-        <div class="nav-item" onclick="window.open('/prompt-builder.html', '_blank')"><span class="icon">📝</span> Prompt Builder</div>
+        <div class="nav-item" onclick="switchView('dropbox', this)"><span class="icon">??</span> Dropbox</div>
+        <div class="nav-item" onclick="window.open('/prompt-builder.html', '_blank')"><span class="icon">??</span> Prompt Builder</div>
       </div>
     </div>
 
     <!-- PROJECTS -->
     <div class="nav-section">
-      <div class="nav-label nav-label-dd" onclick="toggleNav(this)">🌐 Apps &amp; Sites <span class="nav-chevron">▾</span></div>
+      <div class="nav-label nav-label-dd" onclick="toggleNav(this)">?? Apps &amp; Sites <span class="nav-chevron">?</span></div>
       <div class="nav-items-wrap">
 
-        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">📈 TraderClaw</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://traderclaw-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/dc5c9acb-2c73-4a1c-b4c9-82a81e2efe9f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/trading-strategy" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
-        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#eab308;"></div><span class="nav-proj-name">🧠 Decision Engine</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://trading-strategy-production-1b41.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/b1ffc05e-c74a-4b24-94a2-ef6239bc5bf5" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/decide-engine" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
-        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#3b82f6;"></div><span class="nav-proj-name">🌐 WebClaw</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/3ac94b97-cca3-4550-9f53-2c8bdbc3f2ca" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/webclaw-service-hub" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
-        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#6366f1;"></div><span class="nav-proj-name">🏢 Agent Office</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://agent-office-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/016e0c7d-696f-4bde-8461-17980bd04a7e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
-        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#6366f1;"></div><span class="nav-proj-name">🎯 Mission Control</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://mission-control-standalone-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/8da6b690-445e-4d54-832f-548c32cb8fad" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
-        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#f97316;"></div><span class="nav-proj-name">🛡️ Cyber / Security</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://cyber-security-production-18df.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/241f80ab-f7a4-4a9f-bcf2-416928b07255" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> cyber-security <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/39cdade6-ffcb-4838-a276-9af11c7d3881" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> CyberClaw <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/cyber-claw" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
-        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">📊 Market Dashboard</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://market-dashboard-production-b2f4.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/a2e18e5e-1e3f-4db2-9f44-42c517fb2590" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/market-dashboard" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
-        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#f97316;"></div><span class="nav-proj-name">🔍 RankForge</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://web-production-7f6eb.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/9dc553bb-f048-48af-981b-eaad9800471d" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/SEO" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
-        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#ef4444;"></div><span class="nav-proj-name">🎬 YouTube Claw</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://youtube-claw-web-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Workflow Studio <span class="link-ext">↗</span></a><a class="nav-link" href="https://yt-summarizer-production-4521.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> RSS Feed <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/a9662236-e548-4bab-8bd3-05dcb87193d0" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/youtube-claw" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
-        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🌾 Comment Farm</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://commentfarm-production-fc8b.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/067b5254-82ba-476d-874f-d1dc40971999" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/commentfarm" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
-        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#06b6d4;"></div><span class="nav-proj-name">🌍 Earth Watch</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://earth-watch-production-e3c6.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/d6d73954-7450-4273-8b8e-4eb40d8cea04" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/earth-watch" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
-        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">📡 Broadcast Sender</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://broadcast-sender-production-32be.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/9e18538c-a385-4a59-ba28-f806c66ebb69" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/broadcast-sender" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
-        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">💡 Idea Vault</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://idea-vault-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/b4475c1e-b091-4446-ba91-48e57e639aa6" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
-        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🔎 X Scraping</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://x-scrapping-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/d01ab81d-1b8c-4c22-93aa-ea9c46aec7e1" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
-        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#a855f7;"></div><span class="nav-proj-name">✨ Innerverse</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/754f5a3c-3fa2-402d-9b0b-704eea72f2d2" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/innerverse" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
-        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#ec4899;"></div><span class="nav-proj-name">🔄 n8n</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://primary-production-11563.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/26a88079-68de-4932-b746-f83bddfcbc06" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
-        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#06b6d4;"></div><span class="nav-proj-name">🕹️ Interaction</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/a23361f6-93d3-46a4-a45b-4c2b0411e1fd" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
-        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">📦 Misc</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://book-maker-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Book Maker <span class="link-ext">↗</span></a><a class="nav-link" href="https://workout-tracker-production-0ec7.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Workout Tracker <span class="link-ext">↗</span></a><a class="nav-link" href="https://yt-summarizer-production-4521.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> YT Summarizer <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/3dd1f7ff-827f-4ddc-aa30-6837df85a3c3" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Flashcards <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/95992860-8b8c-4469-b26f-1254adb2a96f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Workout Tracker <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/330e335d-b7ed-49ad-bc59-6e277949e27e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Diet Plan <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/natal-affirmations" target="_blank"><div class="link-dot" style="background:#64748b;"></div> Natal Affirmations <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">?? TraderClaw</span><span class="nav-proj-chevron">�</span></div><div class="nav-proj-links"><a class="nav-link" href="https://traderclaw-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">?</span></a><a class="nav-link" href="https://railway.app/project/dc5c9acb-2c73-4a1c-b4c9-82a81e2efe9f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">?</span></a><a class="nav-link" href="https://github.com/classical91/trading-strategy" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">?</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#eab308;"></div><span class="nav-proj-name">?? Decision Engine</span><span class="nav-proj-chevron">�</span></div><div class="nav-proj-links"><a class="nav-link" href="https://trading-strategy-production-1b41.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">?</span></a><a class="nav-link" href="https://railway.app/project/b1ffc05e-c74a-4b24-94a2-ef6239bc5bf5" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">?</span></a><a class="nav-link" href="https://github.com/classical91/decide-engine" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">?</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#3b82f6;"></div><span class="nav-proj-name">?? WebClaw</span><span class="nav-proj-chevron">�</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/3ac94b97-cca3-4550-9f53-2c8bdbc3f2ca" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">?</span></a><a class="nav-link" href="https://github.com/classical91/webclaw-service-hub" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">?</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#6366f1;"></div><span class="nav-proj-name">?? Agent Office</span><span class="nav-proj-chevron">�</span></div><div class="nav-proj-links"><a class="nav-link" href="https://agent-office-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">?</span></a><a class="nav-link" href="https://railway.app/project/016e0c7d-696f-4bde-8461-17980bd04a7e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">?</span></a><a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">?</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#6366f1;"></div><span class="nav-proj-name">?? Mission Control</span><span class="nav-proj-chevron">�</span></div><div class="nav-proj-links"><a class="nav-link" href="https://mission-control-standalone-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">?</span></a><a class="nav-link" href="https://railway.app/project/8da6b690-445e-4d54-832f-548c32cb8fad" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">?</span></a><a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">?</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#f97316;"></div><span class="nav-proj-name">??? Cyber / Security</span><span class="nav-proj-chevron">�</span></div><div class="nav-proj-links"><a class="nav-link" href="https://cyber-security-production-18df.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">?</span></a><a class="nav-link" href="https://railway.app/project/241f80ab-f7a4-4a9f-bcf2-416928b07255" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> cyber-security <span class="link-ext">?</span></a><a class="nav-link" href="https://railway.app/project/39cdade6-ffcb-4838-a276-9af11c7d3881" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> CyberClaw <span class="link-ext">?</span></a><a class="nav-link" href="https://github.com/classical91/cyber-claw" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">?</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">?? Market Dashboard</span><span class="nav-proj-chevron">�</span></div><div class="nav-proj-links"><a class="nav-link" href="https://market-dashboard-production-b2f4.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">?</span></a><a class="nav-link" href="https://railway.app/project/a2e18e5e-1e3f-4db2-9f44-42c517fb2590" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">?</span></a><a class="nav-link" href="https://github.com/classical91/market-dashboard" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">?</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#f97316;"></div><span class="nav-proj-name">?? RankForge</span><span class="nav-proj-chevron">�</span></div><div class="nav-proj-links"><a class="nav-link" href="https://web-production-7f6eb.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">?</span></a><a class="nav-link" href="https://railway.app/project/9dc553bb-f048-48af-981b-eaad9800471d" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">?</span></a><a class="nav-link" href="https://github.com/classical91/SEO" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">?</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#ef4444;"></div><span class="nav-proj-name">?? YouTube Claw</span><span class="nav-proj-chevron">�</span></div><div class="nav-proj-links"><a class="nav-link" href="https://youtube-claw-web-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Workflow Studio <span class="link-ext">?</span></a><a class="nav-link" href="https://yt-summarizer-production-4521.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> RSS Feed <span class="link-ext">?</span></a><a class="nav-link" href="https://railway.app/project/a9662236-e548-4bab-8bd3-05dcb87193d0" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">?</span></a><a class="nav-link" href="https://github.com/classical91/youtube-claw" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">?</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">?? Comment Farm</span><span class="nav-proj-chevron">�</span></div><div class="nav-proj-links"><a class="nav-link" href="https://commentfarm-production-fc8b.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">?</span></a><a class="nav-link" href="https://railway.app/project/067b5254-82ba-476d-874f-d1dc40971999" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">?</span></a><a class="nav-link" href="https://github.com/classical91/commentfarm" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">?</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#06b6d4;"></div><span class="nav-proj-name">?? Earth Watch</span><span class="nav-proj-chevron">�</span></div><div class="nav-proj-links"><a class="nav-link" href="https://earth-watch-production-e3c6.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">?</span></a><a class="nav-link" href="https://railway.app/project/d6d73954-7450-4273-8b8e-4eb40d8cea04" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">?</span></a><a class="nav-link" href="https://github.com/classical91/earth-watch" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">?</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">?? Broadcast Sender</span><span class="nav-proj-chevron">�</span></div><div class="nav-proj-links"><a class="nav-link" href="https://broadcast-sender-production-32be.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">?</span></a><a class="nav-link" href="https://railway.app/project/9e18538c-a385-4a59-ba28-f806c66ebb69" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">?</span></a><a class="nav-link" href="https://github.com/classical91/broadcast-sender" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">?</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">?? Idea Vault</span><span class="nav-proj-chevron">�</span></div><div class="nav-proj-links"><a class="nav-link" href="https://idea-vault-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">?</span></a><a class="nav-link" href="https://railway.app/project/b4475c1e-b091-4446-ba91-48e57e639aa6" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">?</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">?? X Scraping</span><span class="nav-proj-chevron">�</span></div><div class="nav-proj-links"><a class="nav-link" href="https://x-scrapping-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">?</span></a><a class="nav-link" href="https://railway.app/project/d01ab81d-1b8c-4c22-93aa-ea9c46aec7e1" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">?</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#a855f7;"></div><span class="nav-proj-name">? Innerverse</span><span class="nav-proj-chevron">�</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/754f5a3c-3fa2-402d-9b0b-704eea72f2d2" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">?</span></a><a class="nav-link" href="https://github.com/classical91/innerverse" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">?</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#ec4899;"></div><span class="nav-proj-name">?? n8n</span><span class="nav-proj-chevron">�</span></div><div class="nav-proj-links"><a class="nav-link" href="https://primary-production-11563.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">?</span></a><a class="nav-link" href="https://railway.app/project/26a88079-68de-4932-b746-f83bddfcbc06" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">?</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#06b6d4;"></div><span class="nav-proj-name">??? Interaction</span><span class="nav-proj-chevron">�</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/a23361f6-93d3-46a4-a45b-4c2b0411e1fd" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">?</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">?? Misc</span><span class="nav-proj-chevron">�</span></div><div class="nav-proj-links"><a class="nav-link" href="https://book-maker-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Book Maker <span class="link-ext">?</span></a><a class="nav-link" href="https://workout-tracker-production-0ec7.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Workout Tracker <span class="link-ext">?</span></a><a class="nav-link" href="https://yt-summarizer-production-4521.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> YT Summarizer <span class="link-ext">?</span></a><a class="nav-link" href="https://railway.app/project/3dd1f7ff-827f-4ddc-aa30-6837df85a3c3" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Flashcards <span class="link-ext">?</span></a><a class="nav-link" href="https://railway.app/project/95992860-8b8c-4469-b26f-1254adb2a96f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Workout Tracker <span class="link-ext">?</span></a><a class="nav-link" href="https://railway.app/project/330e335d-b7ed-49ad-bc59-6e277949e27e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Diet Plan <span class="link-ext">?</span></a><a class="nav-link" href="https://github.com/classical91/natal-affirmations" target="_blank"><div class="link-dot" style="background:#64748b;"></div> Natal Affirmations <span class="link-ext">?</span></a></div></div>
 
       </div>
     </div>
@@ -1836,12 +1836,12 @@
     <div class="nav-section">
       <div class="nav-heading">System</div>
       <div class="nav-items-wrap nav-open">
-        <div class="nav-item"><span class="icon">⚙️</span> Settings</div>
+        <div class="nav-item"><span class="icon">??</span> Settings</div>
         <a class="nav-link" data-dev-only="true" href="http://localhost:18789" target="_blank">
-          <div class="link-dot" style="background:#6366f1;"></div> Gateway (local) <span class="link-ext">↗</span>
+          <div class="link-dot" style="background:#6366f1;"></div> Gateway (local) <span class="link-ext">?</span>
         </a>
         <a class="nav-link" data-dev-only="true" href="http://10.0.0.106:18789" target="_blank">
-          <div class="link-dot" style="background:#6366f1;"></div> Gateway (LAN) <span class="link-ext">↗</span>
+          <div class="link-dot" style="background:#6366f1;"></div> Gateway (LAN) <span class="link-ext">?</span>
         </a>
       </div>
     </div>
@@ -1856,7 +1856,7 @@
         <div style="width:22px; height:22px; background:#534AB7; border-radius:5px; display:flex; align-items:center; justify-content:center; color:white; font-size:12px; font-weight:500;">A</div>
         <span style="font-size:14px; font-weight:500; color:#f1f5f9;">Agent Office</span>
         <span style="font-size:12px; color:#64748b;">/</span>
-        <span style="font-size:13px; color:#94a3b8;">HQ · Floor 1</span>
+        <span style="font-size:13px; color:#94a3b8;">HQ � Floor 1</span>
       </div>
       <div style="display:flex; align-items:center; gap:10px;">
         <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:#94a3b8;">
@@ -1869,8 +1869,8 @@
 
     <div style="display:grid; grid-template-columns:minmax(0,1fr); gap:12px;">
       <div style="background:#111827; border:1px solid #1e293b; border-radius:12px; overflow:hidden; position:relative;">
-        <div style="position:absolute; top:8px; left:10px; font-size:10px; color:#64748b; letter-spacing:0.04em; z-index:2;">HQ · floor 1</div>
-        <div style="position:absolute; top:8px; right:10px; font-size:10px; color:#64748b; font-family:monospace; z-index:2;">14 × 11</div>
+        <div style="position:absolute; top:8px; left:10px; font-size:10px; color:#64748b; letter-spacing:0.04em; z-index:2;">HQ � floor 1</div>
+        <div style="position:absolute; top:8px; right:10px; font-size:10px; color:#64748b; font-family:monospace; z-index:2;">14 � 11</div>
         <svg id="officesvg" viewBox="0 0 1100 720" width="100%" style="display:block; shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
 <defs>
   <pattern id="wallstripe" x="0" y="0" width="20" height="40" patternUnits="userSpaceOnUse" patternTransform="skewX(-26)">
@@ -2309,16 +2309,16 @@
     <!-- HABBO-STYLE ROOM STATUS BAR -->
     <div style="margin-top:10px; background:#111827; border:1px solid #1e293b; border-radius:10px; overflow:hidden;">
       <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; padding:9px 12px; border-bottom:1px solid #1e293b;">
-        <div style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:#f1f5f9;"><span style="font-size:15px;">🏢</span> Agent Office <span style="font-size:11px; font-weight:500; color:#64748b;">· Main room</span></div>
+        <div style="display:flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:#f1f5f9;"><span style="font-size:15px;">??</span> Agent Office <span style="font-size:11px; font-weight:500; color:#64748b;">� Main room</span></div>
         <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:#94a3b8;"><span style="width:7px; height:7px; background:#22c55e; border-radius:50%; box-shadow:0 0 6px #22c55e;"></span><span id="room-online-count">0</span>&nbsp;online</div>
-        <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:#94a3b8; flex:1 1 200px; min-width:160px; overflow:hidden;"><span style="color:#64748b; flex-shrink:0;">Task:</span><span id="room-task-ticker" style="color:#cbd5e1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">—</span></div>
+        <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:#94a3b8; flex:1 1 200px; min-width:160px; overflow:hidden;"><span style="color:#64748b; flex-shrink:0;">Task:</span><span id="room-task-ticker" style="color:#cbd5e1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">�</span></div>
         <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
-          <button onclick="roomComingSoon('Furniture catalog')" title="Furniture catalog — coming soon" style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:0 12px; height:30px; font-size:12px; color:#cbd5e1; cursor:pointer;">🪑 Catalog</button>
-          <button onclick="roomComingSoon('Build mode')" title="Build mode — coming soon" style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:0 12px; height:30px; font-size:12px; color:#cbd5e1; cursor:pointer;">🔨 Build</button>
+          <button onclick="roomComingSoon('Furniture catalog')" title="Furniture catalog � coming soon" style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:0 12px; height:30px; font-size:12px; color:#cbd5e1; cursor:pointer;">?? Catalog</button>
+          <button onclick="roomComingSoon('Build mode')" title="Build mode � coming soon" style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:0 12px; height:30px; font-size:12px; color:#cbd5e1; cursor:pointer;">?? Build</button>
         </div>
       </div>
       <div style="display:grid; grid-template-columns:1fr auto auto auto; gap:6px; padding:8px; align-items:center;">
-        <input type="text" placeholder="Say something in the room…" style="background:#0f172a; border:1px solid #1e293b; border-radius:8px; padding:0 12px; height:32px; font-size:13px; color:#f1f5f9; outline:none;"/>
+        <input type="text" placeholder="Say something in the room�" style="background:#0f172a; border:1px solid #1e293b; border-radius:8px; padding:0 12px; height:32px; font-size:13px; color:#f1f5f9; outline:none;"/>
         <button style="background:#1e293b; border:none; border-radius:8px; padding:0 14px; height:32px; font-size:12px; color:#94a3b8; cursor:pointer;">Wave</button>
         <button style="background:#1e293b; border:none; border-radius:8px; padding:0 14px; height:32px; font-size:12px; color:#94a3b8; cursor:pointer;">Sit</button>
         <button style="background:#334155; border:none; border-radius:8px; padding:0 14px; height:32px; font-size:12px; color:#94a3b8; cursor:pointer;">Leave</button>
@@ -2366,7 +2366,7 @@
       <div class="org-row-center">
         <div class="org-card glow-indigo org-card-wide" onclick="showAgentInfo('devin'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('devin')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
           <div class="org-card-inner" onclick="showAgentInfo('traderclaw'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('traderclaw')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
-            <div class="org-avatar" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.25);">🛠️</div>
+            <div class="org-avatar" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.25);">???</div>
             <div class="org-body">
               <div class="org-name">Devin</div>
               <div class="org-title">Project Overseer</div>
@@ -2378,7 +2378,7 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">VIEW AGENT →→</div>
+          <div class="org-cta">VIEW AGENT ??</div>
         </div>
       </div>
 
@@ -2387,7 +2387,7 @@
       <div class="org-row-center">
         <div class="org-card org-card-wide" style="border-color:rgba(100,116,139,0.2);">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(100,116,139,0.15);border-color:rgba(100,116,139,0.25);">👑</div>
+            <div class="org-avatar" style="background:rgba(100,116,139,0.15);border-color:rgba(100,116,139,0.25);">??</div>
             <div class="org-body">
               <div class="org-name">FatherClaw</div>
               <div class="org-title">Orchestrator</div>
@@ -2399,20 +2399,20 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">AGENT CARD ?</div>
         </div>
       </div>
 
       <div class="org-connector-v"></div>
 
       <div class="org-section-label">
-        <div class="line"></div><div class="text">👨‍💻 OPENCLAW CODERS</div><div class="line"></div>
+        <div class="line"></div><div class="text">????? OPENCLAW CODERS</div><div class="line"></div>
       </div>
 
       <div class="org-row-3">
         <div class="org-card glow-orange">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(249,115,22,0.15);border-color:rgba(249,115,22,0.25);">⚙️</div>
+            <div class="org-avatar" style="background:rgba(249,115,22,0.15);border-color:rgba(249,115,22,0.25);">??</div>
             <div class="org-body">
               <div class="org-name">Coder</div>
               <div class="org-title">General Dev Agent</div>
@@ -2424,11 +2424,11 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">AGENT CARD ?</div>
         </div>
         <div class="org-card glow-green">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.25);">🤖</div>
+            <div class="org-avatar" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.25);">??</div>
             <div class="org-body">
               <div class="org-name">Codex</div>
               <div class="org-title">Lightweight Coder</div>
@@ -2440,11 +2440,11 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">AGENT CARD ?</div>
         </div>
         <div class="org-card glow-pink">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(236,72,153,0.15);border-color:rgba(236,72,153,0.25);">🔨</div>
+            <div class="org-avatar" style="background:rgba(236,72,153,0.15);border-color:rgba(236,72,153,0.25);">??</div>
             <div class="org-body">
               <div class="org-name">Forge</div>
               <div class="org-title">In-house Dev Agent</div>
@@ -2456,18 +2456,18 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">AGENT CARD ?</div>
         </div>
       </div>
 
       <div class="org-section-label" style="margin-top:24px;">
-        <div class="line"></div><div class="text">⌘ EXTERNAL CODING TOOLS</div><div class="line"></div>
+        <div class="line"></div><div class="text">? EXTERNAL CODING TOOLS</div><div class="line"></div>
       </div>
 
       <div class="org-row-3">
         <div class="org-card glow-orange">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(217,119,87,0.18);border-color:rgba(217,119,87,0.3);">🧠</div>
+            <div class="org-avatar" style="background:rgba(217,119,87,0.18);border-color:rgba(217,119,87,0.3);">??</div>
             <div class="org-body">
               <div class="org-name">Claude Code</div>
               <div class="org-title">Anthropic CLI</div>
@@ -2479,11 +2479,11 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">AGENT CARD ?</div>
         </div>
         <div class="org-card glow-blue">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.25);">⌘</div>
+            <div class="org-avatar" style="background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.25);">?</div>
             <div class="org-body">
               <div class="org-name">Cursor</div>
               <div class="org-title">Agentic IDE</div>
@@ -2495,11 +2495,11 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">AGENT CARD ?</div>
         </div>
         <div class="org-card glow-purple">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.25);">🐙</div>
+            <div class="org-avatar" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.25);">??</div>
             <div class="org-body">
               <div class="org-name">GitHub Copilot</div>
               <div class="org-title">Pair Programmer</div>
@@ -2511,26 +2511,26 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">AGENT CARD ?</div>
         </div>
       </div>
 
       <div class="org-flow-divider">
         <div class="line"></div>
-        <div class="org-flow-label">↓ INPUT SIGNAL</div>
+        <div class="org-flow-label">? INPUT SIGNAL</div>
         <div class="line"></div>
-        <div class="org-flow-label">OUTPUT ACTION ↓</div>
+        <div class="org-flow-label">OUTPUT ACTION ?</div>
         <div class="line"></div>
       </div>
 
       <div class="org-section-label">
-        <div class="line"></div><div class="text">💻 OPERATIONS</div><div class="line"></div>
+        <div class="line"></div><div class="text">?? OPERATIONS</div><div class="line"></div>
       </div>
 
       <div class="org-row-2" style="max-width:680px; margin: 0 auto;">
         <div class="org-card glow-green" onclick="showAgentInfo('webclaw'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('webclaw')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
           <div class="org-card-inner" onclick="showAgentInfo('xhunter'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('xhunter')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
-            <div class="org-avatar" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.25);">📈</div>
+            <div class="org-avatar" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.25);">??</div>
             <div class="org-body">
               <div class="org-name">TraderClaw</div>
               <div class="org-title">Trading Bot</div>
@@ -2542,11 +2542,11 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">VIEW AGENT →→</div>
+          <div class="org-cta">VIEW AGENT ??</div>
         </div>
         <div class="org-card glow-blue" onclick="showAgentInfo('penny'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('penny')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
           <div class="org-card-inner" onclick="showAgentInfo('reaper'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('reaper')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
-            <div class="org-avatar" style="background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.25);">🌐</div>
+            <div class="org-avatar" style="background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.25);">??</div>
             <div class="org-body">
               <div class="org-name">WebClaw</div>
               <div class="org-title">Web Developer</div>
@@ -2558,18 +2558,18 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">VIEW AGENT →→</div>
+          <div class="org-cta">VIEW AGENT ??</div>
         </div>
       </div>
 
       <div class="org-section-label" style="margin-top:32px;">
-        <div class="line"></div><div class="text">⚡ EXECUTION LAYER</div><div class="line"></div>
+        <div class="line"></div><div class="text">? EXECUTION LAYER</div><div class="line"></div>
       </div>
 
       <div class="org-row-4">
         <div class="org-card glow-cyan" onclick="showAgentInfo('forge'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('forge')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(6,182,212,0.15);border-color:rgba(6,182,212,0.25);">🐦</div>
+            <div class="org-avatar" style="background:rgba(6,182,212,0.15);border-color:rgba(6,182,212,0.25);">??</div>
             <div class="org-body">
               <div class="org-name">X-Hunter</div>
               <div class="org-title">Social Scout</div>
@@ -2581,11 +2581,11 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">VIEW AGENT →→</div>
+          <div class="org-cta">VIEW AGENT ??</div>
         </div>
         <div class="org-card glow-orange" onclick="showAgentInfo('xbot'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('xbot')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(249,115,22,0.15);border-color:rgba(249,115,22,0.25);">⚙️</div>
+            <div class="org-avatar" style="background:rgba(249,115,22,0.15);border-color:rgba(249,115,22,0.25);">??</div>
             <div class="org-body">
               <div class="org-name">Forge</div>
               <div class="org-title">Dev Agent</div>
@@ -2597,11 +2597,11 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">VIEW AGENT →→</div>
+          <div class="org-cta">VIEW AGENT ??</div>
         </div>
         <div class="org-card glow-purple" onclick="showAgentInfo('fatherclaw'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('fatherclaw')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.25);">✨</div>
+            <div class="org-avatar" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.25);">?</div>
             <div class="org-body">
               <div class="org-name">Lyra</div>
               <div class="org-title">Innerverse</div>
@@ -2613,11 +2613,11 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">VIEW AGENT →→</div>
+          <div class="org-cta">VIEW AGENT ??</div>
         </div>
         <div class="org-card" style="border-color:rgba(34,197,94,0.2);">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.2);">💀</div>
+            <div class="org-avatar" style="background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.2);">??</div>
             <div class="org-body">
               <div class="org-name">Reaper</div>
               <div class="org-title">Farm Operator</div>
@@ -2629,11 +2629,11 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">VIEW AGENT →→</div>
+          <div class="org-cta">VIEW AGENT ??</div>
         </div>
         <div class="org-card" style="border-color:rgba(234,179,8,0.2);">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.2);">🪙</div>
+            <div class="org-avatar" style="background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.2);">??</div>
             <div class="org-body">
               <div class="org-name">Penny</div>
               <div class="org-title">Utility Agent</div>
@@ -2645,11 +2645,11 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">VIEW AGENT →→</div>
+          <div class="org-cta">VIEW AGENT ??</div>
         </div>
         <div class="org-card" style="border-color:rgba(234,179,8,0.2);" onclick="showAgentInfo('swarm'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('swarm')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.2);">🐝</div>
+            <div class="org-avatar" style="background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.2);">??</div>
             <div class="org-body">
               <div class="org-name">Swarm</div>
               <div class="org-title">Codex Agent</div>
@@ -2661,11 +2661,11 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">VIEW AGENT →</div>
+          <div class="org-cta">VIEW AGENT ?</div>
         </div>
         <div class="org-card glow-pink">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(236,72,153,0.15);border-color:rgba(236,72,153,0.25);">🤖</div>
+            <div class="org-avatar" style="background:rgba(236,72,153,0.15);border-color:rgba(236,72,153,0.25);">??</div>
             <div class="org-body">
               <div class="org-name">XBot</div>
               <div class="org-title">X Publisher</div>
@@ -2677,18 +2677,18 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">VIEW AGENT →→</div>
+          <div class="org-cta">VIEW AGENT ??</div>
         </div>
       </div>
 
       <div class="org-section-label" style="margin-top:32px;">
-        <div class="line"></div><div class="text">🔬 RESEARCH & SUPPORT</div><div class="line"></div>
+        <div class="line"></div><div class="text">?? RESEARCH & SUPPORT</div><div class="line"></div>
       </div>
 
       <div class="org-row-3">
         <div class="org-card glow-indigo">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.25);">🔭</div>
+            <div class="org-avatar" style="background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.25);">??</div>
             <div class="org-body">
               <div class="org-name">Nova</div>
               <div class="org-title">Product Researcher</div>
@@ -2700,11 +2700,11 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">AGENT CARD ?</div>
         </div>
         <div class="org-card glow-orange">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(245,158,11,0.18);border-color:rgba(245,158,11,0.3);">🪙</div>
+            <div class="org-avatar" style="background:rgba(245,158,11,0.18);border-color:rgba(245,158,11,0.3);">??</div>
             <div class="org-body">
               <div class="org-name">Penny</div>
               <div class="org-title">OSS / Community</div>
@@ -2716,11 +2716,11 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">AGENT CARD ?</div>
         </div>
         <div class="org-card glow-green">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.25);">🌾</div>
+            <div class="org-avatar" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.25);">??</div>
             <div class="org-body">
               <div class="org-name">FarmBot</div>
               <div class="org-title">Comment Farming</div>
@@ -2732,18 +2732,18 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">AGENT CARD →</div>
+          <div class="org-cta">AGENT CARD ?</div>
         </div>
       </div>
 
       <div class="org-section-label" style="margin-top:32px;">
-        <div class="line"></div><div class="text">🛡 SECURITY</div><div class="line"></div>
+        <div class="line"></div><div class="text">?? SECURITY</div><div class="line"></div>
       </div>
 
       <div class="org-row-center">
         <div class="org-card org-card-wide" style="border-color:rgba(239,68,68,0.15);">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.2);">🛡</div>
+            <div class="org-avatar" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.2);">??</div>
             <div class="org-body">
               <div class="org-name">Guardian</div>
               <div class="org-title">Security</div>
@@ -2755,12 +2755,12 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">VIEW AGENT →→</div>
+          <div class="org-cta">VIEW AGENT ??</div>
         </div>
       </div>
         <div class="org-card" onclick="showAgentInfo('command');" style="cursor:pointer;border-color:rgba(100,116,139,0.2);">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(100,116,139,0.1);border-color:rgba(100,116,139,0.2);">📡</div>
+            <div class="org-avatar" style="background:rgba(100,116,139,0.1);border-color:rgba(100,116,139,0.2);">??</div>
             <div class="org-body">
               <div class="org-name">Command</div>
               <div class="org-title">Orchestrator</div>
@@ -2772,17 +2772,17 @@
               </div>
             </div>
           </div>
-          <div class="org-cta">VIEW AGENT →</div>
+          <div class="org-cta">VIEW AGENT ?</div>
         </div>
 
       <div class="org-section-label" style="margin-top:32px;">
-        <div class="line"></div><div class="text">⬡ META LAYER - OPENCLAW GATEWAY</div><div class="line"></div>
+        <div class="line"></div><div class="text">? META LAYER - OPENCLAW GATEWAY</div><div class="line"></div>
       </div>
 
       <div class="org-row-2" style="max-width:680px; margin: 0 auto;">
         <div class="org-card">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(255,255,255,0.05);font-size:18px;">📡</div>
+            <div class="org-avatar" style="background:rgba(255,255,255,0.05);font-size:18px;">??</div>
             <div class="org-body">
               <div class="org-name" style="font-size:13px;">Gateway</div>
               <div class="org-title" style="font-size:11px;">localhost:18789</div>
@@ -2793,11 +2793,11 @@
         </div>
         <div class="org-card">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(255,255,255,0.05);font-size:18px;">⚡</div>
+            <div class="org-avatar" style="background:rgba(255,255,255,0.05);font-size:18px;">?</div>
             <div class="org-body">
               <div class="org-name" style="font-size:13px;">Models</div>
               <div class="org-title" style="font-size:11px;">AI Providers</div>
-              <div class="org-desc">Sonnet 4.6 (default) · GPT-5.4 (WebClaw) · Gemma 4-31B (Penny) · Qwen3.6 (Codex, FarmBot)</div>
+              <div class="org-desc">Sonnet 4.6 (default) � GPT-5.4 (WebClaw) � Gemma 4-31B (Penny) � Qwen3.6 (Codex, FarmBot)</div>
               <div class="org-tags"><span class="org-tag org-tag-indigo">Claude</span><span class="org-tag org-tag-green">GPT-5.4</span><span class="org-tag org-tag-orange">Gemma</span><span class="org-tag org-tag-teal">Qwen</span></div>
             </div>
           </div>
@@ -2825,7 +2825,7 @@
   <!-- PASSPHRASE MODAL -->
   <div id="passphrase-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.75); align-items:center; justify-content:center;">
     <div style="background:#0d0f14; border:1px solid #2a3048; border-radius:12px; padding:28px 24px; width:100%; max-width:360px; margin:0 16px;">
-      <div style="font-size:14px; font-weight:700; color:#e2e8f0; margin-bottom:6px;">🔒 Unlock Dropbox</div>
+      <div style="font-size:14px; font-weight:700; color:#e2e8f0; margin-bottom:6px;">?? Unlock Dropbox</div>
       <div style="font-size:12px; color:#64748b; margin-bottom:18px;">Enter the passphrase to access your drops.</div>
       <input id="passphrase-input" type="password" placeholder="Passphrase..."
         style="width:100%; background:#0a0c11; border:1px solid #2a3048; border-radius:8px; padding:12px 14px; font-size:15px; color:#e2e8f0; outline:none; box-sizing:border-box; -webkit-appearance:none;"
@@ -2975,11 +2975,11 @@
       <!-- Header -->
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; gap:16px;">
         <div>
-          <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">🧠 MEMORY</div>
-          <div style="font-size:13px; color:var(--muted);">Agent memory banks — notes, learnings, and context per bot.</div>
+          <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">?? MEMORY</div>
+          <div style="font-size:13px; color:var(--muted);">Agent memory banks � notes, learnings, and context per bot.</div>
         </div>
         <button onclick="MEM.showForm()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 20px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap; -webkit-tap-highlight-color:transparent;">
-          <span>＋</span> New Memory
+          <span>+</span> New Memory
         </button>
       </div>
 
@@ -3033,12 +3033,12 @@
 <div class="statusbar" id="statusbar"></div>
 
 <script>
-// ─── AGENT DATA ───────────────────────────────────────────────
+// --- AGENT DATA -----------------------------------------------
 const AGENTS = [
   {
     id: 'devin',
     name: 'Devin',
-    emoji: '🛠️',
+    emoji: '???',
     color: '#6366f1',
     role: 'Project Overseer',
     model: 'Claude Sonnet 4.6',
@@ -3061,7 +3061,7 @@ const AGENTS = [
   {
     id: 'traderclaw',
     name: 'TraderClaw',
-    emoji: '📈',
+    emoji: '??',
     color: '#22c55e',
     role: 'Trading Bot',
     model: 'Claude Sonnet 4.6',
@@ -3084,7 +3084,7 @@ const AGENTS = [
   {
     id: 'webclaw',
     name: 'WebClaw',
-    emoji: '🌐',
+    emoji: '??',
     color: '#3b82f6',
     role: 'Web Developer',
     model: 'GPT-5.4',
@@ -3107,7 +3107,7 @@ const AGENTS = [
   {
     id: 'xhunter',
     name: 'X-Hunter',
-    emoji: '🐦',
+    emoji: '??',
     color: '#06b6d4',
     role: 'Social / X Agent',
     model: 'Claude Sonnet 4.6',
@@ -3130,7 +3130,7 @@ const AGENTS = [
   {
     id: 'swarm',
     name: 'Swarm',
-    emoji: '🐝',
+    emoji: '??',
     color: '#eab308',
     role: 'Codex Agent',
     model: 'GPT-4o-mini',
@@ -3152,7 +3152,7 @@ const AGENTS = [
   {
     id: 'penny',
     name: 'Penny',
-    emoji: '🪙',
+    emoji: '??',
     color: '#f59e0b',
     role: 'OSS Agent',
     model: 'GPT-5.4',
@@ -3174,7 +3174,7 @@ const AGENTS = [
   {
     id: 'reaper',
     name: 'Reaper',
-    emoji: '💀',
+    emoji: '??',
     color: '#78716c',
     role: 'Farm Bot',
     model: 'GPT-4o-mini',
@@ -3196,7 +3196,7 @@ const AGENTS = [
   {
     id: 'forge',
     name: 'Forge',
-    emoji: '⚙️',
+    emoji: '??',
     color: '#8b5cf6',
     role: 'Dev Agent',
     model: 'Claude Sonnet 4.6',
@@ -3218,7 +3218,7 @@ const AGENTS = [
   {
     id: 'lyra',
     name: 'Lyra',
-    emoji: '✨',
+    emoji: '?',
     color: '#a855f7',
     role: 'Innerverse',
     model: 'Claude Sonnet 4.6',
@@ -3240,7 +3240,7 @@ const AGENTS = [
   {
     id: 'xbot',
     name: 'XBot',
-    emoji: '🤖',
+    emoji: '??',
     color: '#ec4899',
     role: 'X Bot',
     model: 'GPT-5',
@@ -3262,7 +3262,7 @@ const AGENTS = [
   {
     id: 'guardian',
     name: 'Guardian',
-    emoji: '🛡',
+    emoji: '??',
     color: '#ef4444',
     role: 'Security',
     model: 'Claude Sonnet 4.6',
@@ -3284,7 +3284,7 @@ const AGENTS = [
   {
     id: 'fatherclaw',
     name: 'FatherClaw',
-    emoji: '👑',
+    emoji: '??',
     color: '#64748b',
     role: 'Orchestrator',
     model: 'Claude Sonnet 4.6',
@@ -3307,7 +3307,7 @@ const AGENTS = [
   {
     id: 'command',
     name: 'Command',
-    emoji: '📡',
+    emoji: '??',
     color: '#64748b',
     role: 'Orchestrator',
     model: 'Claude Sonnet 4.6',
@@ -3328,7 +3328,7 @@ const AGENTS = [
   }
 ];
 
-// ─── POSITIONS (grid slots in office) ─────────────────────────
+// --- POSITIONS (grid slots in office) -------------------------
 const POSITIONS = [
   { x: 0.49, y: 0.36 },
   { x: 0.27, y: 0.59 },
@@ -3344,7 +3344,7 @@ const POSITIONS = [
   { x: 0.42, y: 0.68 },
 ];
 
-// ─── STATE ────────────────────────────────────────────────────
+// --- STATE ----------------------------------------------------
 const OFFICE_SCENE = {
   gridW: 14,
   gridH: 11,
@@ -3443,7 +3443,7 @@ let agentState = AGENTS.map((agent) => {
 let feedItems = [];
 let feedCount = 0;
 
-// ─── AGENT DATA ───────────────────────────────────────────────
+// --- AGENT DATA -----------------------------------------------
 const HABBO_SPRITES = {
   'devin': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABuCAYAAACXzxWYAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAISUlEQVR4nO1cTWwVVRi9r5IAXVCoJbWgj1CE0miDtBUjISSNGhM2xEQWBnVnjLtuYdGQLmTLzrj1Jy5w0w0L0Q0xmmCBEDRQhCr1p5LUlrIo4A/jO7dzhu99vfNef+6dN/W9kwxz5947w5zz/dx7Z6ZvjalzNAQwdY6GAKbO0RDA1DkaApg6R0MAU+doCGDqHA0BTJ2jIYCpczQEyPj/i0pbweQIWQsA8rkSIQsBJOGoSnvmCC1AtGPHDnPz5s2EZEdHh5mcnOTxgvas4VsAaWFLqLm52bS0tJjZ2dkI+7a2NjM3N2ePe3p6bLmW8C2AtmoCkJ2amrJliFIsFi15bBRoEdf2jhAhUAB5iECCsDrI0/oA27BRDAmIBFC0OGzs9X3erE8BEguCPG6cJEAOZRJGmRvAvrIPz4vDBYcykXoTwYcAljhIk4C0tiQPaJI41p5BYdgGXLlyhcRz5wH2huD2iGVpSVkmEQ20S2/RbSl5IlcekEC7NaA9QPZlP3ke23R/CIgNbcIbVgzvAvDGZQjIdi0Q611leSzDS3jDikXwJUAkc4COZ5kMXUmQkPGfBoYS+oqhdtlCePMAHcuStOzDOld/3c6yFE0Mi9jlxgMs9FAm419mekImRjlJ0uTluTwHfdRka1nDpDcBtFW51xMhudejhc4PTHqAbsMxwo7lODECS/KKYIsh7Q0uceQ4zwTHcwE5khDSa1ImSkuCVwH02A/I2JUWZ7srD6AubfSQ9T5miUEEAFxju54kufauXKAFoRcwlFayTvCaA9IgRXGtEeKMXtZXho4ME/SNrS5R82GwACtwKpy2ECplbVuHhyI6VEAK57vmDlKgKJo3dqFgOednGMTNA3r2xzri4fkPTNO+92w5fm5g6wDUUwQIAqFobRJ/pUT8bFTt0cHi4U0AWlAibZEjCet6WQfLS+Ih4H0YlNaGKI54TaAJS0TCytbqLBu/8ClAAQsUuC3jlgRHR0eTTk39/UkZ7dobQHxmZsb5H/gmDwT1AKI/Jg0h0sRIklt/wUSjjxJdEgKl7Wx5AvQC7w9F+fRXA3VSCO77+vrmT+wvJwWSox8dKxNBEM/nA5E0yFi3ZSWEJU/HeOQUpnd3cb49Jl4pZywXQZ4K0wtws1dPn7CVjHVZhhAy2UnyBLyg/+2TZef7RH7eDpfIy9gnYXpBKIQSoMAHmN1HTlS1niQO6JEBXhAKIT2Ab4LN2K3bpmtbe7InQFRmdCnUxWsTlvhq9QDCsit5QQRy5y7+aCu1CC5I4hADeUBe0xcyzQHvvHbAunUaaRKl5SXxECMAEPz1uK4gEZcIIK2Jsh/CJwRCChBt2/2yLdy69mVZQyUR2C4B8kimvK5ZBROh6IVXj5uxi6dN9/NvmC2d+xcQpgiYJ8icoCHJ45pNj60x354ZzueboRhR97437Y129R4xV7/7zIrw4qGhVBEATpgkhNXt+Q///Scp+xLB+xciIL+xrdMeUIRfb5wzTz59MFUE2zclwfUODJq16zdYIXEt3wg+CkCELdv3LxABqCQEiQMg3/L4trLr+vICrx9ISOtLuESw9Q6rS+LoD2jyPpHpPGDz1ucSUlIIDfZpagp/e5kKAMuCOECSGiCdBXGiZqtBCPH7+DfOtvv37ph16zdmch/5WQ7HAPmtnQfMb+NfO0UoJb7U0FkOMhHgztS4uXr+E7Nx8047JwDSrE+0dTxrpia/T0SAMD9f+8L7vWUigCZfDRwFKIIu+0RwAWB9grPCatYHIMLc3T9sufOZQ+bBvbtJG8LAFzLPAa5JDQE3h6WJTe277AYwJ2CBhcWVr+Vx5gJUIg+sdSQ+aX3fyFyA2T9vlYlA4sj8AOOfuDs9UZYMfaOmHkCXh9U18azg9d1gKdtH1cZoekA18nB71G9oLQbJ/oR3D2CGThOCHgCX1sQgCAgDHAEAjALjP5wJEgbeBbjw8XGzt+up1Awtc4AkBI8gecT9zNQNuwFyZPCNYDmA6/tLY7+YvrfeT+pdo4Ac/lxJ73+VBPUoQCAXzNy+bq2uycpjzgF8oebzAC5+EPMu8gSfLH947GjFJ8pLRc09AIQxy2NZQz9SP9i70+v91NwDgErE24t9pXO2m+uXPrfHfNnq60VJzT1Ag8R37X097v+TuT+XfDNkX7iKdwW5eyxuh8BKSCOvLf6o/3YrgoQv8oDXp8KLeY+vPUASx0jwIF4bSECE2xMXeJjft8OLeZdP8i5XX9e8ySlAHP+r5i9Hy6BDIs3VAcY69hAjC3gXgGM0ZoAkj7H73ZOf2nKx6yVLTsa1SHLW1ekVWcCrACBNYPpLIfBhBARofaLbujg2aX1ae2LsKyvQavWAQom0/SDCJYSEfuqjCWdFHgjx5/NGC4GwQMz//Zf7jyqyJKwR7DM5/AMhsDyWq8G8IfhXYvSGvCKLqXDyvWAekbt3g1mjIYCpc6wmAYL81lDuBeCDkKGhITM8PJzvn9DwCRKfnp42p06dMoODg3YbGBgwly9fzvWHkisC1gMALA7CJI89sWfPHm8iZPVjalVBiwMgD8DaxMjIiN0fPnw42cchkZvvBF2IYmuldtCuDpSIWRFAEsSxkThBQVaKzEIA63wshwlJHKCrAyDnEiEEMhMgzuIL6mh1HefsL0UgKnnUUhFcAN4sszjR2tpq95IYXV26uxYNYI5wtS0VwQXgzQIgDZfHHrnBldgItDF/yGsAgnj+RwG6MdxbEyHS4pve47D0qpkI2RvlDE7GPMnByhpsE3kj2M9tZpUEFwhBLCLGg/7WaC1+VlfO6Z1h4TPGq6FWU+GEmBTD1R4aeVgL1PRHlvMgQE3xHwHAZX1NsgKBAAAAAElFTkSuQmCC',
   'fatherclaw': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABuCAYAAACXzxWYAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAHzUlEQVR4nO2cXWgcVRiGzxY1tmBrYqGiMUVF00I11iR6E5BQBMGLNKgkIAq5kCLeFMxNFUIJaG9SyI2IVwF/IEEl7YUglF4ovbHdtkYKTSxaGoMQ0MRWaI2C474n847fnj2zf3NmdrazD0xmd/4673u+7ztnfrp3qIzTMkBlnJYBKuO0DFAZp2WAyjgtA1TGaRmgMk7LAJVxWgaojNMyQGWcRhvgFaZcI0+gUQZ4/ryh4kHSBmjh4+PjampqqurtBc4NS9IA78SJE+rMmTMUTzFe2A4wamBgQB08eFBu75SkDNDiZ2dn9cRl+DM3N1e0YVtbW2ASJxVjqiQWARTPVt3Y2AjWnTt3Ti8T0aG3W1lZoWGxFcskDPBGR0dVZ2enQhQAiodwiASMDAgHlhoRSz1waUDZyo4WBmhlQOEA5kj6+/utqUH8muAEpxGAkx4ZGbEWNZH7ARROcwCjg7VAGiWO4SwdXBqQg3i2HMKbhIgognVBpgUZHh7Wc6SSXyec1QTnKTA/P1+0ECdNYchrfDfBclkLuA33BYwI4I8jnJjgyoCSbg4nTwE4eQgMEwbkfpyHRYtZM6LgyoBcoTDpCKARgOKlOCzjcpnjFM4I4D4Mf2Ca5QKnRVCKx4nLym22uk0goQlcJ4/DYyEKXKSBsxRA8aMoGaIyGgDF21oWyEgwj0VQMDFVeT1RFhcGaPFm8bO1cph4FjciC6UUyZbH9rLrjEJUA4qKn5n/ElOo/G5rST/E1b9nPwyWbXnmzSIT8O/5tafuNIhigC56YaMyGday4LH1pXgpEkAoMJfjO02wdaf1EMUA0/WiESAForVs0QBs4oFtmYQR58IEp70AhaKlIZxXf2YVN3O+EowI4HmbPudym/5HTQPnV4MQDgPM4Syp1PomFE/hzxeEn/I/G/cX6iKR+wFs8VrC1ibcQsW7SpVwbgC6J9kqZoWvFP6mcKBbnZ/tuzWkFyhB5jpMYNXO5/PB8r6+Puu+Uvj6+rp1mxDxkXB6OYxixLs+EoqGEdKMLcKMoLj15ZSX/7/QBSlQmE4ZBdAFidQA9tvSCM57e3v1ZwiXQGT+4yNFJgjhqbwhAnQU2AqdvMozjdDiGRgiQ57e07W53hfOlHJJbBEAsTjZy58fVXtfOVpS/TE+gBGy2ClLeUAU9L1+rKousx7iMCBXaOWgFkC8HMICa0sWxMvcp2BGQVw4N2BmZsYbGxsLvjMSTNHyuxTOdYDrEQVx4dyAgnitwlYLmA4EQmVFl2F+YXFZC2+6CBDoVJALvr1wRZsgCcttKRxmoA7wuC5PMu5usGio+sbwQJAONiiULS+Fx9EDgLgNCCKAwinEZgJE22oFWLq2Ko+Z2nGAxHv2hXfVb79eUjsf2Ke++/q9YEU5E7heAvGoHTjexq0/1PfffJDKByMS76nn3iq7AU1ATejevSt0OyketG29V+HYrkyIwwAtHicK0PqIAggwW12Gu1kcAXsMiic8tgtcG1AknlQyAYQVuEefHLIudxUFib0gYZoAbEZIsN366pLe18RVFDh9OGprfYk04crFL0Pv/gKs6zvwtvr50lcqThJ/TY4mAAgEtvCn+Ef2vajNemz/S7GcT0PeE0RYQxhbl0ZIKB7QhK49B5D3JUUxCg19U5QCbWHOdfI7t8NYII01oCrQkjZx1YDt1lYX1Z/rK3pyQSIG3Fi7pi6f/TRy6N5YX9bze9o7dQT89MPJyOcWuwEIV4q3tX4tbG/fvEJEHXBFYikAIwBakUJqhRFQafBUC4kZsLx4Wu188Im6xYMo+4aR3EjQF+8iAlzi9unwretlu6co4kHqI6Bt6w5d8cH2jt0l62/3CMjh6oxdHY2Q3PYRAHjnh3dvJLd7BGjOf/KO2t/9kLWLykQEEPbVF5d+Ub2vva8/ZyICypGpCLARNQJIuTvKtdJUEZA/fbzk8VpUmiICIJzwabN4UBKJxAyoRzyFd3UfUMtLp/ERd4A9PitQaXwugC7QBsVXYwKFP77/ZT2//vvVovWuxAOnd4XLPcevRrwpnOy472G1unyeX9P7dLjSs/ww8VK42drgx4tfYNac/3EyLCWAKfyvm5vvB2J+97Z2lQTODWAfjREgxX905FV16Njxkm0Z6hQOEOpmCsSJUwMgmmD4SyPwYsShY5+pjvv3qjvv2qbXI68JWxuVHhW/WSMgVxCtX4iwGSExb5qYgpMSD5y/KIk/phFIi11dveqfv29ad0pSsElcRTAwApfHvBpMI7G/JMVoSCtJDIX18FWllEb/jE7DaRmgMk4zGRDLD6mk3gD/QkhNTEyoyclJ579AlVoDKHxtbU1NT0+rw4cP62lwcFAtLCyk/k3RuvHv/OgWh2CKx5z09PQ4MyGR3xGqZiO2OIB4gNYmJ09uvg0yNDQUzP2USPWLkp7fWqEbmKEOCsK0CRAJ4ZgonNCQqCSWArjOx+UwkcIBQx1AnM2EOEjMAL+Klyxjq5t5zu2lCaRcRNVK7AbwZFnFSUdHh55LYQx1Ge6maYA1wrauVmI3gCcLIBohjzlqg62wEaxj/ZDHAEJ4+nsBhjHC2xRCwvKb0WNp6aYZCOkT5QhO5jzFoZVNuE7Ujab/QcUSI0gVOR7rD68mPRIsMgLY0sJljleiUUPhQJg0w7Y+btJwLZDJH1ZODf8B1sajfAf0ZU8AAAAASUVORK5CYII=',
@@ -3470,9 +3470,9 @@ const canvas = {
 const ctx = null; // SVG mode - no canvas context
 // SVG floor is drawn in viewBox coords (see gen_room.js):
 //   tile (gx, gy) top point = (550 + (gx - gy) * 40, 295 + (gx + gy) * 20)
-//   tile rhombus is 80 wide × 40 tall; center = top + (0, 20)
+//   tile rhombus is 80 wide � 40 tall; center = top + (0, 20)
 // The agent <div> is positioned in CSS px relative to officeArea, so we scale
-// viewBox → CSS px by (clientWidth / viewBoxWidth).
+// viewBox ? CSS px by (clientWidth / viewBoxWidth).
 const SVG_VB_W = 1100;
 const SVG_VB_H = 720;
 const SVG_OX = 550;   // viewBox x of tile (0,0) top
@@ -3516,7 +3516,7 @@ function projectAgentPosition(agent, metrics = getOfficeMetrics(officeArea.clien
   const ds = depthScale(depth);
   // The canvas sits at bottom:8px inside the avatar; after the avatar is
   // scaled by ds (transform-origin: bottom), the canvas visual bottom lands
-  // at projected.y − 8*ds.  We want that to equal the tile's front vertex
+  // at projected.y - 8*ds.  We want that to equal the tile's front vertex
   // (iso.y + tileH/2), so projected.y = iso.y + tileH/2 + 8*ds.
   return { x: point.x, y: point.y + metrics.tileH / 2 + 8 * ds, depth };
 }
@@ -3637,7 +3637,7 @@ function drawPixelAgent(canvasEl, look, agent) {
   bx(5, 2, 16, 5, hr);
 }
 
-// ─── HABBO ROOM STATUS BAR ────────────────────────────────────
+// --- HABBO ROOM STATUS BAR ------------------------------------
 function updateRoomStatusBar() {
   if (typeof agentState === 'undefined') return;
   const online = agentState.filter(a => a.status !== 'offline').length;
@@ -3651,7 +3651,7 @@ function cycleRoomTicker() {
   const el = document.getElementById('room-task-ticker');
   if (!el || typeof agentState === 'undefined') return;
   const active = agentState.filter(a => a.currentTask && a.status !== 'offline');
-  if (!active.length) { el.textContent = '—'; return; }
+  if (!active.length) { el.textContent = '�'; return; }
   _roomTickerIdx = (_roomTickerIdx + 1) % active.length;
   const a = active[_roomTickerIdx];
   el.textContent = a.name + ': ' + a.currentTask;
@@ -3664,7 +3664,7 @@ function roomComingSoon(name) {
     t.style.cssText = 'position:fixed; left:50%; bottom:32px; transform:translateX(-50%); background:#111827; color:#f1f5f9; border:1px solid #334155; border-radius:10px; padding:10px 16px; font-size:13px; z-index:9999; box-shadow:0 8px 24px rgba(0,0,0,0.4); transition:opacity 0.3s; pointer-events:none;';
     document.body.appendChild(t);
   }
-  t.textContent = name + ' is coming next 🚧';
+  t.textContent = name + ' is coming next ??';
   t.style.opacity = '1';
   clearTimeout(t._timer);
   t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2200);
@@ -3715,7 +3715,7 @@ function centerOfficeView(force = false) {
   officeHasAutoCentered = true;
 }
 
-// ─── STATUS BAR ───────────────────────────────────────────────
+// --- STATUS BAR -----------------------------------------------
 function renderStatusBar() {
   const bar = document.getElementById('statusbar');
   bar.innerHTML = agentState.map(agent => `
@@ -3732,7 +3732,7 @@ function renderStatusBar() {
   `).join('');
 }
 
-// ─── ACTIVITY FEED ────────────────────────────────────────────
+// --- ACTIVITY FEED --------------------------------------------
 function addFeedItem(agent, msg) {
   feedCount++;
   const now = new Date();
@@ -3762,7 +3762,7 @@ function addFeedItem(agent, msg) {
   document.getElementById('feedCount').textContent = feedCount;
 }
 
-// ─── AUTO-UPDATE LOOP ─────────────────────────────────────────
+// --- AUTO-UPDATE LOOP -----------------------------------------
 function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 function screenFacingFromDelta(dx, dy, fallback = 'S') {
@@ -3908,14 +3908,14 @@ function tick() {
   document.getElementById('onlineCount').textContent = activeCount;
 }
 
-// ─── CLOCK ────────────────────────────────────────────────────
+// --- CLOCK ----------------------------------------------------
 function updateClock() {
   document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-CA', {
     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
   });
 }
 
-// ─── VIEW SWITCHER ────────────────────────────────────────────
+// --- VIEW SWITCHER --------------------------------------------
 const VIEW_HANDLERS = {
   office: { enter: () => { resizeCanvas(); renderAgents(); centerOfficeView(); }, focus: false },
   org: { focus: false }
@@ -3935,7 +3935,7 @@ function switchView(view, navEl) {
   currentView = view;
 }
 
-// ─── INIT ─────────────────────────────────────────────────────
+// --- INIT -----------------------------------------------------
 window.addEventListener('resize', () => {
   officeHasAutoCentered = false;
   resizeCanvas();
@@ -3947,7 +3947,7 @@ renderAgents();
 centerOfficeView(true);
 renderStatusBar();
 
-// Kick off loops (demo tick disabled — real activity only)
+// Kick off loops (demo tick disabled � real activity only)
 let tickInterval = null;
 function startTickLoop() {
   if (!tickInterval) tickInterval = setInterval(tick, 3500);
@@ -4301,11 +4301,11 @@ window.AOResets = (() => {
 
 </script>
 
-<!-- ── DECISION ENGINE ─────────────────────────────────────── -->
+<!-- -- DECISION ENGINE --------------------------------------- -->
 <script>
 const DE = (() => {
 const TAG_STYLE={X:{bg:"#1d4ed820",border:"#3b82f6",text:"#93c5fd"},TG:{bg:"#0369a120",border:"#0ea5e9",text:"#7dd3fc"},GOOGLE:{bg:"#15803d20",border:"#22c55e",text:"#86efac"},CMC:{bg:"#c2410c20",border:"#f97316",text:"#fdba74"},MEXC:{bg:"#7c3aed20",border:"#a78bfa",text:"#c4b5fd"},TV:{bg:"#0f766e20",border:"#14b8a6",text:"#5eead4"},RSI:{bg:"#b4520920",border:"#d97706",text:"#fcd34d"},SC:{bg:"#4338ca20",border:"#818cf8",text:"#a5b4fc"},TA:{bg:"#05966920",border:"#10b981",text:"#6ee7b7"},ETF:{bg:"#0e749020",border:"#06b6d4",text:"#67e8f9"},FUTURES:{bg:"#be123c20",border:"#f43f5e",text:"#fda4af"},SECTORS:{bg:"#92400e20",border:"#f59e0b",text:"#fbbf24"},ALERTS:{bg:"#6b21a820",border:"#a855f7",text:"#d8b4fe"},CORR:{bg:"#1e3a5f20",border:"#3b82f6",text:"#93c5fd"},SCAN:{bg:"#064e3b20",border:"#059669",text:"#34d399"},DERIV:{bg:"#7f1d1d20",border:"#ef4444",text:"#fca5a5"},CRYPTOPY:{bg:"#1c191720",border:"#78716c",text:"#a8a29e"},SENT:{bg:"#1e293b20",border:"#64748b",text:"#94a3b8"}};
-const OT_TEMPLATE=[{id:"fib_618",label:".618 - Fib level plotted",hint:"Most common reversal zone.",weight:3},{id:"fib_65",label:".65 - Fib level plotted",hint:"Upper edge of the golden pocket.",weight:3},{id:"fib_gp",label:"Golden Pocket (.618 to .65) identified",hint:"Highest probability long entry.",weight:4},{id:"fib_5",label:".5 - Mid level plotted",hint:"Equilibrium.",weight:2},{id:"fib_786",label:".786 - Deep retrace plotted",hint:"Trend strength weakening.",weight:2},{id:"vp_os",label:"Oversold zone identified (low vol node)",hint:"Price below VAL = discount.",weight:3},{id:"vp_poc",label:"POC (Point of Control) marked",hint:"Highest volume node.",weight:4},{id:"vp_ob",label:"Overbought zone identified (high vol node)",hint:"Price above VAH = premium.",weight:3},{id:"vp_pos",label:"Price position vs VP noted",hint:"Discount / Fair Value / Premium.",weight:3},{id:"sr_key",label:"Key support level identified",hint:"Where will buyers step in?",weight:3},{id:"sr_res",label:"Key resistance level identified",hint:"Where will sellers push back?",weight:3},{id:"sr_flip",label:"Flip zone identified (S→R or R→S)",hint:"High-conviction levels.",weight:4},{id:"sr_clear",label:"Clear path to next resistance",hint:"No major clusters to first TP.",weight:3},{id:"ms_trend",label:"Trend confirmed (HH/HL or LH/LL)",hint:"HH+HL = uptrend.",weight:4},{id:"ms_bos",label:"BOS (Break of Structure) identified",hint:"Confirmed BOS = trend continuation.",weight:4},{id:"ms_bo",label:"Breakout setup visible on chart",hint:"Price coiling at resistance.",weight:3},{id:"ms_choch",label:"No CHoCH against your position",hint:"CHoCH opposite = potential reversal.",weight:4},{id:"ms_range",label:"Range / consolidation zone mapped",hint:"Mark the high and low.",weight:2}];
+const OT_TEMPLATE=[{id:"fib_618",label:".618 - Fib level plotted",hint:"Most common reversal zone.",weight:3},{id:"fib_65",label:".65 - Fib level plotted",hint:"Upper edge of the golden pocket.",weight:3},{id:"fib_gp",label:"Golden Pocket (.618 to .65) identified",hint:"Highest probability long entry.",weight:4},{id:"fib_5",label:".5 - Mid level plotted",hint:"Equilibrium.",weight:2},{id:"fib_786",label:".786 - Deep retrace plotted",hint:"Trend strength weakening.",weight:2},{id:"vp_os",label:"Oversold zone identified (low vol node)",hint:"Price below VAL = discount.",weight:3},{id:"vp_poc",label:"POC (Point of Control) marked",hint:"Highest volume node.",weight:4},{id:"vp_ob",label:"Overbought zone identified (high vol node)",hint:"Price above VAH = premium.",weight:3},{id:"vp_pos",label:"Price position vs VP noted",hint:"Discount / Fair Value / Premium.",weight:3},{id:"sr_key",label:"Key support level identified",hint:"Where will buyers step in?",weight:3},{id:"sr_res",label:"Key resistance level identified",hint:"Where will sellers push back?",weight:3},{id:"sr_flip",label:"Flip zone identified (S?R or R?S)",hint:"High-conviction levels.",weight:4},{id:"sr_clear",label:"Clear path to next resistance",hint:"No major clusters to first TP.",weight:3},{id:"ms_trend",label:"Trend confirmed (HH/HL or LH/LL)",hint:"HH+HL = uptrend.",weight:4},{id:"ms_bos",label:"BOS (Break of Structure) identified",hint:"Confirmed BOS = trend continuation.",weight:4},{id:"ms_bo",label:"Breakout setup visible on chart",hint:"Price coiling at resistance.",weight:3},{id:"ms_choch",label:"No CHoCH against your position",hint:"CHoCH opposite = potential reversal.",weight:4},{id:"ms_range",label:"Range / consolidation zone mapped",hint:"Mark the high and low.",weight:2}];
 const OT_TOKENS=[{prefix:"btc",label:"BITCOIN",sub:"Review BTC drawings on TradingView."},{prefix:"usdtd",label:"USDT.D",sub:"Review USDT.D drawings on TradingView."},{prefix:"total",label:"TOTAL",sub:"Review TOTAL drawings on TradingView."},{prefix:"btcd",label:"BTC.D",sub:"Review BTC.D drawings on TradingView."}];
 const CU_GROUPS=[{id:"cu_tv",label:"TRADINGVIEW CHARTS",links:[{id:"a",label:"Market Dominance",url:"https://www.tradingview.com/chart/uwHQFIja/"},{id:"b",label:"All Market Spectrum",url:"https://www.tradingview.com/chart/tDSfdLfo/"},{id:"c",label:"Global OI Layout",url:"https://www.tradingview.com/chart/UBsUirLO/"},{id:"d",label:"Market Summary",url:"https://www.tradingview.com/#main-market-summary"}]},{id:"cu_cmc",label:"COINMARKETCAP",links:[{id:"e",label:"Crypto Market Overview",url:"https://coinmarketcap.com/charts/"},{id:"f",label:"Leaderboards",url:"https://coinmarketcap.com/best-cryptos/"}]},{id:"cu_macro",label:"MACRO & MARKETS",links:[{id:"g",label:"CNBC",url:"https://www.cnbc.com/"},{id:"h",label:"Futures Overview",url:"https://www.barchart.com/futures"},{id:"i",label:"Indexes",url:"https://tradingeconomics.com/stocks"},{id:"j",label:"Currencies",url:"https://tradingeconomics.com/currencies"}]},{id:"cu_moon",label:"MOON PHASES",links:[{id:"k",label:"Moon Phases",url:"https://www.timeanddate.com/moon/phases/"}]}];
 const MTD_GROUPS=[{id:"mtd_news",label:"NEWS & ANALYSIS",sub:"Run bots and agents first.",items:[{id:"n_gpt",label:"GPT TA Agent - Screenshot BTC, USDT.D, TOTAL, BTC.D",hint:"Run your GPT TA agent.",weight:4},{id:"n_4h",label:"4H Chart-IMG Bot - Check latest output",hint:"Pull the latest 4H chart image.",weight:3},{id:"n_auto",label:"Automation for Cryptocurrency - Check latest",hint:"Run or check the automation.",weight:3},{id:"n_news",label:"CoinTrendsZBot - Run /news",hint:"Read the latest crypto news.",weight:3}]},{id:"mtd_vol",label:"VOLUME ANALYSIS",sub:"ETF inflows, CVD vs OI, funding rates.",items:[{id:"etf_pos",label:"ETF inflows positive in last 24H",hint:"Positive = institutional demand.",weight:4},{id:"etf_size",label:"ETF inflow size is meaningful",hint:"$200M+ = strong conviction.",weight:2},{id:"cvd_oi",label:"CVD vs OI checked on CoinAnk",hint:"Diverging or converging?",weight:4},{id:"cvd_read",label:"CVD and OI relationship noted",hint:"Converging = confirms the move.",weight:3},{id:"vol_tmpl",label:"Volume template reviewed on TradingView",hint:"Does volume support price action?",weight:3},{id:"vol_spike",label:"Volume spike on the key candle",hint:"High volume on breakout = real participation.",weight:3},{id:"vol_dry",label:"Volume dried up on the pullback",hint:"Low volume retrace = weak selling.",weight:3},{id:"fund_chk",label:"Funding rate checked on Coinglass",hint:"Check before entering.",weight:4,link:"https://www.coinglass.com/FundingRate/BTC"},{id:"fund_ok",label:"Funding rate not extreme (<0.05%/8H)",hint:"High positive funding = overcrowded.",weight:3}]},{id:"mtd_qual",label:"QUALITATIVE ANALYSIS",sub:"Check X, TradingView Ideas, Telegram bot.",items:[{id:"q_x",label:"X - Check sentiment and narrative",hint:"What are traders saying?",weight:3},{id:"q_tv",label:"TradingView Ideas - Check published ideas",hint:"Read recent TV ideas on BTC.",weight:3},{id:"q_bot",label:"Telegram Bot - Run /ideas",hint:"Compare against your analysis.",weight:3}]}];
@@ -4325,7 +4325,7 @@ function checkItem(item,value,index,checkKey){
   const isY=value==="yes",isN=value==="no",isS=value==="skip";
   const rowBg=isY?"background:rgba(5,46,22,0.15)":isN?"background:rgba(69,10,10,0.15)":"";
   const boxStyle=isY?"background:#10b981;border-color:#10b981;color:#000":isN?"background:#ef4444;border-color:#ef4444;color:#fff":isS?"background:#3f3f46;border-color:#52525b;color:#a1a1aa":"border:1px solid #3f3f46;color:#52525b";
-  const boxTxt=isY?"✓":isN?"✕":isS?"-":index;
+  const boxTxt=isY?"?":isN?"?":isS?"-":index;
   const yS=isY?"background:rgba(6,78,59,0.6);color:#6ee7b7;border-color:#10b981":"border:1px solid #27272a;color:#52525b";
   const nS=isN?"background:rgba(127,29,29,0.6);color:#fca5a5;border-color:#ef4444":"border:1px solid #27272a;color:#52525b";
   const sS=isS?"background:#3f3f46;color:#d4d4d8;border-color:#52525b":"border:1px solid #27272a;color:#52525b";
@@ -4334,12 +4334,12 @@ function checkItem(item,value,index,checkKey){
 }
 
 function grpHdr(id,label,sub,yes,total,collapsed){
-  return`<button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;border-bottom:1px solid #1c1c1e;cursor:pointer;text-align:left;" data-deaction="toggle-group" data-group="${id}"><div style="flex:1;min-width:0;"><div style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;letter-spacing:.05em;">${label}</div>${sub?`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-top:2px;">${sub}</div>`:""}</div><div style="display:flex;align-items:center;gap:8px;margin-left:10px;flex-shrink:0;"><span style="font-size:11px;font-family:monospace;color:#10b981;">${yes}</span><span style="font-size:11px;font-family:monospace;color:#3f3f46;">/</span><span style="font-size:11px;font-family:monospace;color:#71717a;">${total}</span><span style="font-size:11px;font-family:monospace;color:#52525b;">${collapsed?"▶":"▼"}</span></div></button>`;
+  return`<button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;border-bottom:1px solid #1c1c1e;cursor:pointer;text-align:left;" data-deaction="toggle-group" data-group="${id}"><div style="flex:1;min-width:0;"><div style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;letter-spacing:.05em;">${label}</div>${sub?`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-top:2px;">${sub}</div>`:""}</div><div style="display:flex;align-items:center;gap:8px;margin-left:10px;flex-shrink:0;"><span style="font-size:11px;font-family:monospace;color:#10b981;">${yes}</span><span style="font-size:11px;font-family:monospace;color:#3f3f46;">/</span><span style="font-size:11px;font-family:monospace;color:#71717a;">${total}</span><span style="font-size:11px;font-family:monospace;color:#52525b;">${collapsed?"?":"?"}</span></div></button>`;
 }
 
 function linkDrop(gid,label,links){
   const open=st.linkOpen[gid];
-  return`<div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;margin-bottom:4px;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-link" data-linkgroup="${gid}"><span style="font-size:11px;font-family:monospace;color:#a1a1aa;">${label}</span><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:10px;font-family:monospace;color:#52525b;">${links.length}</span><span style="font-size:10px;font-family:monospace;color:#52525b;">${open?"▼":"▶"}</span></div></button>${open?`<div style="border-top:1px solid #1c1c1e;">${links.map(l=>`<a href="${l.url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid rgba(28,28,30,0.5);text-decoration:none;" onmouseover="this.style.background='#1c1c1e'" onmouseout="this.style.background='transparent'"><span style="font-size:10px;font-family:monospace;color:#3f3f46;">↗</span><span style="font-size:11px;font-family:monospace;color:#71717a;">${l.label}</span></a>`).join("")}</div>`:""}</div>`;
+  return`<div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;margin-bottom:4px;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-link" data-linkgroup="${gid}"><span style="font-size:11px;font-family:monospace;color:#a1a1aa;">${label}</span><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:10px;font-family:monospace;color:#52525b;">${links.length}</span><span style="font-size:10px;font-family:monospace;color:#52525b;">${open?"?":"?"}</span></div></button>${open?`<div style="border-top:1px solid #1c1c1e;">${links.map(l=>`<a href="${l.url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid rgba(28,28,30,0.5);text-decoration:none;" onmouseover="this.style.background='#1c1c1e'" onmouseout="this.style.background='transparent'"><span style="font-size:10px;font-family:monospace;color:#3f3f46;">?</span><span style="font-size:11px;font-family:monospace;color:#71717a;">${l.label}</span></a>`).join("")}</div>`:""}</div>`;
 }
 
 function row(label,hint,content){
@@ -4372,15 +4372,15 @@ function buildHome(){
   const t=now.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:true});
   const d=now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
   const wf=[{id:"markettd",n:"01",label:"MARKET TOP-DOWN",desc:"Get the macro picture first.",dot:"#a78bfa"},{id:"bottomup",n:"02",label:"CRYPTO BOTTOM-UP",desc:"Review all object trees.",dot:"#38bdf8"},{id:"btcstrat",n:"03",label:"BTC STRATEGY",desc:"Deep dive into BTC.",dot:"#f97316"},{id:"altres",n:"04",label:"ALT RESEARCH",desc:"Scan for alt opportunities.",dot:"#f59e0b"}];
-  return`<div style="margin-bottom:28px;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;margin-bottom:4px;">${d}</div><div style="font-size:24px;font-family:monospace;font-weight:700;color:#e4e4e7;margin-bottom:4px;">Decision Engine</div><div style="font-size:10px;font-family:monospace;color:#52525b;">@DiamondHands811 · ${t}</div></div><div style="margin-bottom:20px;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;letter-spacing:.1em;margin-bottom:8px;">SESSION WORKFLOW</div>${wf.map(w=>`<button style="width:100%;display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid #1c1c1e;border-radius:3px;background:#0d0d0f;margin-bottom:4px;cursor:pointer;text-align:left;" data-deaction="nav" data-view="${w.id}" onmouseover="this.style.background='#1c1c1e'" onmouseout="this.style.background='#0d0d0f'"><span style="font-size:10px;font-family:monospace;color:#3f3f46;width:20px;">${w.n}</span><div style="width:8px;height:8px;border-radius:50%;background:${w.dot};flex-shrink:0;"></div><div style="flex:1;"><div style="font-size:11px;font-family:monospace;font-weight:600;color:#d4d4d8;">${w.label}</div><div style="font-size:10px;font-family:monospace;color:#3f3f46;margin-top:2px;">${w.desc}</div></div><span style="font-size:11px;font-family:monospace;color:#27272a;">→</span></button>`).join("")}</div><div style="margin-bottom:16px;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;letter-spacing:.1em;margin-bottom:8px;">ALL SECTIONS</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">${VIEWS.filter(v=>v.id!=="home").map(v=>`<button style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;text-align:left;" data-deaction="nav" data-view="${v.id}"><div style="width:6px;height:6px;border-radius:50%;background:${v.dot};flex-shrink:0;"></div><span style="font-size:10px;font-family:monospace;color:#52525b;">${v.label}</span></button>`).join("")}</div></div><div style="border:1px solid rgba(28,28,30,0.5);border-radius:3px;padding:14px;text-align:center;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;font-style:italic;">"Process over prediction. System over impulse."</div></div>`;
+  return`<div style="margin-bottom:28px;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;margin-bottom:4px;">${d}</div><div style="font-size:24px;font-family:monospace;font-weight:700;color:#e4e4e7;margin-bottom:4px;">Decision Engine</div><div style="font-size:10px;font-family:monospace;color:#52525b;">@DiamondHands811 � ${t}</div></div><div style="margin-bottom:20px;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;letter-spacing:.1em;margin-bottom:8px;">SESSION WORKFLOW</div>${wf.map(w=>`<button style="width:100%;display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid #1c1c1e;border-radius:3px;background:#0d0d0f;margin-bottom:4px;cursor:pointer;text-align:left;" data-deaction="nav" data-view="${w.id}" onmouseover="this.style.background='#1c1c1e'" onmouseout="this.style.background='#0d0d0f'"><span style="font-size:10px;font-family:monospace;color:#3f3f46;width:20px;">${w.n}</span><div style="width:8px;height:8px;border-radius:50%;background:${w.dot};flex-shrink:0;"></div><div style="flex:1;"><div style="font-size:11px;font-family:monospace;font-weight:600;color:#d4d4d8;">${w.label}</div><div style="font-size:10px;font-family:monospace;color:#3f3f46;margin-top:2px;">${w.desc}</div></div><span style="font-size:11px;font-family:monospace;color:#27272a;">?</span></button>`).join("")}</div><div style="margin-bottom:16px;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;letter-spacing:.1em;margin-bottom:8px;">ALL SECTIONS</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">${VIEWS.filter(v=>v.id!=="home").map(v=>`<button style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;text-align:left;" data-deaction="nav" data-view="${v.id}"><div style="width:6px;height:6px;border-radius:50%;background:${v.dot};flex-shrink:0;"></div><span style="font-size:10px;font-family:monospace;color:#52525b;">${v.label}</span></button>`).join("")}</div></div><div style="border:1px solid rgba(28,28,30,0.5);border-radius:3px;padding:14px;text-align:center;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;font-style:italic;">"Process over prediction. System over impulse."</div></div>`;
 }
 
 function buildMTD(){
-  let h=`<div style="border:1px solid #1c1c1e;border-radius:3px;margin-bottom:16px;overflow:hidden;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-cu"><div><div style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">DASHBOARD - QUICK LINKS</div></div><span style="font-size:10px;font-family:monospace;color:#52525b;">${st.cuOpen?"▼":"▶"}</span></button>${st.cuOpen?`<div style="padding:8px;border-top:1px solid #1c1c1e;">${CU_GROUPS.map(g=>linkDrop(g.id,g.label,g.links)).join("")}</div>`:""}</div><div style="display:flex;flex-direction:column;gap:8px;">`;
+  let h=`<div style="border:1px solid #1c1c1e;border-radius:3px;margin-bottom:16px;overflow:hidden;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-cu"><div><div style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">DASHBOARD - QUICK LINKS</div></div><span style="font-size:10px;font-family:monospace;color:#52525b;">${st.cuOpen?"?":"?"}</span></button>${st.cuOpen?`<div style="padding:8px;border-top:1px solid #1c1c1e;">${CU_GROUPS.map(g=>linkDrop(g.id,g.label,g.links)).join("")}</div>`:""}</div><div style="display:flex;flex-direction:column;gap:8px;">`;
   MTD_GROUPS.forEach(grp=>{
     const yes=grp.items.filter(i=>st.checks[i.id]==="yes").length,isC=st.mtdCollapsed[grp.id]!==false;
     h+=`<div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;">${grpHdr(grp.id,grp.label,grp.sub,yes,grp.items.length,isC)}`;
-    if(!isC){h+="<div>";grp.items.forEach((item,idx)=>{h+=checkItem(item,st.checks[item.id]||null,idx+1,"checks");if(item.link)h+=`<div style="padding:0 16px 10px;"><a href="${item.link}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;font-size:10px;font-family:monospace;border:1px solid #3f3f46;color:#a1a1aa;border-radius:3px;text-decoration:none;">↗ Coinglass Funding</a></div>`;});h+="</div>";}
+    if(!isC){h+="<div>";grp.items.forEach((item,idx)=>{h+=checkItem(item,st.checks[item.id]||null,idx+1,"checks");if(item.link)h+=`<div style="padding:0 16px 10px;"><a href="${item.link}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;font-size:10px;font-family:monospace;border:1px solid #3f3f46;color:#a1a1aa;border-radius:3px;text-decoration:none;">? Coinglass Funding</a></div>`;});h+="</div>";}
     h+="</div>";
   });
   return h+"</div>";
@@ -4390,7 +4390,7 @@ function buildBU(){
   const sections=[];let curSec=null,curGrp=null;
   const buList=[{id:"sec1",sectionDiv:true,label:"SECTION 1 - OBJECT TREE",sub:"Open TradingView. Review each chart."},...OT_TOKENS.flatMap(t=>[{id:`g_${t.prefix}`,group:true,label:`${t.label} - OBJECT TREE`,sub:t.sub},...OT_TEMPLATE.map(i=>({...i,id:`${t.prefix}_${i.id}`}))])];
   buList.forEach(i=>{if(i.sectionDiv){curSec={...i,groups:[]};sections.push(curSec);curGrp=null;}else if(i.group){curGrp={...i,items:[]};if(curSec)curSec.groups.push(curGrp);}else if(curGrp)curGrp.items.push(i);});
-  let h=fbar("filter","S1: OBJECT TREE · S2: SAVED DRAFTS");
+  let h=fbar("filter","S1: OBJECT TREE � S2: SAVED DRAFTS");
   sections.forEach(sec=>{
     const all=sec.groups.flatMap(g=>g.items),secY=all.filter(i=>st.checks[i.id]==="yes").length;
     h+=`<div style="display:flex;align-items:center;gap:10px;margin:16px 0 10px;"><div style="flex:1;height:1px;background:#1c1c1e;"></div><div style="padding:4px 10px;border:1px solid #27272a;border-radius:3px;background:#0d0d0f;font-size:10px;font-family:monospace;font-weight:600;color:#a1a1aa;letter-spacing:.1em;">${sec.label}</div><div style="font-size:10px;font-family:monospace;color:#52525b;">${secY}/${all.length}</div><div style="flex:1;height:1px;background:#1c1c1e;"></div></div>`;
@@ -4402,8 +4402,8 @@ function buildBU(){
     });
   });
   const done=st.drafts.filter(d=>d.done).length;
-  h+=`<div style="display:flex;align-items:center;gap:10px;margin:16px 0 10px;"><div style="flex:1;height:1px;background:#1c1c1e;"></div><div style="padding:4px 10px;border:1px solid #27272a;border-radius:3px;background:#0d0d0f;font-size:10px;font-family:monospace;font-weight:600;color:#a1a1aa;letter-spacing:.1em;">SECTION 2 - SAVED DRAFTS</div><div style="font-size:10px;font-family:monospace;color:#52525b;">${done}/${st.drafts.length}</div><div style="flex:1;height:1px;background:#1c1c1e;"></div></div><div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-drafts"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">CHART DRAFTS</span><a href="https://t.me/tesr56788/14817" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;font-family:monospace;padding:2px 8px;border:1px solid #27272a;color:#71717a;border-radius:3px;text-decoration:none;">↗ Telegram Drafts</a></div><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;font-family:monospace;color:#10b981;">${done}</span><span style="font-size:10px;font-family:monospace;color:#3f3f46;">/</span><span style="font-size:11px;font-family:monospace;color:#71717a;">${st.drafts.length}</span><span style="font-size:10px;font-family:monospace;color:#52525b;">${st.draftsOpen?"▼":"▶"}</span></div></button>`;
-  if(st.draftsOpen){h+="<div>";st.drafts.forEach((d,i)=>{h+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid rgba(28,28,30,0.4);${d.done?"background:rgba(5,46,22,0.1)":""}"><div style="width:20px;height:20px;border-radius:3px;border:1px solid ${d.done?"#10b981":"#3f3f46"};display:flex;align-items:center;justify-content:center;font-size:11px;font-family:monospace;cursor:pointer;${d.done?"background:#10b981;color:#000":"color:#52525b"}" data-deaction="toggle-draft" data-draftid="${d.id}">${d.done?"✓":i+1}</div><input value="${d.text.replace(/"/g,"&quot;")}" placeholder="Draft ${i+1} - describe the setup..." style="flex:1;background:transparent;border:none;border-bottom:1px solid #1c1c1e;color:${d.done?"#52525b":"#d4d4d8"};font-size:11px;font-family:monospace;padding:2px 0;${d.done?"text-decoration:line-through":""}" data-deaction="edit-draft" data-draftid="${d.id}"/><button style="font-size:10px;font-family:monospace;color:#27272a;background:transparent;border:none;cursor:pointer;" data-deaction="remove-draft" data-draftid="${d.id}">✕</button></div>`;});h+=`<button style="width:100%;padding:8px 16px;font-size:10px;font-family:monospace;color:#3f3f46;background:transparent;border:none;border-top:1px solid #1c1c1e;cursor:pointer;text-align:left;" data-deaction="add-draft">+ add draft</button></div>`;}
+  h+=`<div style="display:flex;align-items:center;gap:10px;margin:16px 0 10px;"><div style="flex:1;height:1px;background:#1c1c1e;"></div><div style="padding:4px 10px;border:1px solid #27272a;border-radius:3px;background:#0d0d0f;font-size:10px;font-family:monospace;font-weight:600;color:#a1a1aa;letter-spacing:.1em;">SECTION 2 - SAVED DRAFTS</div><div style="font-size:10px;font-family:monospace;color:#52525b;">${done}/${st.drafts.length}</div><div style="flex:1;height:1px;background:#1c1c1e;"></div></div><div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-drafts"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">CHART DRAFTS</span><a href="https://t.me/tesr56788/14817" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;font-family:monospace;padding:2px 8px;border:1px solid #27272a;color:#71717a;border-radius:3px;text-decoration:none;">? Telegram Drafts</a></div><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;font-family:monospace;color:#10b981;">${done}</span><span style="font-size:10px;font-family:monospace;color:#3f3f46;">/</span><span style="font-size:11px;font-family:monospace;color:#71717a;">${st.drafts.length}</span><span style="font-size:10px;font-family:monospace;color:#52525b;">${st.draftsOpen?"?":"?"}</span></div></button>`;
+  if(st.draftsOpen){h+="<div>";st.drafts.forEach((d,i)=>{h+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid rgba(28,28,30,0.4);${d.done?"background:rgba(5,46,22,0.1)":""}"><div style="width:20px;height:20px;border-radius:3px;border:1px solid ${d.done?"#10b981":"#3f3f46"};display:flex;align-items:center;justify-content:center;font-size:11px;font-family:monospace;cursor:pointer;${d.done?"background:#10b981;color:#000":"color:#52525b"}" data-deaction="toggle-draft" data-draftid="${d.id}">${d.done?"?":i+1}</div><input value="${d.text.replace(/"/g,"&quot;")}" placeholder="Draft ${i+1} - describe the setup..." style="flex:1;background:transparent;border:none;border-bottom:1px solid #1c1c1e;color:${d.done?"#52525b":"#d4d4d8"};font-size:11px;font-family:monospace;padding:2px 0;${d.done?"text-decoration:line-through":""}" data-deaction="edit-draft" data-draftid="${d.id}"/><button style="font-size:10px;font-family:monospace;color:#27272a;background:transparent;border:none;cursor:pointer;" data-deaction="remove-draft" data-draftid="${d.id}">?</button></div>`;});h+=`<button style="width:100%;padding:8px 16px;font-size:10px;font-family:monospace;color:#3f3f46;background:transparent;border:none;border-top:1px solid #1c1c1e;cursor:pointer;text-align:left;" data-deaction="add-draft">+ add draft</button></div>`;}
   return h+"</div>";
 }
 
@@ -4429,7 +4429,7 @@ function buildAlt(){
 
 function buildDrafting(){
   const notes=[{id:"dn_ind",title:"Indicator setup",lines:["Object tree from HTF to LTF","Volatility (indicator + chart)","2x Volume + MA","MACD for range","Moving avgs for trend","Stochastic/AO/Cipher (accumulation vs distribution)","USDT.D vs BTC"]},{id:"dn_alt",title:"Alt research",lines:["Use trading X account","Telegram/Twitter/Google search of the specific crypto token","Mexc % notification - futures and spot % change","Coinmarketcap hot sectors","TradingView % change + screener/heatmaps","ETH ETF inflows, Top Futures Positions, Sectors 24H","Cryptoalerts.ai, Correlation Tool, Better Crypto Scanner","Crypto Derivatives Visual Screener, Cryptopy, RSI Heatmap","Supercharts, order book, moving avgs, oscillators, divergences","Market structure, oversold/overbought, local tops/bottoms","GPT TA agent, Telegram TA bot, Sharebot67","Templates, Trading focus, Volatility checker","Fundamental analysis, Technical analysis, Sentiment analysis","Qualitative analysis, Risk management"]}];
-  return`<div style="border:1px solid #1c1c1e;border-radius:3px;padding:14px;margin-bottom:16px;"><div style="font-size:10px;font-family:monospace;color:#52525b;letter-spacing:.1em;margin-bottom:4px;">DRAFTING IDEAS</div><div style="font-size:10px;font-family:monospace;color:#3f3f46;">Reference notes.</div></div><div style="display:flex;flex-direction:column;gap:8px;">${notes.map(n=>{const isC=st.collapsed[n.id]!==false;return`<div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-group" data-group="${n.id}"><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">${n.title}</span><span style="font-size:10px;font-family:monospace;color:#52525b;">${isC?"▶":"▼"}</span></button>${!isC?`<div style="padding:10px 16px;border-top:1px solid #1c1c1e;">${n.lines.map(l=>`<div style="font-size:10px;font-family:monospace;color:#71717a;line-height:1.8;">${l}</div>`).join("")}</div>`:""}</div>`;}).join("")}</div>`;
+  return`<div style="border:1px solid #1c1c1e;border-radius:3px;padding:14px;margin-bottom:16px;"><div style="font-size:10px;font-family:monospace;color:#52525b;letter-spacing:.1em;margin-bottom:4px;">DRAFTING IDEAS</div><div style="font-size:10px;font-family:monospace;color:#3f3f46;">Reference notes.</div></div><div style="display:flex;flex-direction:column;gap:8px;">${notes.map(n=>{const isC=st.collapsed[n.id]!==false;return`<div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-group" data-group="${n.id}"><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">${n.title}</span><span style="font-size:10px;font-family:monospace;color:#52525b;">${isC?"?":"?"}</span></button>${!isC?`<div style="padding:10px 16px;border-top:1px solid #1c1c1e;">${n.lines.map(l=>`<div style="font-size:10px;font-family:monospace;color:#71717a;line-height:1.8;">${l}</div>`).join("")}</div>`:""}</div>`;}).join("")}</div>`;
 }
 
 function buildTD(){
@@ -4452,15 +4452,15 @@ function buildTD(){
   const steps=[{id:1,label:"Macro",dot:ms==="RISK_ON"?"#10b981":ms==="RISK_OFF"?"#ef4444":"#f59e0b"},{id:2,label:"Regime",dot:rc==="green"?"#10b981":rc==="red"?"#ef4444":rc==="blue"?"#38bdf8":"#f59e0b"},{id:3,label:"Bias",dot:bc==="green"?"#10b981":bc==="red"?"#ef4444":"#f59e0b"},{id:4,label:"Signals",dot:fired>=3?"#10b981":fired>=2?"#f59e0b":"#ef4444"},{id:5,label:"Score",dot:conf>=80?"#10b981":conf>=65?"#f59e0b":"#ef4444"},{id:6,label:"Execute",dot:ev?"#10b981":"#27272a"}];
   let h=`<div style="display:flex;gap:2px;margin-bottom:20px;border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;">${steps.map(st2=>`<button style="flex:1;padding:10px 6px;text-align:left;background:${step===st2.id?"#1c1c1e":"transparent"};border:none;border-right:1px solid #1c1c1e;cursor:pointer;last-child{border-right:none}" data-deaction="td-step" data-step="${st2.id}"><div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;"><div style="width:6px;height:6px;border-radius:50%;background:${st2.dot};"></div><span style="font-size:9px;font-family:monospace;color:#52525b;">${String(st2.id).padStart(2,"0")}</span></div><div style="font-size:10px;font-family:monospace;font-weight:600;color:#d4d4d8;">${st2.label}</div></button>`).join("")}</div>`;
 
-  if(step===1){h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 01 / MACRO - Bad macro = no trade.</div>${panel(ph("USDT.D - PRIMARY RISK GAUGE",pill(mc,ms))+row("USDT.D above 4H EMA20?","Rising = money leaving crypto = risk off",ct("usdt_above_ema","ABOVE","BELOW"))+row("USDT.D 24H % change",">+0.75% = risk-off | <-0.25% = risk-on",fld("usdt_change","e.g. -0.8")))}${panel(ph("DOMINANCE + STRUCTURE","")+row("BTC.D rising (above 4H EMA20)?","",ct("btc_d_rising","RISING","FALLING"))+row("TOTAL above Daily EMA200?","",ct("total_bull","ABOVE (BULL)","BELOW (BEAR)"))+row("DXY above Daily EMA50?","",ct("dxy_bull","YES (HEADWIND)","NO (TAILWIND)"))+row("News blackout active?","",ct("blackout","BLACKOUT","CLEAR")))}<div style="border:1px solid ${ro?"#7f1d1d":rn?"#064e3b":"#3f3f46"};border-radius:3px;padding:10px;font-size:11px;font-family:monospace;background:${ro?"#450a0a15":rn?"#022c2215":"#0d0d0f"};margin-bottom:12px;"><span style="color:#52525b;">VERDICT - </span><span style="${cc[mc]};font-weight:600;">${ms}</span><span style="color:#52525b;margin-left:12px;">${{RISK_OFF:"No longs. Shorts only. 50% size.",RISK_ON:"Longs preferred. Full size.",NEUTRAL:"Longs OK. 75% size.",BLACKOUT:"Stand aside."}[ms]}</span></div><button style="width:100%;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="2">NEXT - CLASSIFY REGIME →</button>`;}
+  if(step===1){h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 01 / MACRO - Bad macro = no trade.</div>${panel(ph("USDT.D - PRIMARY RISK GAUGE",pill(mc,ms))+row("USDT.D above 4H EMA20?","Rising = money leaving crypto = risk off",ct("usdt_above_ema","ABOVE","BELOW"))+row("USDT.D 24H % change",">+0.75% = risk-off | <-0.25% = risk-on",fld("usdt_change","e.g. -0.8")))}${panel(ph("DOMINANCE + STRUCTURE","")+row("BTC.D rising (above 4H EMA20)?","",ct("btc_d_rising","RISING","FALLING"))+row("TOTAL above Daily EMA200?","",ct("total_bull","ABOVE (BULL)","BELOW (BEAR)"))+row("DXY above Daily EMA50?","",ct("dxy_bull","YES (HEADWIND)","NO (TAILWIND)"))+row("News blackout active?","",ct("blackout","BLACKOUT","CLEAR")))}<div style="border:1px solid ${ro?"#7f1d1d":rn?"#064e3b":"#3f3f46"};border-radius:3px;padding:10px;font-size:11px;font-family:monospace;background:${ro?"#450a0a15":rn?"#022c2215":"#0d0d0f"};margin-bottom:12px;"><span style="color:#52525b;">VERDICT - </span><span style="${cc[mc]};font-weight:600;">${ms}</span><span style="color:#52525b;margin-left:12px;">${{RISK_OFF:"No longs. Shorts only. 50% size.",RISK_ON:"Longs preferred. Full size.",NEUTRAL:"Longs OK. 75% size.",BLACKOUT:"Stand aside."}[ms]}</span></div><button style="width:100%;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="2">NEXT - CLASSIFY REGIME ?</button>`;}
 
-  if(step===2){const am={"TREND UP":"Pullback longs only","TREND DOWN":"Bounce shorts only",RANGE:"Mean reversion both sides","VOLATILE EXP":"Breakout continuation",COMPRESSION:"No entries",UNCLASSIFIED:"Needs more data"};const fm={"TREND UP":"Shorts, mean reversion","TREND DOWN":"Longs, mean reversion",RANGE:"Breakout chasing","VOLATILE EXP":"Scalps, mean reversion",COMPRESSION:"Everything",UNCLASSIFIED:"Trading without clarity"};h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 02 / REGIME</div>${panel(ph("4H STRUCTURE READ",pill(rc,regime))+row("ADX(14) value",">25 trending | <20 ranging",fld("adx","e.g. 31"))+row("Price vs 4H EMA50","",mu("price_ema50",[{l:"ABOVE",v:"above"},{l:"BELOW",v:"below"}]))+row("EMA50 vs 4H EMA200","",mu("ema50_ema200",[{l:"50>200 BULL",v:"above"},{l:"50<200 BEAR",v:"below"}]))+row("ATR vs 20-period avg","",mu("atr_state",[{l:"NORMAL",v:"normal"},{l:">1.5x HIGH",v:"high"},{l:"<0.6x LOW",v:"low"}])))}<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;"><div style="border:1px solid #1c1c1e;border-radius:3px;padding:10px;"><div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:4px;">ALLOWED</div><div style="font-size:11px;font-family:monospace;color:#10b981;">${am[regime]||"-"}</div></div><div style="border:1px solid #1c1c1e;border-radius:3px;padding:10px;"><div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:4px;">FORBIDDEN</div><div style="font-size:11px;font-family:monospace;color:#ef4444;">${fm[regime]||"-"}</div></div></div><div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="1">← MACRO</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="3">DAILY BIAS →</button></div>`;}
+  if(step===2){const am={"TREND UP":"Pullback longs only","TREND DOWN":"Bounce shorts only",RANGE:"Mean reversion both sides","VOLATILE EXP":"Breakout continuation",COMPRESSION:"No entries",UNCLASSIFIED:"Needs more data"};const fm={"TREND UP":"Shorts, mean reversion","TREND DOWN":"Longs, mean reversion",RANGE:"Breakout chasing","VOLATILE EXP":"Scalps, mean reversion",COMPRESSION:"Everything",UNCLASSIFIED:"Trading without clarity"};h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 02 / REGIME</div>${panel(ph("4H STRUCTURE READ",pill(rc,regime))+row("ADX(14) value",">25 trending | <20 ranging",fld("adx","e.g. 31"))+row("Price vs 4H EMA50","",mu("price_ema50",[{l:"ABOVE",v:"above"},{l:"BELOW",v:"below"}]))+row("EMA50 vs 4H EMA200","",mu("ema50_ema200",[{l:"50>200 BULL",v:"above"},{l:"50<200 BEAR",v:"below"}]))+row("ATR vs 20-period avg","",mu("atr_state",[{l:"NORMAL",v:"normal"},{l:">1.5x HIGH",v:"high"},{l:"<0.6x LOW",v:"low"}])))}<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;"><div style="border:1px solid #1c1c1e;border-radius:3px;padding:10px;"><div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:4px;">ALLOWED</div><div style="font-size:11px;font-family:monospace;color:#10b981;">${am[regime]||"-"}</div></div><div style="border:1px solid #1c1c1e;border-radius:3px;padding:10px;"><div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:4px;">FORBIDDEN</div><div style="font-size:11px;font-family:monospace;color:#ef4444;">${fm[regime]||"-"}</div></div></div><div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="1">? MACRO</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="3">DAILY BIAS ?</button></div>`;}
 
-  if(step===3){h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 03 / DAILY BIAS - All 3 must agree.</div>${panel(ph("3-CONDITION HTF FILTER",pill(bc,bl))+row("Daily close above EMA200?","",mu("daily_ema200",[{l:"ABOVE",v:"above"},{l:"BELOW",v:"below"}]))+row("Daily EMA50 above EMA200?","",ct("ema50_cross","YES (GOLDEN)","NO (DEATH)"))+row("Last confirmed market structure","",mu("structure",[{l:"HL (BULL)",v:"HL"},{l:"LH (BEAR)",v:"LH"},{l:"UNCLEAR",v:"unclear"}])))}<div style="border:1px solid #1c1c1e;border-radius:3px;padding:10px;margin-bottom:12px;"><div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:4px;">VERDICT</div><div style="font-size:16px;font-family:monospace;font-weight:700;${cc[bc]}">${bl}</div><div style="font-size:10px;font-family:monospace;color:#52525b;margin-top:4px;">${{NEUTRAL:"Scalp only. 50% max.",BULLISH:"Full stack. Longs preferred.",BEARISH:"Short bias. Longs need 80+."}[bl]}</div></div><div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="2">← REGIME</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="4">SIGNALS →</button></div>`;}
+  if(step===3){h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 03 / DAILY BIAS - All 3 must agree.</div>${panel(ph("3-CONDITION HTF FILTER",pill(bc,bl))+row("Daily close above EMA200?","",mu("daily_ema200",[{l:"ABOVE",v:"above"},{l:"BELOW",v:"below"}]))+row("Daily EMA50 above EMA200?","",ct("ema50_cross","YES (GOLDEN)","NO (DEATH)"))+row("Last confirmed market structure","",mu("structure",[{l:"HL (BULL)",v:"HL"},{l:"LH (BEAR)",v:"LH"},{l:"UNCLEAR",v:"unclear"}])))}<div style="border:1px solid #1c1c1e;border-radius:3px;padding:10px;margin-bottom:12px;"><div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:4px;">VERDICT</div><div style="font-size:16px;font-family:monospace;font-weight:700;${cc[bc]}">${bl}</div><div style="font-size:10px;font-family:monospace;color:#52525b;margin-top:4px;">${{NEUTRAL:"Scalp only. 50% max.",BULLISH:"Full stack. Longs preferred.",BEARISH:"Short bias. Longs need 80+."}[bl]}</div></div><div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="2">? REGIME</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="4">SIGNALS ?</button></div>`;}
 
-  if(step===4){h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 04 / SIGNALS - 3 of 5 buckets required.</div>${panel(ph("5-BUCKET CONFLUENCE",pill(fired>=3?"green":fired>=2?"amber":"red",fired+"/5 FIRING"))+[{k:"trend",n:"TREND",h:"EMA stack aligned"},{k:"momentum",n:"MOMENTUM",h:"MACD histogram direction"},{k:"reversal",n:"REVERSAL",h:"Stoch cross from extreme"},{k:"participation",n:"PARTICIPATION",h:"Volume > 1.5x MA"},{k:"volatility",n:"VOLATILITY",h:"ATR within normal range"}].map(b=>row(b.n,b.h,ct(b.k,"FIRES","DEAD"))).join(""))}${panel(ph("CIPHER B / AO","")+row("Cipher B mode","Accumulation = smart money buying",mu("cipher",[{l:"ACCUMULATION",v:"accum"},{l:"DISTRIBUTION",v:"dist"},{l:"NEUTRAL",v:"neutral"}])))}<div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="3">← BIAS</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="5">SCORE →</button></div>`;}
+  if(step===4){h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 04 / SIGNALS - 3 of 5 buckets required.</div>${panel(ph("5-BUCKET CONFLUENCE",pill(fired>=3?"green":fired>=2?"amber":"red",fired+"/5 FIRING"))+[{k:"trend",n:"TREND",h:"EMA stack aligned"},{k:"momentum",n:"MOMENTUM",h:"MACD histogram direction"},{k:"reversal",n:"REVERSAL",h:"Stoch cross from extreme"},{k:"participation",n:"PARTICIPATION",h:"Volume > 1.5x MA"},{k:"volatility",n:"VOLATILITY",h:"ATR within normal range"}].map(b=>row(b.n,b.h,ct(b.k,"FIRES","DEAD"))).join(""))}${panel(ph("CIPHER B / AO","")+row("Cipher B mode","Accumulation = smart money buying",mu("cipher",[{l:"ACCUMULATION",v:"accum"},{l:"DISTRIBUTION",v:"dist"},{l:"NEUTRAL",v:"neutral"}])))}<div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="3">? BIAS</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="5">SCORE ?</button></div>`;}
 
-  if(step===5){const sb=[{label:"HTF Trend Alignment",pts:bsc,max:30},{label:"Macro Filter",pts:msc,max:20},{label:"Signal Confluence",pts:sigsc,max:20},{label:"Volume Confirmation",pts:volsc,max:15},{label:"Volatility",pts:atsc,max:10},{label:"Funding / Cipher",pts:fsc,max:5}];h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 05 / CONFIDENCE SCORE</div>${panel(ph("SCORE BREAKDOWN","")+sb.map(item=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;border-bottom:1px solid rgba(28,28,30,0.4);"><div style="font-size:11px;font-family:monospace;color:#d4d4d8;">${item.label}</div><div style="display:flex;align-items:center;gap:10px;"><div style="width:80px;height:4px;background:#1c1c1e;border-radius:2px;overflow:hidden;"><div style="height:100%;border-radius:2px;background:${sco};width:${(item.pts/item.max)*100}%"></div></div><span style="font-size:10px;font-family:monospace;color:#a1a1aa;width:40px;text-align:right;">${item.pts}/${item.max}</span></div></div>`).join(""))}<div style="border:1px solid #1c1c1e;border-radius:3px;padding:16px;margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;"><span style="font-size:10px;font-family:monospace;color:#52525b;">TOTAL</span><span style="font-size:10px;font-family:monospace;color:${sco};">${conf>=80?"FULL SIZE":conf>=65?"HALF SIZE":conf>=50?"25% SIZE":"NO TRADE"}</span></div><div style="font-size:48px;font-family:monospace;font-weight:700;color:${sco};margin-bottom:10px;">${conf}<span style="font-size:14px;color:#27272a;margin-left:4px;">/ 100</span></div><div style="height:4px;background:#1c1c1e;border-radius:2px;overflow:hidden;"><div style="height:100%;border-radius:2px;background:${sco};width:${conf}%;"></div></div></div><div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="4">← SIGNALS</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;border:1px solid #1c1c1e;border-radius:3px;cursor:pointer;${conf>=65?"color:#a1a1aa;background:transparent":"color:#27272a;background:transparent;cursor:not-allowed"}" ${conf<50?"disabled":""} data-deaction="td-step" data-step="6">${conf>=65?"EXECUTE →":"SCORE TOO LOW"}</button></div>`;}
+  if(step===5){const sb=[{label:"HTF Trend Alignment",pts:bsc,max:30},{label:"Macro Filter",pts:msc,max:20},{label:"Signal Confluence",pts:sigsc,max:20},{label:"Volume Confirmation",pts:volsc,max:15},{label:"Volatility",pts:atsc,max:10},{label:"Funding / Cipher",pts:fsc,max:5}];h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 05 / CONFIDENCE SCORE</div>${panel(ph("SCORE BREAKDOWN","")+sb.map(item=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;border-bottom:1px solid rgba(28,28,30,0.4);"><div style="font-size:11px;font-family:monospace;color:#d4d4d8;">${item.label}</div><div style="display:flex;align-items:center;gap:10px;"><div style="width:80px;height:4px;background:#1c1c1e;border-radius:2px;overflow:hidden;"><div style="height:100%;border-radius:2px;background:${sco};width:${(item.pts/item.max)*100}%"></div></div><span style="font-size:10px;font-family:monospace;color:#a1a1aa;width:40px;text-align:right;">${item.pts}/${item.max}</span></div></div>`).join(""))}<div style="border:1px solid #1c1c1e;border-radius:3px;padding:16px;margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;"><span style="font-size:10px;font-family:monospace;color:#52525b;">TOTAL</span><span style="font-size:10px;font-family:monospace;color:${sco};">${conf>=80?"FULL SIZE":conf>=65?"HALF SIZE":conf>=50?"25% SIZE":"NO TRADE"}</span></div><div style="font-size:48px;font-family:monospace;font-weight:700;color:${sco};margin-bottom:10px;">${conf}<span style="font-size:14px;color:#27272a;margin-left:4px;">/ 100</span></div><div style="height:4px;background:#1c1c1e;border-radius:2px;overflow:hidden;"><div style="height:100%;border-radius:2px;background:${sco};width:${conf}%;"></div></div></div><div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="4">? SIGNALS</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;border:1px solid #1c1c1e;border-radius:3px;cursor:pointer;${conf>=65?"color:#a1a1aa;background:transparent":"color:#27272a;background:transparent;cursor:not-allowed"}" ${conf<50?"disabled":""} data-deaction="td-step" data-step="6">${conf>=65?"EXECUTE ?":"SCORE TOO LOW"}</button></div>`;}
 
   if(step===6){h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 06 / EXECUTION</div>${panel(ph("TRADE PARAMETERS",pill(conf>=80?"green":"amber","SCORE "+conf))+row("Direction","",mu("dir",[{l:"LONG",v:"long"},{l:"SHORT",v:"short"}]))+row("Account balance","",fld("balance","e.g. 10000"))+row("Risk %","",mu("risk",[{l:"1%",v:"1"},{l:"1.5%",v:"1.5"},{l:"2%",v:"2"}]))+row("ATR(14) value","",fld("atr_val","e.g. 1250"))+row("Entry price","",fld("entry","e.g. 87000")))}${ev?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;margin-bottom:12px;">${[{l:"POSITION SIZE",v:ps.toFixed(5)+" BTC",c:"color:#e4e4e7"},{l:"RISK AMOUNT",v:"$"+fmt(ra,2),c:"color:#e4e4e7"},{l:"STOP LOSS",v:"$"+fmt(sp,0),c:"color:#ef4444"},{l:"STOP DIST",v:"$"+fmt(sd,0)+" (1.5x ATR)",c:"color:#52525b"},{l:"TP1 1.5R (40%)",v:"$"+fmt(t1,0),c:"color:#10b981"},{l:"TP2 2.5R (40%)",v:"$"+fmt(t2,0),c:"color:#6ee7b7"},{l:"RUNNER (20%)",v:"Trail 1x ATR after TP2",c:"color:#38bdf8"},{l:"SIZE MULT",v:(sm*100).toFixed(0)+"%",c:"color:#f59e0b"}].map(item=>`<div style="background:#0d0d0f;padding:10px 12px;"><div style="font-size:9px;font-family:monospace;color:#3f3f46;">${item.l}</div><div style="font-size:12px;font-family:monospace;font-weight:600;margin-top:4px;${item.c}">${item.v}</div></div>`).join("")}</div>`:""}  <button style="width:100%;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-reset">RESET - NEW ANALYSIS</button>`;}
   return h;
@@ -4479,7 +4479,7 @@ function buildApp(){
 
   const menuHtml=st.menuOpen?`<div style="border-top:1px solid #1c1c1e;padding:8px 16px;display:flex;flex-wrap:wrap;gap:4px;">${VIEWS.map(v=>`<button style="padding:4px 10px;font-size:10px;font-family:monospace;border-radius:3px;cursor:pointer;border:1px solid ${st.view===v.id?"#52525b":"#1c1c1e"};background:${st.view===v.id?"#27272a":"transparent"};color:${st.view===v.id?"#e4e4e7":"#52525b"};" data-deaction="nav" data-view="${v.id}">${v.label}</button>`).join("")}<button style="padding:4px 10px;font-size:10px;font-family:monospace;border-radius:3px;cursor:pointer;border:1px solid #1c1c1e;background:transparent;color:#52525b;" data-deaction="nav" data-view="topdown">TOP-DOWN WIZARD</button></div>`:"";
 
-  return`<div style="min-height:100%;background:#09090b;color:#e4e4e7;"><div style="position:sticky;top:0;z-index:100;border-bottom:1px solid #1c1c1e;background:rgba(9,9,11,0.97);">${menuHtml?`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;"><div style="display:flex;align-items:center;gap:10px;">${st.view!=="home"?`<button style="font-size:11px;font-family:monospace;color:#52525b;background:transparent;border:none;cursor:pointer;" data-deaction="nav" data-view="home">←</button>`:""}  <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:50%;background:${cur.dot};"></div><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">${cur.label}</span></div></div><button style="font-size:10px;font-family:monospace;color:#52525b;background:transparent;border:1px solid #1c1c1e;border-radius:3px;padding:4px 10px;cursor:pointer;" data-deaction="toggle-menu">MENU</button></div>${menuHtml}`:`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;"><div style="display:flex;align-items:center;gap:10px;">${st.view!=="home"?`<button style="font-size:11px;font-family:monospace;color:#52525b;background:transparent;border:none;cursor:pointer;" data-deaction="nav" data-view="home">←</button>`:""}  <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:50%;background:${cur.dot};"></div><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">${cur.label}</span></div></div><button style="font-size:10px;font-family:monospace;color:#52525b;background:transparent;border:1px solid #1c1c1e;border-radius:3px;padding:4px 10px;cursor:pointer;" data-deaction="toggle-menu">MENU</button></div>`}</div><div style="padding:16px;max-width:640px;margin:0 auto;">${content}</div></div>`;
+  return`<div style="min-height:100%;background:#09090b;color:#e4e4e7;"><div style="position:sticky;top:0;z-index:100;border-bottom:1px solid #1c1c1e;background:rgba(9,9,11,0.97);">${menuHtml?`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;"><div style="display:flex;align-items:center;gap:10px;">${st.view!=="home"?`<button style="font-size:11px;font-family:monospace;color:#52525b;background:transparent;border:none;cursor:pointer;" data-deaction="nav" data-view="home">?</button>`:""}  <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:50%;background:${cur.dot};"></div><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">${cur.label}</span></div></div><button style="font-size:10px;font-family:monospace;color:#52525b;background:transparent;border:1px solid #1c1c1e;border-radius:3px;padding:4px 10px;cursor:pointer;" data-deaction="toggle-menu">MENU</button></div>${menuHtml}`:`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;"><div style="display:flex;align-items:center;gap:10px;">${st.view!=="home"?`<button style="font-size:11px;font-family:monospace;color:#52525b;background:transparent;border:none;cursor:pointer;" data-deaction="nav" data-view="home">?</button>`:""}  <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:50%;background:${cur.dot};"></div><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">${cur.label}</span></div></div><button style="font-size:10px;font-family:monospace;color:#52525b;background:transparent;border:1px solid #1c1c1e;border-radius:3px;padding:4px 10px;cursor:pointer;" data-deaction="toggle-menu">MENU</button></div>`}</div><div style="padding:16px;max-width:640px;margin:0 auto;">${content}</div></div>`;
 }
 
 function render(){
@@ -4526,7 +4526,7 @@ return{render};
 })();
 </script>
 
-<!-- ── SORA STUDIO ─────────────────────────────────────────── -->
+<!-- -- SORA STUDIO ------------------------------------------- -->
 <script>
 const SORA = (() => {
 const STAGES=[{id:"idea",label:"Idea",color:"#a78bfa"},{id:"queued",label:"Queued",color:"#fbbf24"},{id:"generating",label:"Generating",color:"#34d399"},{id:"review",label:"Review",color:"#60a5fa"},{id:"done",label:"Archive",color:"#94a3b8"}];
@@ -4571,7 +4571,7 @@ function buildList(){
   return`<div style="width:260px;border-right:1px solid #14141f;display:flex;flex-direction:column;background:#08080e;flex-shrink:0;overflow:hidden;">
     <div style="padding:10px;border-bottom:1px solid #14141f;flex-shrink:0;">
       <div style="position:relative;margin-bottom:8px;">
-        <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#28283a;font-size:10px;">🔍</span>
+        <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#28283a;font-size:10px;">??</span>
         <input value="${search.replace(/"/g,"&quot;")}" placeholder="Search..." style="width:100%;background:#0e0e18;border:1px solid #14141f;border-radius:5px;padding:6px 8px 6px 26px;color:#ddd8cc;font-size:11px;outline:none;box-sizing:border-box;font-family:inherit;" data-soraaction="search"/>
       </div>
       <button style="width:100%;background:linear-gradient(135deg,#6d28d9,#4f46e5);border:none;border-radius:5px;padding:7px 10px;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:5px;justify-content:center;font-family:inherit;letter-spacing:.04em;" data-soraaction="add-idea">+ New Sequence</button>
@@ -4609,12 +4609,12 @@ function buildDetail(){
             const isCur=s.id===sel.stage,isPast=i<activeIdx;
             return`<div style="display:flex;align-items:center;gap:4px;">
               <button style="background:${isCur?s.color+"18":"transparent"};border:1px solid ${isCur?s.color:isPast?"#22222e":"#14141f"};border-radius:4px;padding:3px 9px;color:${isCur?s.color:isPast?"#2e2e44":"#1c1c2a"};font-size:9px;cursor:pointer;font-family:inherit;text-transform:uppercase;letter-spacing:.08em;" data-soraaction="set-stage" data-stage="${s.id}">${s.label}</button>
-              ${i<STAGES.length-1?`<span style="color:#1c1c2a;font-size:9px;">›</span>`:""}
+              ${i<STAGES.length-1?`<span style="color:#1c1c2a;font-size:9px;">�</span>`:""}
             </div>`;
           }).join("")}
         </div>
       </div>
-      <button style="background:transparent;border:1px solid #14141f;border-radius:5px;padding:7px 10px;cursor:pointer;color:#28283a;margin-top:4px;" data-soraaction="delete-idea" data-id="${sel.id}" title="Delete">🗑</button>
+      <button style="background:transparent;border:1px solid #14141f;border-radius:5px;padding:7px 10px;cursor:pointer;color:#28283a;margin-top:4px;" data-soraaction="delete-idea" data-id="${sel.id}" title="Delete">??</button>
     </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
@@ -4626,8 +4626,8 @@ function buildDetail(){
       <div style="grid-column:1/-1;">
         <div style="font-size:9px;color:#32324a;text-transform:uppercase;letter-spacing:.12em;margin-bottom:7px;font-weight:600;">Reference Image</div>
         ${sel.referenceImage
-          ?`<div style="position:relative;display:inline-block;"><img src="${sel.referenceImage}" style="max-width:100%;max-height:220px;border-radius:8px;border:1px solid #1a1a28;display:block;"/><button style="position:absolute;top:8px;right:8px;background:#06060acc;border:1px solid #1a1a28;border-radius:4px;padding:4px 6px;cursor:pointer;color:#8888a0;font-size:10px;" data-soraaction="clear-image">✕</button></div>`
-          :`<div style="background:#0c0c14;border:1px dashed #1c1c2a;border-radius:8px;padding:28px 20px;text-align:center;cursor:pointer;color:#28283a;font-size:11px;" data-soraaction="upload-trigger"><div style="font-size:20px;margin-bottom:8px;opacity:.3;">⬆</div>Click to upload reference image<div style="font-size:9px;margin-top:4px;color:#1c1c2a;">PNG · JPG · WEBP</div></div>`}
+          ?`<div style="position:relative;display:inline-block;"><img src="${sel.referenceImage}" style="max-width:100%;max-height:220px;border-radius:8px;border:1px solid #1a1a28;display:block;"/><button style="position:absolute;top:8px;right:8px;background:#06060acc;border:1px solid #1a1a28;border-radius:4px;padding:4px 6px;cursor:pointer;color:#8888a0;font-size:10px;" data-soraaction="clear-image">?</button></div>`
+          :`<div style="background:#0c0c14;border:1px dashed #1c1c2a;border-radius:8px;padding:28px 20px;text-align:center;cursor:pointer;color:#28283a;font-size:11px;" data-soraaction="upload-trigger"><div style="font-size:20px;margin-bottom:8px;opacity:.3;">?</div>Click to upload reference image<div style="font-size:9px;margin-top:4px;color:#1c1c2a;">PNG � JPG � WEBP</div></div>`}
         <input type="file" accept="image/*" id="sora-file-input" style="display:none;" data-soraaction="file-input"/>
       </div>
 
@@ -4648,7 +4648,7 @@ function buildDetail(){
       <div style="grid-column:1/-1;">
         <div style="font-size:9px;color:#32324a;text-transform:uppercase;letter-spacing:.12em;margin-bottom:7px;font-weight:600;">Tags</div>
         <div style="background:#0c0c14;border:1px solid #14141f;border-radius:7px;padding:8px 10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-height:38px;">
-          ${sel.tags.map(tag=>`<span style="background:#14141f;border:1px solid #1c1c2a;border-radius:3px;padding:2px 7px;font-size:10px;color:#5a5a78;display:inline-flex;align-items:center;gap:5px;">#${tag}<span style="cursor:pointer;opacity:.6;font-size:9px;" data-soraaction="remove-tag" data-tag="${tag}">✕</span></span>`).join("")}
+          ${sel.tags.map(tag=>`<span style="background:#14141f;border:1px solid #1c1c2a;border-radius:3px;padding:2px 7px;font-size:10px;color:#5a5a78;display:inline-flex;align-items:center;gap:5px;">#${tag}<span style="cursor:pointer;opacity:.6;font-size:9px;" data-soraaction="remove-tag" data-tag="${tag}">?</span></span>`).join("")}
           <input value="${newTag.replace(/"/g,"&quot;")}" placeholder="${sel.tags.length===0?"Type a tag and press Enter...":"+"}" style="background:transparent;border:none;outline:none;font-size:10px;color:#5a5a78;font-family:inherit;flex:1;min-width:80px;" data-soraaction="tag-input"/>
         </div>
       </div>
@@ -4660,8 +4660,8 @@ function buildDetail(){
 
       <div style="grid-column:1/-1;">
         ${sel.stage!=="done"
-          ?`<button style="background:linear-gradient(135deg,#6d28d9,#4f46e5);border:none;border-radius:6px;padding:9px 18px;color:#fff;font-size:11px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;letter-spacing:.04em;" data-soraaction="advance-stage">Move to ${STAGES[activeIdx+1]?.label||""} ›</button>`
-          :`<div style="background:#94a3b818;border:1px solid #94a3b830;border-radius:6px;padding:9px 16px;font-size:11px;color:#94a3b8;">✓ Archived - this sequence is complete</div>`}
+          ?`<button style="background:linear-gradient(135deg,#6d28d9,#4f46e5);border:none;border-radius:6px;padding:9px 18px;color:#fff;font-size:11px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;letter-spacing:.04em;" data-soraaction="advance-stage">Move to ${STAGES[activeIdx+1]?.label||""} �</button>`
+          :`<div style="background:#94a3b818;border:1px solid #94a3b830;border-radius:6px;padding:9px 16px;font-size:11px;color:#94a3b8;">? Archived - this sequence is complete</div>`}
       </div>
     </div>
 
@@ -4675,7 +4675,7 @@ function buildApp(){
   return`<div style="height:100%;display:flex;flex-direction:column;background:#06060a;color:#ddd8cc;font-family:'DM Mono','Fira Code','Courier New',monospace;overflow:hidden;">
     <div style="border-bottom:1px solid #14141f;padding:0 20px;height:46px;display:flex;align-items:center;gap:12px;background:#08080e;flex-shrink:0;">
       <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:14px;">🎬</span>
+        <span style="font-size:14px;">??</span>
         <span style="font-size:12px;font-weight:700;color:#ddd8cc;letter-spacing:.14em;text-transform:uppercase;">Sora Studio</span>
         <span style="font-size:10px;color:#28283a;margin-left:2px;">/ sequences</span>
       </div>
@@ -4814,7 +4814,7 @@ function saveNavState(state) { localStorage.setItem('nav-collapsed-state', JSON.
 function toggleNav(labelEl) {
   const wrap = labelEl.nextElementSibling;
   if (!wrap) return;
-  const section = labelEl.textContent.trim().replace(/\s*▾$/, '');
+  const section = labelEl.textContent.trim().replace(/\s*?$/, '');
   const isOpen = wrap.style.maxHeight && wrap.style.maxHeight !== '0px';
   const state = getNavState();
   if (isOpen) {
@@ -4836,7 +4836,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.nav-label').forEach(labelEl => {
     const wrap = labelEl.nextElementSibling;
     if (!wrap || !wrap.classList.contains('nav-items-wrap')) return;
-    const section = labelEl.textContent.trim().replace(/\s*▾$/, '');
+    const section = labelEl.textContent.trim().replace(/\s*?$/, '');
     const collapsed = state[section] !== false;
     if (collapsed) {
       wrap.style.maxHeight = '0px';
@@ -4856,7 +4856,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// ─── PANEL COLLAPSE ───────────────────────────────────────────────────────────
+// --- PANEL COLLAPSE -----------------------------------------------------------
 let feedPanelOpen = false;
 
 function toggleFeedPanel() {
@@ -4883,7 +4883,7 @@ function setFocusMode(enabled) {
     btn.style.color = 'var(--accent)';
     btn.style.borderColor = 'var(--accent)';
     btn.style.background = 'rgba(99,102,241,0.12)';
-    btn.textContent = '⛶ Focus';
+    btn.textContent = '? Focus';
   } else {
     layout.classList.remove('nav-collapsed');
     if (!feedPanelOpen) layout.classList.add('feed-collapsed');
@@ -4891,11 +4891,11 @@ function setFocusMode(enabled) {
     btn.style.color = 'var(--muted)';
     btn.style.borderColor = 'var(--border)';
     btn.style.background = 'transparent';
-    btn.textContent = '⛶ Focus';
+    btn.textContent = '? Focus';
   }
 }
 
-// ─── MOBILE NAV ───────────────────────────────────────────────────────────────
+// --- MOBILE NAV ---------------------------------------------------------------
 function updateFocusButtonLabel() {
   const btn = document.getElementById('focus-btn');
   if (!btn) return;
@@ -4934,7 +4934,7 @@ document.querySelectorAll('.nav-item').forEach(el => {
   });
 });
 
-// ─── DROPBOX ─────────────────────────────────────────────────────────────────
+// --- DROPBOX -----------------------------------------------------------------
 const DROPS_API = '/api/drops';
 const DROPS_SESSION_API = '/api/session';
 let _dropsCache = null;
@@ -5099,7 +5099,7 @@ function handleDropboxRequestError(error, fallbackMessage) {
   alert(error.message || fallbackMessage);
 }
 
-// ─── Dropbox state & rendering ───────────────────────────────────────────────
+// --- Dropbox state & rendering -----------------------------------------------
 
 const dropboxState = {
   drops: [],
@@ -5182,13 +5182,13 @@ function dropBadge(text, type) {
 
 function dropFormatDate(value) {
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '—';
+  if (Number.isNaN(d.getTime())) return '�';
   return d.toLocaleString();
 }
 
 function dropFormatShortDate(value) {
   const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '—';
+  if (Number.isNaN(d.getTime())) return '�';
   const now = new Date();
   if (d.toDateString() === now.toDateString()) {
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -5226,7 +5226,7 @@ function renderDropTable() {
             <td>${dropBadge(drop.subject, 'subject')}</td>
             <td>${dropBadge(drop.status, 'status')}</td>
             <td>${dropBadge(drop.priority, 'priority')}</td>
-            <td>${escHTML(drop.project || '—')}</td>
+            <td>${escHTML(drop.project || '�')}</td>
             <td>${(drop.tags || []).slice(0, 3).map(t => dropBadge(t, 'tag')).join(' ')}</td>
             <td>${dropFormatDate(drop.updated_at || drop.date)}</td>
           </tr>`).join('')}
@@ -5311,12 +5311,12 @@ function openNoteView(drop) {
   section.style.cssText = 'width:100%;max-width:720px;margin:0 auto;padding:24px 20px 60px;box-sizing:border-box;';
   section.innerHTML = `
     <div class="drop-detail">
-      <button class="drop-detail-back" id="drop-detail-back">← Notes</button>
+      <button class="drop-detail-back" id="drop-detail-back">? Notes</button>
       <div class="drop-detail-header">
         <h2 class="drop-detail-title">${escHTML(drop.title || 'Untitled drop')}</h2>
         <div class="drop-detail-meta-row">
           <span>${dropFormatDate(drop.updated_at || drop.date)}</span>
-          ${metaParts.length ? `<span class="sep">·</span>${metaParts.join('<span class="sep"> </span>')}` : ''}
+          ${metaParts.length ? `<span class="sep">�</span>${metaParts.join('<span class="sep"> </span>')}` : ''}
         </div>
       </div>
       <div class="drop-detail-content">${escHTML(drop.content || '')}</div>
@@ -5419,7 +5419,7 @@ function clearDropForm() {
   if (s) s.value = 'idea';
 }
 
-// ─── Dropbox event listeners ──────────────────────────────────────────────────
+// --- Dropbox event listeners --------------------------------------------------
 
 document.getElementById('save-drop-btn').addEventListener('click', async () => {
   try { await saveDrop(); } catch (err) { alert(err.message); }
@@ -5527,7 +5527,7 @@ window.switchView = function(view, navEl) {
   }
 };
 
-// ─── MEMORY MODULE ───────────────────────────────────────────────────────────
+// --- MEMORY MODULE -----------------------------------------------------------
 const MEM = (() => {
   const API = '/api/memories';
   let activeAgent = 'all';
