@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<title>Mission Board - Agent Office</title>
+<link rel="stylesheet" href="shared.css"/>
+<link rel="stylesheet" href="workspace-systems.css"/>
+</head>
+<body>
+
+<!-- Mobile nav overlay -->
+<div id="mobile-overlay" onclick="closeMobileNav()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999;"></div>
+
+<div class="topbar">
+  <div style="display:flex; align-items:center; gap:12px;">
+    <button class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu" aria-label="Open navigation">&#9776;</button>
+    <div class="topbar-logo">⬡ AGENT OFFICE</div>
+  </div>
+  <div class="topbar-meta">
+    <span><span class="online-dot"></span><span id="onlineCount">9</span> agents online</span>
+    <span id="clock">--:--:--</span>
+    <button id="feed-toggle-btn" onclick="toggleFeedPanel()" title="Toggle activity panel" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">☰ Agents</button>
+    <button id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode — hide panels" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">⛶ Focus</button>
+  </div>
+</div>
+
+<div class="layout feed-collapsed">
+
+  <!-- LEFT NAV -->
+  <nav class="nav">
+
+    <!-- WORKSPACE -->
+    <div class="nav-section">
+      <div class="nav-heading">Workspace</div>
+      <div class="nav-items-wrap nav-open">
+        <a class="nav-item" href="/"><span class="icon">🏢</span> Office</a>
+        <a class="nav-item" href="/org-chart.html"><span class="icon">🗂️</span> Org Chart</a>
+        <a class="nav-item" href="/memory.html"><span class="icon">🧠</span> Memory</a>
+        <a class="nav-item" href="/calendar.html"><span class="icon">📅</span> Calendar</a>
+        <a class="nav-item" href="/resets.html"><span class="icon">&#9201;</span> Resets</a>
+        <a class="nav-item" href="/ai-landscape.html" data-ai-landscape-nav="true"><span class="icon">AI</span> AI Landscape</a>
+        <a class="nav-item active" href="/mission-board.html"><span class="icon">📥</span> Mission Board</a>
+        <a class="nav-item" href="/project-rooms.html"><span class="icon">▣</span> Project Rooms</a>
+        <a class="nav-item" href="/agent-registry.html"><span class="icon">◎</span> Agent Registry</a>
+        <div class="nav-item" onclick="window.open('/prompt-builder.html', '_blank')"><span class="icon">📝</span> Prompt Builder</div>
+      </div>
+    </div>
+
+    <!-- PROJECTS -->
+    <div class="nav-section">
+      <div class="nav-label nav-label-dd" onclick="toggleNav(this)">🌐 Apps &amp; Sites <span class="nav-chevron">▾</span></div>
+      <div class="nav-items-wrap">
+
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">📈 TraderClaw</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://traderclaw-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/dc5c9acb-2c73-4a1c-b4c9-82a81e2efe9f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/trading-strategy" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#eab308;"></div><span class="nav-proj-name">🧠 Decision Engine</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://trading-strategy-production-1b41.up.railway.app/" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/b1ffc05e-c74a-4b24-94a2-ef6239bc5bf5" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/decide-engine" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#3b82f6;"></div><span class="nav-proj-name">🌐 WebClaw</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/3ac94b97-cca3-4550-9f53-2c8bdbc3f2ca" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/webclaw-service-hub" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#6366f1;"></div><span class="nav-proj-name">🏢 Agent Office</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://agent-office-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/016e0c7d-696f-4bde-8461-17980bd04a7e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#6366f1;"></div><span class="nav-proj-name">🎯 Mission Control</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://mission-control-standalone-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/8da6b690-445e-4d54-832f-548c32cb8fad" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#f97316;"></div><span class="nav-proj-name">🛡️ Cyber / Security</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://cyber-security-production-18df.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/241f80ab-f7a4-4a9f-bcf2-416928b07255" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> cyber-security <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/39cdade6-ffcb-4838-a276-9af11c7d3881" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> CyberClaw <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/cyber-claw" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">📊 Market Dashboard</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://market-dashboard-production-b2f4.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/a2e18e5e-1e3f-4db2-9f44-42c517fb2590" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/market-dashboard" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#f97316;"></div><span class="nav-proj-name">🔍 RankForge</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://web-production-7f6eb.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/9dc553bb-f048-48af-981b-eaad9800471d" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/SEO" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#ef4444;"></div><span class="nav-proj-name">🎬 YouTube Claw</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://youtube-claw-web-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Workflow Studio <span class="link-ext">↗</span></a><a class="nav-link" href="https://yt-summarizer-production-4521.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> RSS Feed <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/a9662236-e548-4bab-8bd3-05dcb87193d0" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/youtube-claw" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🌾 Comment Farm</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://commentfarm-production-fc8b.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/067b5254-82ba-476d-874f-d1dc40971999" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/commentfarm" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#06b6d4;"></div><span class="nav-proj-name">🌍 Earth Watch</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://earth-watch-production-e3c6.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/d6d73954-7450-4273-8b8e-4eb40d8cea04" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/earth-watch" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">📡 Broadcast Sender</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://broadcast-sender-production-32be.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/9e18538c-a385-4a59-ba28-f806c66ebb69" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/broadcast-sender" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">💡 Idea Vault</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://idea-vault-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/b4475c1e-b091-4446-ba91-48e57e639aa6" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🔎 X Scraping</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://x-scrapping-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/d01ab81d-1b8c-4c22-93aa-ea9c46aec7e1" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#a855f7;"></div><span class="nav-proj-name">✨ Innerverse</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/754f5a3c-3fa2-402d-9b0b-704eea72f2d2" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/innerverse" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#ec4899;"></div><span class="nav-proj-name">🔄 n8n</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://primary-production-11563.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/26a88079-68de-4932-b746-f83bddfcbc06" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#06b6d4;"></div><span class="nav-proj-name">🕹️ Interaction</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/a23361f6-93d3-46a4-a45b-4c2b0411e1fd" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">📦 Misc</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://book-maker-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Book Maker <span class="link-ext">↗</span></a><a class="nav-link" href="https://workout-tracker-production-0ec7.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Workout Tracker <span class="link-ext">↗</span></a><a class="nav-link" href="https://yt-summarizer-production-4521.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> YT Summarizer <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/3dd1f7ff-827f-4ddc-aa30-6837df85a3c3" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Flashcards <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/95992860-8b8c-4469-b26f-1254adb2a96f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Workout Tracker <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/330e335d-b7ed-49ad-bc59-6e277949e27e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Diet Plan <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/natal-affirmations" target="_blank"><div class="link-dot" style="background:#64748b;"></div> Natal Affirmations <span class="link-ext">↗</span></a></div></div>
+
+      </div>
+    </div>
+<!-- SYSTEM -->
+    <div class="nav-section">
+      <div class="nav-heading">System</div>
+      <div class="nav-items-wrap nav-open">
+        <a class="nav-item" href="/settings.html"><span class="icon">⚙️</span> Settings</a>
+        <a class="nav-link" data-dev-only="true" href="http://localhost:18789" target="_blank">
+          <div class="link-dot" style="background:#6366f1;"></div> Gateway (local) <span class="link-ext">↗</span>
+        </a>
+        <a class="nav-link" data-dev-only="true" href="http://10.0.0.106:18789" target="_blank">
+          <div class="link-dot" style="background:#6366f1;"></div> Gateway (LAN) <span class="link-ext">↗</span>
+        </a>
+      </div>
+    </div>
+
+  </nav>
+
+  <div class="view" id="view-dropbox" style="flex-direction:column; background:#0a0c11; overflow-y:auto;">
+    <section id="dropbox-view" class="dropbox-view">
+      <div class="dropbox-toolbar">
+        <h2>Dropbox</h2>
+        <div class="dropbox-actions">
+          <button id="new-drop-btn" class="btn btn-primary">New Drop</button>
+          <button id="dropbox-view-list" class="btn btn-secondary active">Table</button>
+          <button id="dropbox-view-detail" class="btn btn-secondary">Cards</button>
+        </div>
+      </div>
+
+      <div class="dropbox-filters">
+        <input id="drop-search" type="search" placeholder="Search drops..." />
+        <select id="drop-filter-subject">
+          <option value="">All Subjects</option>
+        </select>
+        <select id="drop-filter-status">
+          <option value="">All Statuses</option>
+          <option value="inbox">Inbox</option>
+          <option value="idea">Idea</option>
+          <option value="researching">Researching</option>
+          <option value="ready">Ready</option>
+          <option value="building">Building</option>
+          <option value="archived">Archived</option>
+        </select>
+        <select id="drop-filter-priority">
+          <option value="">All Priorities</option>
+          <option value="normal">Normal</option>
+          <option value="high">High</option>
+          <option value="urgent">Urgent</option>
+        </select>
+        <select id="drop-sort">
+          <option value="updated_desc">Newest</option>
+          <option value="updated_asc">Oldest</option>
+          <option value="priority_desc">Priority</option>
+          <option value="title_asc">Title</option>
+        </select>
+      </div>
+
+      <div class="dropbox-layout">
+        <div class="dropbox-main">
+          <div class="dropbox-quick-capture">
+            <input id="drop-title" type="text" placeholder="Title" />
+            <input id="drop-subject" type="text" placeholder="Subject / Category" />
+            <input id="drop-project" type="text" placeholder="Project" />
+            <input id="drop-tags" type="text" placeholder="Tags (comma separated)" />
+
+            <div class="dropbox-row">
+              <select id="drop-priority">
+                <option value="normal">Normal</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+              <select id="drop-status">
+                <option value="inbox">Inbox</option>
+                <option value="idea" selected>Idea</option>
+                <option value="researching">Researching</option>
+                <option value="ready">Ready</option>
+                <option value="building">Building</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+
+            <textarea id="drop-content" rows="5" placeholder="Capture your note, idea, reminder, or task... Use [[linked note]] syntax for internal links."></textarea>
+
+            <div class="dropbox-row">
+              <button id="save-drop-btn" class="btn btn-primary">Save Drop</button>
+              <button id="clear-drop-btn" class="btn btn-secondary">Clear</button>
+            </div>
+          </div>
+
+          <div id="dropbox-table-wrap" class="dropbox-table-wrap"></div>
+          <div id="dropbox-cards-wrap" class="dropbox-cards-wrap hidden"></div>
+        </div>
+
+        <aside id="drop-detail-panel" class="drop-detail-panel">
+          <div class="drop-detail-empty">Select a drop to view details.</div>
+        </aside>
+      </div>
+    </section>
+  </div>
+
+  <!-- ACTIVITY FEED -->
+  <aside class="feed">
+    <div class="feed-header">
+      Activity <span class="badge" id="feedCount">0</span>
+    </div>
+    <div class="feed-list" id="feedList"></div>
+  </aside>
+
+</div>
+
+<!-- BOTTOM STATUS BAR -->
+<div class="statusbar" id="statusbar"></div>
+
+
+  <!-- PASSPHRASE MODAL -->
+  <div id="passphrase-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.75); align-items:center; justify-content:center;">
+    <div style="background:#0d0f14; border:1px solid #2a3048; border-radius:12px; padding:28px 24px; width:100%; max-width:360px; margin:0 16px;">
+      <div style="font-size:14px; font-weight:700; color:#e2e8f0; margin-bottom:6px;">🔒 Unlock Dropbox</div>
+      <div style="font-size:12px; color:#64748b; margin-bottom:18px;">Enter the passphrase to access your drops.</div>
+      <input id="passphrase-input" type="password" placeholder="Passphrase..."
+        style="width:100%; background:#0a0c11; border:1px solid #2a3048; border-radius:8px; padding:12px 14px; font-size:15px; color:#e2e8f0; outline:none; box-sizing:border-box; -webkit-appearance:none;"
+        autocomplete="current-password" autocorrect="off" autocapitalize="none" spellcheck="false" />
+      <div id="passphrase-error" style="display:none; font-size:12px; color:#f87171; margin-top:8px;"></div>
+      <div style="display:flex; gap:10px; margin-top:18px;">
+        <button id="passphrase-cancel" style="flex:1; padding:11px; background:transparent; border:1px solid #2a3048; border-radius:8px; color:#64748b; font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
+        <button id="passphrase-submit" style="flex:2; padding:11px; background:var(--accent, #6366f1); border:none; border-radius:8px; color:#fff; font-size:13px; font-weight:600; cursor:pointer;">Unlock</button>
+      </div>
+    </div>
+  </div>
+
+<script src="app-shared.js"></script>
+<script src="mission-board.js"></script>
+<script>
+switchView('dropbox', document.querySelector('.nav-item.active'));
+</script>
+
+</body>
+</html>

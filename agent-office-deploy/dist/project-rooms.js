@@ -118,9 +118,7 @@
     });
     root.querySelectorAll('[data-task-id]').forEach(card => {
       card.addEventListener('click', () => {
-        switchView('dropbox');
-        dropboxState.selectedId = card.dataset.taskId;
-        renderDropbox();
+        window.location.href = '/mission-board.html?task=' + encodeURIComponent(card.dataset.taskId);
       });
     });
   }
