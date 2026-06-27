@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<title>Memory - Agent Office</title>
+<link rel="stylesheet" href="shared.css"/>
+</head>
+<body>
+
+<!-- Mobile nav overlay -->
+<div id="mobile-overlay" onclick="closeMobileNav()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999;"></div>
+
+<div class="topbar">
+  <div style="display:flex; align-items:center; gap:12px;">
+    <button class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu" aria-label="Open navigation">&#9776;</button>
+    <div class="topbar-logo">⬡ AGENT OFFICE</div>
+  </div>
+  <div class="topbar-meta">
+    <span><span class="online-dot"></span><span id="onlineCount">9</span> agents online</span>
+    <span id="clock">--:--:--</span>
+    <button id="feed-toggle-btn" onclick="toggleFeedPanel()" title="Toggle activity panel" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">☰ Agents</button>
+    <button id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode — hide panels" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">⛶ Focus</button>
+  </div>
+</div>
+
+<div class="layout feed-collapsed">
+
+  <!-- LEFT NAV -->
+  <nav class="nav">
+
+    <!-- WORKSPACE -->
+    <div class="nav-section">
+      <div class="nav-heading">Workspace</div>
+      <div class="nav-items-wrap nav-open">
+        <a class="nav-item" href="/"><span class="icon">🏢</span> Office</a>
+        <a class="nav-item" href="/org-chart.html"><span class="icon">🗂️</span> Org Chart</a>
+        <a class="nav-item active" href="/memory.html"><span class="icon">🧠</span> Memory</a>
+        <a class="nav-item" href="/calendar.html"><span class="icon">📅</span> Calendar</a>
+        <a class="nav-item" href="/resets.html"><span class="icon">&#9201;</span> Resets</a>
+        <a class="nav-item" href="/ai-landscape.html" data-ai-landscape-nav="true"><span class="icon">AI</span> AI Landscape</a>
+        <a class="nav-item" href="/mission-board.html"><span class="icon">📥</span> Mission Board</a>
+        <a class="nav-item" href="/project-rooms.html"><span class="icon">▣</span> Project Rooms</a>
+        <a class="nav-item" href="/agent-registry.html"><span class="icon">◎</span> Agent Registry</a>
+        <div class="nav-item" onclick="window.open('/prompt-builder.html', '_blank')"><span class="icon">📝</span> Prompt Builder</div>
+      </div>
+    </div>
+
+    <!-- PROJECTS -->
+    <div class="nav-section">
+      <div class="nav-label nav-label-dd" onclick="toggleNav(this)">🌐 Apps &amp; Sites <span class="nav-chevron">▾</span></div>
+      <div class="nav-items-wrap">
+
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">📈 TraderClaw</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://traderclaw-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/dc5c9acb-2c73-4a1c-b4c9-82a81e2efe9f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/trading-strategy" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#eab308;"></div><span class="nav-proj-name">🧠 Decision Engine</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://trading-strategy-production-1b41.up.railway.app/" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/b1ffc05e-c74a-4b24-94a2-ef6239bc5bf5" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/decide-engine" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#3b82f6;"></div><span class="nav-proj-name">🌐 WebClaw</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/3ac94b97-cca3-4550-9f53-2c8bdbc3f2ca" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/webclaw-service-hub" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#6366f1;"></div><span class="nav-proj-name">🏢 Agent Office</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://agent-office-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/016e0c7d-696f-4bde-8461-17980bd04a7e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#6366f1;"></div><span class="nav-proj-name">🎯 Mission Control</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://mission-control-standalone-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/8da6b690-445e-4d54-832f-548c32cb8fad" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#f97316;"></div><span class="nav-proj-name">🛡️ Cyber / Security</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://cyber-security-production-18df.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/241f80ab-f7a4-4a9f-bcf2-416928b07255" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> cyber-security <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/39cdade6-ffcb-4838-a276-9af11c7d3881" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> CyberClaw <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/cyber-claw" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">📊 Market Dashboard</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://market-dashboard-production-b2f4.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/a2e18e5e-1e3f-4db2-9f44-42c517fb2590" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/market-dashboard" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#f97316;"></div><span class="nav-proj-name">🔍 RankForge</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://web-production-7f6eb.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/9dc553bb-f048-48af-981b-eaad9800471d" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/SEO" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#ef4444;"></div><span class="nav-proj-name">🎬 YouTube Claw</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://youtube-claw-web-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Workflow Studio <span class="link-ext">↗</span></a><a class="nav-link" href="https://yt-summarizer-production-4521.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> RSS Feed <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/a9662236-e548-4bab-8bd3-05dcb87193d0" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/youtube-claw" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🌾 Comment Farm</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://commentfarm-production-fc8b.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/067b5254-82ba-476d-874f-d1dc40971999" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/commentfarm" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#06b6d4;"></div><span class="nav-proj-name">🌍 Earth Watch</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://earth-watch-production-e3c6.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/d6d73954-7450-4273-8b8e-4eb40d8cea04" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/earth-watch" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">📡 Broadcast Sender</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://broadcast-sender-production-32be.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/9e18538c-a385-4a59-ba28-f806c66ebb69" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/broadcast-sender" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">💡 Idea Vault</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://idea-vault-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/b4475c1e-b091-4446-ba91-48e57e639aa6" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🔎 X Scraping</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://x-scrapping-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/d01ab81d-1b8c-4c22-93aa-ea9c46aec7e1" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#a855f7;"></div><span class="nav-proj-name">✨ Innerverse</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/754f5a3c-3fa2-402d-9b0b-704eea72f2d2" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/innerverse" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#ec4899;"></div><span class="nav-proj-name">🔄 n8n</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://primary-production-11563.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/26a88079-68de-4932-b746-f83bddfcbc06" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#06b6d4;"></div><span class="nav-proj-name">🕹️ Interaction</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/a23361f6-93d3-46a4-a45b-4c2b0411e1fd" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">📦 Misc</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://book-maker-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Book Maker <span class="link-ext">↗</span></a><a class="nav-link" href="https://workout-tracker-production-0ec7.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Workout Tracker <span class="link-ext">↗</span></a><a class="nav-link" href="https://yt-summarizer-production-4521.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> YT Summarizer <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/3dd1f7ff-827f-4ddc-aa30-6837df85a3c3" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Flashcards <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/95992860-8b8c-4469-b26f-1254adb2a96f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Workout Tracker <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/330e335d-b7ed-49ad-bc59-6e277949e27e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Diet Plan <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/natal-affirmations" target="_blank"><div class="link-dot" style="background:#64748b;"></div> Natal Affirmations <span class="link-ext">↗</span></a></div></div>
+
+      </div>
+    </div>
+<!-- SYSTEM -->
+    <div class="nav-section">
+      <div class="nav-heading">System</div>
+      <div class="nav-items-wrap nav-open">
+        <a class="nav-item" href="/settings.html"><span class="icon">⚙️</span> Settings</a>
+        <a class="nav-link" data-dev-only="true" href="http://localhost:18789" target="_blank">
+          <div class="link-dot" style="background:#6366f1;"></div> Gateway (local) <span class="link-ext">↗</span>
+        </a>
+        <a class="nav-link" data-dev-only="true" href="http://10.0.0.106:18789" target="_blank">
+          <div class="link-dot" style="background:#6366f1;"></div> Gateway (LAN) <span class="link-ext">↗</span>
+        </a>
+      </div>
+    </div>
+
+  </nav>
+
+  <div class="view" id="view-memory" style="flex-direction:column; background:#0a0c11; overflow-y:auto;">
+    <div id="memory-app" style="max-width:900px; width:100%; margin:0 auto; padding:40px 28px 80px;">
+
+      <!-- Header -->
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; gap:16px;">
+        <div>
+          <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">🧠 MEMORY</div>
+          <div style="font-size:13px; color:var(--muted);">Agent memory banks — notes, learnings, and context per bot.</div>
+        </div>
+        <button onclick="MEM.showForm()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 20px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap; -webkit-tap-highlight-color:transparent;">
+          <span>＋</span> New Memory
+        </button>
+      </div>
+
+      <!-- Add form (hidden by default) -->
+      <div id="mem-form" style="display:none; background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:28px;">
+        <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:16px;">New Memory Entry</div>
+        <!-- Agent tabs -->
+        <div id="mem-agent-tabs" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px;"></div>
+        <input type="hidden" id="mem-agent" value="">
+        <div style="margin-bottom:12px;">
+          <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">Memory</label>
+          <textarea id="mem-content" rows="6" placeholder="Paste agent memory here..." style="width:100%; background:#0d0f14; border:1px solid var(--border); border-radius:8px; padding:11px 12px; font-size:16px; color:var(--text); outline:none; resize:vertical; font-family:inherit;"></textarea>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
+          <button onclick="MEM.hideForm()" style="background:transparent; color:var(--muted); border:1px solid var(--border); border-radius:8px; padding:12px 20px; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;">Cancel</button>
+          <button onclick="MEM.save()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 22px; font-size:14px; font-weight:600; cursor:pointer; -webkit-tap-highlight-color:transparent;">Save Memory</button>
+        </div>
+      </div>
+
+      <!-- Agent Roster Cards -->
+      <div id="mem-roster" style="margin-bottom:32px;">
+        <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin-bottom:14px;">Agent Roster</div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px;" id="mem-roster-grid"></div>
+      </div>
+
+      <!-- Agent filter tabs -->
+      <div id="mem-filters" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px;"></div>
+
+      <!-- Memory list -->
+      <div id="mem-list"></div>
+
+    </div>
+  </div>
+
+  <!-- ACTIVITY FEED -->
+  <aside class="feed">
+    <div class="feed-header">
+      Activity <span class="badge" id="feedCount">0</span>
+    </div>
+    <div class="feed-list" id="feedList"></div>
+  </aside>
+
+</div>
+
+<!-- BOTTOM STATUS BAR -->
+<div class="statusbar" id="statusbar"></div>
+
+<script src="app-shared.js"></script>
+<script>
+switchView('memory', document.querySelector('.nav-item.active'));
+</script>
+
+</body>
+</html>
