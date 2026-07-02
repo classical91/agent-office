@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
 <title>Dev Links - Agent Office</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -10,161 +13,235 @@
 <link rel="stylesheet" href="shared.css"/>
 </head>
 <body>
-<div class="app-shell">
-  <aside class="sidebar">
-    <div class="brand-row">
-      <div class="brand-mark">AO</div>
-      <div>
-        <div class="brand-name">Agent Office</div>
-        <div class="brand-subtitle">Ops Console</div>
+
+<!-- Mobile nav overlay -->
+<div id="mobile-overlay" onclick="closeMobileNav()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999;"></div>
+
+<div class="topbar">
+  <div style="display:flex; align-items:center; gap:12px;">
+    <button class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu" aria-label="Open navigation">&#9776;</button>
+    <div class="topbar-logo">⬡ AGENT OFFICE</div>
+  </div>
+  <div class="topbar-meta">
+    <span><span class="online-dot"></span><span id="onlineCount">9</span> agents online</span>
+    <span id="clock">--:--:--</span>
+    <button id="feed-toggle-btn" onclick="toggleFeedPanel()" title="Toggle activity panel" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">☰ Agents</button>
+    <button id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode — hide panels" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">⛶ Focus</button>
+  </div>
+</div>
+
+<div class="layout feed-collapsed">
+
+  <!-- LEFT NAV -->
+  <nav class="nav">
+
+    <!-- WORKSPACE -->
+    <div class="nav-section">
+      <div class="nav-heading">Workspace</div>
+      <div class="nav-items-wrap nav-open">
+        <a class="nav-item" href="/"><span class="icon">🏢</span> Office</a>
+        <a class="nav-item" href="/org-chart.html"><span class="icon">🗂️</span> Org Chart</a>
+        <a class="nav-item" href="/memory.html"><span class="icon">🧠</span> Memory</a>
+        <a class="nav-item" href="/calendar.html"><span class="icon">📅</span> Calendar</a>
+        <a class="nav-item" href="/resets.html"><span class="icon">&#9201;</span> Resets</a>
+        <a class="nav-item" href="/ai-landscape.html" data-ai-landscape-nav="true"><span class="icon">AI</span> AI Landscape</a>
+        <a class="nav-item" href="/mission-board.html"><span class="icon">📥</span> Mission Board</a>
+        <a class="nav-item" href="/project-rooms.html"><span class="icon">▣</span> Project Rooms</a>
+        <a class="nav-item" href="/agent-registry.html"><span class="icon">◎</span> Agent Registry</a>
+        <div class="nav-item" onclick="window.open('/prompt-builder.html', '_blank')"><span class="icon">📝</span> Prompt Builder</div>
       </div>
     </div>
 
-    <nav class="nav-list">
-      <a class="nav-item" href="/index.html"><span class="icon">⌂</span> Dashboard</a>
-      <a class="nav-item" href="/mission-board.html"><span class="icon">◈</span> Mission Board</a>
-      <a class="nav-item" href="/project-rooms.html"><span class="icon">▦</span> Project Rooms</a>
-      <a class="nav-item" href="/agent-registry.html"><span class="icon">◎</span> Agent Registry</a>
-      <a class="nav-item" href="/org-chart.html"><span class="icon">☷</span> Org Chart</a>
-      <a class="nav-item" href="/calendar.html"><span class="icon">◷</span> Calendar</a>
-      <a class="nav-item" href="/memory.html"><span class="icon">◇</span> Memory</a>
-      <a class="nav-item" href="/resets.html"><span class="icon">↻</span> Resets</a>
-      <a class="nav-item" href="/ai-landscape.html"><span class="icon">✦</span> AI Landscape</a>
-      <a class="nav-item active" href="/dev.html"><span class="icon">⌘</span> Dev Links</a>
-      <a class="nav-item" href="/settings.html"><span class="icon">⚙️</span> Settings</a>
-    </nav>
+    <!-- PROJECTS -->
+    <div class="nav-section">
+      <div class="nav-label nav-label-dd" onclick="toggleNav(this)">🌐 Apps &amp; Sites <span class="nav-chevron">▾</span></div>
+      <div class="nav-items-wrap">
+
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#0ea5e9;"></div><span class="nav-proj-name">AI Ops / Platforms</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/" target="_blank" rel="noopener noreferrer"><div class="link-dot" style="background:#7c3aed;"></div> Railway Dashboard <span class="link-ext">↗</span></a><a class="nav-link" href="https://primary-production-11563.up.railway.app" target="_blank" rel="noopener noreferrer"><div class="link-dot" style="background:#22c55e;"></div> n8n Live <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91" target="_blank" rel="noopener noreferrer"><div class="link-dot" style="background:#64748b;"></div> GitHub Profile <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank" rel="noopener noreferrer"><div class="link-dot" style="background:#64748b;"></div> Agent Office Repo <span class="link-ext">↗</span></a><a class="nav-link" href="https://platform.openai.com/" target="_blank" rel="noopener noreferrer"><div class="link-dot" style="background:#10b981;"></div> OpenAI Platform <span class="link-ext">↗</span></a><a class="nav-link" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer"><div class="link-dot" style="background:#10b981;"></div> ChatGPT <span class="link-ext">↗</span></a><a class="nav-link" href="https://openrouter.ai/" target="_blank" rel="noopener noreferrer"><div class="link-dot" style="background:#a855f7;"></div> OpenRouter <span class="link-ext">↗</span></a><a class="nav-link" href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer"><div class="link-dot" style="background:#f97316;"></div> Claude Console <span class="link-ext">↗</span></a><a class="nav-link" href="http://localhost:18789" target="_blank" rel="noopener noreferrer"><div class="link-dot" style="background:#6366f1;"></div> OpenClaw Gateway <span class="link-ext">↗</span></a></div></div>
+
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">📈 TraderClaw</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://traderclaw-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/dc5c9acb-2c73-4a1c-b4c9-82a81e2efe9f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/trading-strategy" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#eab308;"></div><span class="nav-proj-name">🧠 Decision Engine</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://trading-strategy-production-1b41.up.railway.app/" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/b1ffc05e-c74a-4b24-94a2-ef6239bc5bf5" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/decide-engine" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#3b82f6;"></div><span class="nav-proj-name">🌐 WebClaw</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/3ac94b97-cca3-4550-9f53-2c8bdbc3f2ca" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/webclaw-service-hub" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#6366f1;"></div><span class="nav-proj-name">🏢 Agent Office</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://agent-office-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/016e0c7d-696f-4bde-8461-17980bd04a7e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#6366f1;"></div><span class="nav-proj-name">🎯 Mission Control</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://mission-control-standalone-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/8da6b690-445e-4d54-832f-548c32cb8fad" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#f97316;"></div><span class="nav-proj-name">🛡️ Cyber / Security</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://cyber-security-production-18df.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/241f80ab-f7a4-4a9f-bcf2-416928b07255" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> cyber-security <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/39cdade6-ffcb-4838-a276-9af11c7d3881" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> CyberClaw <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/cyber-claw" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">📊 Market Dashboard</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://market-dashboard-production-b2f4.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/a2e18e5e-1e3f-4db2-9f44-42c517fb2590" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/market-dashboard" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#f97316;"></div><span class="nav-proj-name">🔍 RankForge</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://web-production-7f6eb.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/9dc553bb-f048-48af-981b-eaad9800471d" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/SEO" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#ef4444;"></div><span class="nav-proj-name">🎬 YouTube Claw</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://youtube-claw-web-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Workflow Studio <span class="link-ext">↗</span></a><a class="nav-link" href="https://yt-summarizer-production-4521.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> RSS Feed <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/a9662236-e548-4bab-8bd3-05dcb87193d0" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/youtube-claw" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🌾 Comment Farm</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://commentfarm-production-fc8b.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/067b5254-82ba-476d-874f-d1dc40971999" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/commentfarm" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#06b6d4;"></div><span class="nav-proj-name">🌍 Earth Watch</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://earth-watch-production-e3c6.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/d6d73954-7450-4273-8b8e-4eb40d8cea04" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/earth-watch" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">📡 Broadcast Sender</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://broadcast-sender-production-32be.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/9e18538c-a385-4a59-ba28-f806c66ebb69" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/broadcast-sender" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">💡 Idea Vault</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://idea-vault-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/b4475c1e-b091-4446-ba91-48e57e639aa6" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">🔎 X Scraping</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://x-scrapping-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/d01ab81d-1b8c-4c22-93aa-ea9c46aec7e1" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#a855f7;"></div><span class="nav-proj-name">✨ Innerverse</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/754f5a3c-3fa2-402d-9b0b-704eea72f2d2" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/innerverse" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#ec4899;"></div><span class="nav-proj-name">🔄 n8n</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://primary-production-11563.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/26a88079-68de-4932-b746-f83bddfcbc06" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#06b6d4;"></div><span class="nav-proj-name">🕹️ Interaction</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/project/a23361f6-93d3-46a4-a45b-4c2b0411e1fd" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a></div></div>
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#64748b;"></div><span class="nav-proj-name">📦 Misc</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://book-maker-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Book Maker <span class="link-ext">↗</span></a><a class="nav-link" href="https://workout-tracker-production-0ec7.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Workout Tracker <span class="link-ext">↗</span></a><a class="nav-link" href="https://yt-summarizer-production-4521.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> YT Summarizer <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/3dd1f7ff-827f-4ddc-aa30-6837df85a3c3" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Flashcards <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/95992860-8b8c-4469-b26f-1254adb2a96f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Workout Tracker <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/330e335d-b7ed-49ad-bc59-6e277949e27e" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Diet Plan <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/natal-affirmations" target="_blank"><div class="link-dot" style="background:#64748b;"></div> Natal Affirmations <span class="link-ext">↗</span></a></div></div>
+
+      </div>
+    </div>
+<!-- SYSTEM -->
+    <div class="nav-section">
+      <div class="nav-heading">System</div>
+      <div class="nav-items-wrap nav-open">
+        <a class="nav-item active" href="/dev.html"><span class="icon">⌘</span> Dev Links</a>
+        <a class="nav-item" href="/settings.html"><span class="icon">⚙️</span> Settings</a>
+        <a class="nav-link" data-dev-only="true" href="http://localhost:18789" target="_blank">
+          <div class="link-dot" style="background:#6366f1;"></div> Gateway (local) <span class="link-ext">↗</span>
+        </a>
+        <a class="nav-link" data-dev-only="true" href="http://10.0.0.106:18789" target="_blank">
+          <div class="link-dot" style="background:#6366f1;"></div> Gateway (LAN) <span class="link-ext">↗</span>
+        </a>
+      </div>
+    </div>
+
+  </nav>
+
+  <div class="view" id="view-dev" style="flex-direction:column; background:#0a0c11; overflow-y:auto;">
+    <div style="max-width:1180px; margin:0 auto; padding:32px 28px 48px; width:100%; box-sizing:border-box;">
+      <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">⌘ DEV LINKS</div>
+      <h1 style="font-size:34px; line-height:1.1; margin:0 0 10px; color:var(--text);">External control room</h1>
+      <p style="margin:0 0 26px; color:var(--muted); max-width:720px; line-height:1.6;">Quick exits for model routing, automation, deploys, repos, observability, and docs that support Agent Office work.</p>
+
+      <section class="dev-link-section">
+        <div class="dev-section-heading">
+          <span>Control Room</span>
+          <small>Daily agent operations</small>
+        </div>
+        <div class="dev-link-grid">
+          <a class="dev-link-card" href="https://railway.app/" target="_blank" rel="noopener noreferrer">
+            <strong>Railway Dashboard</strong>
+            <span>Deployments, logs, variables, Postgres, service health, and production restarts.</span>
+          </a>
+          <a class="dev-link-card" href="https://primary-production-11563.up.railway.app" target="_blank" rel="noopener noreferrer">
+            <strong>n8n Live</strong>
+            <span>Hosted workflow automation, webhook routing, and agent orchestration flows.</span>
+          </a>
+          <a class="dev-link-card" href="https://github.com/classical91" target="_blank" rel="noopener noreferrer">
+            <strong>GitHub Profile</strong>
+            <span>All repos, commits, issues, Actions, and project source surfaces.</span>
+          </a>
+          <a class="dev-link-card" href="https://github.com/classical91/agent-office" target="_blank" rel="noopener noreferrer">
+            <strong>Agent Office Repo</strong>
+            <span>Source, deploy files, pull requests, and change history for this app.</span>
+          </a>
+          <a class="dev-link-card" href="https://platform.openai.com/" target="_blank" rel="noopener noreferrer">
+            <strong>OpenAI Platform</strong>
+            <span>API keys, usage, models, billing, and developer dashboard.</span>
+          </a>
+          <a class="dev-link-card" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">
+            <strong>ChatGPT</strong>
+            <span>Open ChatGPT for direct planning, testing, and agent handoff work.</span>
+          </a>
+          <a class="dev-link-card" href="https://openrouter.ai/" target="_blank" rel="noopener noreferrer">
+            <strong>OpenRouter</strong>
+            <span>Model routing, keys, usage, and provider status.</span>
+          </a>
+          <a class="dev-link-card" href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer">
+            <strong>Claude Console</strong>
+            <span>Anthropic API keys, usage, model access, and workbench.</span>
+          </a>
+          <a class="dev-link-card" href="http://localhost:18789/" target="_blank" rel="noopener noreferrer">
+            <strong>OpenClaw Gateway</strong>
+            <span>Local Agent Office gateway for OpenClaw routing and local control.</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="dev-link-section">
+        <div class="dev-section-heading">
+          <span>AI & API Docs</span>
+          <small>References for agent capabilities</small>
+        </div>
+        <div class="dev-link-grid">
+          <a class="dev-link-card" href="https://platform.openai.com/docs" target="_blank" rel="noopener noreferrer">
+            <strong>OpenAI Docs</strong>
+            <span>API, model, tool, and agent platform references.</span>
+          </a>
+          <a class="dev-link-card" href="https://docs.anthropic.com/" target="_blank" rel="noopener noreferrer">
+            <strong>Anthropic Docs</strong>
+            <span>Claude API guides, tool use, and prompt references.</span>
+          </a>
+          <a class="dev-link-card" href="https://ai.google.dev/" target="_blank" rel="noopener noreferrer">
+            <strong>Google AI Studio</strong>
+            <span>Gemini docs, model access, and API examples.</span>
+          </a>
+          <a class="dev-link-card" href="https://docs.openrouter.ai/" target="_blank" rel="noopener noreferrer">
+            <strong>OpenRouter Docs</strong>
+            <span>Provider routing, model catalog, and request formats.</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="dev-link-section">
+        <div class="dev-section-heading">
+          <span>Operations</span>
+          <small>Debugging, monitoring, and data tools</small>
+        </div>
+        <div class="dev-link-grid">
+          <a class="dev-link-card" href="https://docs.railway.com/" target="_blank" rel="noopener noreferrer">
+            <strong>Railway Docs</strong>
+            <span>Deploy config, Postgres, environment variables, and runtime behavior.</span>
+          </a>
+          <a class="dev-link-card" href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">
+            <strong>Supabase</strong>
+            <span>Database dashboard, auth, storage, and edge functions.</span>
+          </a>
+          <a class="dev-link-card" href="https://vercel.com/dashboard" target="_blank" rel="noopener noreferrer">
+            <strong>Vercel</strong>
+            <span>Frontend deploys, previews, domains, and logs.</span>
+          </a>
+          <a class="dev-link-card" href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer">
+            <strong>Google Cloud</strong>
+            <span>Cloud services, credentials, APIs, and project billing.</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="dev-link-section">
+        <div class="dev-section-heading">
+          <span>Local Shortcuts</span>
+          <small>Common localhost surfaces</small>
+        </div>
+        <div class="dev-link-grid">
+          <a class="dev-link-card" href="http://localhost:3000/" target="_blank" rel="noopener noreferrer">
+            <strong>Local App :3000</strong>
+            <span>Default frontend dev server.</span>
+          </a>
+          <a class="dev-link-card" href="http://localhost:5678/" target="_blank" rel="noopener noreferrer">
+            <strong>Local n8n :5678</strong>
+            <span>Local workflow editor when n8n is running.</span>
+          </a>
+          <a class="dev-link-card" href="http://localhost:18789/" target="_blank" rel="noopener noreferrer">
+            <strong>Gateway :18789</strong>
+            <span>Agent Office gateway endpoint from Settings.</span>
+          </a>
+          <a class="dev-link-card" href="http://localhost:8080/" target="_blank" rel="noopener noreferrer">
+            <strong>Local API :8080</strong>
+            <span>Common local backend or proxy port.</span>
+          </a>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ACTIVITY FEED -->
+  <aside class="feed">
+    <div class="feed-header">
+      Activity <span class="badge" id="feedCount">0</span>
+    </div>
+    <div class="feed-list" id="feedList"></div>
   </aside>
 
-  <main class="main-panel">
-    <div class="view active" id="view-dev" style="flex-direction:column; background:#0a0c11; overflow-y:auto;">
-      <div style="max-width:1180px; margin:0 auto; padding:32px 28px 48px; width:100%; box-sizing:border-box;">
-        <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">⌘ DEV LINKS</div>
-        <h1 style="font-size:34px; line-height:1.1; margin:0 0 10px; color:var(--text);">External control room</h1>
-        <p style="margin:0 0 26px; color:var(--muted); max-width:720px; line-height:1.6;">Quick exits for model routing, automation, deploys, repos, observability, and docs that support Agent Office work.</p>
-
-        <section class="dev-link-section">
-          <div class="dev-section-heading">
-            <span>Control Room</span>
-            <small>Daily agent operations</small>
-          </div>
-          <div class="dev-link-grid">
-            <a class="dev-link-card" href="https://railway.app/" target="_blank" rel="noopener noreferrer">
-              <strong>Railway Dashboard</strong>
-              <span>Deployments, logs, variables, Postgres, service health, and production restarts.</span>
-            </a>
-            <a class="dev-link-card" href="https://primary-production-11563.up.railway.app" target="_blank" rel="noopener noreferrer">
-              <strong>n8n Live</strong>
-              <span>Hosted workflow automation, webhook routing, and agent orchestration flows.</span>
-            </a>
-            <a class="dev-link-card" href="https://github.com/classical91" target="_blank" rel="noopener noreferrer">
-              <strong>GitHub Profile</strong>
-              <span>All repos, commits, issues, Actions, and project source surfaces.</span>
-            </a>
-            <a class="dev-link-card" href="https://github.com/classical91/agent-office" target="_blank" rel="noopener noreferrer">
-              <strong>Agent Office Repo</strong>
-              <span>Source, deploy files, pull requests, and change history for this app.</span>
-            </a>
-            <a class="dev-link-card" href="https://platform.openai.com/" target="_blank" rel="noopener noreferrer">
-              <strong>OpenAI Platform</strong>
-              <span>API keys, usage, models, billing, and developer dashboard.</span>
-            </a>
-            <a class="dev-link-card" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">
-              <strong>ChatGPT</strong>
-              <span>Open ChatGPT for direct planning, testing, and agent handoff work.</span>
-            </a>
-            <a class="dev-link-card" href="https://openrouter.ai/" target="_blank" rel="noopener noreferrer">
-              <strong>OpenRouter</strong>
-              <span>Model routing, keys, usage, and provider status.</span>
-            </a>
-            <a class="dev-link-card" href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer">
-              <strong>Claude Console</strong>
-              <span>Anthropic API keys, usage, model access, and workbench.</span>
-            </a>
-            <a class="dev-link-card" href="http://localhost:18789/" target="_blank" rel="noopener noreferrer">
-              <strong>OpenClaw Gateway</strong>
-              <span>Local Agent Office gateway for OpenClaw routing and local control.</span>
-            </a>
-          </div>
-        </section>
-
-        <section class="dev-link-section">
-          <div class="dev-section-heading">
-            <span>AI & API Docs</span>
-            <small>References for agent capabilities</small>
-          </div>
-          <div class="dev-link-grid">
-            <a class="dev-link-card" href="https://platform.openai.com/docs" target="_blank" rel="noopener noreferrer">
-              <strong>OpenAI Docs</strong>
-              <span>API, model, tool, and agent platform references.</span>
-            </a>
-            <a class="dev-link-card" href="https://docs.anthropic.com/" target="_blank" rel="noopener noreferrer">
-              <strong>Anthropic Docs</strong>
-              <span>Claude API guides, tool use, and prompt references.</span>
-            </a>
-            <a class="dev-link-card" href="https://ai.google.dev/" target="_blank" rel="noopener noreferrer">
-              <strong>Google AI Studio</strong>
-              <span>Gemini docs, model access, and API examples.</span>
-            </a>
-            <a class="dev-link-card" href="https://docs.openrouter.ai/" target="_blank" rel="noopener noreferrer">
-              <strong>OpenRouter Docs</strong>
-              <span>Provider routing, model catalog, and request formats.</span>
-            </a>
-          </div>
-        </section>
-
-        <section class="dev-link-section">
-          <div class="dev-section-heading">
-            <span>Operations</span>
-            <small>Debugging, monitoring, and data tools</small>
-          </div>
-          <div class="dev-link-grid">
-            <a class="dev-link-card" href="https://docs.railway.com/" target="_blank" rel="noopener noreferrer">
-              <strong>Railway Docs</strong>
-              <span>Deploy config, Postgres, environment variables, and runtime behavior.</span>
-            </a>
-            <a class="dev-link-card" href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">
-              <strong>Supabase</strong>
-              <span>Database dashboard, auth, storage, and edge functions.</span>
-            </a>
-            <a class="dev-link-card" href="https://vercel.com/dashboard" target="_blank" rel="noopener noreferrer">
-              <strong>Vercel</strong>
-              <span>Frontend deploys, previews, domains, and logs.</span>
-            </a>
-            <a class="dev-link-card" href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer">
-              <strong>Google Cloud</strong>
-              <span>Cloud services, credentials, APIs, and project billing.</span>
-            </a>
-          </div>
-        </section>
-
-        <section class="dev-link-section">
-          <div class="dev-section-heading">
-            <span>Local Shortcuts</span>
-            <small>Common localhost surfaces</small>
-          </div>
-          <div class="dev-link-grid">
-            <a class="dev-link-card" href="http://localhost:3000/" target="_blank" rel="noopener noreferrer">
-              <strong>Local App :3000</strong>
-              <span>Default frontend dev server.</span>
-            </a>
-            <a class="dev-link-card" href="http://localhost:5678/" target="_blank" rel="noopener noreferrer">
-              <strong>Local n8n :5678</strong>
-              <span>Local workflow editor when n8n is running.</span>
-            </a>
-            <a class="dev-link-card" href="http://localhost:18789/" target="_blank" rel="noopener noreferrer">
-              <strong>Gateway :18789</strong>
-              <span>Agent Office gateway endpoint from Settings.</span>
-            </a>
-            <a class="dev-link-card" href="http://localhost:8080/" target="_blank" rel="noopener noreferrer">
-              <strong>Local API :8080</strong>
-              <span>Common local backend or proxy port.</span>
-            </a>
-          </div>
-        </section>
-      </div>
-    </div>
-  </main>
 </div>
+
+<!-- BOTTOM STATUS BAR -->
+<div class="statusbar" id="statusbar"></div>
+
 <script src="app-shared.js"></script>
+<script>
+switchView('dev', document.querySelector('.nav-item.active'));
+</script>
+
 </body>
 </html>
