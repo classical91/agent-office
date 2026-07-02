@@ -1728,7 +1728,7 @@
         <div class="nav-item" onclick="switchView('org', this)"><span class="icon">🗂️</span> Org Chart</div>
         <div class="nav-item" onclick="switchView('memory', this)"><span class="icon">🧠</span> Memory</div>
         <div class="nav-item" onclick="switchView('calendar', this)"><span class="icon">📅</span> Calendar</div>
-        <div class="nav-item" onclick="switchView('resets', this)"><span class="icon">&#9201;</span> Resets</div>
+        <div class="nav-item" onclick="switchView('resets', this)"><span class="icon">&#9201;</span> Countdown</div>
         <div class="nav-item" onclick="switchView('dropbox', this)"><span class="icon">📥</span> Dropbox</div>
         <div class="nav-item" onclick="window.open('/prompt-builder.html', '_blank')"><span class="icon">📝</span> Prompt Builder</div>
       </div>
@@ -1738,6 +1738,8 @@
     <div class="nav-section">
       <div class="nav-label nav-label-dd" onclick="toggleNav(this)">🌐 Apps &amp; Sites <span class="nav-chevron">▾</span></div>
       <div class="nav-items-wrap">
+
+        <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#0ea5e9;"></div><span class="nav-proj-name">AI Ops / Platforms</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://railway.app/" target="_blank" rel="noopener noreferrer"><div class="link-dot" style="background:#7c3aed;"></div> Railway Dashboard <span class="link-ext">↗</span></a><a class="nav-link" href="https://primary-production-11563.up.railway.app" target="_blank" rel="noopener noreferrer"><div class="link-dot" style="background:#22c55e;"></div> n8n Live <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91" target="_blank" rel="noopener noreferrer"><div class="link-dot" style="background:#64748b;"></div> GitHub Profile <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/agent-office" target="_blank" rel="noopener noreferrer"><div class="link-dot" style="background:#64748b;"></div> Agent Office Repo <span class="link-ext">↗</span></a><a class="nav-link" href="https://platform.openai.com/" target="_blank" rel="noopener noreferrer"><div class="link-dot" style="background:#10b981;"></div> OpenAI Platform <span class="link-ext">↗</span></a><a class="nav-link" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer"><div class="link-dot" style="background:#10b981;"></div> ChatGPT <span class="link-ext">↗</span></a><a class="nav-link" href="https://openrouter.ai/" target="_blank" rel="noopener noreferrer"><div class="link-dot" style="background:#a855f7;"></div> OpenRouter <span class="link-ext">↗</span></a><a class="nav-link" href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer"><div class="link-dot" style="background:#f97316;"></div> Claude Console <span class="link-ext">↗</span></a><a class="nav-link" href="http://localhost:18789" target="_blank" rel="noopener noreferrer"><div class="link-dot" style="background:#6366f1;"></div> OpenClaw Gateway <span class="link-ext">↗</span></a></div></div>
 
         <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#22c55e;"></div><span class="nav-proj-name">📈 TraderClaw</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://traderclaw-production.up.railway.app" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/dc5c9acb-2c73-4a1c-b4c9-82a81e2efe9f" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/trading-strategy" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
         <div class="nav-proj-group"><div class="nav-proj-header" onclick="toggleProjGroup(this)"><div class="nav-proj-dot" style="background:#eab308;"></div><span class="nav-proj-name">🧠 Decision Engine</span><span class="nav-proj-chevron">›</span></div><div class="nav-proj-links"><a class="nav-link" href="https://trading-strategy-production-1b41.up.railway.app/" target="_blank"><div class="link-dot" style="background:#22c55e;"></div> Live App <span class="link-ext">↗</span></a><a class="nav-link" href="https://railway.app/project/b1ffc05e-c74a-4b24-94a2-ef6239bc5bf5" target="_blank"><div class="link-dot" style="background:#7c3aed;"></div> Railway <span class="link-ext">↗</span></a><a class="nav-link" href="https://github.com/classical91/decide-engine" target="_blank"><div class="link-dot" style="background:#64748b;"></div> GitHub <span class="link-ext">↗</span></a></div></div>
@@ -2770,15 +2772,15 @@
   <div class="view" id="view-resets" style="flex-direction:column; background:#0a0c11; overflow-y:auto;">
     <section class="resets-view">
       <div class="resets-hero">
-        <div class="resets-kicker">Reset Signals</div>
-        <h2>API Reset Countdown</h2>
+        <div class="resets-kicker">Countdown Signals</div>
+        <h2>API Countdown</h2>
         <div class="resets-sub">
-          Track separate usage reset windows and attach a different Pushcut webhook to each card.
+          Track separate usage countdown windows and attach a different Pushcut webhook to each card.
           Webhook URLs are saved only in this browser's localStorage.
         </div>
 
         <div class="resets-controls">
-          <input id="reset-new-title" class="resets-input" placeholder="New countdown name, e.g. Gemini API Reset" />
+          <input id="reset-new-title" class="resets-input" placeholder="New countdown name, e.g. Gemini API Countdown" />
           <div>
             <button type="button" class="resets-btn" onclick="AOResets.openNewPicker()">Pick date and time</button>
             <div id="reset-new-time-label" class="resets-picked-label">No time selected</div>
@@ -4036,6 +4038,7 @@ window.AOResets = (() => {
   let newResetAt = '';
   let pickerDate = new Date();
   let selectedPickerDate = new Date();
+  let editingId = null;
   let cards = [];
 
   function tomorrowAt(hour = 9) {
@@ -4068,19 +4071,19 @@ window.AOResets = (() => {
     return [
       {
         id: randomId(),
-        title: 'Claude Code Usage Reset',
+        title: 'Claude Code Usage Countdown',
         resetAt: nextWeekAt(9),
         webhookUrl: '',
         fired: false,
-        message: 'Example: resets next week.'
+        message: 'Example: counts down to next week.'
       },
       {
         id: randomId(),
-        title: 'Codex Usage Reset',
+        title: 'Codex Usage Countdown',
         resetAt: tomorrowAt(9),
         webhookUrl: '',
         fired: false,
-        message: 'Example: resets tomorrow.'
+        message: 'Example: counts down to tomorrow.'
       }
     ];
   }
@@ -4130,6 +4133,8 @@ window.AOResets = (() => {
     cards.forEach(card => {
       const r = remaining(card.resetAt);
       const reached = r.total <= 0;
+      const editing = editingId === card.id;
+      const webhookLabel = card.webhookUrl ? 'Webhook saved locally' : 'No webhook set';
       const el = document.createElement('section');
       el.className = 'reset-card';
       el.innerHTML = `
@@ -4138,7 +4143,7 @@ window.AOResets = (() => {
             <div class="reset-card-title">${escapeHtml(card.title)}</div>
             <div class="reset-card-time">Target: ${new Date(card.resetAt).toLocaleString()}</div>
           </div>
-          <div class="reset-chip">${reached ? 'Reset window reached' : 'Counting down'}</div>
+          <div class="reset-chip">${reached ? 'Countdown reached' : 'Counting down'}</div>
         </div>
         <div class="reset-timer">
           <div class="reset-unit"><div class="reset-num">${r.days}</div><div class="reset-label">Days</div></div>
@@ -4146,13 +4151,19 @@ window.AOResets = (() => {
           <div class="reset-unit"><div class="reset-num">${r.minutes}</div><div class="reset-label">Mins</div></div>
           <div class="reset-unit"><div class="reset-num">${r.seconds}</div><div class="reset-label">Secs</div></div>
         </div>
-        <input class="resets-input" value="${escapeHtml(card.title)}" onchange="AOResets.updateCard('${card.id}', 'title', this.value)" />
-        <input class="resets-input" type="datetime-local" value="${formatLocalInput(card.resetAt)}" onchange="AOResets.updateCard('${card.id}', 'resetAt', AOResets.fromLocalInput(this.value))" />
-        <input class="resets-input" placeholder="Paste this card's Pushcut webhook URL" value="${escapeHtml(card.webhookUrl || '')}" onchange="AOResets.updateCard('${card.id}', 'webhookUrl', this.value)" />
+        <div class="reset-card-time">${escapeHtml(webhookLabel)}</div>
+        ${editing ? `
+          <input class="resets-input" value="${escapeHtml(card.title)}" onchange="AOResets.updateCard('${card.id}', 'title', this.value)" />
+          <input class="resets-input" type="datetime-local" value="${formatLocalInput(card.resetAt)}" onchange="AOResets.updateCard('${card.id}', 'resetAt', AOResets.fromLocalInput(this.value))" />
+          <input class="resets-input" placeholder="Paste this card's Pushcut webhook URL" value="${escapeHtml(card.webhookUrl || '')}" onchange="AOResets.updateCard('${card.id}', 'webhookUrl', this.value)" />
+        ` : ''}
         <div class="reset-row">
-          <button type="button" class="resets-btn" onclick="AOResets.testWebhook('${card.id}')">Test Pushcut</button>
-          <button type="button" class="resets-btn" onclick="AOResets.clearWebhook('${card.id}')">Clear Webhook</button>
-          <button type="button" class="resets-btn danger" onclick="AOResets.deleteCard('${card.id}')">Delete</button>
+          <button type="button" class="resets-btn" onclick="AOResets.${editing ? 'finishEditing' : 'editCard'}('${card.id}')">${editing ? 'Done' : 'Edit'}</button>
+          ${editing ? `
+            <button type="button" class="resets-btn" onclick="AOResets.testWebhook('${card.id}')">Test Pushcut</button>
+            <button type="button" class="resets-btn" onclick="AOResets.clearWebhook('${card.id}')">Clear Webhook</button>
+            <button type="button" class="resets-btn danger" onclick="AOResets.deleteCard('${card.id}')">Delete</button>
+          ` : ''}
         </div>
         <div class="reset-message">${escapeHtml(card.message || '')}</div>
       `;
@@ -4296,7 +4307,7 @@ window.AOResets = (() => {
     card[key] = value;
     if (key === 'resetAt') {
       card.fired = false;
-      card.message = 'Reset time updated. Webhook firing re-armed.';
+      card.message = 'Countdown time updated. Webhook firing re-armed.';
     } else if (key === 'webhookUrl') {
       card.message = value ? 'Webhook URL saved locally.' : 'Webhook URL removed.';
     } else {
@@ -4306,8 +4317,19 @@ window.AOResets = (() => {
     render();
   }
 
+  function editCard(id) {
+    editingId = id;
+    render();
+  }
+
+  function finishEditing() {
+    editingId = null;
+    render();
+  }
+
   function deleteCard(id) {
     cards = cards.filter(c => c.id !== id);
+    if (editingId === id) editingId = null;
     saveCards();
     render();
   }
@@ -4335,7 +4357,7 @@ window.AOResets = (() => {
       return;
     }
     try {
-      card.message = auto ? 'Reset reached - firing webhook...' : 'Testing webhook...';
+      card.message = auto ? 'Countdown reached - firing webhook...' : 'Testing webhook...';
       saveCards();
       await fetch(card.webhookUrl, {
         method: 'POST',
@@ -4363,6 +4385,8 @@ window.AOResets = (() => {
     applyPicker,
     addCard,
     updateCard,
+    editCard,
+    finishEditing,
     deleteCard,
     clearWebhook,
     testWebhook,
@@ -5175,6 +5199,7 @@ function handleDropboxRequestError(error, fallbackMessage) {
 const dropboxState = {
   drops: [],
   selectedId: null,
+  editingId: null,
   view: 'table',
   filters: {
     search: '',
@@ -5393,6 +5418,7 @@ function openNoteView(drop) {
       <div class="drop-detail-content">${escHTML(drop.content || '')}</div>
       ${tagsHtml}${linksHtml}${backlinksHtml}
       <div class="detail-actions">
+        <button id="edit-drop-btn" class="btn btn-primary">Edit</button>
         <button id="toggle-done-btn" class="btn btn-secondary">${drop.done ? 'Restore' : 'Archive'}</button>
         <button id="delete-drop-btn" class="btn btn-danger">Delete</button>
       </div>
@@ -5407,6 +5433,8 @@ function openNoteView(drop) {
     listEl.style.display = '';
     renderDropbox();
   });
+
+  section.querySelector('#edit-drop-btn').addEventListener('click', () => editDrop(drop.id));
 
   section.querySelector('#toggle-done-btn').addEventListener('click', async () => {
     try {
@@ -5463,11 +5491,14 @@ async function saveDrop() {
   };
 
   try {
-    await requestJson(DROPS_API, {
-      method: 'POST',
+    const editingId = dropboxState.editingId;
+    await requestJson(editingId ? `${DROPS_API}/${editingId}` : DROPS_API, {
+      method: editingId ? 'PATCH' : 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+    if (editingId) dropboxState.selectedId = editingId;
+    dropboxState.editingId = null;
     clearDropForm();
     const drops = await loadDrops();
     if (drops !== null) { dropboxState.drops = drops; }
@@ -5475,6 +5506,34 @@ async function saveDrop() {
   } catch (error) {
     handleDropboxRequestError(error, 'Failed to save drop.');
   }
+}
+
+function editDrop(id) {
+  const drop = dropboxState.drops.find(item => item.id === id);
+  if (!drop) return;
+  dropboxState.editingId = id;
+  dropboxState.selectedId = id;
+  const fields = {
+    'drop-title': drop.title || '',
+    'drop-subject': drop.subject || '',
+    'drop-project': drop.project || '',
+    'drop-tags': (drop.tags || []).join(', '),
+    'drop-content': drop.content || '',
+  };
+  Object.entries(fields).forEach(([fieldId, value]) => {
+    const el = document.getElementById(fieldId);
+    if (el) el.value = value;
+  });
+  const priority = document.getElementById('drop-priority');
+  if (priority) priority.value = drop.priority || 'normal';
+  const status = document.getElementById('drop-status');
+  if (status) status.value = drop.status || 'idea';
+  const saveBtn = document.getElementById('save-drop-btn');
+  if (saveBtn) saveBtn.textContent = 'Update Drop';
+  const clearBtn = document.getElementById('clear-drop-btn');
+  if (clearBtn) clearBtn.textContent = 'Cancel Edit';
+  const title = document.getElementById('drop-title');
+  if (title) title.focus();
 }
 
 function clearDropForm() {
@@ -5488,6 +5547,11 @@ function clearDropForm() {
   if (p) p.value = 'normal';
   const s = document.getElementById('drop-status');
   if (s) s.value = 'idea';
+  dropboxState.editingId = null;
+  const saveBtn = document.getElementById('save-drop-btn');
+  if (saveBtn) saveBtn.textContent = 'Save Drop';
+  const clearBtn = document.getElementById('clear-drop-btn');
+  if (clearBtn) clearBtn.textContent = 'Clear';
 }
 
 // ─── Dropbox event listeners ──────────────────────────────────────────────────
