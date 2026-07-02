@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Dev Links - Agent Office</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="shared.css"/>
+</head>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand-row">
+      <div class="brand-mark">AO</div>
+      <div>
+        <div class="brand-name">Agent Office</div>
+        <div class="brand-subtitle">Ops Console</div>
+      </div>
+    </div>
+
+    <nav class="nav-list">
+      <a class="nav-item" href="/index.html"><span class="icon">⌂</span> Dashboard</a>
+      <a class="nav-item" href="/mission-board.html"><span class="icon">◈</span> Mission Board</a>
+      <a class="nav-item" href="/project-rooms.html"><span class="icon">▦</span> Project Rooms</a>
+      <a class="nav-item" href="/agent-registry.html"><span class="icon">◎</span> Agent Registry</a>
+      <a class="nav-item" href="/org-chart.html"><span class="icon">☷</span> Org Chart</a>
+      <a class="nav-item" href="/calendar.html"><span class="icon">◷</span> Calendar</a>
+      <a class="nav-item" href="/memory.html"><span class="icon">◇</span> Memory</a>
+      <a class="nav-item" href="/resets.html"><span class="icon">↻</span> Resets</a>
+      <a class="nav-item" href="/ai-landscape.html"><span class="icon">✦</span> AI Landscape</a>
+      <a class="nav-item active" href="/dev.html"><span class="icon">⌘</span> Dev Links</a>
+      <a class="nav-item" href="/settings.html"><span class="icon">⚙️</span> Settings</a>
+    </nav>
+  </aside>
+
+  <main class="main-panel">
+    <div class="view" id="view-dev" style="flex-direction:column; background:#0a0c11; overflow-y:auto;">
+      <div style="max-width:1180px; margin:0 auto; padding:32px 28px 48px; width:100%; box-sizing:border-box;">
+        <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">⌘ DEV LINKS</div>
+        <h1 style="font-size:34px; line-height:1.1; margin:0 0 10px; color:var(--text);">External control room</h1>
+        <p style="margin:0 0 26px; color:var(--muted); max-width:720px; line-height:1.6;">Quick exits for model routing, automation, deploys, repos, observability, and docs that support Agent Office work.</p>
+
+        <section class="dev-link-section">
+          <div class="dev-section-heading">
+            <span>Core Stack</span>
+            <small>Daily build and ship surfaces</small>
+          </div>
+          <div class="dev-link-grid">
+            <a class="dev-link-card" href="https://openrouter.ai/" target="_blank" rel="noopener noreferrer">
+              <strong>OpenRouter</strong>
+              <span>Model routing, keys, usage, and provider status.</span>
+            </a>
+            <a class="dev-link-card" href="https://n8n.io/" target="_blank" rel="noopener noreferrer">
+              <strong>n8n</strong>
+              <span>Automation flows, webhooks, and workflow orchestration.</span>
+            </a>
+            <a class="dev-link-card" href="https://railway.com/" target="_blank" rel="noopener noreferrer">
+              <strong>Railway</strong>
+              <span>Deployments, logs, variables, and service health.</span>
+            </a>
+            <a class="dev-link-card" href="https://github.com/classical91/agent-office" target="_blank" rel="noopener noreferrer">
+              <strong>GitHub Repo</strong>
+              <span>Source, commits, pull requests, and issues.</span>
+            </a>
+          </div>
+        </section>
+
+        <section class="dev-link-section">
+          <div class="dev-section-heading">
+            <span>AI & API Docs</span>
+            <small>References for agent capabilities</small>
+          </div>
+          <div class="dev-link-grid">
+            <a class="dev-link-card" href="https://platform.openai.com/docs" target="_blank" rel="noopener noreferrer">
+              <strong>OpenAI Docs</strong>
+              <span>API, model, tool, and agent platform references.</span>
+            </a>
+            <a class="dev-link-card" href="https://docs.anthropic.com/" target="_blank" rel="noopener noreferrer">
+              <strong>Anthropic Docs</strong>
+              <span>Claude API guides, tool use, and prompt references.</span>
+            </a>
+            <a class="dev-link-card" href="https://ai.google.dev/" target="_blank" rel="noopener noreferrer">
+              <strong>Google AI Studio</strong>
+              <span>Gemini docs, model access, and API examples.</span>
+            </a>
+            <a class="dev-link-card" href="https://docs.openrouter.ai/" target="_blank" rel="noopener noreferrer">
+              <strong>OpenRouter Docs</strong>
+              <span>Provider routing, model catalog, and request formats.</span>
+            </a>
+          </div>
+        </section>
+
+        <section class="dev-link-section">
+          <div class="dev-section-heading">
+            <span>Operations</span>
+            <small>Debugging, monitoring, and data tools</small>
+          </div>
+          <div class="dev-link-grid">
+            <a class="dev-link-card" href="https://docs.railway.com/" target="_blank" rel="noopener noreferrer">
+              <strong>Railway Docs</strong>
+              <span>Deploy config, Postgres, environment variables, and runtime behavior.</span>
+            </a>
+            <a class="dev-link-card" href="https://supabase.com/dashboard" target="_blank" rel="noopener noreferrer">
+              <strong>Supabase</strong>
+              <span>Database dashboard, auth, storage, and edge functions.</span>
+            </a>
+            <a class="dev-link-card" href="https://vercel.com/dashboard" target="_blank" rel="noopener noreferrer">
+              <strong>Vercel</strong>
+              <span>Frontend deploys, previews, domains, and logs.</span>
+            </a>
+            <a class="dev-link-card" href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer">
+              <strong>Google Cloud</strong>
+              <span>Cloud services, credentials, APIs, and project billing.</span>
+            </a>
+          </div>
+        </section>
+
+        <section class="dev-link-section">
+          <div class="dev-section-heading">
+            <span>Local Shortcuts</span>
+            <small>Common localhost surfaces</small>
+          </div>
+          <div class="dev-link-grid">
+            <a class="dev-link-card" href="http://localhost:3000/" target="_blank" rel="noopener noreferrer">
+              <strong>Local App :3000</strong>
+              <span>Default frontend dev server.</span>
+            </a>
+            <a class="dev-link-card" href="http://localhost:5678/" target="_blank" rel="noopener noreferrer">
+              <strong>Local n8n :5678</strong>
+              <span>Local workflow editor when n8n is running.</span>
+            </a>
+            <a class="dev-link-card" href="http://localhost:18789/" target="_blank" rel="noopener noreferrer">
+              <strong>Gateway :18789</strong>
+              <span>Agent Office gateway endpoint from Settings.</span>
+            </a>
+            <a class="dev-link-card" href="http://localhost:8080/" target="_blank" rel="noopener noreferrer">
+              <strong>Local API :8080</strong>
+              <span>Common local backend or proxy port.</span>
+            </a>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="app-shared.js"></script>
+</body>
+</html>
