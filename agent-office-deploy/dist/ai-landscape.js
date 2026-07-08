@@ -6,6 +6,7 @@
     {
       name: "ChatGPT",
       company: "OpenAI",
+      website: "https://chatgpt.com/",
       group: "Chatbots",
       kind: "OpenAI model family",
       bestFor: "Reasoning, coding, multimodal work, agents, writing, and daily productivity",
@@ -26,6 +27,7 @@
     {
       name: "Claude",
       company: "Anthropic",
+      website: "https://claude.ai/",
       group: "Chatbots",
       kind: "Anthropic model family",
       bestFor: "Long-form writing, careful analysis, codebases, agents, and thoughtful reasoning",
@@ -44,6 +46,7 @@
     {
       name: "Gemini",
       company: "Google",
+      website: "https://gemini.google.com/",
       group: "Chatbots",
       kind: "Google model family",
       bestFor: "Google apps, coding, agents, multimodal work, and search-linked productivity",
@@ -62,6 +65,7 @@
     {
       name: "Grok",
       company: "xAI",
+      website: "https://grok.com/",
       group: "Chatbots",
       kind: "xAI model family",
       bestFor: "Real-time web/X search, coding, reasoning, voice, images, and video generation",
@@ -79,6 +83,7 @@
     {
       name: "Microsoft 365 Copilot",
       company: "Microsoft",
+      website: "https://www.microsoft.com/en-us/microsoft-365/copilot",
       group: "Chatbots",
       kind: "Enterprise assistant",
       bestFor: "Work documents, enterprise knowledge, meetings, secure workflows, and internal agents",
@@ -95,6 +100,7 @@
     {
       name: "Meta AI / Llama",
       company: "Meta",
+      website: "https://www.llama.com/",
       group: "Chatbots",
       kind: "Open model family",
       bestFor: "Consumer assistants, open-model workflows, social products, and deployable Llama stacks",
@@ -112,6 +118,7 @@
     {
       name: "DeepSeek",
       company: "DeepSeek",
+      website: "https://www.deepseek.com/",
       group: "Chatbots",
       kind: "Low-cost open model",
       bestFor: "Low-cost reasoning, coding, technical workflows, and budget-conscious AI apps",
@@ -128,6 +135,7 @@
     {
       name: "Mistral",
       company: "Mistral AI",
+      website: "https://mistral.ai/",
       group: "Chatbots",
       kind: "Open / enterprise model",
       bestFor: "Open-weight enterprise models, coding agents, private deployments, and efficient multimodal work",
@@ -145,6 +153,7 @@
     {
       name: "Qwen",
       company: "Alibaba / Qwen",
+      website: "https://qwen.ai/",
       group: "Chatbots",
       kind: "Open / agentic model",
       bestFor: "Agentic workflows, multilingual tasks, coding, visual agents, and low-cost deployment",
@@ -162,6 +171,7 @@
     {
       name: "Kimi",
       company: "Moonshot AI",
+      website: "https://www.kimi.com/",
       group: "Chatbots",
       kind: "Long-context model",
       bestFor: "Long-context work, coding agents, document analysis, websites, and agent swarms",
@@ -179,6 +189,7 @@
     {
       name: "Cohere",
       company: "Cohere",
+      website: "https://cohere.com/",
       group: "Chatbots",
       kind: "Enterprise / retrieval",
       bestFor: "Enterprise AI, private deployments, retrieval, search, reranking, and secure workflows",
@@ -194,10 +205,239 @@
       ]
     },
 
+    // --------------------------------------------------------------- AI Video
+    {
+      name: "Runway",
+      company: "Runway",
+      group: "AI Video",
+      kind: "Creative video studio",
+      website: "https://runwayml.com/product",
+      bestFor: "Production-style text-to-video, image-to-video, editing, motion control, and campaign assets",
+      strengths: ["Cinematic", "Editing", "Workflow", "Multimodel"],
+      api: "Public API / web app",
+      apiNote: "Use the web studio for creative work and Runway API for product integrations where available.",
+      limits: "High-quality generations are credit-heavy; best output still needs human direction and iteration.",
+      generalUseCases: ["Cinematic prompt-to-video clips", "Image-to-video and product motion tests", "Ad concepts, trailers, and social clips", "Video editing, inpainting, and generative extensions"],
+      submodels: [
+        model("Runway Gen-4.5", "Flagship video", "Runway's high-end generation tier for realistic video, stronger prompt following, and production-grade motion.", "Best for polished cinematic shots, campaign assets, and high-value creative work", "High", "Heavy"),
+        model("Runway studio", "Workflow", "A creative workspace that brings video, image, audio, editing, and model access into one production surface.", "Best for iterative creative direction and production workflows", "Subscription / tiered", "Moderate to heavy")
+      ]
+    },
+    {
+      name: "Sora",
+      company: "OpenAI",
+      group: "AI Video",
+      kind: "Text / image to video",
+      website: "https://sora.com/",
+      bestFor: "Immersive short video generation from text and images with strong scene detail",
+      strengths: ["Realism", "Prompting", "Audio", "Scenes"],
+      api: "Public API",
+      apiNote: "OpenAI provides Sora video generation through the API and a consumer-facing Sora product surface.",
+      limits: "Access, geography, safety rules, clip length, and cost can change quickly.",
+      generalUseCases: ["Text-to-video concepts and visual ideation", "Image-to-video animation", "Short social and narrative clips", "Product visuals and mood exploration"],
+      submodels: [
+        model("Sora 2", "Video + audio", "OpenAI video model for detailed dynamic clips from natural language or images, with audio-oriented generation support.", "Best for rich short-form visual concepts and prompt-driven scenes", "High", "Heavy")
+      ]
+    },
+    {
+      name: "Google Flow / Veo",
+      company: "Google",
+      group: "AI Video",
+      kind: "AI filmmaking tools",
+      website: "https://labs.google/fx/tools/flow",
+      bestFor: "Cinematic video generation through Google's Flow studio and Veo models",
+      strengths: ["Veo", "Cinematic", "Google stack", "API"],
+      api: "Public API",
+      apiNote: "Veo is available through Google AI Studio / Gemini API for developer workflows and Flow for creative work.",
+      limits: "Availability, resolution, quota, and model versions vary by product surface and account tier.",
+      generalUseCases: ["Cinematic clips from prompts", "Video experiments in Google Flow", "Developer video generation via Gemini API", "Reference-driven concept work"],
+      submodels: [
+        model("Veo 3.1", "Google video model", "Google's video generation model for cinematic clips, prompt following, and native audio-oriented video workflows.", "Best for Google-stack creative work and API-backed video generation", "High", "Heavy"),
+        model("Google Flow", "Filmmaking studio", "Creative studio built around Google's generative video, image, and custom creative tools.", "Best for ideating, refining, and assembling AI filmmaking concepts", "Subscription / tiered", "Moderate to heavy")
+      ]
+    },
+    {
+      name: "Leonardo AI",
+      company: "Leonardo.Ai",
+      group: "AI Video",
+      kind: "Image and motion studio",
+      website: "https://app.leonardo.ai/",
+      bestFor: "Image generation, visual style development, and image-to-motion creative assets",
+      strengths: ["Images", "Motion", "Style", "Assets"],
+      api: "Public API / web app",
+      apiNote: "Best used as a visual asset pipeline; API availability depends on plan and product surface.",
+      limits: "Video depth is strongest when paired with high-quality generated or uploaded stills.",
+      generalUseCases: ["Concept art and character frames", "Image-to-video experiments", "Thumbnail and campaign asset generation", "Style exploration before video generation"],
+      submodels: [
+        model("Leonardo motion tools", "Image to motion", "Creative tools for moving from static AI imagery into short animated or motion assets.", "Best for turning still concepts into social-ready motion tests", "Medium", "Moderate")
+      ]
+    },
+    {
+      name: "Midjourney",
+      company: "Midjourney",
+      group: "AI Video",
+      kind: "Image-first creative lab",
+      website: "https://www.midjourney.com/home",
+      bestFor: "High-quality visual direction, style frames, key art, and concept imagery for video pipelines",
+      strengths: ["Image quality", "Style", "Keyframes", "Concept"],
+      api: "No official public API",
+      apiNote: "Best treated as a premium image/keyframe generator; use exports as inputs for motion tools.",
+      limits: "Not a full production video editor; official API access is limited or unavailable.",
+      generalUseCases: ["Keyframe generation for video prompts", "Mood boards and styleframes", "Characters, products, and environment concepts", "Reference frames for Runway, Luma, Kling, or Pika"],
+      submodels: [
+        model("Midjourney image models", "Styleframes", "High-end image generation model family for art direction, visual exploration, and keyframe creation.", "Best for defining the visual look before animating in a video tool", "Medium", "Moderate")
+      ]
+    },
+    {
+      name: "Luma Dream Machine",
+      company: "Luma AI",
+      group: "AI Video",
+      kind: "Video and creative agents",
+      website: "https://dream-machine.lumalabs.ai/",
+      bestFor: "Image-to-video, text-to-video, brand-consistent creative work, and fast visual iteration",
+      strengths: ["Motion", "Image-to-video", "Agents", "Brand"],
+      api: "Public API / web app",
+      apiNote: "Luma offers creative app workflows and API access for media generation products.",
+      limits: "Short-form generation still needs iteration for faces, physics, and continuity.",
+      generalUseCases: ["Animating product and concept stills", "Short cinematic prompt tests", "Brand asset exploration", "Rapid creative variations"],
+      submodels: [
+        model("Dream Machine / Ray", "Video model", "Luma's creative video generation surface for turning prompts and images into short video clips.", "Best for fast motion tests and visual ideation", "Medium", "Moderate to heavy")
+      ]
+    },
+    {
+      name: "Pika",
+      company: "Pika",
+      group: "AI Video",
+      kind: "Idea-to-video platform",
+      website: "https://pika.art/",
+      bestFor: "Fast social video, effects, image animation, and playful transformations",
+      strengths: ["Fast", "Effects", "Social", "Animation"],
+      api: "Web app",
+      apiNote: "Primarily a creator-facing web product for quick generation and trend-driven effects.",
+      limits: "Great for speed and effect-driven work; less suited to long-form controlled production.",
+      generalUseCases: ["Short social clips", "Image animation", "Creative effects and transformations", "Trend testing and rapid variants"],
+      submodels: [
+        model("Pika video tools", "Social motion", "Idea-to-video and image animation tools built around fast creative effects and social-ready motion.", "Best for quick concept clips and short-form content experiments", "Medium", "Moderate")
+      ]
+    },
+    {
+      name: "Kling AI",
+      company: "Kuaishou / Kling",
+      group: "AI Video",
+      kind: "Video and image generator",
+      website: "https://kling.ai/",
+      bestFor: "High-realism video, image-to-video, motion control, character consistency, and longer creative sequences",
+      strengths: ["Realism", "4K", "Motion control", "Characters"],
+      api: "Public API / web app",
+      apiNote: "Kling provides a creative studio and API platform for video, image, sound, and effects workflows.",
+      limits: "Regional access and billing can vary; commercial workflows need rights review.",
+      generalUseCases: ["Photoreal text-to-video and image-to-video", "Character and product motion", "Storyboarded visual sequences", "Effects and sound-enhanced clips"],
+      submodels: [
+        model("Kling Video 3.0", "Native 4K", "Kling's video model line focused on cinematic video, native 4K, motion control, and multimodal creation.", "Best for photoreal motion, controlled shots, and higher-end visual output", "High", "Heavy")
+      ]
+    },
+    {
+      name: "Hailuo AI",
+      company: "MiniMax",
+      group: "AI Video",
+      kind: "Video and media agent",
+      website: "https://hailuoai.video/",
+      bestFor: "Creator-friendly text-to-video, image-to-video, meme formats, and fast online clips",
+      strengths: ["Templates", "Creators", "Image-to-video", "Memes"],
+      api: "Web app / model API",
+      apiNote: "Hailuo is MiniMax's creator video surface; MiniMax also exposes multimodal model capabilities.",
+      limits: "Template-heavy outputs can feel trend-driven; rights and likeness use require care.",
+      generalUseCases: ["Photo-to-video templates", "Short social videos and memes", "Fast idea testing", "Creator content variants"],
+      submodels: [
+        model("Hailuo media tools", "Creator video", "MiniMax video tools for turning text or photos into short creator-friendly clips and effects.", "Best for fast social assets and photo animation", "Medium", "Moderate")
+      ]
+    },
+    {
+      name: "Adobe Firefly Video",
+      company: "Adobe",
+      group: "AI Video",
+      kind: "Creative suite video generator",
+      website: "https://firefly.adobe.com/",
+      bestFor: "Commercially oriented creative work, product shots, B-roll, and Adobe workflow integration",
+      strengths: ["Commercial", "Adobe", "B-roll", "Design"],
+      api: "Web app / Adobe APIs",
+      apiNote: "Firefly brings Adobe and partner generative models into a single creative workspace.",
+      limits: "Best value comes if you already work inside the Adobe ecosystem.",
+      generalUseCases: ["Product shots and B-roll clips", "Campaign visuals", "Design-to-video workflows", "Commercial creative drafts"],
+      submodels: [
+        model("Firefly video generator", "Commercial studio", "Adobe's generative video workspace for creating video from text prompts or images with creative-suite integration.", "Best for brand-safe creative drafts and Adobe-centered workflows", "Subscription / tiered", "Moderate to heavy")
+      ]
+    },
+    {
+      name: "Krea",
+      company: "Krea",
+      group: "AI Video",
+      kind: "Creative model hub",
+      website: "https://www.krea.ai/video",
+      bestFor: "Trying multiple video models in one place, comparing outputs, and refining image/video assets",
+      strengths: ["Model hub", "Compare", "Images", "Video"],
+      api: "Web app",
+      apiNote: "Krea aggregates multiple creative models and video workflows in one app surface.",
+      limits: "Model availability can change; output rights and cost depend on the selected model.",
+      generalUseCases: ["Comparing Veo, Kling, Hailuo, Runway, and other models", "Text-to-video and image-to-video tests", "Creative enhancement and upscaling", "Rapid visual exploration"],
+      submodels: [
+        model("Krea video", "Model hub", "A video generation workspace for testing multiple current video models and refining creative outputs.", "Best for side-by-side model exploration and quick creative comparison", "Medium", "Moderate")
+      ]
+    },
+    {
+      name: "HeyGen",
+      company: "HeyGen",
+      group: "AI Video",
+      kind: "Avatar and business video",
+      website: "https://www.heygen.com/",
+      bestFor: "Avatar videos, narration, video translation, training, sales, and social explainers",
+      strengths: ["Avatars", "Voice", "Translation", "Business"],
+      api: "Public API / web app",
+      apiNote: "HeyGen is strongest for avatar-led and business video workflows with voice, captions, and templates.",
+      limits: "Less focused on cinematic scene generation than Runway, Veo, Kling, or Sora.",
+      generalUseCases: ["Avatar explainers and training videos", "Video translation and localization", "Sales and product walkthroughs", "Short narrated social content"],
+      submodels: [
+        model("HeyGen avatar video", "Business video", "AI video tools for avatars, narration, captions, translation, and branded explainers.", "Best for presenter-led business videos and localization", "Subscription / tiered", "Moderate")
+      ]
+    },
+    {
+      name: "Synthesia",
+      company: "Synthesia",
+      group: "AI Video",
+      kind: "Enterprise avatar platform",
+      website: "https://www.synthesia.io/",
+      bestFor: "Corporate training, internal communications, localization, and scalable presenter videos",
+      strengths: ["Enterprise", "Avatars", "Training", "Localization"],
+      api: "Enterprise API / web app",
+      apiNote: "Synthesia is oriented around enterprise video creation, governance, templates, and localization.",
+      limits: "Best for structured presenter content, not open-ended cinematic generation.",
+      generalUseCases: ["Training and enablement videos", "Internal announcements", "Localized presenter content", "Enterprise template workflows"],
+      submodels: [
+        model("Synthesia AI video", "Enterprise avatar", "Business video platform for creating professional avatar videos without cameras, studios, or actors.", "Best for repeatable corporate video production", "Bundled / enterprise", "Moderate")
+      ]
+    },
+    {
+      name: "InVideo",
+      company: "InVideo",
+      group: "AI Video",
+      kind: "AI video agent",
+      website: "https://invideo.io/",
+      bestFor: "Longer marketing videos, scripts, ads, storyboards, and agent-assisted production",
+      strengths: ["Agentic", "Marketing", "Storyboards", "Ads"],
+      api: "Web app",
+      apiNote: "InVideo is positioned as an AI video agent for turning briefs into videos and production assets.",
+      limits: "Generated videos often need brand review, fact checking, and final human edit passes.",
+      generalUseCases: ["Marketing videos and ads", "Script-to-video workflows", "Storyboards and production decks", "Social content batches"],
+      submodels: [
+        model("InVideo Agent One", "Video agent", "Agentic video creation workflow that helps generate scripts, storyboards, ads, and production assets.", "Best for marketing teams and longer video drafts", "Subscription / tiered", "Moderate to heavy")
+      ]
+    },
+
     // ----------------------------------------------------------- Coding Agents
     {
       name: "Claude Code",
       company: "Anthropic",
+      website: "https://www.anthropic.com/claude-code",
       group: "Coding Agents",
       kind: "Terminal coding agent",
       bestFor: "Long coding sessions, refactors, repo reasoning, and implementation loops",
@@ -213,6 +453,7 @@
     {
       name: "OpenAI Codex CLI",
       company: "OpenAI",
+      website: "https://github.com/openai/codex",
       group: "Coding Agents",
       kind: "Terminal coding agent",
       bestFor: "Repo audits, bug fixes, code generation, and terminal-first development",
@@ -228,6 +469,7 @@
     {
       name: "Cursor / Windsurf",
       company: "Anysphere / Codeium",
+      website: "https://cursor.com/",
       group: "Coding Agents",
       kind: "Agent IDE",
       bestFor: "Interactive coding, refactors, and local code understanding inside an editor",
@@ -243,6 +485,7 @@
     {
       name: "Aider",
       company: "Open source",
+      website: "https://aider.chat/",
       group: "Coding Agents",
       kind: "CLI pair programmer",
       bestFor: "Small patches, terminal coding, and diff-driven work",
@@ -258,6 +501,7 @@
     {
       name: "Gemini CLI / Code Assist",
       company: "Google",
+      website: "https://cloud.google.com/products/gemini/code-assist",
       group: "Coding Agents",
       kind: "Developer assistant",
       bestFor: "Google-stack development, code help, and cloud-connected workflows",
@@ -275,6 +519,7 @@
     {
       name: "Perplexity",
       company: "Perplexity",
+      website: "https://www.perplexity.ai/",
       group: "Research Agents",
       kind: "Search-first assistant",
       bestFor: "Cited research, current answers, discovery, model switching, and search-first work",
@@ -291,6 +536,7 @@
     {
       name: "Deep Research modes",
       company: "OpenAI / Google / Anthropic",
+      website: "https://chatgpt.com/",
       group: "Research Agents",
       kind: "Autonomous research agent",
       bestFor: "Multi-step research that browses, reads many sources, and writes a cited report",
@@ -306,6 +552,7 @@
     {
       name: "Microsoft 365 Researcher",
       company: "Microsoft",
+      website: "https://www.microsoft.com/en-us/microsoft-365/copilot/researcher",
       group: "Research Agents",
       kind: "Enterprise research agent",
       bestFor: "Research grounded in both the web and your internal work files",
@@ -323,6 +570,7 @@
     {
       name: "Agent-Browser",
       company: "Open tooling",
+      website: "https://agent-browser.dev/",
       group: "Browser Agents",
       kind: "CLI browser tool",
       bestFor: "Form filling, clicking, browsing, and web automation with fewer tokens",
@@ -338,6 +586,7 @@
     {
       name: "Browser / Playwright MCP",
       company: "Microsoft / OSS",
+      website: "https://github.com/microsoft/playwright-mcp",
       group: "Browser Agents",
       kind: "Browser automation connector",
       bestFor: "Frontend QA, web automation, and browser control via MCP",
@@ -353,6 +602,7 @@
     {
       name: "Computer-use agents",
       company: "OpenAI / Anthropic",
+      website: "https://developers.openai.com/api/docs/guides/tools-computer-use",
       group: "Browser Agents",
       kind: "Screen + browser control",
       bestFor: "Operating a browser or desktop visually, like a person, for end-to-end tasks",
@@ -370,6 +620,7 @@
     {
       name: "n8n AI workflows",
       company: "n8n",
+      website: "https://n8n.io/",
       group: "Automation Agents",
       kind: "Workflow automation builder",
       bestFor: "Scheduled tasks and backend automations that chain AI with apps and APIs",
@@ -385,6 +636,7 @@
     {
       name: "LangGraph / LangChain",
       company: "LangChain",
+      website: "https://www.langchain.com/langgraph",
       group: "Automation Agents",
       kind: "Agent framework",
       bestFor: "Production agent apps with multi-step logic, tool calls, and memory flows",
@@ -400,6 +652,7 @@
     {
       name: "Copilot Studio agents",
       company: "Microsoft",
+      website: "https://www.microsoft.com/en-us/microsoft-copilot/microsoft-copilot-studio",
       group: "Automation Agents",
       kind: "Enterprise agent builder",
       bestFor: "Internal support, approvals, and workflow automation across enterprise systems",
@@ -415,6 +668,7 @@
     {
       name: "Compose.ai",
       company: "Compose.ai",
+      website: "https://www.compose.ai/",
       group: "Automation Agents",
       kind: "Email assistant",
       bestFor: "Email drafting, reply acceleration, and outreach inside your inbox",
@@ -430,6 +684,7 @@
     {
       name: "Otter.ai",
       company: "Otter",
+      website: "https://otter.ai/",
       group: "Automation Agents",
       kind: "Meeting notes automation",
       bestFor: "Meeting summaries, notes, and action items captured automatically",
@@ -447,6 +702,7 @@
     {
       name: "Railway CLI",
       company: "Railway",
+      website: "https://docs.railway.com/reference/cli-api",
       group: "CLI Agents",
       kind: "Deploy CLI",
       bestFor: "Backend/frontend deployment and project operations from the terminal",
@@ -462,6 +718,7 @@
     {
       name: "Vercel CLI",
       company: "Vercel",
+      website: "https://vercel.com/docs/cli",
       group: "CLI Agents",
       kind: "Frontend deploy CLI",
       bestFor: "React/Next.js deployments and preview environments",
@@ -477,6 +734,7 @@
     {
       name: "GitHub CLI",
       company: "GitHub",
+      website: "https://cli.github.com/",
       group: "CLI Agents",
       kind: "Repo operations CLI",
       bestFor: "PR workflows, issue management, and developer automation",
@@ -494,6 +752,7 @@
     {
       name: "Model Context Protocol",
       company: "Open standard",
+      website: "https://modelcontextprotocol.io/",
       group: "MCP-Compatible Tools",
       kind: "Tool connection standard",
       bestFor: "Safe, structured tool and data access for agents",
@@ -509,6 +768,7 @@
     {
       name: "Filesystem MCP",
       company: "OSS",
+      website: "https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem",
       group: "MCP-Compatible Tools",
       kind: "Local file connector",
       bestFor: "Local projects, document automation, and controlled file edits",
@@ -524,6 +784,7 @@
     {
       name: "GitHub MCP",
       company: "GitHub",
+      website: "https://github.com/github/github-mcp-server",
       group: "MCP-Compatible Tools",
       kind: "Repository connector",
       bestFor: "Codebase automation, issue triage, and PR review",
@@ -539,6 +800,7 @@
     {
       name: "Database MCP",
       company: "OSS",
+      website: "https://github.com/modelcontextprotocol/servers",
       group: "MCP-Compatible Tools",
       kind: "Data connector",
       bestFor: "Analytics dashboards, admin tools, and backend inspection",
@@ -554,6 +816,7 @@
     {
       name: "Claude Agent SDK",
       company: "Anthropic",
+      website: "https://docs.anthropic.com/en/docs/claude-code/sdk",
       group: "MCP-Compatible Tools",
       kind: "Programmable agent SDK",
       bestFor: "Custom agent apps, code agents, and tool orchestration",
@@ -569,6 +832,7 @@
     {
       name: "Agent infrastructure",
       company: "Community",
+      website: "https://www.agentmail.to/",
       group: "MCP-Compatible Tools",
       kind: "Memory / email / skills",
       bestFor: "Agent memory, programmatic email, and reusable skills",
@@ -587,6 +851,7 @@
 
   const categoryOrder = [
     "Chatbots",
+    "AI Video",
     "Coding Agents",
     "Research Agents",
     "Browser Agents",
@@ -597,6 +862,7 @@
 
   const categoryCopy = {
     "Chatbots": "General-purpose conversational assistants and the model families that power them.",
+    "AI Video": "Creative video, image-to-video, avatar, and production tools for visual media workflows.",
     "Coding Agents": "Agents that read, write, run, test, and refactor code across a repo.",
     "Research Agents": "Search-first and deep-research agents that gather, cite, and synthesize information.",
     "Browser Agents": "Agents that drive a real browser — click, type, fill forms, and test UI.",
@@ -633,6 +899,7 @@
         ai.company,
         ai.group,
         ai.kind,
+        ai.website,
         ai.bestFor,
         ai.api,
         ai.apiNote,
@@ -757,6 +1024,7 @@
             <div class="ai-metric"><span>API access</span><strong>${esc(ai.api)}</strong></div>
             <div class="ai-metric"><span>Limits</span><strong>${esc(ai.limits)}</strong></div>
           </div>
+          ${ai.website ? `<a class="ai-card-link" href="${esc(ai.website)}" target="_blank" rel="noopener noreferrer">Open website</a>` : ""}
           <p class="ai-model-copy ai-api-note">${esc(ai.apiNote)}</p>
           <ul class="ai-use-list">${ai.generalUseCases.map(use => `<li>${esc(use)}</li>`).join("")}</ul>
         </div>
@@ -767,6 +1035,7 @@
   function matrixSection() {
     const rows = [
       ["Hard reasoning", "ChatGPT / Claude", "Gemini / Grok"],
+      ["AI video generation", "Runway / Sora / Google Flow", "Luma / Kling / Pika"],
       ["Coding agent", "Claude Code / Codex CLI", "Cursor / Aider"],
       ["Current web research", "Perplexity", "Deep Research modes"],
       ["Browser automation", "Playwright MCP / Agent-Browser", "Computer-use agents"],
