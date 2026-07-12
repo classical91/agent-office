@@ -16,10 +16,10 @@
       limits: "Cost scales sharply with reasoning effort; rate limits on lower tiers.",
       generalUseCases: ["Deep reasoning and complex problem solving", "Coding, debugging, and repo planning", "Writing, editing, summarization, and research", "Agentic task execution and multimodal workflows"],
       submodels: [
-        model("GPT-5.5", "Latest flagship", "Newest top OpenAI model tier for stronger reasoning, coding, planning, and professional-grade assistant workflows.", "Best for hard reasoning, advanced coding, research, and high-value tasks", "High", "Heavy"),
-        model("GPT-5.4", "Flagship", "High-capability GPT-5 family model for complex reasoning, analysis, and multimodal work.", "Best for premium assistant experiences and difficult prompts", "High", "Heavy"),
-        model("GPT-5.3 Instant", "Fast", "Fast-response GPT tier built for speed-sensitive everyday assistant use.", "Best for chat, quick answers, lightweight product features, and daily productivity", "Medium", "Moderate"),
-        model("GPT-5.3-Codex", "Coding", "Coding-focused GPT model tier for repo work, debugging, implementation, and software tasks.", "Best for IDE copilots, code reviews, test fixes, and full-stack builds", "Medium", "Moderate to heavy"),
+        model("GPT-5.6 Sol", "Latest flagship", "Newest top OpenAI model (GA July 2026, now the ChatGPT default) for the hardest reasoning, coding, and agentic workflows; ~89% on Terminal-Bench 2.1.", "Best for hard reasoning, advanced coding, research, and high-value tasks", "High", "Heavy"),
+        model("GPT-5.6 Terra / Luna", "Flagship family", "GPT-5.6 sibling tiers balancing capability, speed, and cost across premium assistant and multimodal work.", "Best for premium assistant experiences and difficult prompts", "High", "Heavy"),
+        model("GPT-5.5 Instant", "Fast", "Fast-response GPT tier built for speed-sensitive everyday assistant use.", "Best for chat, quick answers, lightweight product features, and daily productivity", "Medium", "Moderate"),
+        model("GPT-5.6-Codex", "Coding", "Coding-focused GPT model tier for repo work, debugging, implementation, and software tasks.", "Best for IDE copilots, code reviews, test fixes, and full-stack builds", "Medium", "Moderate to heavy"),
         model("GPT-realtime-1.5", "Voice", "Realtime multimodal model optimized for low-latency voice and live conversational agents.", "Best for voice agents, call flows, and live assistant apps", "High", "Very heavy"),
         model("GPT-image-1.5", "Image", "Image model for generating, editing, and transforming visual content from text or visual prompts.", "Best for thumbnails, mockups, ads, design concepts, and visual content", "High", "Heavy")
       ]
@@ -38,9 +38,9 @@
       generalUseCases: ["Long-form writing and editing", "Codebase reasoning and agentic coding", "Business planning and analysis", "Document summarization and careful explanations"],
       submodels: [
         model("Claude Opus 4.8", "Latest flagship", "Top Claude model tier for hard reasoning, coding, long-running agents, and premium-quality outputs.", "Best for hardest coding jobs, strategic analysis, and deep writing", "High", "Heavy"),
-        model("Claude Sonnet 4.6", "Balanced", "Updated Sonnet-family model focused on coding, agents, speed, and high-quality everyday work.", "Best for most day-to-day coding, writing, analysis, and assistant workflows", "Medium", "Moderate"),
+        model("Claude Sonnet 5", "Balanced", "Newest Sonnet-family model (June 2026) with big coding and agentic gains — ~63% SWE-Bench Pro — at introductory $2/$10 pricing.", "Best for most day-to-day coding, writing, analysis, and assistant workflows", "Medium", "Moderate"),
         model("Claude Haiku 4.5", "Fast", "Lightweight Claude model tuned for speed, throughput, and lower-cost assistant flows.", "Best for summaries, support bots, routing, and quick responses", "Low", "Light"),
-        model("Fable 5", "Creative", "Newer Claude-family model line geared toward creative, expressive, and conversational output.", "Best for creative writing, character, and expressive assistant experiences", "Medium", "Moderate")
+        model("Fable 5", "Creative", "Claude-family model line geared toward creative, expressive, and conversational output; redeployed July 2026.", "Best for creative writing, character, and expressive assistant experiences", "Medium", "Moderate")
       ]
     },
     {
@@ -57,7 +57,7 @@
       generalUseCases: ["Drafting in Gmail, Docs, Sheets, and Slides", "Search-connected answers and productivity", "Agentic workflows through the Google ecosystem", "Video, audio, image, and multimodal creation"],
       submodels: [
         model("Gemini 3.5 Flash", "Latest fast agentic", "Newer Gemini model promoted for faster agentic behavior, coding, and responsive everyday AI use.", "Best for fast assistants, agents, coding, and Google app productivity", "Low", "Light to moderate"),
-        model("Gemini 3.5 Pro", "Pro", "Higher-end Gemini 3.5 tier for stronger reasoning, coding, and power-user workflows.", "Best for advanced reasoning, research, and complex developer workflows", "Medium", "Moderate"),
+        model("Gemini 3.5 Pro", "Pro", "Higher-end Gemini 3.5 tier for stronger reasoning, coding, and power-user workflows; reached general availability July 2026.", "Best for advanced reasoning, research, and complex developer workflows", "Medium", "Moderate"),
         model("Gemini 3", "Core frontier", "Gemini 3 family emphasizes stronger reasoning, multimodal capability, and broad Google product integration.", "Best for rich multimodal tasks, assistant workflows, and Google ecosystem work", "Medium", "Moderate"),
         model("Gemini Omni Flash", "Create anything", "Generative media family designed to create video/audio outputs from text, images, video, or audio inputs.", "Best for video generation, audio/video remixes, and creative media workflows", "High", "Heavy")
       ]
@@ -75,7 +75,7 @@
       limits: "Best context is tied to X; media APIs are pricey.",
       generalUseCases: ["Live web and X-aware context", "Coding and technical help", "Real-time search and trend interpretation", "Image, video, and voice generation"],
       submodels: [
-        model("Grok 4.3", "Latest main model", "xAI current main model for chat, coding, reasoning, tool use, vision, and real-time search workflows.", "Best for real-time reasoning, coding, and X/web-aware assistance", "Medium", "Moderate"),
+        model("Grok 4.5", "Latest main model", "xAI's public flagship since July 2026 for chat, coding, reasoning, tool use, vision, and real-time search — adds Opus-class reasoning with native X integration.", "Best for real-time reasoning, coding, and X/web-aware assistance", "Medium", "Moderate"),
         model("Grok Imagine API", "Image / video", "Dedicated xAI media API for image and short video generation workflows.", "Best for visuals, short videos, social media assets, and creative generation", "High", "Heavy"),
         model("Grok Voice API", "Voice", "Voice-focused xAI model/API layer for speech-first assistant experiences.", "Best for voice agents, live chat, and conversational interfaces", "High", "Very heavy")
       ]
@@ -128,8 +128,9 @@
       limits: "Smaller multimodal coverage; data-residency considerations for some teams.",
       generalUseCases: ["Code generation and debugging", "Reasoning-heavy prompts", "Budget AI deployments", "Developer experimentation"],
       submodels: [
-        model("DeepSeek R1", "Reasoning", "Reasoning-focused model optimized for step-by-step thinking, logic, math, and technical tasks.", "Best for math, logic, coding, and deep reasoning", "Low", "Light"),
-        model("DeepSeek V3", "Balanced", "General-purpose DeepSeek model for chat, coding, and broad assistant workflows.", "Best for coding, general productivity, and low-cost assistants", "Very low", "Very light")
+        model("DeepSeek V4 Pro", "Latest flagship", "Newest DeepSeek flagship (mid-2026): 1.6T-parameter MoE (~49B active) with a 1M-token context window for top-tier reasoning and coding.", "Best for hard reasoning, coding, and long-context technical work", "Low", "Light"),
+        model("DeepSeek V4 Flash", "Efficient", "Lighter V4 MoE model (284B total, ~13B active, 1M context) tuned for fast, low-cost deployment.", "Best for coding, general productivity, and low-cost assistants", "Very low", "Very light"),
+        model("DeepSeek R1", "Reasoning", "Reasoning-focused model optimized for step-by-step thinking, logic, math, and technical tasks.", "Best for math, logic, coding, and deep reasoning", "Low", "Light")
       ]
     },
     {
@@ -145,8 +146,9 @@
       limits: "Frontier quality trails the largest closed models on the hardest tasks.",
       generalUseCases: ["Private AI deployments", "Enterprise copilots", "Low-latency assistants", "Code agents and developer tools"],
       submodels: [
-        model("Mistral Large 3", "Flagship open-weight", "Mistral large open-weight flagship multimodal model for reasoning, multilingual work, and enterprise use.", "Best for enterprise reasoning, private deployment, and high-quality open output", "Medium", "Moderate"),
+        model("Mistral Large 3", "Flagship open-weight", "Mistral large open-weight flagship multimodal model for reasoning, multilingual work, and enterprise use; now Apache 2.0 licensed.", "Best for enterprise reasoning, private deployment, and high-quality open output", "Medium", "Moderate"),
         model("Mistral Medium 3.5", "Efficient agentic", "Frontier-class multimodal model optimized for agentic and coding use cases at lower cost.", "Best for agentic workflows, coding, and cost-aware enterprise apps", "Low", "Light"),
+        model("Mistral Small 4", "Compact open-weight", "Small, efficient Apache 2.0 model for fast, low-cost on-device and private deployments.", "Best for lightweight assistants and edge/private hosting", "Very low", "Very light"),
         model("Devstral 2", "Code agents", "Mistral code-agent model for solving software engineering tasks and building developer agents.", "Best for autonomous coding agents and repo tasks", "Low", "Light")
       ]
     },
@@ -163,7 +165,7 @@
       limits: "Western tooling and docs are thinner; some models region-gated.",
       generalUseCases: ["Agentic desktop and mobile workflows", "Coding and technical assistants", "Multilingual applications", "Image generation and editing"],
       submodels: [
-        model("Qwen 3.5", "Agentic", "Qwen model family focused on agentic AI workflows, large workloads, and visual/desktop task execution.", "Best for agentic apps, multilingual assistants, and automation", "Low", "Light"),
+        model("Qwen 3.6", "Agentic", "Newest Apache 2.0 Qwen model family (MoE + dense) focused on agentic AI workflows, reasoning, and visual/desktop task execution.", "Best for agentic apps, multilingual assistants, and automation", "Low", "Light"),
         model("Qwen3-Coder-Plus", "Coding", "Coding-focused Qwen model series for developer workflows and programming tasks.", "Best for code generation, debugging, and coding assistants", "Low", "Light"),
         model("Qwen Image 2.0", "Image", "Qwen image model family for image generation and editing workflows.", "Best for visual generation, edits, thumbnails, and creative assets", "Low", "Moderate")
       ]
@@ -181,7 +183,7 @@
       limits: "Newer ecosystem; fewer third-party integrations than the majors.",
       generalUseCases: ["Full-stack website generation", "Document and file analysis", "Long-context research", "Coding assistants and codebase tasks"],
       submodels: [
-        model("Kimi K2.6", "Latest app model", "Kimi newer app-facing model focused on coding, websites, documents, and agent workflows.", "Best for building websites, analyzing docs, and agent-style workflows", "Medium", "Moderate"),
+        model("Kimi K2.7 Code", "Latest app model", "Newest Kimi coding-focused model (+21.8% over K2.6 on Kimi Code Bench v2), with a HighSpeed variant offering ~6x faster inference.", "Best for building websites, analyzing docs, and agent-style workflows", "Medium", "Moderate"),
         model("Kimi K2.5 API", "Long context", "API model promoted for long-context work, tool calling, codebases, and always-on agents.", "Best for long documents, codebases, and API agent workflows", "Low", "Light to moderate"),
         model("Kimi Agent Swarm", "Agents", "Multi-agent workflow mode for larger tasks that benefit from parallel specialized agents.", "Best for large projects, research batches, and complex build workflows", "Medium", "Heavy")
       ]
@@ -202,6 +204,26 @@
         model("Command family", "Enterprise LLM", "Cohere enterprise LLM family for secure business automation, private AI workflows, and assistants.", "Best for enterprise copilots and business process automation", "Medium", "Moderate"),
         model("Embed family", "Embeddings", "Embedding models for turning documents and text into searchable vector representations.", "Best for semantic search, RAG, memory, and knowledge bases", "Low", "Light"),
         model("Rerank family", "Retrieval", "Reranking models that improve search quality by sorting retrieved documents by relevance.", "Best for RAG accuracy, search refinement, and document ranking", "Low", "Light")
+      ]
+    },
+    {
+      name: "NVIDIA Nemotron / Cosmos",
+      company: "NVIDIA",
+      website: "https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/",
+      group: "Chatbots",
+      kind: "Open model family",
+      bestFor: "Open agentic reasoning, efficient on-device models, physical AI, and NIM-deployed enterprise workflows",
+      strengths: ["Open models", "Agentic", "NIM deploy", "Physical AI"],
+      api: "Open weights + NIM API",
+      apiNote: "Open-weight models on Hugging Face plus optimized NVIDIA NIM microservices for flexible, high-performance deployment.",
+      limits: "Best value on NVIDIA hardware; more infra/enterprise-oriented than a consumer chat app.",
+      generalUseCases: ["Building agentic AI applications", "Efficient on-device and edge reasoning", "Physical AI, robotics, and world simulation", "Enterprise RAG, speech, and safety pipelines"],
+      submodels: [
+        model("Nemotron 3 Ultra", "Flagship", "550B-parameter mixture-of-experts model in the Nemotron 3 family for complex agentic reasoning and simulation.", "Best for demanding agentic reasoning, science, math, and multimodal work", "Open weights", "Heavy"),
+        model("Nemotron 3 Super", "Balanced", "Mid-size Nemotron 3 open model balancing leading accuracy with efficiency for agentic AI apps.", "Best for high-quality open-model agents and assistants", "Open weights", "Moderate"),
+        model("Nemotron 3 Nano", "Efficient", "Highly efficient small model on a hybrid Mamba-2 + Transformer MoE architecture with a 1M-token context, built for on-device agentic tasks.", "Best for on-device, edge, and low-cost agentic workloads", "Very low", "Light"),
+        model("Cosmos 3", "Physical AI", "Open world foundation model unifying synthetic world generation, physical reasoning, and action simulation for robotics and autonomous vehicles.", "Best for robotics, autonomous vehicles, and physical AI simulation", "High", "Heavy"),
+        model("Nemotron Speech", "Speech", "Leaderboard-topping open speech models, including a new ASR model for transcription and voice pipelines.", "Best for speech recognition and voice-enabled agents", "Open weights", "Light")
       ]
     },
 
@@ -232,11 +254,11 @@
       bestFor: "Immersive short video generation from text and images with strong scene detail",
       strengths: ["Realism", "Prompting", "Audio", "Scenes"],
       api: "Public API",
-      apiNote: "OpenAI provides Sora video generation through the API and a consumer-facing Sora product surface.",
-      limits: "Access, geography, safety rules, clip length, and cost can change quickly.",
+      apiNote: "Being wound down: the Sora web/app experiences were discontinued April 26, 2026, and the Sora API is scheduled to shut down September 24, 2026.",
+      limits: "Deprecated — plan migrations to Veo, Kling, or Runway; access, clip length, and cost were volatile through the wind-down.",
       generalUseCases: ["Text-to-video concepts and visual ideation", "Image-to-video animation", "Short social and narrative clips", "Product visuals and mood exploration"],
       submodels: [
-        model("Sora 2", "Video + audio", "OpenAI video model for detailed dynamic clips from natural language or images, with audio-oriented generation support.", "Best for rich short-form visual concepts and prompt-driven scenes", "High", "Heavy")
+        model("Sora 2", "Being retired", "OpenAI video model for detailed dynamic clips from text or images with audio; the Sora app is retired and the API shuts down September 24, 2026.", "Best for rich short-form visual concepts — migrate off before the API sunset", "High", "Heavy")
       ]
     },
     {
@@ -333,7 +355,7 @@
       limits: "Regional access and billing can vary; commercial workflows need rights review.",
       generalUseCases: ["Photoreal text-to-video and image-to-video", "Character and product motion", "Storyboarded visual sequences", "Effects and sound-enhanced clips"],
       submodels: [
-        model("Kling Video 3.0", "Native 4K", "Kling's video model line focused on cinematic video, native 4K, motion control, and multimodal creation.", "Best for photoreal motion, controlled shots, and higher-end visual output", "High", "Heavy")
+        model("Kling Video 3.0", "Native 4K", "Kling's video model line — a 2026 text-to-video arena leader — with cinematic 4K, motion control, and a multi-shot storyboard mode with native audio sync across cuts.", "Best for photoreal motion, controlled shots, and higher-end visual output", "High", "Heavy")
       ]
     },
     {
