@@ -6,6 +6,7 @@
     {
       name: "ChatGPT",
       company: "OpenAI",
+      updateLinks: [{"label": "OpenAI model release notes", "url": "https://help.openai.com/en/articles/9624314-model-release-notes"}],
       website: "https://chatgpt.com/",
       group: "Chatbots",
       kind: "OpenAI model family",
@@ -27,6 +28,7 @@
     {
       name: "Claude",
       company: "Anthropic",
+      updateLinks: [{"label": "Anthropic release notes", "url": "https://docs.anthropic.com/en/release-notes/overview"}],
       website: "https://claude.ai/",
       group: "Chatbots",
       kind: "Anthropic model family",
@@ -46,6 +48,7 @@
     {
       name: "Gemini",
       company: "Google",
+      updateLinks: [{"label": "Gemini API changelog", "url": "https://ai.google.dev/gemini-api/docs/changelog"}],
       website: "https://gemini.google.com/",
       group: "Chatbots",
       kind: "Google model family",
@@ -65,6 +68,7 @@
     {
       name: "Grok",
       company: "xAI",
+      updateLinks: [{"label": "xAI news", "url": "https://x.ai/news"}, {"label": "xAI docs", "url": "https://docs.x.ai/docs"}],
       website: "https://grok.com/",
       group: "Chatbots",
       kind: "xAI model family",
@@ -83,6 +87,7 @@
     {
       name: "Microsoft 365 Copilot",
       company: "Microsoft",
+      updateLinks: [{"label": "Microsoft 365 Copilot release notes", "url": "https://learn.microsoft.com/en-us/copilot/microsoft-365/release-notes"}],
       website: "https://www.microsoft.com/en-us/microsoft-365/copilot",
       group: "Chatbots",
       kind: "Enterprise assistant",
@@ -100,6 +105,7 @@
     {
       name: "Meta AI / Llama",
       company: "Meta",
+      updateLinks: [{"label": "Meta AI blog", "url": "https://ai.meta.com/blog/"}],
       website: "https://www.llama.com/",
       group: "Chatbots",
       kind: "Open model family",
@@ -118,6 +124,7 @@
     {
       name: "DeepSeek",
       company: "DeepSeek",
+      updateLinks: [{"label": "DeepSeek API news", "url": "https://api-docs.deepseek.com/news"}],
       website: "https://www.deepseek.com/",
       group: "Chatbots",
       kind: "Low-cost open model",
@@ -136,6 +143,7 @@
     {
       name: "Mistral",
       company: "Mistral AI",
+      updateLinks: [{"label": "Mistral changelog", "url": "https://docs.mistral.ai/getting-started/changelog/"}],
       website: "https://mistral.ai/",
       group: "Chatbots",
       kind: "Open / enterprise model",
@@ -155,6 +163,7 @@
     {
       name: "Qwen",
       company: "Alibaba / Qwen",
+      updateLinks: [{"label": "Qwen blog", "url": "https://qwenlm.github.io/blog/"}],
       website: "https://qwen.ai/",
       group: "Chatbots",
       kind: "Open / agentic model",
@@ -173,6 +182,7 @@
     {
       name: "Kimi",
       company: "Moonshot AI",
+      updateLinks: [{"label": "Moonshot/Kimi changelog", "url": "https://platform.moonshot.ai/docs/changelog"}],
       website: "https://www.kimi.com/",
       group: "Chatbots",
       kind: "Long-context model",
@@ -191,6 +201,7 @@
     {
       name: "Cohere",
       company: "Cohere",
+      updateLinks: [{"label": "Cohere changelog", "url": "https://docs.cohere.com/changelog"}],
       website: "https://cohere.com/",
       group: "Chatbots",
       kind: "Enterprise / retrieval",
@@ -209,6 +220,7 @@
     {
       name: "NVIDIA Nemotron / Cosmos",
       company: "NVIDIA",
+      updateLinks: [{"label": "NVIDIA AI blog", "url": "https://blogs.nvidia.com/blog/category/generative-ai/"}, {"label": "NVIDIA API catalog", "url": "https://build.nvidia.com/explore/discover"}],
       website: "https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/",
       group: "Chatbots",
       kind: "Open model family",
@@ -231,6 +243,7 @@
     {
       name: "Runway",
       company: "Runway",
+      updateLinks: [{"label": "Runway updates", "url": "https://runwayml.com/research"}],
       group: "AI Video",
       kind: "Creative video studio",
       website: "https://runwayml.com/product",
@@ -248,6 +261,7 @@
     {
       name: "Sora",
       company: "OpenAI",
+      updateLinks: [{"label": "OpenAI model release notes", "url": "https://help.openai.com/en/articles/9624314-model-release-notes"}, {"label": "OpenAI Sora", "url": "https://openai.com/sora/"}],
       group: "AI Video",
       kind: "Text / image to video",
       website: "https://sora.com/",
@@ -264,6 +278,7 @@
     {
       name: "Google Flow / Veo",
       company: "Google",
+      updateLinks: [{"label": "Google AI updates", "url": "https://blog.google/technology/ai/"}, {"label": "Gemini API changelog", "url": "https://ai.google.dev/gemini-api/docs/changelog"}],
       group: "AI Video",
       kind: "AI filmmaking tools",
       website: "https://labs.google/fx/tools/flow",
@@ -281,6 +296,7 @@
     {
       name: "Leonardo AI",
       company: "Leonardo.Ai",
+      updateLinks: [{"label": "Leonardo AI updates", "url": "https://leonardo.ai/news/"}],
       group: "AI Video",
       kind: "Image and motion studio",
       website: "https://app.leonardo.ai/",
@@ -297,6 +313,7 @@
     {
       name: "Midjourney",
       company: "Midjourney",
+      updateLinks: [{"label": "Midjourney updates", "url": "https://updates.midjourney.com/"}],
       group: "AI Video",
       kind: "Image-first creative lab",
       website: "https://www.midjourney.com/home",
@@ -313,6 +330,7 @@
     {
       name: "Luma Dream Machine",
       company: "Luma AI",
+      updateLinks: [{"label": "Luma updates", "url": "https://lumalabs.ai/news"}],
       group: "AI Video",
       kind: "Video and creative agents",
       website: "https://dream-machine.lumalabs.ai/",
@@ -329,6 +347,7 @@
     {
       name: "Pika",
       company: "Pika",
+      updateLinks: [{"label": "Pika updates", "url": "https://pika.art/blog"}],
       group: "AI Video",
       kind: "Idea-to-video platform",
       website: "https://pika.art/",
@@ -345,6 +364,7 @@
     {
       name: "Kling AI",
       company: "Kuaishou / Kling",
+      updateLinks: [{"label": "Kling AI updates", "url": "https://klingai.com/global/news"}],
       group: "AI Video",
       kind: "Video and image generator",
       website: "https://kling.ai/",
@@ -361,6 +381,7 @@
     {
       name: "Hailuo AI",
       company: "MiniMax",
+      updateLinks: [{"label": "Hailuo AI", "url": "https://hailuoai.video/"}],
       group: "AI Video",
       kind: "Video and media agent",
       website: "https://hailuoai.video/",
@@ -377,6 +398,7 @@
     {
       name: "Adobe Firefly Video",
       company: "Adobe",
+      updateLinks: [{"label": "Adobe Firefly release notes", "url": "https://helpx.adobe.com/firefly/release-note/release-notes-firefly.html"}],
       group: "AI Video",
       kind: "Creative suite video generator",
       website: "https://firefly.adobe.com/",
@@ -393,6 +415,7 @@
     {
       name: "Krea",
       company: "Krea",
+      updateLinks: [{"label": "Krea updates", "url": "https://www.krea.ai/blog"}],
       group: "AI Video",
       kind: "Creative model hub",
       website: "https://www.krea.ai/video",
@@ -409,6 +432,7 @@
     {
       name: "HeyGen",
       company: "HeyGen",
+      updateLinks: [{"label": "HeyGen changelog", "url": "https://docs.heygen.com/changelog"}],
       group: "AI Video",
       kind: "Avatar and business video",
       website: "https://www.heygen.com/",
@@ -425,6 +449,7 @@
     {
       name: "Synthesia",
       company: "Synthesia",
+      updateLinks: [{"label": "Synthesia updates", "url": "https://www.synthesia.io/post"}],
       group: "AI Video",
       kind: "Enterprise avatar platform",
       website: "https://www.synthesia.io/",
@@ -441,6 +466,7 @@
     {
       name: "InVideo",
       company: "InVideo",
+      updateLinks: [{"label": "InVideo blog", "url": "https://invideo.io/blog/"}],
       group: "AI Video",
       kind: "AI video agent",
       website: "https://invideo.io/",
@@ -459,6 +485,7 @@
     {
       name: "Claude Code",
       company: "Anthropic",
+      updateLinks: [{"label": "Claude Code release notes", "url": "https://docs.anthropic.com/en/docs/claude-code/release-notes"}],
       website: "https://www.anthropic.com/claude-code",
       group: "Coding Agents",
       kind: "Terminal coding agent",
@@ -475,6 +502,7 @@
     {
       name: "OpenAI Codex CLI",
       company: "OpenAI",
+      updateLinks: [{"label": "Codex releases", "url": "https://github.com/openai/codex/releases"}],
       website: "https://github.com/openai/codex",
       group: "Coding Agents",
       kind: "Terminal coding agent",
@@ -491,6 +519,7 @@
     {
       name: "Cursor / Windsurf",
       company: "Anysphere / Codeium",
+      updateLinks: [{"label": "Cursor changelog", "url": "https://cursor.com/changelog"}, {"label": "Windsurf changelog", "url": "https://windsurf.com/changelog"}],
       website: "https://cursor.com/",
       group: "Coding Agents",
       kind: "Agent IDE",
@@ -507,6 +536,7 @@
     {
       name: "Aider",
       company: "Open source",
+      updateLinks: [{"label": "Aider release history", "url": "https://aider.chat/HISTORY.html"}],
       website: "https://aider.chat/",
       group: "Coding Agents",
       kind: "CLI pair programmer",
@@ -523,6 +553,7 @@
     {
       name: "Gemini CLI / Code Assist",
       company: "Google",
+      updateLinks: [{"label": "Gemini CLI releases", "url": "https://github.com/google-gemini/gemini-cli/releases"}, {"label": "Gemini Code Assist release notes", "url": "https://developers.google.com/gemini-code-assist/docs/release-notes"}],
       website: "https://cloud.google.com/products/gemini/code-assist",
       group: "Coding Agents",
       kind: "Developer assistant",
@@ -541,6 +572,7 @@
     {
       name: "Perplexity",
       company: "Perplexity",
+      updateLinks: [{"label": "Perplexity blog", "url": "https://www.perplexity.ai/hub/blog"}],
       website: "https://www.perplexity.ai/",
       group: "Research Agents",
       kind: "Search-first assistant",
@@ -558,6 +590,7 @@
     {
       name: "Deep Research modes",
       company: "OpenAI / Google / Anthropic",
+      updateLinks: [{"label": "OpenAI model release notes", "url": "https://help.openai.com/en/articles/9624314-model-release-notes"}, {"label": "Anthropic release notes", "url": "https://docs.anthropic.com/en/release-notes/overview"}, {"label": "Gemini updates", "url": "https://ai.google.dev/gemini-api/docs/changelog"}],
       website: "https://chatgpt.com/",
       group: "Research Agents",
       kind: "Autonomous research agent",
@@ -574,6 +607,7 @@
     {
       name: "Microsoft 365 Researcher",
       company: "Microsoft",
+      updateLinks: [{"label": "Microsoft 365 Copilot release notes", "url": "https://learn.microsoft.com/en-us/copilot/microsoft-365/release-notes"}],
       website: "https://www.microsoft.com/en-us/microsoft-365/copilot/researcher",
       group: "Research Agents",
       kind: "Enterprise research agent",
@@ -592,6 +626,7 @@
     {
       name: "Agent-Browser",
       company: "Open tooling",
+      updateLinks: [{"label": "Agent-Browser releases", "url": "https://github.com/browserbase/agent-browser/releases"}],
       website: "https://agent-browser.dev/",
       group: "Browser Agents",
       kind: "CLI browser tool",
@@ -608,6 +643,7 @@
     {
       name: "Browser / Playwright MCP",
       company: "Microsoft / OSS",
+      updateLinks: [{"label": "Playwright releases", "url": "https://github.com/microsoft/playwright/releases"}, {"label": "Playwright MCP releases", "url": "https://github.com/microsoft/playwright-mcp/releases"}],
       website: "https://github.com/microsoft/playwright-mcp",
       group: "Browser Agents",
       kind: "Browser automation connector",
@@ -624,6 +660,7 @@
     {
       name: "Computer-use agents",
       company: "OpenAI / Anthropic",
+      updateLinks: [{"label": "OpenAI model release notes", "url": "https://help.openai.com/en/articles/9624314-model-release-notes"}, {"label": "Anthropic release notes", "url": "https://docs.anthropic.com/en/release-notes/overview"}],
       website: "https://developers.openai.com/api/docs/guides/tools-computer-use",
       group: "Browser Agents",
       kind: "Screen + browser control",
@@ -642,6 +679,7 @@
     {
       name: "n8n AI workflows",
       company: "n8n",
+      updateLinks: [{"label": "n8n release notes", "url": "https://docs.n8n.io/release-notes/"}],
       website: "https://n8n.io/",
       group: "Automation Agents",
       kind: "Workflow automation builder",
@@ -658,6 +696,7 @@
     {
       name: "LangGraph / LangChain",
       company: "LangChain",
+      updateLinks: [{"label": "LangGraph changelog", "url": "https://changelog.langchain.com/?category=langgraph"}, {"label": "LangChain changelog", "url": "https://changelog.langchain.com/"}],
       website: "https://www.langchain.com/langgraph",
       group: "Automation Agents",
       kind: "Agent framework",
@@ -674,6 +713,7 @@
     {
       name: "Copilot Studio agents",
       company: "Microsoft",
+      updateLinks: [{"label": "Copilot Studio release planner", "url": "https://learn.microsoft.com/en-us/microsoft-copilot-studio/release-plan/"}],
       website: "https://www.microsoft.com/en-us/microsoft-copilot/microsoft-copilot-studio",
       group: "Automation Agents",
       kind: "Enterprise agent builder",
@@ -690,6 +730,7 @@
     {
       name: "Compose.ai",
       company: "Compose.ai",
+      updateLinks: [{"label": "Compose AI updates", "url": "https://www.compose.ai/blog"}],
       website: "https://www.compose.ai/",
       group: "Automation Agents",
       kind: "Email assistant",
@@ -706,6 +747,7 @@
     {
       name: "Otter.ai",
       company: "Otter",
+      updateLinks: [{"label": "Otter updates", "url": "https://otter.ai/blog"}],
       website: "https://otter.ai/",
       group: "Automation Agents",
       kind: "Meeting notes automation",
@@ -724,6 +766,7 @@
     {
       name: "Railway CLI",
       company: "Railway",
+      updateLinks: [{"label": "Railway changelog", "url": "https://railway.com/changelog"}],
       website: "https://docs.railway.com/reference/cli-api",
       group: "CLI Agents",
       kind: "Deploy CLI",
@@ -740,6 +783,7 @@
     {
       name: "Vercel CLI",
       company: "Vercel",
+      updateLinks: [{"label": "Vercel changelog", "url": "https://vercel.com/changelog"}],
       website: "https://vercel.com/docs/cli",
       group: "CLI Agents",
       kind: "Frontend deploy CLI",
@@ -756,6 +800,7 @@
     {
       name: "GitHub CLI",
       company: "GitHub",
+      updateLinks: [{"label": "GitHub CLI releases", "url": "https://github.com/cli/cli/releases"}],
       website: "https://cli.github.com/",
       group: "CLI Agents",
       kind: "Repo operations CLI",
@@ -774,6 +819,7 @@
     {
       name: "Model Context Protocol",
       company: "Open standard",
+      updateLinks: [{"label": "MCP releases", "url": "https://github.com/modelcontextprotocol/specification/releases"}],
       website: "https://modelcontextprotocol.io/",
       group: "MCP-Compatible Tools",
       kind: "Tool connection standard",
@@ -790,6 +836,7 @@
     {
       name: "Filesystem MCP",
       company: "OSS",
+      updateLinks: [{"label": "Filesystem MCP server", "url": "https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem"}],
       website: "https://github.com/modelcontextprotocol/servers/tree/main/src/filesystem",
       group: "MCP-Compatible Tools",
       kind: "Local file connector",
@@ -806,6 +853,7 @@
     {
       name: "GitHub MCP",
       company: "GitHub",
+      updateLinks: [{"label": "GitHub MCP Server releases", "url": "https://github.com/github/github-mcp-server/releases"}],
       website: "https://github.com/github/github-mcp-server",
       group: "MCP-Compatible Tools",
       kind: "Repository connector",
@@ -822,6 +870,7 @@
     {
       name: "Database MCP",
       company: "OSS",
+      updateLinks: [{"label": "MCP servers", "url": "https://github.com/modelcontextprotocol/servers"}],
       website: "https://github.com/modelcontextprotocol/servers",
       group: "MCP-Compatible Tools",
       kind: "Data connector",
@@ -838,6 +887,7 @@
     {
       name: "Claude Agent SDK",
       company: "Anthropic",
+      updateLinks: [{"label": "Claude Agent SDK docs", "url": "https://docs.anthropic.com/en/docs/claude-code/sdk"}],
       website: "https://docs.anthropic.com/en/docs/claude-code/sdk",
       group: "MCP-Compatible Tools",
       kind: "Programmable agent SDK",
@@ -854,6 +904,7 @@
     {
       name: "Agent infrastructure",
       company: "Community",
+      updateLinks: [{"label": "OpenAI Agents SDK releases", "url": "https://github.com/openai/openai-agents-python/releases"}, {"label": "Anthropic release notes", "url": "https://docs.anthropic.com/en/release-notes/overview"}],
       website: "https://www.agentmail.to/",
       group: "MCP-Compatible Tools",
       kind: "Memory / email / skills",
@@ -899,8 +950,19 @@
   const state = { category: "All", query: "", openCards: new Set(), collapsedGroups: new Set(), activeModels: {} };
   let rendered = false;
 
-  function model(name, badge, desc, use, cost, burn) {
-    return { name, badge, desc, use, cost, burn };
+  function model(name, badge, desc, use, cost, burn, updateLinks = []) {
+    return { name, badge, desc, use, cost, burn, updateLinks };
+  }
+
+  function updateLinksFor(ai, active) {
+    const links = (active.updateLinks && active.updateLinks.length) ? active.updateLinks : (ai.updateLinks || []);
+    if (!links.length) return "";
+    return `
+      <div class="ai-update-links" aria-label="Update logs for ${esc(active.name)}">
+        <span>Update logs:</span>
+        ${links.map(link => `<a class="ai-update-link" href="${esc(link.url)}" target="_blank" rel="noopener noreferrer">${esc(link.label || "Update log")}</a>`).join("")}
+      </div>
+    `;
   }
 
   function esc(value) {
@@ -954,8 +1016,8 @@
         <header class="ai-header">
           <div>
             <div class="ai-kicker">Agent Office model & agent catalog</div>
-            <h1 class="ai-title">Choose the right AI agent for the job</h1>
-            <p class="ai-subtitle">A working catalog of AI models and agents grouped by category — chatbots, coding, research, browser, automation, CLI, and MCP tools. Each card shows what it is best for, its strengths, its limits, whether it has API access, and a relative cost tier. Cost comparison graph is at the bottom.</p>
+            <h1 class="ai-title">AI Models</h1>
+            <p class="ai-subtitle">A working catalog of AI models and agents with direct update-log links, grouped by category — chatbots, coding, research, browser, automation, CLI, and MCP tools. Each card shows what it is best for, its strengths, its limits, whether it has API access, and a relative cost tier. Cost comparison graph is at the bottom.</p>
           </div>
           <div class="ai-notice-stack">
             <div class="ai-notice warning">Models and agents change frequently. Treat these as editable catalog entries and refresh provider data before making buying decisions.</div>
@@ -963,7 +1025,7 @@
           </div>
         </header>
 
-        <section class="ai-toolbar" aria-label="AI landscape filters">
+        <section class="ai-toolbar" aria-label="AI Models filters">
           <input id="ai-search" class="ai-search" value="${esc(state.query)}" placeholder="Search agents, models, cost, API, or use cases" />
           <div class="ai-filter-row">${categoryFilters.map(cat => pill("category", cat, state.category === cat)).join("")}</div>
         </section>
@@ -1031,6 +1093,7 @@
             ${ai.strengths.map(tag => `<span class="ai-tag">${esc(tag)}</span>`).join("")}
           </div>
         </button>
+        <div class="ai-card-links">${updateLinksFor(ai, active)}</div>
         <div class="ai-card-body">
           ${hasTabs ? `<div class="ai-model-tabs">${ai.submodels.map(m => `<button class="ai-pill ${m.name === active.name ? "active" : ""}" data-model-ai="${esc(ai.name)}" data-model-name="${esc(m.name)}" type="button">${esc(m.name)}</button>`).join("")}</div>` : ""}
           <div class="ai-model-detail">
@@ -1048,6 +1111,7 @@
           </div>
           ${ai.website ? `<a class="ai-card-link" href="${esc(ai.website)}" target="_blank" rel="noopener noreferrer">Open website</a>` : ""}
           <p class="ai-model-copy ai-api-note">${esc(ai.apiNote)}</p>
+          ${updateLinksFor(ai, active)}
           <ul class="ai-use-list">${ai.generalUseCases.map(use => `<li>${esc(use)}</li>`).join("")}</ul>
         </div>
       </article>
@@ -1144,13 +1208,13 @@
     itemEl.className = "nav-item";
     itemEl.setAttribute("data-ai-landscape-nav", "true");
     itemEl.setAttribute("onclick", "switchView('ai-landscape', this)");
-    itemEl.innerHTML = '<span class="icon">AI</span> AI Landscape';
+    itemEl.innerHTML = '<span class="icon">AI</span> AI Models';
     const dropbox = Array.from(firstWrap.children).find(el => String(el.getAttribute("onclick") || "").includes("dropbox"));
     firstWrap.insertBefore(itemEl, dropbox || null);
   }
 
   function boot() {
-    // Only add the AI Landscape nav item; do NOT consolidate the whole sidebar
+    // Only add the AI Models nav item; do NOT consolidate the whole sidebar
     // into one "Site Menu" — the nav keeps its own structure (Apps & Sites is the
     // single dropdown, with per-site Railway/GitHub sub-dropdowns).
     addAiNavItem();
@@ -1159,7 +1223,7 @@
         VIEW_HANDLERS["ai-landscape"] = { enter: () => render(), focus: false };
       }
     } catch (error) {
-      console.warn("AI Landscape could not register with Agent Office router.", error);
+      console.warn("AI Models could not register with Agent Office router.", error);
     }
   }
 
