@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>Resets - Agent Office</title>
-<link rel="stylesheet" href="shared.css"/>
+<link rel="stylesheet" href="shared.css?v=theme-vars-20260723"/>
 <!-- Apply saved theme before first paint to avoid a flash of the default theme. Mirrors THEMES in app-shared.js. -->
 <script>
 (function(){
@@ -23,7 +23,7 @@
     var t=THEMES[localStorage.getItem('ao-theme')];
     if(t){var s=document.documentElement.style;
       s.setProperty('--bg',t.bg);s.setProperty('--panel',t.panel);s.setProperty('--border',t.border);
-      s.setProperty('--text',t.text);s.setProperty('--muted',t.muted);s.setProperty('--accent',t.accent);
+      s.setProperty('--text',t.text);s.setProperty('--muted',t.muted);s.setProperty('--accent',t.accent);s.setProperty('--view-bg',t.viewBg);
     }
   }catch(e){}
 })();
@@ -114,7 +114,7 @@
 
   </nav>
 
-  <div class="view" id="view-resets" style="flex-direction:column; background:#0a0c11; overflow-y:auto;">
+  <div class="view" id="view-resets" style="flex-direction:column; background:var(--view-bg); overflow-y:auto;">
     <section class="resets-view">
       <div class="resets-hero">
         <div class="resets-kicker">Reset Signals</div>
@@ -173,7 +173,7 @@
 <!-- BOTTOM STATUS BAR -->
 <div class="statusbar" id="statusbar"></div>
 
-<script src="app-shared.js"></script>
+<script src="app-shared.js?v=theme-vars-20260723"></script>
 <script>
 switchView('resets', document.querySelector('.nav-item.active'));
 </script>

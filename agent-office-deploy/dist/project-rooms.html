@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>Project Rooms - Agent Office</title>
-<link rel="stylesheet" href="shared.css"/>
+<link rel="stylesheet" href="shared.css?v=theme-vars-20260723"/>
 <!-- Apply saved theme before first paint to avoid a flash of the default theme. Mirrors THEMES in app-shared.js. -->
 <script>
 (function(){
@@ -23,7 +23,7 @@
     var t=THEMES[localStorage.getItem('ao-theme')];
     if(t){var s=document.documentElement.style;
       s.setProperty('--bg',t.bg);s.setProperty('--panel',t.panel);s.setProperty('--border',t.border);
-      s.setProperty('--text',t.text);s.setProperty('--muted',t.muted);s.setProperty('--accent',t.accent);
+      s.setProperty('--text',t.text);s.setProperty('--muted',t.muted);s.setProperty('--accent',t.accent);s.setProperty('--view-bg',t.viewBg);
     }
   }catch(e){}
 })();
@@ -115,7 +115,7 @@
 
   </nav>
 
-  <div class="view" id="view-projects" style="flex-direction:column; background:#0a0c11; overflow:hidden;">
+  <div class="view" id="view-projects" style="flex-direction:column; background:var(--view-bg); overflow:hidden;">
     <div id="project-rooms-app" class="ops-view"></div>
   </div>
 
@@ -135,11 +135,11 @@
 
   <!-- PASSPHRASE MODAL -->
   <div id="passphrase-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.75); align-items:center; justify-content:center;">
-    <div style="background:#0d0f14; border:1px solid #2a3048; border-radius:12px; padding:28px 24px; width:100%; max-width:360px; margin:0 16px;">
+    <div style="background:var(--bg); border:1px solid #2a3048; border-radius:12px; padding:28px 24px; width:100%; max-width:360px; margin:0 16px;">
       <div style="font-size:14px; font-weight:700; color:#e2e8f0; margin-bottom:6px;">🔒 Unlock Dropbox</div>
       <div style="font-size:12px; color:#64748b; margin-bottom:18px;">Enter the passphrase to access your drops.</div>
       <input id="passphrase-input" type="password" placeholder="Passphrase..."
-        style="width:100%; background:#0a0c11; border:1px solid #2a3048; border-radius:8px; padding:12px 14px; font-size:15px; color:#e2e8f0; outline:none; box-sizing:border-box; -webkit-appearance:none;"
+        style="width:100%; background:var(--view-bg); border:1px solid #2a3048; border-radius:8px; padding:12px 14px; font-size:15px; color:#e2e8f0; outline:none; box-sizing:border-box; -webkit-appearance:none;"
         autocomplete="current-password" autocorrect="off" autocapitalize="none" spellcheck="false" />
       <div id="passphrase-error" style="display:none; font-size:12px; color:#f87171; margin-top:8px;"></div>
       <div style="display:flex; gap:10px; margin-top:18px;">
@@ -149,7 +149,7 @@
     </div>
   </div>
 
-<script src="app-shared.js"></script>
+<script src="app-shared.js?v=theme-vars-20260723"></script>
 <script src="project-rooms.js"></script>
 <script>
 switchView('projects', document.querySelector('.nav-item.active'));

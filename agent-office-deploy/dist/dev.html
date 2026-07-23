@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="shared.css"/>
+<link rel="stylesheet" href="shared.css?v=theme-vars-20260723"/>
 <!-- Apply saved theme before first paint to avoid a flash of the default theme. Mirrors THEMES in app-shared.js. -->
 <script>
 (function(){
@@ -26,7 +26,7 @@
     var t=THEMES[localStorage.getItem('ao-theme')];
     if(t){var s=document.documentElement.style;
       s.setProperty('--bg',t.bg);s.setProperty('--panel',t.panel);s.setProperty('--border',t.border);
-      s.setProperty('--text',t.text);s.setProperty('--muted',t.muted);s.setProperty('--accent',t.accent);
+      s.setProperty('--text',t.text);s.setProperty('--muted',t.muted);s.setProperty('--accent',t.accent);s.setProperty('--view-bg',t.viewBg);
     }
   }catch(e){}
 })();
@@ -117,7 +117,7 @@
 
   </nav>
 
-  <div class="view" id="view-dev" style="flex-direction:column; background:#0a0c11; overflow-y:auto;">
+  <div class="view" id="view-dev" style="flex-direction:column; background:var(--view-bg); overflow-y:auto;">
     <div style="max-width:1180px; margin:0 auto; padding:32px 28px 48px; width:100%; box-sizing:border-box;">
       <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">⌘ DEV LINKS</div>
       <h1 style="font-size:34px; line-height:1.1; margin:0 0 10px; color:var(--text);">External control room</h1>
@@ -258,7 +258,7 @@
 <!-- BOTTOM STATUS BAR -->
 <div class="statusbar" id="statusbar"></div>
 
-<script src="app-shared.js"></script>
+<script src="app-shared.js?v=theme-vars-20260723"></script>
 <script>
 switchView('dev', document.querySelector('.nav-item.active'));
 </script>
