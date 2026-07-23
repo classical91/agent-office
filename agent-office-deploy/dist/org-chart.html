@@ -8,6 +8,26 @@
 <meta http-equiv="Expires" content="0"/>
 <title>Org Chart - Agent Office</title>
 <link rel="stylesheet" href="shared.css"/>
+<!-- Apply saved theme before first paint to avoid a flash of the default theme. Mirrors THEMES in app-shared.js. -->
+<script>
+(function(){
+  var THEMES={
+    dark:{bg:'#0d0f14',panel:'#13161d',border:'#1e2330',text:'#e2e8f0',muted:'#64748b',accent:'#6366f1',viewBg:'#0a0c11'},
+    midnight:{bg:'#000000',panel:'#0e0e0e',border:'#1c1c1c',text:'#f1f5f9',muted:'#52525b',accent:'#10b981',viewBg:'#000000'},
+    ocean:{bg:'#050e1c',panel:'#091626',border:'#0f2540',text:'#e0f2fe',muted:'#4a7090',accent:'#38bdf8',viewBg:'#050e1c'},
+    crimson:{bg:'#0f0808',panel:'#160c0c',border:'#2c1212',text:'#fef2f2',muted:'#7a5050',accent:'#ef4444',viewBg:'#0f0808'},
+    forest:{bg:'#060e08',panel:'#09160b',border:'#122818',text:'#f0fdf4',muted:'#4a7055',accent:'#22c55e',viewBg:'#060e08'},
+    amber:{bg:'#0f0c05',panel:'#17120a',border:'#2e2010',text:'#fefce8',muted:'#7a6535',accent:'#f59e0b',viewBg:'#0f0c05'}
+  };
+  try{
+    var t=THEMES[localStorage.getItem('ao-theme')];
+    if(t){var s=document.documentElement.style;
+      s.setProperty('--bg',t.bg);s.setProperty('--panel',t.panel);s.setProperty('--border',t.border);
+      s.setProperty('--text',t.text);s.setProperty('--muted',t.muted);s.setProperty('--accent',t.accent);
+    }
+  }catch(e){}
+})();
+</script>
 </head>
 <body>
 
@@ -41,7 +61,7 @@
         <a class="nav-item" href="/memory.html"><span class="icon">🧠</span> Memory</a>
         <a class="nav-item" href="/calendar.html"><span class="icon">📅</span> Calendar</a>
         <a class="nav-item" href="/resets.html"><span class="icon">&#9201;</span> Resets</a>
-        <a class="nav-item" href="/ai-landscape.html" data-ai-landscape-nav="true"><span class="icon">AI</span> AI Landscape</a>
+        <a class="nav-item" href="/ai-landscape.html" data-ai-landscape-nav="true"><span class="icon">AI</span> AI Models</a>
         <a class="nav-item" href="/mission-board.html"><span class="icon">📥</span> Mission Board</a>
         <a class="nav-item" href="/project-rooms.html"><span class="icon">▣</span> Project Rooms</a>
         <a class="nav-item" href="/agent-registry.html"><span class="icon">◎</span> Agent Registry</a>
