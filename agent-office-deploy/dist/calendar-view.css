@@ -55,7 +55,7 @@
 .calendar-subtitle {
   margin-top: 10px;
   max-width: 680px;
-  color: #94a3b8;
+  color: color-mix(in srgb, var(--muted) 60%, var(--text));
   font-size: 13px;
   line-height: 1.7;
 }
@@ -85,20 +85,20 @@
 }
 
 .calendar-btn.primary {
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.92), rgba(99, 102, 241, 0.92));
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.92), color-mix(in srgb, var(--accent) 92%, transparent));
   border-color: rgba(125, 211, 252, 0.55);
-  color: #020617;
+  color: var(--view-bg);
 }
 
 .calendar-btn.warm {
   background: linear-gradient(135deg, rgba(249, 115, 22, 0.88), rgba(234, 179, 8, 0.88));
   border-color: rgba(251, 191, 36, 0.4);
-  color: #111827;
+  color: var(--panel);
 }
 
 .calendar-btn.ghost {
   background: transparent;
-  color: #94a3b8;
+  color: color-mix(in srgb, var(--muted) 60%, var(--text));
 }
 
 .calendar-btn.tiny {
@@ -147,7 +147,7 @@
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  color: #64748b;
+  color: var(--muted);
   margin-bottom: 5px;
 }
 
@@ -164,7 +164,7 @@
 .calendar-input::placeholder,
 .calendar-search::placeholder,
 .calendar-note-input::placeholder {
-  color: #475569;
+  color: color-mix(in srgb, var(--muted) 75%, var(--bg));
 }
 
 .calendar-command > .calendar-btn {
@@ -191,7 +191,7 @@
   padding: 8px 12px;
   border: 1px solid rgba(148, 163, 184, 0.16);
   background: rgba(15, 23, 42, 0.66);
-  color: #cbd5e1;
+  color: color-mix(in srgb, var(--text) 78%, var(--muted));
   font-size: 11px;
   font-weight: 600;
 }
@@ -356,7 +356,7 @@
 .calendar-month-weekday {
   text-align: center;
   font-size: 10px;
-  color: #475569;
+  color: color-mix(in srgb, var(--muted) 75%, var(--bg));
   text-transform: uppercase;
   letter-spacing: 0.1em;
 }
@@ -367,7 +367,7 @@
   border-radius: 12px;
   border: 1px solid transparent;
   background: transparent;
-  color: #cbd5e1;
+  color: color-mix(in srgb, var(--text) 78%, var(--muted));
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -380,7 +380,7 @@
 }
 
 .calendar-mini-cell.muted {
-  color: #475569;
+  color: color-mix(in srgb, var(--muted) 75%, var(--bg));
 }
 
 .calendar-mini-cell.current {
@@ -389,7 +389,7 @@
 }
 
 .calendar-mini-cell.selected {
-  background: linear-gradient(135deg, rgba(56, 189, 248, 0.24), rgba(99, 102, 241, 0.18));
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.24), color-mix(in srgb, var(--accent) 18%, transparent));
   border-color: rgba(125, 211, 252, 0.45);
   color: #f8fafc;
 }
@@ -414,7 +414,7 @@
   border-radius: 14px;
   background: transparent;
   border: 1px solid rgba(148, 163, 184, 0.12);
-  color: #94a3b8;
+  color: color-mix(in srgb, var(--muted) 60%, var(--text));
   cursor: pointer;
   transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
 }
@@ -439,7 +439,7 @@
 .calendar-badge,
 .calendar-deadline-day {
   font-size: 10px;
-  color: #64748b;
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.14em;
 }
@@ -477,7 +477,7 @@
 .calendar-empty {
   display: block;
   margin-top: 4px;
-  color: #94a3b8;
+  color: color-mix(in srgb, var(--muted) 60%, var(--text));
   font-size: 12px;
   line-height: 1.6;
 }
@@ -546,7 +546,7 @@
 
 .calendar-range-sub {
   margin-top: 4px;
-  color: #64748b;
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -564,7 +564,7 @@
   appearance: none;
   border: 1px solid rgba(148, 163, 184, 0.14);
   background: rgba(15, 23, 42, 0.72);
-  color: #cbd5e1;
+  color: color-mix(in srgb, var(--text) 78%, var(--muted));
   border-radius: 12px;
   padding: 9px 12px;
   font-size: 11px;
@@ -576,7 +576,7 @@
 
 .calendar-nav-btn.active,
 .calendar-view-btn.active {
-  color: #020617;
+  color: var(--view-bg);
   background: linear-gradient(135deg, rgba(125, 211, 252, 0.95), rgba(56, 189, 248, 0.95));
   border-color: rgba(125, 211, 252, 0.6);
 }
@@ -644,7 +644,7 @@
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
-  color: #cbd5e1;
+  color: color-mix(in srgb, var(--text) 78%, var(--muted));
 }
 
 .calendar-month-cell.is-today .calendar-day-number {
@@ -653,7 +653,7 @@
 }
 
 .calendar-month-cell.is-other .calendar-day-number {
-  color: #475569;
+  color: color-mix(in srgb, var(--muted) 75%, var(--bg));
 }
 
 .calendar-month-events {
@@ -744,7 +744,7 @@
 .calendar-time-day span {
   display: block;
   margin-top: 4px;
-  color: #64748b;
+  color: var(--muted);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -771,7 +771,7 @@
   position: absolute;
   right: 14px;
   font-size: 10px;
-  color: #64748b;
+  color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.12em;
 }
@@ -906,7 +906,7 @@
 .calendar-agenda-row-copy span {
   display: block;
   margin-top: 4px;
-  color: #94a3b8;
+  color: color-mix(in srgb, var(--muted) 60%, var(--text));
   font-size: 12px;
 }
 
@@ -982,7 +982,7 @@
 }
 
 .calendar-detail-label {
-  color: #94a3b8;
+  color: color-mix(in srgb, var(--muted) 60%, var(--text));
 }
 
 .calendar-detail-meta {
@@ -1049,7 +1049,7 @@
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: #64748b;
+  color: var(--muted);
   font-weight: 700;
 }
 
