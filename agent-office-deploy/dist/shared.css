@@ -3,13 +3,15 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg: #0d0f14;
-    --panel: #13161d;
-    --border: #1e2330;
-    --text: #e2e8f0;
-    --muted: #64748b;
+    /* Themes set --accent only; every surface below derives from it, so the
+       whole app washes with one steady colour (mirrors the hub's palette). */
     --accent: #6366f1;
-    --view-bg: #0a0c11;
+    --bg: #0a0b0e;
+    --panel: color-mix(in srgb, var(--accent) 16%, #15171d);
+    --border: color-mix(in srgb, var(--accent) 30%, #262a32);
+    --text: #e8ecf5;
+    --muted: color-mix(in srgb, var(--accent) 20%, #9aa0ab);
+    --view-bg: transparent;
     --green: #22c55e;
     --yellow: #eab308;
     --red: #ef4444;
@@ -21,7 +23,9 @@
   }
 
   body {
-    background: var(--bg);
+    background:
+      radial-gradient(1400px 900px at 50% -15%, color-mix(in srgb, var(--accent) 46%, var(--bg)) 0%, transparent 65%),
+      color-mix(in srgb, var(--accent) 24%, var(--bg)) fixed;
     color: var(--text);
     font-family: 'Inter', sans-serif;
     height: 100vh;

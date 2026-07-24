@@ -923,26 +923,26 @@ window.SETTINGS = (() => {
   const GW_LAN_KEY   = 'ao-gateway-lan';
   const THEME_KEY    = 'ao-theme';
 
+  // A theme is just an accent. shared.css derives every surface from it.
   const THEMES = {
-    dark:     { label: 'Dark',     bg: '#0d0f14', panel: '#13161d', border: '#1e2330', text: '#e2e8f0', muted: '#64748b', accent: '#6366f1', viewBg: '#0a0c11' },
-    midnight: { label: 'Midnight', bg: '#000000', panel: '#0e0e0e', border: '#1c1c1c', text: '#f1f5f9', muted: '#52525b', accent: '#10b981', viewBg: '#000000' },
-    ocean:    { label: 'Ocean',    bg: '#050e1c', panel: '#091626', border: '#0f2540', text: '#e0f2fe', muted: '#4a7090', accent: '#38bdf8', viewBg: '#050e1c' },
-    crimson:  { label: 'Crimson',  bg: '#0f0808', panel: '#160c0c', border: '#2c1212', text: '#fef2f2', muted: '#7a5050', accent: '#ef4444', viewBg: '#0f0808' },
-    forest:   { label: 'Forest',   bg: '#060e08', panel: '#09160b', border: '#122818', text: '#f0fdf4', muted: '#4a7055', accent: '#22c55e', viewBg: '#060e08' },
-    amber:    { label: 'Amber',    bg: '#0f0c05', panel: '#17120a', border: '#2e2010', text: '#fefce8', muted: '#7a6535', accent: '#f59e0b', viewBg: '#0f0c05' },
+    dark:     { label: 'Dark',     accent: '#6366f1' },
+    midnight: { label: 'Midnight', accent: '#10b981' },
+    ocean:    { label: 'Ocean',    accent: '#38bdf8' },
+    crimson:  { label: 'Crimson',  accent: '#ef4444' },
+    forest:   { label: 'Forest',   accent: '#22c55e' },
+    amber:    { label: 'Amber',    accent: '#f59e0b' },
+  };
+
+  // Mirrors the derivations in shared.css :root, for the picker previews.
+  const surface = {
+    wash:   (a) => `color-mix(in srgb, ${a} 24%, #0a0b0e)`,
+    panel:  (a) => `color-mix(in srgb, ${a} 16%, #15171d)`,
+    border: (a) => `color-mix(in srgb, ${a} 30%, #262a32)`,
   };
 
   function applyTheme(name) {
     const t = THEMES[name] || THEMES.dark;
-    const s = document.documentElement.style;
-    s.setProperty('--bg',     t.bg);
-    s.setProperty('--panel',  t.panel);
-    s.setProperty('--border', t.border);
-    s.setProperty('--text',   t.text);
-    s.setProperty('--muted',  t.muted);
-    s.setProperty('--accent', t.accent);
-    s.setProperty('--view-bg', t.viewBg);
-    document.body.style.background = t.bg;
+    document.documentElement.style.setProperty('--accent', t.accent);
     localStorage.setItem(THEME_KEY, name);
     const grid = document.getElementById('settings-theme-grid');
     if (grid) renderThemePicker(grid, name);
@@ -952,14 +952,15 @@ window.SETTINGS = (() => {
     active = active || localStorage.getItem(THEME_KEY) || 'dark';
     grid.innerHTML = Object.entries(THEMES).map(([key, t]) => {
       const on = key === active;
-      return `<button onclick="SETTINGS.applyTheme('${key}')" style="display:flex;flex-direction:column;align-items:center;gap:8px;background:${t.panel};border:2px solid ${on ? t.accent : t.border};border-radius:12px;padding:14px 16px;cursor:pointer;min-width:76px;transition:border-color 0.15s;">
+      const a = t.accent;
+      return `<button onclick="SETTINGS.applyTheme('${key}')" style="display:flex;flex-direction:column;align-items:center;gap:8px;background:${surface.panel(a)};border:2px solid ${on ? a : surface.border(a)};border-radius:12px;padding:14px 16px;cursor:pointer;min-width:76px;transition:border-color 0.15s;">
         <div style="display:flex;gap:4px;">
-          <div style="width:13px;height:13px;border-radius:50%;background:${t.bg};border:1px solid ${t.border};"></div>
-          <div style="width:13px;height:13px;border-radius:50%;background:${t.panel};border:1px solid ${t.border};"></div>
-          <div style="width:13px;height:13px;border-radius:50%;background:${t.accent};"></div>
+          <div style="width:13px;height:13px;border-radius:50%;background:${surface.wash(a)};border:1px solid ${surface.border(a)};"></div>
+          <div style="width:13px;height:13px;border-radius:50%;background:${surface.panel(a)};border:1px solid ${surface.border(a)};"></div>
+          <div style="width:13px;height:13px;border-radius:50%;background:${a};"></div>
         </div>
-        <div style="font-size:11px;color:${t.text};font-weight:${on ? 600 : 400};">${t.label}</div>
-        ${on ? `<div style="font-size:9px;color:${t.accent};">✓ Active</div>` : '<div style="font-size:9px;color:transparent;">·</div>'}
+        <div style="font-size:11px;color:#e8ecf5;font-weight:${on ? 600 : 400};">${t.label}</div>
+        ${on ? `<div style="font-size:9px;color:${a};">✓ Active</div>` : '<div style="font-size:9px;color:transparent;">·</div>'}
       </button>`;
     }).join('');
   }
