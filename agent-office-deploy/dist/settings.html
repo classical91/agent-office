@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>Settings - Agent Office</title>
-<link rel="stylesheet" href="shared.css"/>
+<link rel="stylesheet" href="shared.css?v=theme-vars-20260723"/>
 <!-- Apply saved theme before first paint to avoid a flash of the default theme. Mirrors THEMES in app-shared.js. -->
 <script>
 (function(){
@@ -23,7 +23,7 @@
     var t=THEMES[localStorage.getItem('ao-theme')];
     if(t){var s=document.documentElement.style;
       s.setProperty('--bg',t.bg);s.setProperty('--panel',t.panel);s.setProperty('--border',t.border);
-      s.setProperty('--text',t.text);s.setProperty('--muted',t.muted);s.setProperty('--accent',t.accent);
+      s.setProperty('--text',t.text);s.setProperty('--muted',t.muted);s.setProperty('--accent',t.accent);s.setProperty('--view-bg',t.viewBg);
     }
   }catch(e){}
 })();
@@ -114,7 +114,7 @@
 
   </nav>
 
-  <div class="view" id="view-settings" style="flex-direction:column; background:#0a0c11; overflow-y:auto;">
+  <div class="view" id="view-settings" style="flex-direction:column; background:var(--view-bg); overflow-y:auto;">
   <div style="max-width:720px; width:100%; margin:0 auto; padding:40px 28px 80px;">
 
     <div style="margin-bottom:36px;">
@@ -135,11 +135,11 @@
       <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">Set custom gateway endpoints. Saved to this browser's localStorage.</div>
       <div style="margin-bottom:14px;">
         <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">Local Gateway</label>
-        <input id="settings-gateway-local" type="url" placeholder="http://localhost:18789" style="width:100%; background:#0d0f14; border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:13px; color:var(--text); outline:none; box-sizing:border-box;" />
+        <input id="settings-gateway-local" type="url" placeholder="http://localhost:18789" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:13px; color:var(--text); outline:none; box-sizing:border-box;" />
       </div>
       <div style="margin-bottom:18px;">
         <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">LAN Gateway</label>
-        <input id="settings-gateway-lan" type="url" placeholder="http://10.0.0.106:18789" style="width:100%; background:#0d0f14; border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:13px; color:var(--text); outline:none; box-sizing:border-box;" />
+        <input id="settings-gateway-lan" type="url" placeholder="http://10.0.0.106:18789" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:13px; color:var(--text); outline:none; box-sizing:border-box;" />
       </div>
       <button onclick="SETTINGS.saveGateway()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:10px 20px; font-size:13px; font-weight:600; cursor:pointer;">Save Gateway URLs</button>
       <span id="settings-gateway-msg" style="font-size:12px; color:#22c55e; margin-left:14px; display:none;">Saved.</span>
@@ -150,28 +150,28 @@
       <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px;">Local Data</div>
       <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">All data is stored in this browser's localStorage. Nothing is sent to any server.</div>
       <div style="display:flex; flex-direction:column; gap:12px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:#0d0f14; border-radius:8px; border:1px solid var(--border);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
           <div>
             <div style="font-size:13px; color:var(--text); margin-bottom:2px;">Reset Countdowns</div>
             <div style="font-size:11px; color:var(--muted);">Clears all API reset countdown cards</div>
           </div>
           <button onclick="SETTINGS.clearKey('agent-office-per-card-countdowns-v2', this)" style="background:transparent; color:#ef4444; border:1px solid #ef4444; border-radius:6px; padding:7px 14px; font-size:12px; cursor:pointer;">Clear</button>
         </div>
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:#0d0f14; border-radius:8px; border:1px solid var(--border);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
           <div>
             <div style="font-size:13px; color:var(--text); margin-bottom:2px;">Memory Entries</div>
             <div style="font-size:11px; color:var(--muted);">Clears all saved agent memory entries</div>
           </div>
           <button onclick="SETTINGS.clearKey('ao-memory', this)" style="background:transparent; color:#ef4444; border:1px solid #ef4444; border-radius:6px; padding:7px 14px; font-size:12px; cursor:pointer;">Clear</button>
         </div>
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:#0d0f14; border-radius:8px; border:1px solid var(--border);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
           <div>
             <div style="font-size:13px; color:var(--text); margin-bottom:2px;">Nav Layout</div>
             <div style="font-size:11px; color:var(--muted);">Resets sidebar collapsed/expanded state</div>
           </div>
           <button onclick="SETTINGS.clearKey('nav-collapsed-state', this)" style="background:transparent; color:#ef4444; border:1px solid #ef4444; border-radius:6px; padding:7px 14px; font-size:12px; cursor:pointer;">Clear</button>
         </div>
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:#0d0f14; border-radius:8px; border:1px solid var(--border);">
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
           <div>
             <div style="font-size:13px; color:var(--text); margin-bottom:2px;">All Local Data</div>
             <div style="font-size:11px; color:var(--muted);">Wipes everything stored by this app</div>
@@ -206,7 +206,7 @@
 <!-- BOTTOM STATUS BAR -->
 <div class="statusbar" id="statusbar"></div>
 
-<script src="app-shared.js"></script>
+<script src="app-shared.js?v=theme-vars-20260723"></script>
 <script>
 switchView('settings', document.querySelector('.nav-item.active'));
 </script>

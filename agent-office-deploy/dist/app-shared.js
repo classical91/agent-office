@@ -941,8 +941,8 @@ window.SETTINGS = (() => {
     s.setProperty('--text',   t.text);
     s.setProperty('--muted',  t.muted);
     s.setProperty('--accent', t.accent);
+    s.setProperty('--view-bg', t.viewBg);
     document.body.style.background = t.bg;
-    document.querySelectorAll('.view').forEach(el => { el.style.background = t.viewBg; });
     localStorage.setItem(THEME_KEY, name);
     const grid = document.getElementById('settings-theme-grid');
     if (grid) renderThemePicker(grid, name);

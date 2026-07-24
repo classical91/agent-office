@@ -2,7 +2,7 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  background: #0a0c11;
+  background: var(--view-bg);
   padding: 24px;
 }
 
@@ -67,7 +67,7 @@
 .ops-form select,
 .ops-form textarea,
 .mission-inline-select {
-  background: #0d0f14;
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 9px 10px;
@@ -145,7 +145,7 @@
 .mission-ticket {
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: #10131a;
+  background: var(--panel);
   padding: 10px;
   margin-bottom: 8px;
   cursor: pointer;
