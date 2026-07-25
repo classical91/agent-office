@@ -1644,12 +1644,22 @@ async function handleStatic(req, res, pathname) {
       '.json': 'application/json; charset=utf-8',
     }[ext] || 'text/plain; charset=utf-8';
 
-    res.writeHead(200, { 'Content-Type': mimeType });
+    // Static assets carried no cache headers at all, so browsers fell back to
+    // heuristic caching and the ?v= query was the only cache-buster — forget to
+    // bump it and a stale stylesheet pairs with fresh markup. Revalidate
+    // instead; these files are small and this app is single-user.
+    res.writeHead(200, {
+      'Content-Type': mimeType,
+      'Cache-Control': 'no-cache',
+    });
     res.end(data);
   } catch (error) {
     try {
       const data = await fs.readFile(path.join(__dirname, 'index.html'));
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-cache',
+      });
       res.end(data);
     } catch (fallbackError) {
       sendJson(res, 500, { error: 'Unable to load application shell.' });
