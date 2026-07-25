@@ -1042,6 +1042,8 @@
     .feed { display: none !important; }
     .topbar { padding: 0 12px; }
     .topbar-meta { gap: 10px; font-size: 11px; }
+    /* Focus Mode is a no-op on mobile - nav and feed are already hidden. */
+    #focus-btn { display: none !important; }
     .mobile-nav-toggle {
       display: flex !important;
       align-items: center; justify-content: center;
