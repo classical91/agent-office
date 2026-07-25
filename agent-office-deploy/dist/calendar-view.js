@@ -673,7 +673,7 @@
 
   function renderToolbar() {
     return '<div class="calendar-toolbar">'
-      + '<div><div class="calendar-range-main">' + escapeHtml(currentRangeLabel()) + '</div><div class="calendar-range-sub">' + escapeHtml(timezoneLabel()) + ' / Sync status: local preview only</div></div>'
+      + '<div><div class="calendar-range-main">' + escapeHtml(currentRangeLabel()) + '</div><div class="calendar-range-sub">' + escapeHtml(timezoneLabel()) + ' / Sync status: ' + (state.gcalConfigured ? 'Google Calendar connected' : 'Agent Office calendar') + '</div></div>'
       + '<div class="calendar-toolbar-controls">'
       + '<div class="calendar-nav">'
       + '<button class="calendar-nav-btn" onclick="CAL.navigate(-1)">Prev</button>'
@@ -683,7 +683,7 @@
       + '<div class="calendar-view-switcher">'
       + ['day', 'week', 'month', 'agenda'].map(view => '<button class="calendar-view-btn' + (state.view === view ? ' active' : '') + '" onclick="CAL.changeView(\'' + view + '\')">' + view + '</button>').join('')
       + '</div>'
-      + '<span class="calendar-status-chip">Google Calendar not connected yet</span>'
+      + '<a class="calendar-status-chip" href="/calendar-v2.html">' + (state.gcalConfigured ? 'Google Calendar connected' : 'Connect Google Calendar') + '</a>'
       + '</div></div>';
   }
 
@@ -1395,16 +1395,20 @@
     state.selectedEventId = event.id;
     state.selectedDate = parseDateKey(dateKey(event.start));
     state.cursorDate = state.selectedDate;
-    // Sync to Google Calendar if configured (skip events already from gcal)
-    if (state.gcalConfigured && !data.gcalId) {
+    // Persist through the server. It routes to Google when connected and keeps
+    // using Agent Office storage otherwise.
+    if (!data.gcalId) {
       fetch('/api/calendar/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: event.title, start: event.start, end: event.end, notes: event.notes || '' })
+        body: JSON.stringify({ title: event.title, start: event.start, end: event.end, notes: event.notes || '', type: event.type || 'meeting' })
       }).then(function (response) {
         return response.ok ? response.json() : null;
       }).then(function (payload) {
-        if (payload && payload.id) event.serverId = payload.id;
+        if (payload && payload.id) {
+          event.serverId = payload.id;
+          if (payload.gcalId) event.gcalId = payload.gcalId;
+        }
       }).catch(function () {});
     }
     return event;
@@ -1437,7 +1441,8 @@
               type: 'meeting',
               start: formatLocalIso(startDate),
               end: formatLocalIso(endDate),
-              gcalId: gEvent.id
+              gcalId: gEvent.id,
+              serverId: 'gcal:' + gEvent.id
             });
             state.events.push(event);
             state.events.sort(compareEvents);
@@ -1747,7 +1752,7 @@
       if (!statusResp.ok) return;
       const status = await statusResp.json();
       if (!status.configured) return;
-      state.gcalConfigured = true;
+      state.gcalConfigured = Boolean(status.connected);
 
       const resp = await fetch('/api/calendar/events');
       if (!resp.ok) return;

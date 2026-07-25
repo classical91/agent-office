@@ -194,6 +194,7 @@
   color: color-mix(in srgb, var(--text) 78%, var(--muted));
   font-size: 11px;
   font-weight: 600;
+  text-decoration: none;
 }
 
 .calendar-chip {
@@ -202,6 +203,7 @@
 
 .calendar-chip:hover,
 .calendar-legend-chip:hover,
+.calendar-status-chip:hover,
 .calendar-deadline-pill:hover {
   border-color: rgba(125, 211, 252, 0.38);
 }

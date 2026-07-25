@@ -85,6 +85,9 @@ All endpoints return JSON.
 | PATCH  | `/api/memories/:id`               | Update a memory entry            |
 | DELETE | `/api/memories/:id`               | Delete a memory entry            |
 | GET    | `/api/calendar/status`            | Check Google Calendar connection |
+| GET    | `/api/calendar/oauth/start`        | Start Google OAuth authorization |
+| GET    | `/api/calendar/oauth/callback`     | Complete Google OAuth             |
+| DELETE | `/api/calendar/oauth/connection`   | Disconnect the stored account     |
 | GET    | `/api/calendar/events`            | List calendar events             |
 | POST   | `/api/calendar/events`            | Create an event                  |
 | PATCH  | `/api/calendar/events/:id`        | Update an event                  |
@@ -95,3 +98,15 @@ All endpoints return JSON.
 ## Deployment
 
 Railway runs `node agent-office-deploy/dist/server.js` (see `railway.json`). The server serves the static pages and assets in `dist/` and exposes the `/api/*` endpoints above. Push to `master` to deploy.
+
+### Google Calendar OAuth
+
+Enable the Google Calendar API and create a Google OAuth web client. Configure these Railway variables:
+
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `PUBLIC_APP_URL` — the deployed app origin, without a trailing slash
+- `GOOGLE_REDIRECT_URI` — optional; defaults to `${PUBLIC_APP_URL}/api/calendar/oauth/callback`
+- `CALENDAR_TOKEN_ENCRYPTION_KEY` — optional dedicated encryption secret; otherwise the Google client secret derives the encryption key
+
+Add the callback URL as an exact authorized redirect URI in the Google OAuth client. Calendar v2 then provides the user-facing **Connect Google Calendar** action. Refresh tokens are encrypted before being stored in PostgreSQL; local development falls back to the ignored `dist/.app-settings.json` file.

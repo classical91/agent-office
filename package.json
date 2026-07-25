@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "node agent-office-deploy/dist/server.js"
+    "start": "node agent-office-deploy/dist/server.js",
+    "test": "node --test tests/calendar-oauth.test.js"
   },
   "dependencies": {
     "pg": "^8.16.0"
