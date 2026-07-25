@@ -2813,3 +2813,109 @@ const MEM = (() => {
   return { render, renderRoster, showForm, hideForm, save, remove, edit, setFilter, selectFormAgent };
 })();
 
+
+
+/* ── TOP BAR LINK SEARCH ────────────────────────────────
+   Searches the Railway / GitHub / live-app links already in the left nav,
+   so there is no second list to keep in sync. */
+function initLinkSearch() {
+  const input = document.getElementById('linkSearch');
+  const panel = document.getElementById('linkSearchResults');
+  if (!input || !panel) return;
+
+  const index = [];
+  document.querySelectorAll('.nav-proj-group').forEach(group => {
+    const project = (group.querySelector('.nav-proj-name')?.textContent || '').trim();
+    group.querySelectorAll('.nav-proj-links a.nav-link').forEach(a => {
+      const href = a.getAttribute('href') || '';
+      const label = a.textContent.replace('↗', '').trim();
+      let kind = 'Link';
+      if (href.includes('railway.com/project') || href.includes('railway.app/')) kind = 'Railway';
+      else if (href.includes('github.com')) kind = 'GitHub';
+      else if (href.includes('.up.railway.app') || href.startsWith('http://localhost')) kind = 'Live';
+      index.push({
+        project, label, href, kind,
+        dot: a.querySelector('.link-dot')?.style.background || 'var(--muted)',
+        haystack: (project + ' ' + label + ' ' + kind + ' ' + href).toLowerCase()
+      });
+    });
+  });
+
+  let results = [];
+  let active = -1;
+
+  function close() {
+    panel.hidden = true;
+    input.setAttribute('aria-expanded', 'false');
+    results = [];
+    active = -1;
+  }
+
+  function render() {
+    if (!results.length) {
+      panel.innerHTML = '<div class="search-empty">No matching links</div>';
+    } else {
+      panel.innerHTML = results.map((r, i) =>
+        '<a class="search-result' + (i === active ? ' active' : '') + '" href="' + r.href + '"'
+        + ' target="_blank" rel="noopener noreferrer" role="option" data-i="' + i + '">'
+        + '<span class="sr-dot" style="background:' + r.dot + ';"></span>'
+        + '<span class="sr-project">' + r.project + '</span>'
+        + '<span class="sr-label">' + r.label + '</span>'
+        + '<span class="sr-kind">' + r.kind + '</span>'
+        + '</a>'
+      ).join('');
+    }
+    panel.hidden = false;
+    input.setAttribute('aria-expanded', 'true');
+  }
+
+  function search(q) {
+    const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+    if (!terms.length) { close(); return; }
+    results = index.filter(r => terms.every(t => r.haystack.includes(t))).slice(0, 20);
+    active = results.length ? 0 : -1;
+    render();
+  }
+
+  function move(delta) {
+    if (!results.length) return;
+    active = (active + delta + results.length) % results.length;
+    panel.querySelectorAll('.search-result').forEach((el, i) => el.classList.toggle('active', i === active));
+    panel.querySelectorAll('.search-result')[active]?.scrollIntoView({ block: 'nearest' });
+  }
+
+  input.addEventListener('input', () => search(input.value));
+  input.addEventListener('focus', () => { if (input.value.trim()) search(input.value); });
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
+    else if (e.key === 'Enter') {
+      if (active >= 0 && results[active]) {
+        e.preventDefault();
+        window.open(results[active].href, '_blank', 'noopener');
+        close();
+      }
+    } else if (e.key === 'Escape') {
+      input.value = '';
+      close();
+      input.blur();
+    }
+  });
+
+  panel.addEventListener('click', e => { if (e.target.closest('.search-result')) close(); });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.topbar-search')) close();
+  });
+
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      input.focus();
+      input.select();
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initLinkSearch);

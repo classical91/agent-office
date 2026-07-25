@@ -1697,6 +1697,103 @@
     .resets-controls { grid-template-columns: 1fr; }
     .reset-timer { grid-template-columns: repeat(2, 1fr); }
   }
+
+  /* TOP BAR LINK SEARCH — filters the Railway / GitHub / live links in the nav */
+  .topbar-search {
+    position: relative;
+    flex: 1;
+    max-width: 380px;
+    margin: 0 20px;
+  }
+
+  .topbar-search-input {
+    width: 100%;
+    height: 30px;
+    padding: 0 30px 0 30px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--accent) 10%, #0f1116);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .topbar-search-input::placeholder { color: var(--muted); }
+  .topbar-search-input:focus { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, #0f1116); }
+  .topbar-search-input::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+
+  .topbar-search-icon {
+    position: absolute;
+    left: 10px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 11px;
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .topbar-search-hint {
+    position: absolute;
+    right: 8px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 9px;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 4px;
+    pointer-events: none;
+  }
+  .topbar-search-input:focus ~ .topbar-search-hint { opacity: 0; }
+
+  .topbar-search-results {
+    position: absolute;
+    top: 38px; left: 0; right: 0;
+    max-height: 340px;
+    overflow-y: auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+    z-index: 10000;
+    padding: 4px;
+  }
+  .topbar-search-results[hidden] { display: none; }
+
+  .search-result {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 9px;
+    border-radius: 7px;
+    font-size: 12px;
+    color: var(--text);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .search-result:hover, .search-result.active { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+  .search-result .sr-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .search-result .sr-project { font-weight: 600; white-space: nowrap; }
+  .search-result .sr-label { color: var(--muted); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .search-result .sr-kind {
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+  .search-empty { padding: 12px 10px; font-size: 11px; color: var(--muted); text-align: center; }
+
+  @media (max-width: 768px) {
+    .topbar-search { margin: 0 8px; max-width: none; }
+    .topbar-search-hint { display: none; }
+    .topbar-search-results { max-height: 60vh; }
+  }
+
 </style>
 <link rel="stylesheet" href="calendar-view.css"/>
 </head>
@@ -1709,6 +1806,12 @@
   <div style="display:flex; align-items:center; gap:12px;">
     <button class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu" aria-label="Open navigation">&#9776;</button>
     <div class="topbar-logo">⬡ AGENT OFFICE</div>
+  </div>
+  <div class="topbar-search">
+    <span class="topbar-search-icon">&#9906;</span>
+    <input id="linkSearch" class="topbar-search-input" type="search" placeholder="Search Railway &amp; GitHub links…" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="linkSearchResults" aria-label="Search project links">
+    <span class="topbar-search-hint">⌘K</span>
+    <div class="topbar-search-results" id="linkSearchResults" role="listbox" hidden></div>
   </div>
   <div class="topbar-meta">
     <span><span class="online-dot"></span><span id="onlineCount">9</span> agents online</span>
@@ -5862,5 +5965,112 @@ const MEM = (() => {
 
 </script>
 <script src="calendar-view.js"></script>
+<script>
+
+/* ── TOP BAR LINK SEARCH ────────────────────────────────
+   Searches the Railway / GitHub / live-app links already in the left nav,
+   so there is no second list to keep in sync. */
+function initLinkSearch() {
+  const input = document.getElementById('linkSearch');
+  const panel = document.getElementById('linkSearchResults');
+  if (!input || !panel) return;
+
+  const index = [];
+  document.querySelectorAll('.nav-proj-group').forEach(group => {
+    const project = (group.querySelector('.nav-proj-name')?.textContent || '').trim();
+    group.querySelectorAll('.nav-proj-links a.nav-link').forEach(a => {
+      const href = a.getAttribute('href') || '';
+      const label = a.textContent.replace('↗', '').trim();
+      let kind = 'Link';
+      if (href.includes('railway.com/project') || href.includes('railway.app/')) kind = 'Railway';
+      else if (href.includes('github.com')) kind = 'GitHub';
+      else if (href.includes('.up.railway.app') || href.startsWith('http://localhost')) kind = 'Live';
+      index.push({
+        project, label, href, kind,
+        dot: a.querySelector('.link-dot')?.style.background || 'var(--muted)',
+        haystack: (project + ' ' + label + ' ' + kind + ' ' + href).toLowerCase()
+      });
+    });
+  });
+
+  let results = [];
+  let active = -1;
+
+  function close() {
+    panel.hidden = true;
+    input.setAttribute('aria-expanded', 'false');
+    results = [];
+    active = -1;
+  }
+
+  function render() {
+    if (!results.length) {
+      panel.innerHTML = '<div class="search-empty">No matching links</div>';
+    } else {
+      panel.innerHTML = results.map((r, i) =>
+        '<a class="search-result' + (i === active ? ' active' : '') + '" href="' + r.href + '"'
+        + ' target="_blank" rel="noopener noreferrer" role="option" data-i="' + i + '">'
+        + '<span class="sr-dot" style="background:' + r.dot + ';"></span>'
+        + '<span class="sr-project">' + r.project + '</span>'
+        + '<span class="sr-label">' + r.label + '</span>'
+        + '<span class="sr-kind">' + r.kind + '</span>'
+        + '</a>'
+      ).join('');
+    }
+    panel.hidden = false;
+    input.setAttribute('aria-expanded', 'true');
+  }
+
+  function search(q) {
+    const terms = q.toLowerCase().split(/\s+/).filter(Boolean);
+    if (!terms.length) { close(); return; }
+    results = index.filter(r => terms.every(t => r.haystack.includes(t))).slice(0, 20);
+    active = results.length ? 0 : -1;
+    render();
+  }
+
+  function move(delta) {
+    if (!results.length) return;
+    active = (active + delta + results.length) % results.length;
+    panel.querySelectorAll('.search-result').forEach((el, i) => el.classList.toggle('active', i === active));
+    panel.querySelectorAll('.search-result')[active]?.scrollIntoView({ block: 'nearest' });
+  }
+
+  input.addEventListener('input', () => search(input.value));
+  input.addEventListener('focus', () => { if (input.value.trim()) search(input.value); });
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
+    else if (e.key === 'Enter') {
+      if (active >= 0 && results[active]) {
+        e.preventDefault();
+        window.open(results[active].href, '_blank', 'noopener');
+        close();
+      }
+    } else if (e.key === 'Escape') {
+      input.value = '';
+      close();
+      input.blur();
+    }
+  });
+
+  panel.addEventListener('click', e => { if (e.target.closest('.search-result')) close(); });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.topbar-search')) close();
+  });
+
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      input.focus();
+      input.select();
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initLinkSearch);
+</script>
 </body>
 </html>
