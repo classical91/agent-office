@@ -940,6 +940,8 @@
     .feed { display: none !important; }
     .topbar { padding: 0 12px; }
     .topbar-meta { gap: 10px; font-size: 11px; }
+    /* Focus Mode is a no-op on mobile - nav and feed are already hidden. */
+    #focus-btn { display: none !important; }
     .mobile-nav-toggle {
       display: flex !important;
       align-items: center; justify-content: center;
@@ -4021,11 +4023,11 @@ function updateClock() {
 
 // --- VIEW SWITCHER --------------------------------------------
 const VIEW_HANDLERS = {
-  office: { enter: () => { resizeCanvas(); renderAgents(); centerOfficeView(); }, focus: false },
+  office: { enter: () => { resizeCanvas(); renderAgents(); centerOfficeView(); } },
   org: { focus: false }
 };
-VIEW_HANDLERS.calendar = { enter: () => { if (window.CAL) window.CAL.render(); }, focus: false };
-VIEW_HANDLERS.resets = { enter: () => { if (window.AOResets) window.AOResets.init(); }, focus: false };
+VIEW_HANDLERS.calendar = { enter: () => { if (window.CAL) window.CAL.render(); } };
+VIEW_HANDLERS.resets = { enter: () => { if (window.AOResets) window.AOResets.init(); } };
 let currentView = 'office';
 
 function switchView(view, navEl) {
@@ -5003,7 +5005,7 @@ function setFocusMode(enabled) {
 function updateFocusButtonLabel() {
   const btn = document.getElementById('focus-btn');
   if (!btn) return;
-  btn.textContent = focusMode ? 'Exit Focus' : 'Focus';
+  btn.textContent = focusMode ? '⛶ Exit Focus' : '⛶ Focus';
 }
 
 const _baseSetFocusMode = setFocusMode;
@@ -5595,41 +5597,16 @@ function escHTML(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// Patch switchView to render Dropbox when opened + auto focus-mode
-// Consolidated router - single source of truth for all view lifecycle
-VIEW_HANDLERS.traderclaw = { enter: () => { if (typeof DE !== 'undefined') DE.render(); }, focus: true };
-VIEW_HANDLERS.lyra       = { enter: () => { if (typeof SORA !== 'undefined') SORA.render(); }, focus: true };
-VIEW_HANDLERS.calendar   = { enter: () => { if (window.CAL) CAL.render(); }, focus: false, feedOnly: true };
-VIEW_HANDLERS.dropbox    = { enter: () => enterDropboxView(), focus: true };
-VIEW_HANDLERS.memory     = { enter: () => { if (typeof MEM !== 'undefined') MEM.render(); }, focus: true };
-VIEW_HANDLERS.office     = { enter: null, focus: false };
-VIEW_HANDLERS.org        = { enter: null, focus: false };
+// View lifecycle hooks - switchView() runs enter() for the view being opened.
+// Views never change focus/nav layout; that stays under the user's control.
+VIEW_HANDLERS.traderclaw = { enter: () => { if (typeof DE !== 'undefined') DE.render(); } };
+VIEW_HANDLERS.lyra       = { enter: () => { if (typeof SORA !== 'undefined') SORA.render(); } };
+VIEW_HANDLERS.calendar   = { enter: () => { if (window.CAL) CAL.render(); } };
+VIEW_HANDLERS.dropbox    = { enter: () => enterDropboxView() };
+VIEW_HANDLERS.memory     = { enter: () => { if (typeof MEM !== 'undefined') MEM.render(); } };
+VIEW_HANDLERS.office     = { enter: null };
+VIEW_HANDLERS.org        = { enter: null };
 
-const _baseSwitchView = switchView;
-window.switchView = function(view, navEl) {
-  _baseSwitchView(view, navEl);
-  const layout = document.querySelector('.layout');
-  const btn = document.getElementById('focus-btn');
-  const handler = VIEW_HANDLERS[view];
-  if (!handler) return;
-  if (handler.enter) handler.enter();
-  if (handler.focus) {
-    layout.classList.add('nav-collapsed', 'feed-collapsed');
-    focusMode = true;
-    if (btn) { btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(99,102,241,0.12)'; }
-  } else if (handler.feedOnly) {
-    layout.classList.remove('nav-collapsed');
-    layout.classList.add('feed-collapsed');
-    focusMode = false;
-    if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
-  } else {
-    layout.classList.remove('nav-collapsed');
-    if (!feedPanelOpen) layout.classList.add('feed-collapsed');
-    else layout.classList.remove('feed-collapsed');
-    focusMode = false;
-    if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
-  }
-};
 
 // --- MEMORY MODULE -----------------------------------------------------------
 const MEM = (() => {
