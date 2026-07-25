@@ -33,6 +33,12 @@
     <button class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu" aria-label="Open navigation">&#9776;</button>
     <div class="topbar-logo">⬡ AGENT OFFICE</div>
   </div>
+  <div class="topbar-search">
+    <span class="topbar-search-icon">&#9906;</span>
+    <input id="linkSearch" class="topbar-search-input" type="search" placeholder="Search Railway &amp; GitHub links…" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="false" aria-controls="linkSearchResults" aria-label="Search project links">
+    <span class="topbar-search-hint">⌘K</span>
+    <div class="topbar-search-results" id="linkSearchResults" role="listbox" hidden></div>
+  </div>
   <div class="topbar-meta">
     <span><span class="online-dot"></span><span id="onlineCount">9</span> agents online</span>
     <span id="clock">--:--:--</span>
