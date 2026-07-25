@@ -922,7 +922,6 @@ const VIEW_HANDLERS = {
   office: { enter: () => { resizeCanvas(); renderAgents(); centerOfficeView(); } },
   org: { focus: false }
 };
-VIEW_HANDLERS.calendar = { enter: () => { if (window.CAL) window.CAL.render(); } };
 VIEW_HANDLERS.resets = { enter: () => { if (window.AOResets) window.AOResets.init(); } };
 VIEW_HANDLERS.settings = { enter: () => { if (window.SETTINGS) window.SETTINGS.load(); } };
 
@@ -2583,7 +2582,6 @@ function escHTML(str) {
 // Views never change focus/nav layout; that stays under the user's control.
 VIEW_HANDLERS.traderclaw = { enter: () => { if (typeof DE !== 'undefined') DE.render(); } };
 VIEW_HANDLERS.lyra       = { enter: () => { if (typeof SORA !== 'undefined') SORA.render(); } };
-VIEW_HANDLERS.calendar   = { enter: () => { if (window.CAL) CAL.render(); } };
 VIEW_HANDLERS.dropbox    = { enter: () => enterDropboxView() };
 VIEW_HANDLERS.projects   = { enter: () => { if (window.ProjectRooms) ProjectRooms.render(); } };
 VIEW_HANDLERS.agents     = { enter: () => { if (window.AgentRegistry) AgentRegistry.render(); } };
