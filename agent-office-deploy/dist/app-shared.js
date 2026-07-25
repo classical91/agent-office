@@ -904,10 +904,18 @@ function tick() {
 
 // ─── CLOCK ────────────────────────────────────────────────────
 function updateClock() {
-  document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-CA', {
+  const el = document.getElementById('clock');
+  if (!el) return;
+  el.textContent = new Date().toLocaleTimeString('en-CA', {
     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
   });
 }
+
+// updateClock() was defined but never called, so the topbar sat on its
+// literal --:--:-- placeholder forever. This script tag is at the end of
+// <body>, so #clock already exists by now.
+updateClock();
+setInterval(updateClock, 1000);
 
 // ─── VIEW SWITCHER ────────────────────────────────────────────
 const VIEW_HANDLERS = {
