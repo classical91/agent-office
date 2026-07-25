@@ -19,7 +19,81 @@
   }catch(e){}
 })();
 </script>
-<link rel="stylesheet" href="calendar-view.css?v=gcal-oauth-20260725"/>
+<style>
+  .gcal-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 16px; gap: 12px; }
+
+  .gcal-toolbar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px;
+  }
+  .gcal-modes { display: flex; gap: 4px; }
+  .gcal-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 6px; padding: 5px 12px; font-size: 11px; font-family: 'Inter', sans-serif;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .gcal-btn:hover { color: var(--text); border-color: var(--accent); }
+  .gcal-btn.active { color: var(--accent); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+
+  .gcal-id {
+    flex: 1; min-width: 180px; max-width: 340px;
+    background: color-mix(in srgb, var(--accent) 10%, #0f1116);
+    border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); font-family: 'Inter', sans-serif; font-size: 11px;
+    padding: 6px 10px; outline: none;
+  }
+  .gcal-id:focus { border-color: var(--accent); }
+
+  .gcal-toggle { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); cursor: pointer; user-select: none; }
+  .gcal-open { margin-left: auto; font-size: 11px; color: var(--accent); text-decoration: none; white-space: nowrap; }
+  .gcal-open:hover { text-decoration: underline; }
+  .gcal-connection { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .gcal-status {
+    display: inline-flex; align-items: center; gap: 7px;
+    border: 1px solid var(--border); border-radius: 999px;
+    padding: 6px 10px; color: var(--muted); font-size: 11px; white-space: nowrap;
+  }
+  .gcal-status::before {
+    content: ''; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--muted);
+  }
+  .gcal-status.connected { color: #86efac; border-color: color-mix(in srgb, #22c55e 38%, var(--border)); }
+  .gcal-status.connected::before { background: #22c55e; box-shadow: 0 0 7px color-mix(in srgb, #22c55e 65%, transparent); }
+  .gcal-status.error { color: #fca5a5; border-color: color-mix(in srgb, #ef4444 42%, var(--border)); }
+  .gcal-status.error::before { background: #ef4444; }
+  .gcal-account { max-width: 220px; overflow: hidden; text-overflow: ellipsis; color: var(--text); font-size: 11px; white-space: nowrap; }
+  .gcal-connect {
+    background: var(--accent); border: 1px solid var(--accent); color: #fff;
+    border-radius: 7px; padding: 6px 11px; font: 600 11px 'Inter', sans-serif;
+    cursor: pointer; white-space: nowrap;
+  }
+  .gcal-connect:hover { filter: brightness(1.08); }
+  .gcal-connect.secondary { background: transparent; color: var(--muted); border-color: var(--border); }
+  .gcal-connect.secondary:hover { color: var(--text); border-color: var(--accent); }
+  .gcal-connect:disabled { opacity: 0.55; cursor: not-allowed; filter: none; }
+  [hidden] { display: none !important; }
+
+  .gcal-frame-wrap {
+    flex: 1; min-height: 0; position: relative;
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    background: #ffffff;
+  }
+  #gcal-frame { width: 100%; height: 100%; border: 0; display: block; }
+  /* Google's embed has no dark theme; invert it to sit on a dark dashboard. */
+  .gcal-frame-wrap.dark #gcal-frame { filter: invert(0.92) hue-rotate(180deg); }
+  .gcal-frame-wrap.dark { background: #0f1116; }
+
+  .gcal-note { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .gcal-note code { color: var(--text); }
+
+  @media (max-width: 768px) {
+    .gcal-wrap { padding: 10px; }
+    .gcal-frame-wrap { min-height: 70vh; }
+    .gcal-open { margin-left: 0; }
+    .gcal-id { max-width: none; }
+  }
+</style>
 </head>
 <body>
 
@@ -59,7 +133,6 @@
         <a class="nav-item" href="/org-chart.html"><span class="icon">🗂️</span> Org Chart</a>
         <a class="nav-item" href="/memory.html"><span class="icon">🧠</span> Memory</a>
         <a class="nav-item active" href="/calendar.html"><span class="icon">📅</span> Calendar</a>
-        <a class="nav-item" href="/calendar-v2.html"><span class="icon">🗓️</span> Calendar v2</a>
         <a class="nav-item" href="/resets.html"><span class="icon">&#9201;</span> Resets</a>
         <a class="nav-item" href="/ai-landscape.html" data-ai-landscape-nav="true"><span class="icon">AI</span> AI Models</a>
         <a class="nav-item" href="/mission-board.html"><span class="icon">📥</span> Mission Board</a>
@@ -118,7 +191,36 @@
   </nav>
 
   <div class="view" id="view-calendar" style="flex-direction:column; overflow:hidden;">
-    <div id="calendar-app" style="flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden;"></div>
+    <div class="gcal-wrap">
+
+      <div class="gcal-toolbar">
+        <div class="gcal-modes">
+          <button class="gcal-btn" data-mode="MONTH">Month</button>
+          <button class="gcal-btn" data-mode="WEEK">Week</button>
+          <button class="gcal-btn" data-mode="AGENDA">Agenda</button>
+        </div>
+        <div class="gcal-connection">
+          <span class="gcal-status" id="gcal-status">Checking connection…</span>
+          <span class="gcal-account" id="gcal-account" hidden></span>
+          <button class="gcal-connect" id="gcal-connect" type="button">Connect Google Calendar</button>
+          <button class="gcal-connect secondary" id="gcal-disconnect" type="button" hidden>Disconnect</button>
+        </div>
+        <input id="gcal-id" class="gcal-id" type="text" spellcheck="false" autocomplete="off"
+               placeholder="calendar id (your Google address)" aria-label="Google Calendar ID">
+        <label class="gcal-toggle"><input type="checkbox" id="gcal-dark"> Dark</label>
+        <a class="gcal-open" id="gcal-open" href="https://calendar.google.com/" target="_blank" rel="noopener noreferrer">Open in Google Calendar &#8599;</a>
+      </div>
+
+      <div class="gcal-frame-wrap" id="gcal-frame-wrap">
+        <iframe id="gcal-frame" title="Google Calendar" frameborder="0" scrolling="no"></iframe>
+      </div>
+
+      <div class="gcal-note">
+        Connect authorizes Agent Office to read and update events through Google&rsquo;s API. The embedded Google view
+        also uses the Google account signed into this browser; the calendar ID above controls which calendar it displays.
+      </div>
+
+    </div>
   </div>
 
   <!-- ACTIVITY FEED -->
@@ -135,9 +237,212 @@
 <div class="statusbar" id="statusbar"></div>
 
 <script src="app-shared.js?v=clock-20260725b"></script>
-<script src="calendar-view.js?v=gcal-oauth-20260725"></script>
 <script>
 switchView('calendar', document.querySelector('.nav-item.active'));
+</script>
+
+<script>
+(function () {
+  // Google Calendar embed. Settings live in localStorage so each browser can
+  // point at its own calendar without touching the deploy.
+  var KEY_ID   = 'ao-gcal-id';
+  var KEY_MODE = 'ao-gcal-mode';
+  var KEY_DARK = 'ao-gcal-dark';
+  var DEFAULT_ID = 'jasonandrewasiedu@gmail.com';
+
+  var frame = document.getElementById('gcal-frame');
+  var wrap  = document.getElementById('gcal-frame-wrap');
+  var idBox = document.getElementById('gcal-id');
+  var dark  = document.getElementById('gcal-dark');
+  var open  = document.getElementById('gcal-open');
+  var status = document.getElementById('gcal-status');
+  var account = document.getElementById('gcal-account');
+  var connect = document.getElementById('gcal-connect');
+  var disconnect = document.getElementById('gcal-disconnect');
+  var oauthPopup = null;
+
+  function get(key, fallback) {
+    try { return localStorage.getItem(key) || fallback; } catch (e) { return fallback; }
+  }
+  function set(key, value) {
+    try { localStorage.setItem(key, value); } catch (e) {}
+  }
+
+  var calId = get(KEY_ID, DEFAULT_ID);
+  var mode  = get(KEY_MODE, 'MONTH');
+  var isDark = get(KEY_DARK, '1') === '1';
+
+  function tz() {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; }
+    catch (e) { return 'UTC'; }
+  }
+
+  function render() {
+    var src = 'https://calendar.google.com/calendar/embed'
+      + '?src=' + encodeURIComponent(calId)
+      + '&ctz=' + encodeURIComponent(tz())
+      + '&mode=' + encodeURIComponent(mode)
+      + '&wkst=2&showTitle=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0';
+    if (frame.getAttribute('src') !== src) frame.setAttribute('src', src);
+
+    open.href = 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(calId);
+    wrap.classList.toggle('dark', isDark);
+    dark.checked = isDark;
+    if (document.activeElement !== idBox) idBox.value = calId;
+    document.querySelectorAll('.gcal-btn').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.mode === mode);
+    });
+  }
+
+  function setConnectionState(kind, label, email) {
+    status.className = 'gcal-status' + (kind ? ' ' + kind : '');
+    status.textContent = label;
+    account.textContent = email || '';
+    account.hidden = !email;
+  }
+
+  async function apiJson(url, options) {
+    var response = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+    var payload = {};
+    try { payload = await response.json(); } catch (e) {}
+    if (!response.ok) {
+      var error = new Error(payload.error || ('Request failed (' + response.status + ')'));
+      error.status = response.status;
+      throw error;
+    }
+    return payload;
+  }
+
+  async function unlockAgentOffice() {
+    var passphrase = window.prompt('Enter the Agent Office passphrase to change the Google Calendar connection.');
+    if (!passphrase) return false;
+    await apiJson('/api/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ passphrase: passphrase })
+    });
+    return true;
+  }
+
+  async function loadConnectionStatus() {
+    try {
+      var data = await apiJson('/api/calendar/status');
+      connect.disabled = !data.googleConfigured;
+      connect.hidden = Boolean(data.connected);
+      disconnect.hidden = !data.connected;
+      if (!data.googleConfigured) {
+        setConnectionState('error', 'OAuth setup required', '');
+        connect.title = 'Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET on the deployment first.';
+        return data;
+      }
+      connect.title = '';
+      if (data.connected) {
+        var email = data.account && data.account.email || '';
+        setConnectionState('connected', 'Connected', email);
+        if (email && calId !== email) {
+          calId = email;
+          set(KEY_ID, calId);
+          render();
+        }
+      } else {
+        setConnectionState('', 'Not connected', '');
+      }
+      return data;
+    } catch (error) {
+      setConnectionState('error', 'Connection check failed', '');
+      connect.disabled = false;
+      throw error;
+    }
+  }
+
+  async function beginGoogleConnection() {
+    if (connect.disabled) return;
+    oauthPopup = window.open('about:blank', 'ao-google-calendar-oauth', 'popup=yes,width=560,height=720');
+    if (!oauthPopup) {
+      window.alert('Allow pop-ups for Agent Office, then try connecting again.');
+      return;
+    }
+    setConnectionState('', 'Opening Google…', '');
+    try {
+      var data = await apiJson('/api/calendar/oauth/start');
+      oauthPopup.location.href = data.url;
+    } catch (error) {
+      oauthPopup.close();
+      oauthPopup = null;
+      if (error.status === 401) {
+        try {
+          if (await unlockAgentOffice()) return beginGoogleConnection();
+        } catch (unlockError) {
+          window.alert(unlockError.message);
+        }
+      } else {
+        window.alert(error.message);
+      }
+      await loadConnectionStatus().catch(function () {});
+    }
+  }
+
+  async function disconnectGoogleCalendar() {
+    if (!window.confirm('Disconnect Google Calendar from Agent Office? Existing events will stay in Google Calendar.')) return;
+    try {
+      await apiJson('/api/calendar/oauth/connection', { method: 'DELETE' });
+    } catch (error) {
+      if (error.status === 401) {
+        try {
+          if (await unlockAgentOffice()) return disconnectGoogleCalendar();
+        } catch (unlockError) {
+          window.alert(unlockError.message);
+          return;
+        }
+      } else {
+        window.alert(error.message);
+      }
+      return;
+    }
+    await loadConnectionStatus();
+  }
+
+  document.querySelectorAll('.gcal-btn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      mode = b.dataset.mode;
+      set(KEY_MODE, mode);
+      render();
+    });
+  });
+
+  dark.addEventListener('change', function () {
+    isDark = dark.checked;
+    set(KEY_DARK, isDark ? '1' : '0');
+    render();
+  });
+
+  function commitId() {
+    var v = idBox.value.trim();
+    if (!v || v === calId) { idBox.value = calId; return; }
+    calId = v;
+    set(KEY_ID, calId);
+    render();
+  }
+  idBox.addEventListener('change', commitId);
+  idBox.addEventListener('keydown', function (e) { if (e.key === 'Enter') { commitId(); idBox.blur(); } });
+  connect.addEventListener('click', beginGoogleConnection);
+  disconnect.addEventListener('click', disconnectGoogleCalendar);
+  window.addEventListener('message', function (event) {
+    if (event.origin !== window.location.origin || !event.data) return;
+    if (event.data.type === 'ao-google-calendar-connected') {
+      loadConnectionStatus().catch(function () {});
+    } else if (event.data.type === 'ao-google-calendar-error') {
+      setConnectionState('error', 'Connection failed', '');
+    }
+  });
+  window.addEventListener('focus', function () {
+    if (oauthPopup && oauthPopup.closed) oauthPopup = null;
+    loadConnectionStatus().catch(function () {});
+  });
+
+  render();
+  loadConnectionStatus().catch(function () {});
+})();
 </script>
 
 </body>
