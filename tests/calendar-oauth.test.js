@@ -67,20 +67,22 @@ async function readJson(response) {
   return payload;
 }
 
-test('Calendar and Calendar v2 render Google events through the Agent Office API instead of an iframe', () => {
+test('Calendar uses the API view while Calendar v2 remains the Google widget', () => {
   const html = fs.readFileSync(CALENDAR_HTML_PATH, 'utf8');
   const v2Html = fs.readFileSync(CALENDAR_V2_HTML_PATH, 'utf8');
   const calendarView = fs.readFileSync(CALENDAR_VIEW_PATH, 'utf8');
 
-  [html, v2Html].forEach(page => {
-    assert.match(page, /id="calendar-app"/);
-    assert.match(page, /id="gcal-connect"/);
-    assert.match(page, /calendar-view\.js/);
-    assert.doesNotMatch(page, /calendar\.google\.com\/calendar\/embed/);
-  });
+  assert.match(html, /id="calendar-app"/);
+  assert.match(html, /id="gcal-connect"/);
+  assert.match(html, /calendar-view\.js/);
+  assert.doesNotMatch(html, /calendar\.google\.com\/calendar\/embed/);
   assert.match(html, /calendar-v2\.html/);
+
   assert.match(v2Html, /Calendar v2/);
-  assert.match(v2Html, /CALENDAR_PAGE_LABEL/);
+  assert.match(v2Html, /id="gcal-frame"/);
+  assert.match(v2Html, /calendar\.google\.com\/calendar\/embed/);
+  assert.match(v2Html, /id="gcal-connect"/);
+
   assert.match(calendarView, /fetch\('\/api\/calendar\/events'/);
   assert.match(calendarView, /AOCalendarConnection/);
 });
