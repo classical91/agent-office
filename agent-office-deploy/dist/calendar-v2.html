@@ -46,8 +46,18 @@
   .gcal-id:focus { border-color: var(--accent); }
 
   .gcal-toggle { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); cursor: pointer; user-select: none; }
-  .gcal-open { margin-left: auto; font-size: 11px; color: var(--accent); text-decoration: none; white-space: nowrap; }
-  .gcal-open:hover { text-decoration: underline; }
+  .gcal-open-row { display: flex; justify-content: flex-end; }
+  .gcal-open {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 42px; padding: 0 16px;
+    border: 1px solid var(--accent); border-radius: 8px;
+    background: var(--accent); color: #fff;
+    font: 600 12px 'Inter', sans-serif; text-decoration: none; white-space: nowrap;
+    transition: filter 0.15s, transform 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .gcal-open:hover { filter: brightness(1.08); }
+  .gcal-open:active { transform: translateY(1px); }
   .gcal-connection { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .gcal-status {
     display: inline-flex; align-items: center; gap: 7px;
@@ -90,7 +100,7 @@
   @media (max-width: 768px) {
     .gcal-wrap { padding: 10px; }
     .gcal-frame-wrap { min-height: 70vh; }
-    .gcal-open { margin-left: 0; }
+    .gcal-open { width: 100%; min-height: 48px; font-size: 13px; }
     .gcal-id { max-width: none; }
   }
 </style>
@@ -208,7 +218,10 @@
         <input id="gcal-id" class="gcal-id" type="text" spellcheck="false" autocomplete="off"
                placeholder="calendar id (your Google address)" aria-label="Google Calendar ID">
         <label class="gcal-toggle"><input type="checkbox" id="gcal-dark"> Dark</label>
-        <a class="gcal-open" id="gcal-open" href="https://calendar.google.com/" target="_blank" rel="noopener noreferrer">Open in Google Calendar &#8599;</a>
+      </div>
+
+      <div class="gcal-open-row">
+        <a class="gcal-open" id="gcal-open" href="https://calendar.google.com/" target="_blank" rel="noopener noreferrer" aria-label="Open your calendar directly in Google Calendar">Open your Google Calendar <span aria-hidden="true">&#8599;</span></a>
       </div>
 
       <div class="gcal-frame-wrap" id="gcal-frame-wrap">
