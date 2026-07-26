@@ -1180,11 +1180,13 @@
   }
 
   function renderTop() {
+    var pageLabel = window.CALENDAR_PAGE_LABEL || 'Calendar';
+    var pageSubtitle = window.CALENDAR_PAGE_SUBTITLE || 'Plan the day, protect focus, and let the agent turn plain language into scheduled actions without leaving the workspace.';
     return '<div class="calendar-top-row">'
       + '<div>'
       + '<div class="calendar-kicker">Time command</div>'
-      + '<div class="calendar-title">Calendar</div>'
-      + '<div class="calendar-subtitle">Plan the day, protect focus, and let the agent turn plain language into scheduled actions without leaving the workspace.</div>'
+      + '<div class="calendar-title">' + escapeHtml(pageLabel) + '</div>'
+      + '<div class="calendar-subtitle">' + escapeHtml(pageSubtitle) + '</div>'
       + '</div>'
       + '<div class="calendar-actions">'
       + '<button class="calendar-btn primary" onclick="CAL.quickAdd(\'event\')">Add event</button>'
