@@ -103,6 +103,60 @@
     .gcal-open { width: 100%; min-height: 48px; font-size: 13px; }
     .gcal-id { max-width: none; }
   }
+
+  /* AGENDA (served by /api/calendar/events - no third-party cookies, so it
+     works in Safari and Brave where the Google embed is blocked). */
+  .gcal-sources { display: flex; gap: 4px; }
+  .gcal-agenda {
+    flex: 1; min-height: 0; overflow-y: auto;
+    border: 1px solid var(--border); border-radius: 10px;
+    background: var(--panel); padding: 6px;
+  }
+  .gcal-day { padding: 6px 6px 10px; }
+  .gcal-day + .gcal-day { border-top: 1px solid var(--border); }
+  .gcal-day-head {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 4px 4px 8px; font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--muted); font-weight: 700;
+  }
+  .gcal-day-head .today { color: var(--accent); }
+  .gcal-day-head .rel { text-transform: none; letter-spacing: 0; font-weight: 500; opacity: 0.75; }
+
+  .gcal-event {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px 8px; border-radius: 8px; text-decoration: none; color: var(--text);
+  }
+  a.gcal-event:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .gcal-event .ev-time {
+    flex-shrink: 0; width: 108px; font-size: 11px; color: var(--muted);
+    font-variant-numeric: tabular-nums; padding-top: 1px;
+  }
+  .gcal-event .ev-body { min-width: 0; flex: 1; display: block; }
+  .gcal-event .ev-title { display: block; font-size: 13px; font-weight: 500; word-break: break-word; }
+  .gcal-event .ev-meta { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; word-break: break-word; }
+  .gcal-event .ev-tag {
+    flex-shrink: 0; font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px;
+  }
+
+  .gcal-agenda-msg { padding: 26px 14px; text-align: center; color: var(--muted); font-size: 12px; line-height: 1.6; }
+  .gcal-banner {
+    margin: 4px 4px 8px; padding: 8px 10px; border-radius: 8px;
+    font-size: 11px; line-height: 1.5;
+    border: 1px solid color-mix(in srgb, var(--yellow) 40%, var(--border));
+    background: color-mix(in srgb, var(--yellow) 10%, transparent);
+    color: #fde68a;
+  }
+  .gcal-banner.error {
+    border-color: color-mix(in srgb, var(--red) 45%, var(--border));
+    background: color-mix(in srgb, var(--red) 10%, transparent);
+    color: #fca5a5;
+  }
+
+  @media (max-width: 768px) {
+    .gcal-event { flex-wrap: wrap; }
+    .gcal-event .ev-time { width: auto; }
+  }
 </style>
 </head>
 <body>
@@ -204,7 +258,11 @@
     <div class="gcal-wrap">
 
       <div class="gcal-toolbar">
-        <div class="gcal-modes">
+        <div class="gcal-sources">
+          <button class="gcal-btn" data-source="api" type="button">Agenda</button>
+          <button class="gcal-btn" data-source="embed" type="button">Google embed</button>
+        </div>
+        <div class="gcal-modes embed-only">
           <button class="gcal-btn" data-mode="MONTH">Month</button>
           <button class="gcal-btn" data-mode="WEEK">Week</button>
           <button class="gcal-btn" data-mode="AGENDA">Agenda</button>
@@ -215,22 +273,31 @@
           <button class="gcal-connect" id="gcal-connect" type="button">Connect Google Calendar</button>
           <button class="gcal-connect secondary" id="gcal-disconnect" type="button" hidden>Disconnect</button>
         </div>
-        <input id="gcal-id" class="gcal-id" type="text" spellcheck="false" autocomplete="off"
+        <div class="gcal-modes api-only">
+          <button class="gcal-btn" data-range="7" type="button">7 days</button>
+          <button class="gcal-btn" data-range="30" type="button">30 days</button>
+          <button class="gcal-btn" data-range="90" type="button">90 days</button>
+          <button class="gcal-btn" id="gcal-refresh" type="button" title="Reload events">Refresh</button>
+        </div>
+        <input id="gcal-id" class="gcal-id embed-only" type="text" spellcheck="false" autocomplete="off"
                placeholder="calendar id (your Google address)" aria-label="Google Calendar ID">
-        <label class="gcal-toggle"><input type="checkbox" id="gcal-dark"> Dark</label>
+        <label class="gcal-toggle embed-only"><input type="checkbox" id="gcal-dark"> Dark</label>
       </div>
 
       <div class="gcal-open-row">
         <a class="gcal-open" id="gcal-open" href="https://calendar.google.com/" target="_blank" rel="noopener noreferrer" aria-label="Open your calendar directly in Google Calendar">Open your Google Calendar <span aria-hidden="true">&#8599;</span></a>
       </div>
 
+      <div class="gcal-agenda" id="gcal-agenda" aria-live="polite"></div>
+
       <div class="gcal-frame-wrap" id="gcal-frame-wrap">
         <iframe id="gcal-frame" title="Google Calendar" frameborder="0" scrolling="no"></iframe>
       </div>
 
       <div class="gcal-note">
-        Connect authorizes Agent Office to read and update events through Google&rsquo;s API. The embedded Google view
-        also uses the Google account signed into this browser; the calendar ID above controls which calendar it displays.
+        <strong>Agenda</strong> reads your events through this server&rsquo;s Google connection, so it works in every
+        browser. <strong>Google embed</strong> loads Google&rsquo;s own widget, which needs third-party cookies &mdash;
+        Safari and Brave block those by default, so it may show a sign-in or permission notice there.
       </div>
 
     </div>
@@ -261,6 +328,8 @@ switchView('calendar-v2', document.querySelector('.nav-item.active'));
   var KEY_ID   = 'ao-gcal-id';
   var KEY_MODE = 'ao-gcal-mode';
   var KEY_DARK = 'ao-gcal-dark';
+  var KEY_SOURCE = 'ao-gcal-source';
+  var KEY_RANGE  = 'ao-gcal-range';
   var DEFAULT_ID = 'jasonandrewasiedu@gmail.com';
 
   var frame = document.getElementById('gcal-frame');
@@ -273,6 +342,8 @@ switchView('calendar-v2', document.querySelector('.nav-item.active'));
   var connect = document.getElementById('gcal-connect');
   var disconnect = document.getElementById('gcal-disconnect');
   var oauthPopup = null;
+  var agendaEl = document.getElementById('gcal-agenda');
+  var agendaLoaded = false;
 
   function get(key, fallback) {
     try { return localStorage.getItem(key) || fallback; } catch (e) { return fallback; }
@@ -284,6 +355,10 @@ switchView('calendar-v2', document.querySelector('.nav-item.active'));
   var calId = get(KEY_ID, DEFAULT_ID);
   var mode  = get(KEY_MODE, 'MONTH');
   var isDark = get(KEY_DARK, '1') === '1';
+  // Default to the API-backed agenda: the embed needs third-party cookies,
+  // which Safari and Brave block.
+  var source = get(KEY_SOURCE, 'api') === 'embed' ? 'embed' : 'api';
+  var rangeDays = parseInt(get(KEY_RANGE, '30'), 10) || 30;
 
   function tz() {
     try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; }
@@ -291,18 +366,36 @@ switchView('calendar-v2', document.querySelector('.nav-item.active'));
   }
 
   function render() {
-    var src = 'https://calendar.google.com/calendar/embed'
-      + '?src=' + encodeURIComponent(calId)
-      + '&ctz=' + encodeURIComponent(tz())
-      + '&mode=' + encodeURIComponent(mode)
-      + '&wkst=2&showTitle=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0';
-    if (frame.getAttribute('src') !== src) frame.setAttribute('src', src);
+    var embed = source === 'embed';
+
+    // Only point the iframe at Google when the embed is actually showing.
+    if (embed) {
+      var src = 'https://calendar.google.com/calendar/embed'
+        + '?src=' + encodeURIComponent(calId)
+        + '&ctz=' + encodeURIComponent(tz())
+        + '&mode=' + encodeURIComponent(mode)
+        + '&wkst=2&showTitle=0&showPrint=0&showTabs=0&showCalendars=0&showTz=0';
+      if (frame.getAttribute('src') !== src) frame.setAttribute('src', src);
+    } else if (frame.hasAttribute('src')) {
+      frame.removeAttribute('src');
+    }
+
+    wrap.hidden = !embed;
+    agendaEl.hidden = embed;
+    document.querySelectorAll('.embed-only').forEach(function (el) { el.hidden = !embed; });
+    document.querySelectorAll('.api-only').forEach(function (el) { el.hidden = embed; });
+    document.querySelectorAll('.gcal-btn[data-source]').forEach(function (b) {
+      b.classList.toggle('active', (b.dataset.source === 'embed') === embed);
+    });
+    document.querySelectorAll('.gcal-btn[data-range]').forEach(function (b) {
+      b.classList.toggle('active', parseInt(b.dataset.range, 10) === rangeDays);
+    });
 
     open.href = 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(calId);
     wrap.classList.toggle('dark', isDark);
     dark.checked = isDark;
     if (document.activeElement !== idBox) idBox.value = calId;
-    document.querySelectorAll('.gcal-btn').forEach(function (b) {
+    document.querySelectorAll('.gcal-btn[data-mode]').forEach(function (b) {
       b.classList.toggle('active', b.dataset.mode === mode);
     });
   }
@@ -415,7 +508,133 @@ switchView('calendar-v2', document.querySelector('.nav-item.active'));
     await loadConnectionStatus();
   }
 
-  document.querySelectorAll('.gcal-btn').forEach(function (b) {
+  // ── AGENDA (via this server's Google connection) ───────────────────────────
+  function esc(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // Google sends timed events as start.dateTime and all-day ones as start.date.
+  function eventStart(ev) {
+    var raw = ev && ev.start && (ev.start.dateTime || ev.start.date);
+    if (!raw) return null;
+    var d = new Date(ev.start.date && !ev.start.dateTime ? raw + 'T00:00:00' : raw);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  function isAllDay(ev) { return Boolean(ev && ev.start && ev.start.date && !ev.start.dateTime); }
+  function dayKey(d) { return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+
+  function dayLabel(d) {
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var diff = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - today) / 86400000);
+    var rel = diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : diff < 0 ? Math.abs(diff) + 'd ago' : 'in ' + diff + 'd';
+    return {
+      date: d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }),
+      rel: rel,
+      today: diff === 0
+    };
+  }
+
+  function timeLabel(ev) {
+    if (isAllDay(ev)) return 'All day';
+    var s = eventStart(ev);
+    var endRaw = ev.end && (ev.end.dateTime || ev.end.date);
+    var e = endRaw ? new Date(endRaw) : null;
+    var opts = { hour: 'numeric', minute: '2-digit' };
+    var out = s ? s.toLocaleTimeString([], opts) : '';
+    if (e && !isNaN(e.getTime())) out += ' – ' + e.toLocaleTimeString([], opts);
+    return out;
+  }
+
+  function agendaMessage(text, kind) {
+    agendaEl.innerHTML = '<div class="gcal-agenda-msg' + (kind ? ' ' + kind : '') + '">' + text + '</div>';
+  }
+
+  function renderAgenda(payload) {
+    var all = Array.isArray(payload.events) ? payload.events : [];
+    var from = new Date(); from.setHours(0, 0, 0, 0);
+    var to = new Date(from.getTime() + rangeDays * 86400000);
+
+    var events = all.filter(function (ev) {
+      var s = eventStart(ev);
+      return s && s >= from && s < to;
+    }).sort(function (a, b) { return eventStart(a) - eventStart(b); });
+
+    var html = '';
+    if (payload.googleConnected === false) {
+      html += '<div class="gcal-banner">Google Calendar is not connected to this server, so only locally stored '
+            + 'events are shown. Use <strong>Connect Google Calendar</strong> above.</div>';
+    } else if (payload.googleError) {
+      html += '<div class="gcal-banner error">' + esc(payload.googleError) + '</div>';
+    }
+
+    if (!events.length) {
+      agendaEl.innerHTML = html + '<div class="gcal-agenda-msg">Nothing scheduled in the next '
+        + rangeDays + ' days.</div>';
+      return;
+    }
+
+    var currentKey = null;
+    events.forEach(function (ev) {
+      var start = eventStart(ev);
+      var key = dayKey(start);
+      if (key !== currentKey) {
+        if (currentKey !== null) html += '</div>';
+        var label = dayLabel(start);
+        html += '<div class="gcal-day"><div class="gcal-day-head">'
+              + '<span' + (label.today ? ' class="today"' : '') + '>' + esc(label.date) + '</span>'
+              + '<span class="rel">' + esc(label.rel) + '</span></div>';
+        currentKey = key;
+      }
+      var meta = [];
+      if (ev.location) meta.push(esc(ev.location));
+      if (ev.description) meta.push(esc(String(ev.description).replace(/\s+/g, ' ').slice(0, 140)));
+      var tag = ev.source === 'google' ? '' : '<span class="ev-tag">local</span>';
+      var body = '<span class="ev-time">' + esc(timeLabel(ev)) + '</span>'
+               + '<span class="ev-body"><span class="ev-title">' + esc(ev.summary || '(No title)') + '</span>'
+               + (meta.length ? '<span class="ev-meta">' + meta.join(' · ') + '</span>' : '')
+               + '</span>' + tag;
+      html += ev.htmlLink
+        ? '<a class="gcal-event" href="' + esc(ev.htmlLink) + '" target="_blank" rel="noopener noreferrer">' + body + '</a>'
+        : '<div class="gcal-event">' + body + '</div>';
+    });
+    if (currentKey !== null) html += '</div>';
+    agendaEl.innerHTML = html;
+  }
+
+  async function loadAgenda() {
+    agendaLoaded = true;
+    if (!agendaEl.childElementCount) agendaMessage('Loading events…');
+    try {
+      renderAgenda(await apiJson('/api/calendar/events'));
+    } catch (error) {
+      agendaMessage('Could not load events: ' + esc(error.message)
+        + '<br>The agenda reads <code>/api/calendar/events</code> on this server.', 'error');
+    }
+  }
+
+  document.querySelectorAll('.gcal-btn[data-source]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      source = b.dataset.source === 'embed' ? 'embed' : 'api';
+      set(KEY_SOURCE, source);
+      render();
+      if (source === 'api') loadAgenda();
+    });
+  });
+
+  document.querySelectorAll('.gcal-btn[data-range]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      rangeDays = parseInt(b.dataset.range, 10) || 30;
+      set(KEY_RANGE, String(rangeDays));
+      render();
+      loadAgenda();
+    });
+  });
+
+  document.getElementById('gcal-refresh').addEventListener('click', loadAgenda);
+
+  document.querySelectorAll('.gcal-btn[data-mode]').forEach(function (b) {
     b.addEventListener('click', function () {
       mode = b.dataset.mode;
       set(KEY_MODE, mode);
@@ -454,7 +673,10 @@ switchView('calendar-v2', document.querySelector('.nav-item.active'));
   });
 
   render();
-  loadConnectionStatus().catch(function () {});
+  if (source === 'api') loadAgenda();
+  loadConnectionStatus().then(function () {
+    if (source === 'api' && agendaLoaded) loadAgenda();
+  }).catch(function () {});
 })();
 </script>
 
