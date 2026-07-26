@@ -1,11 +1,14 @@
 const assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
+const fs = require('node:fs');
 const net = require('node:net');
 const path = require('node:path');
 const test = require('node:test');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const SERVER_PATH = path.join(REPO_ROOT, 'agent-office-deploy', 'dist', 'server.js');
+const CALENDAR_HTML_PATH = path.join(REPO_ROOT, 'agent-office-deploy', 'dist', 'calendar.html');
+const CALENDAR_VIEW_PATH = path.join(REPO_ROOT, 'agent-office-deploy', 'dist', 'calendar-view.js');
 
 function getFreePort() {
   return new Promise((resolve, reject) => {
@@ -62,6 +65,19 @@ async function readJson(response) {
   assert.equal(response.ok, true, payload.error || `HTTP ${response.status}`);
   return payload;
 }
+
+test('Calendar renders Google events through the Agent Office API instead of an iframe', () => {
+  const html = fs.readFileSync(CALENDAR_HTML_PATH, 'utf8');
+  const calendarView = fs.readFileSync(CALENDAR_VIEW_PATH, 'utf8');
+
+  assert.match(html, /id="calendar-app"/);
+  assert.match(html, /id="gcal-connect"/);
+  assert.match(html, /calendar-view\.js/);
+  assert.doesNotMatch(html, /calendar\.google\.com\/calendar\/embed/);
+  assert.doesNotMatch(html, /calendar-v2\.html/);
+  assert.match(calendarView, /fetch\('\/api\/calendar\/events'/);
+  assert.match(calendarView, /AOCalendarConnection/);
+});
 
 test('Google Calendar OAuth start exposes a signed offline authorization URL', async t => {
   const server = await startServer();

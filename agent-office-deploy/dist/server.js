@@ -2573,7 +2573,7 @@ const server = http.createServer(async (req, res) => {
         } catch (profileError) {
           console.warn('Google Calendar connected, but account profile lookup failed.', profileError.message);
         }
-        sendGcalOAuthResult(res, true, 'Authorization is complete. You can return to Calendar v2.');
+        sendGcalOAuthResult(res, true, 'Authorization is complete. You can return to Calendar.');
       } catch (error) {
         console.error('Google Calendar OAuth callback failed.', error);
         sendGcalOAuthResult(res, false, 'Google could not complete the token exchange. Check the OAuth client and redirect URI.');
