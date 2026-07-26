@@ -290,6 +290,7 @@
 
       <div class="gcal-agenda" id="gcal-agenda" aria-live="polite"></div>
 
+      <div class="gcal-banner" id="gcal-blocked" hidden>This browser blocks the third-party cookies Google&rsquo;s widget needs, so it may show a sign-in or permission notice instead of your calendar. Switch to <strong>Agenda</strong> above for the same events.</div>
       <div class="gcal-frame-wrap" id="gcal-frame-wrap">
         <iframe id="gcal-frame" title="Google Calendar" frameborder="0" scrolling="no"></iframe>
       </div>
@@ -355,9 +356,29 @@ switchView('calendar-v2', document.querySelector('.nav-item.active'));
   var calId = get(KEY_ID, DEFAULT_ID);
   var mode  = get(KEY_MODE, 'MONTH');
   var isDark = get(KEY_DARK, '1') === '1';
-  // Default to the API-backed agenda: the embed needs third-party cookies,
-  // which Safari and Brave block.
-  var source = get(KEY_SOURCE, 'api') === 'embed' ? 'embed' : 'api';
+  // Google's embed only renders a private calendar when its session cookies are
+  // sent from an iframe on our domain - i.e. as third-party cookies. Safari and
+  // Brave block those by default (as does every iOS browser, which is WebKit
+  // underneath), so those browsers default to the agenda and everyone else gets
+  // the Google widget. An explicit choice always wins over this guess.
+  // Allow-list rather than block-list: Chrome and Edge still send third-party
+  // cookies, so the embed works there. Safari (ITP), Brave (Shields), Firefox
+  // (Total Cookie Protection) and every iOS browser (WebKit underneath) do not.
+  function embedLikelyBlocked() {
+    try {
+      var ua = navigator.userAgent || '';
+      if (navigator.brave) return true;
+      if (/iPhone|iPad|iPod/i.test(ua)) return true;
+      return !/Chrome|Chromium|Edg\//i.test(ua);
+    } catch (e) {
+      return true;
+    }
+  }
+
+  var storedSource = get(KEY_SOURCE, '');
+  var source = storedSource === 'embed' || storedSource === 'api'
+    ? storedSource
+    : (embedLikelyBlocked() ? 'api' : 'embed');
   var rangeDays = parseInt(get(KEY_RANGE, '30'), 10) || 30;
 
   function tz() {
@@ -382,6 +403,8 @@ switchView('calendar-v2', document.querySelector('.nav-item.active'));
 
     wrap.hidden = !embed;
     agendaEl.hidden = embed;
+    var blockedWarning = document.getElementById('gcal-blocked');
+    if (blockedWarning) blockedWarning.hidden = !(embed && embedLikelyBlocked());
     document.querySelectorAll('.embed-only').forEach(function (el) { el.hidden = !embed; });
     document.querySelectorAll('.api-only').forEach(function (el) { el.hidden = embed; });
     document.querySelectorAll('.gcal-btn[data-source]').forEach(function (b) {
