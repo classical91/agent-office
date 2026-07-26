@@ -2582,7 +2582,6 @@ function escHTML(str) {
 // Views never change focus/nav layout; that stays under the user's control.
 VIEW_HANDLERS.traderclaw = { enter: () => { if (typeof DE !== 'undefined') DE.render(); } };
 VIEW_HANDLERS.lyra       = { enter: () => { if (typeof SORA !== 'undefined') SORA.render(); } };
-VIEW_HANDLERS.calendar   = { enter: () => { if (window.CAL) window.CAL.render(); } };
 VIEW_HANDLERS.dropbox    = { enter: () => enterDropboxView() };
 VIEW_HANDLERS.projects   = { enter: () => { if (window.ProjectRooms) ProjectRooms.render(); } };
 VIEW_HANDLERS.agents     = { enter: () => { if (window.AgentRegistry) AgentRegistry.render(); } };

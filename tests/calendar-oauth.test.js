@@ -9,7 +9,6 @@ const REPO_ROOT = path.resolve(__dirname, '..');
 const SERVER_PATH = path.join(REPO_ROOT, 'agent-office-deploy', 'dist', 'server.js');
 const CALENDAR_HTML_PATH = path.join(REPO_ROOT, 'agent-office-deploy', 'dist', 'calendar.html');
 const CALENDAR_V2_HTML_PATH = path.join(REPO_ROOT, 'agent-office-deploy', 'dist', 'calendar-v2.html');
-const CALENDAR_VIEW_PATH = path.join(REPO_ROOT, 'agent-office-deploy', 'dist', 'calendar-view.js');
 
 function getFreePort() {
   return new Promise((resolve, reject) => {
@@ -67,24 +66,18 @@ async function readJson(response) {
   return payload;
 }
 
-test('Calendar uses the API view while Calendar v2 remains the Google widget', () => {
+test('Calendar v2 is the only Calendar surface and the old URL redirects to it', () => {
   const html = fs.readFileSync(CALENDAR_HTML_PATH, 'utf8');
   const v2Html = fs.readFileSync(CALENDAR_V2_HTML_PATH, 'utf8');
-  const calendarView = fs.readFileSync(CALENDAR_VIEW_PATH, 'utf8');
 
-  assert.match(html, /id="calendar-app"/);
-  assert.match(html, /id="gcal-connect"/);
-  assert.match(html, /calendar-view\.js/);
-  assert.doesNotMatch(html, /calendar\.google\.com\/calendar\/embed/);
-  assert.match(html, /calendar-v2\.html/);
+  assert.match(html, /window\.location\.replace\('\/calendar-v2\.html'/);
+  assert.doesNotMatch(html, /id="calendar-app"/);
 
   assert.match(v2Html, /Calendar v2/);
   assert.match(v2Html, /id="gcal-frame"/);
   assert.match(v2Html, /calendar\.google\.com\/calendar\/embed/);
   assert.match(v2Html, /id="gcal-connect"/);
-
-  assert.match(calendarView, /fetch\('\/api\/calendar\/events'/);
-  assert.match(calendarView, /AOCalendarConnection/);
+  assert.doesNotMatch(v2Html, /href="\/calendar\.html"/);
 });
 
 test('Google Calendar OAuth start exposes a signed offline authorization URL', async t => {
