@@ -19,7 +19,7 @@
   }catch(e){}
 })();
 </script>
-<link rel="stylesheet" href="calendar-view.css?v=office-submenu-20260727"/>
+<link rel="stylesheet" href="calendar-view.css?v=agent-intelligence-20260727"/>
 <style>
   .calendar-connection-bar {
     display: flex;
@@ -315,6 +315,19 @@ body > .statusbar,
 .layout > .feed,
 #mobile-overlay,
 .calendar-connection-bar { display: none !important; }
+/* The sync chip in the toolbar opens the connection bar on demand, so hiding it
+   by default no longer means it is unreachable. */
+.calendar-connection-bar.is-open {
+  display: flex !important;
+  position: absolute;
+  z-index: 40;
+  top: 0;
+  left: 0;
+  right: 0;
+  border-radius: 0 0 14px 14px;
+  box-shadow: 0 16px 34px rgba(2, 6, 23, 0.55);
+}
+#view-calendar-v3 { position: relative; }
 .layout,
 .layout.feed-collapsed {
   display: block !important;
@@ -712,7 +725,7 @@ body > .statusbar,
 <script src="app-shared.js?v=office-submenu-20260727"></script>
 
 
-<script src="calendar-view.js?v=office-submenu-20260727"></script>
+<script src="calendar-view.js?v=agent-intelligence-20260727"></script>
 <script>
 switchView('calendar-v3', document.querySelector('.nav-item.active'));
 </script>
@@ -850,7 +863,13 @@ switchView('calendar-v3', document.querySelector('.nav-item.active'));
   }
 
   function showConnection() {
-    document.getElementById('gcal-connection').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    var bar = document.getElementById('gcal-connection');
+    if (!bar) return;
+    bar.classList.toggle('is-open');
+    if (bar.classList.contains('is-open')) {
+      bar.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      loadConnectionStatus(false).catch(function () {});
+    }
   }
 
   connect.addEventListener('click', beginGoogleConnection);

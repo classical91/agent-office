@@ -81,6 +81,19 @@ test('Calendar v3 is the only active Calendar surface and old URLs redirect to i
   assert.match(v3Html, /id="gcal-connect"/);
 });
 
+test('the calendar bundle loads the Agent Assistant and seeds no demo events', () => {
+  const loader = fs.readFileSync(path.join(REPO_ROOT, 'agent-office-deploy', 'dist', 'calendar-view.js'), 'utf8');
+  assert.match(loader, /calendar-agent-assistant\.js/);
+
+  // Seeded Farmbot events used to fill an empty calendar, which made a
+  // connected-but-empty Google account look populated.
+  ['calendar-view-base.js', path.join('agent-office-deploy', 'dist', 'calendar-view-base.js')].forEach(relative => {
+    const source = fs.readFileSync(path.join(REPO_ROOT, relative), 'utf8');
+    assert.doesNotMatch(source, /evt_farmbot/, `${relative} still seeds demo events`);
+    assert.doesNotMatch(source, /local preview only/, `${relative} still hardcodes a sync status`);
+  });
+});
+
 test('Google Calendar OAuth start exposes a signed offline authorization URL', async t => {
   const server = await startServer();
   t.after(() => server.child.kill());
