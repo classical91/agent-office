@@ -231,35 +231,8 @@
 
   function seedState() {
     const today = startOfDay(new Date());
+    // No seeded events: everything comes from Google via /api/calendar/events.
     const events = [];
-    for (var d = -1; d <= 7; d++) {
-      events.push(
-        makeEvent(today, d, 9, 0, 9, 30, {
-          id: 'evt_farmbot_' + d,
-          title: 'Farmbot Morning Run',
-          type: 'task',
-          notes: 'Automated: Reaper runs CommentFarm discover + autopost. Posts to @DiamondHands811.',
-          recurring: 'Daily',
-          seriesId: 'farmbot'
-        }),
-        makeEvent(today, d, 11, 0, 11, 30, {
-          id: 'evt_farmbot_session_am_' + d,
-          title: 'Farmbot Session',
-          type: 'task',
-          notes: 'Manual: Farmbot session.',
-          recurring: 'Daily',
-          seriesId: 'farmbot_session_am'
-        }),
-        makeEvent(today, d, 16, 0, 16, 30, {
-          id: 'evt_farmbot_session_pm_' + d,
-          title: 'Farmbot Session',
-          type: 'task',
-          notes: 'Manual: Farmbot session.',
-          recurring: 'Daily',
-          seriesId: 'farmbot_session_pm'
-        })
-      );
-    }
     events.sort(compareEvents);
 
     const tasks = [].sort(compareTasks);
@@ -270,7 +243,7 @@
       today,
       cursorDate: today,
       selectedDate: today,
-      selectedEventId: upcoming ? upcoming.id : events[0].id,
+      selectedEventId: upcoming ? upcoming.id : null,
       editingEventId: null,
       editDraft: null,
       creatingEvent: false,

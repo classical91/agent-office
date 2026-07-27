@@ -42,11 +42,8 @@ const DEFAULT_AGENTS = [
 const ALLOWED_ORIGIN = process.env.APP_ORIGIN || process.env.PUBLIC_APP_URL || '';
 const PASSPHRASE_HASH = resolvePassphraseHash();
 const sessions = new Map();
-const RECURRING_CALENDAR_EVENTS = [
-  { seriesId: 'farmbot', title: 'Farmbot Morning Run', s: [9, 0], e: [9, 30], notes: 'Automated: Reaper runs CommentFarm discover + autopost. Posts to @DiamondHands811.', type: 'task', recurring: 'Daily' },
-  { seriesId: 'farmbot_session_am', title: 'Farmbot Session', s: [11, 0], e: [11, 30], notes: 'Manual: Farmbot session.', type: 'task', recurring: 'Daily' },
-  { seriesId: 'farmbot_session_pm', title: 'Farmbot Session', s: [16, 0], e: [16, 30], notes: 'Manual: Farmbot session.', type: 'task', recurring: 'Daily' },
-];
+// Nothing is hardcoded here any more: the calendar reflects Google only.
+const RECURRING_CALENDAR_EVENTS = [];
 const KNOWN_RECURRING_SERIES = new Set(RECURRING_CALENDAR_EVENTS.map(item => item.seriesId));
 
 let writeQueue = Promise.resolve();
@@ -2621,15 +2618,17 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       try {
+        // Google is the single source of truth once connected - locally stored
+        // events are not merged in, so the calendar mirrors Google exactly.
         const googleEvents = await listGoogleCalendarEvents();
         sendJson(res, 200, {
-          events: localEvents.concat(googleEvents),
+          events: googleEvents,
           googleConnected: true,
         });
       } catch (error) {
         console.error('Unable to load Google Calendar events.', error);
         sendJson(res, 200, {
-          events: localEvents,
+          events: [],
           googleConnected: true,
           googleError: 'Google Calendar could not be refreshed.',
         });
