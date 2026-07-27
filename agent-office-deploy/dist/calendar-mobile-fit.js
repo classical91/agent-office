@@ -51,7 +51,7 @@
         min-width: 0 !important;
         box-sizing: border-box !important;
         flex-wrap: nowrap !important;
-        overflow-x: auto !important;
+        overflow-x: hidden !important;
         overflow-y: hidden !important;
       }
 
@@ -69,13 +69,24 @@
 
       .calendar-compact-board .calendar-toolbar-controls {
         width: auto !important;
-        flex: 0 0 auto !important;
+        flex: 1 1 auto !important;
         align-self: center !important;
+        justify-content: flex-end !important;
+        overflow: hidden !important;
       }
 
-      .calendar-compact-board .calendar-nav,
-      .calendar-compact-board .calendar-view-switcher {
+      .calendar-compact-board .calendar-nav {
         flex: 0 0 auto !important;
+      }
+
+      .calendar-compact-board .calendar-view-switcher {
+        display: none !important;
+      }
+
+      .calendar-compact-board .calendar-nav-btn {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+        letter-spacing: 0.08em !important;
       }
 
       .calendar-compact-board .calendar-month-grid {
@@ -93,8 +104,35 @@
         box-sizing: border-box !important;
       }
 
-      .calendar-compact-board .calendar-month-cell,
+      .calendar-compact-board .calendar-month-events {
+        gap: 4px !important;
+        align-items: center !important;
+        overflow: visible !important;
+      }
+
       .calendar-compact-board .calendar-event.small {
+        width: 10px !important;
+        height: 10px !important;
+        min-width: 10px !important;
+        min-height: 10px !important;
+        max-width: 10px !important;
+        max-height: 10px !important;
+        padding: 0 !important;
+        margin: 1px auto 0 !important;
+        border: 2px solid rgba(255, 255, 255, 0.92) !important;
+        border-radius: 999px !important;
+        background: currentColor !important;
+        opacity: 1 !important;
+        box-shadow: 0 0 0 2px rgba(2, 6, 23, 0.72), 0 0 8px currentColor !important;
+        touch-action: manipulation !important;
+      }
+
+      .calendar-compact-board .calendar-event.small.active {
+        transform: scale(1.14) !important;
+        box-shadow: 0 0 0 2px #ffffff, 0 0 12px currentColor !important;
+      }
+
+      .calendar-compact-board .calendar-month-cell {
         touch-action: manipulation !important;
       }
     }
