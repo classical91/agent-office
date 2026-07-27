@@ -50,6 +50,9 @@
         max-width: 100% !important;
         min-width: 0 !important;
         box-sizing: border-box !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
       }
 
       .calendar-compact-board .calendar-toolbar > *,
@@ -57,6 +60,22 @@
       .calendar-compact-board .calendar-nav,
       .calendar-compact-board .calendar-view-switcher {
         min-width: 0 !important;
+        flex-wrap: nowrap !important;
+      }
+
+      .calendar-compact-board .calendar-toolbar > div:first-of-type {
+        flex: 0 0 auto !important;
+      }
+
+      .calendar-compact-board .calendar-toolbar-controls {
+        width: auto !important;
+        flex: 0 0 auto !important;
+        align-self: center !important;
+      }
+
+      .calendar-compact-board .calendar-nav,
+      .calendar-compact-board .calendar-view-switcher {
+        flex: 0 0 auto !important;
       }
 
       .calendar-compact-board .calendar-month-grid {
