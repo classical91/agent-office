@@ -1171,13 +1171,11 @@
       state.gcalFetchStarted = true;
       loadGoogleEvents();
     }
-    root.innerHTML = '<div class="calendar-shell">'
-      + '<div class="calendar-top">' + renderTop() + '</div>'
-      + '<div class="calendar-workspace calendar-view-' + state.view + '">'
-      + '<aside class="calendar-rail calendar-rail-left">' + renderLeftRail() + '</aside>'
-      + '<section class="calendar-stage">' + renderFlash() + renderPriorityBanner() + renderDeadlineStrip() + '<div class="calendar-board">' + renderToolbar() + renderMainBoard() + '</div></section>'
-      + '<aside class="calendar-rail calendar-rail-right">' + renderRightRail() + '</aside>'
-      + '</div></div>';
+    root.innerHTML = '<div class="calendar-shell calendar-compact-shell">'
+      + '<section class="calendar-stage calendar-compact-stage calendar-view-' + state.view + '">'
+      + renderFlash()
+      + '<div class="calendar-board calendar-compact-board">' + renderToolbar() + renderMainBoard() + '</div>'
+      + '</section></div>';
   }
   function jumpToDate(value) {
     const date = typeof value === 'string' ? parseDateKey(value) : startOfDay(value);
