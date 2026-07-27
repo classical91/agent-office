@@ -196,6 +196,115 @@
     #calendar-app .calendar-workspace { grid-template-columns: minmax(0, 1fr); min-height: 0; }
   }
 </style>
+
+<style id="calendar-v3-compact-focus-style">
+/* Calendar v3 compact focus mode */
+html, body { height: 100%; overflow: hidden; }
+body > .topbar,
+body > .statusbar,
+.layout > .nav,
+.layout > .feed,
+#mobile-overlay,
+.calendar-connection-bar,
+.calendar-range-sub,
+.calendar-status-chip,
+.calendar-mini-month,
+.calendar-detail-panel,
+.calendar-details-panel,
+.calendar-inspector,
+.calendar-side-panel,
+.calendar-sidebar-panel,
+.calendar-right-panel,
+.calendar-command-panel,
+.calendar-smart-panel,
+.calendar-agenda-panel {
+  display: none !important;
+}
+.layout,
+.layout.feed-collapsed {
+  display: block !important;
+  height: 100vh !important;
+  min-height: 100vh !important;
+  width: 100vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+#view-calendar-v3 {
+  display: flex !important;
+  height: 100vh !important;
+  width: 100vw !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+#calendar-app {
+  flex: 1 1 auto !important;
+  height: 100vh !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+#calendar-app .calendar-shell,
+#calendar-app .calendar-app,
+#calendar-app .calendar-stage,
+#calendar-app .calendar-main,
+#calendar-app .calendar-workspace {
+  min-height: 100vh !important;
+  height: 100vh !important;
+}
+#calendar-app .calendar-layout,
+#calendar-app .calendar-content,
+#calendar-app .calendar-grid-layout,
+#calendar-app .calendar-body,
+#calendar-app .calendar-workspace {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+  padding-top: 0 !important;
+}
+#calendar-app .calendar-toolbar,
+#calendar-app .calendar-header,
+#calendar-app .calendar-topbar,
+#calendar-app .calendar-controls {
+  min-height: 48px !important;
+  height: 48px !important;
+  padding: 6px 12px !important;
+  gap: 8px !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+}
+#calendar-app .calendar-range-main {
+  font-size: 18px !important;
+  line-height: 1.2 !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+}
+#calendar-app .calendar-view-btn,
+#calendar-app .calendar-nav-btn,
+#calendar-app .calendar-today-btn,
+#calendar-app .calendar-action-btn,
+#calendar-app .calendar-icon-btn {
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 0 12px !important;
+  border-radius: 999px !important;
+  font-size: 13px !important;
+}
+#calendar-app .calendar-month-grid {
+  min-height: calc(100vh - 48px) !important;
+  height: calc(100vh - 48px) !important;
+}
+#calendar-app .calendar-month-cell {
+  min-height: 100px !important;
+}
+@media (max-width: 900px) {
+  #calendar-app .calendar-toolbar,
+  #calendar-app .calendar-header,
+  #calendar-app .calendar-topbar,
+  #calendar-app .calendar-controls { overflow-x: auto !important; }
+}
+</style>
+
 </head>
 <body>
 
