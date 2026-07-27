@@ -298,8 +298,12 @@ switchView('calendar-v3', document.querySelector('.nav-item.active'));
   async function loadConnectionStatus(refreshEvents) {
     try {
       var data = await apiJson('/api/calendar/status');
+      // A stored-but-dead token still reports connected, so key the Connect
+      // button off whether the token actually works.
+      var needsReconnect = data.connected && data.tokenValid === false;
       connect.disabled = !data.googleConfigured;
-      connect.hidden = Boolean(data.connected);
+      connect.hidden = Boolean(data.connected) && !needsReconnect;
+      connect.textContent = needsReconnect ? 'Reconnect Google Calendar' : 'Connect Google Calendar';
       disconnect.hidden = !data.connected;
 
       if (!data.googleConfigured) {
@@ -309,7 +313,9 @@ switchView('calendar-v3', document.querySelector('.nav-item.active'));
       }
 
       connect.title = '';
-      if (data.connected) {
+      if (needsReconnect) {
+        setConnectionState('error', data.tokenError || 'Google token expired - reconnect', '');
+      } else if (data.connected) {
         var email = data.account && data.account.email || '';
         setConnectionState('connected', 'Google Calendar connected', email);
         if (refreshEvents && window.CAL) await window.CAL.loadGoogleEvents();

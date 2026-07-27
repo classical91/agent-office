@@ -1276,8 +1276,10 @@
     if (state.flashTimer) window.clearTimeout(state.flashTimer);
     state.flashTimer = window.setTimeout(function () {
       state.flash = null;
-      const view = document.getElementById('view-calendar');
-      if (view && view.classList.contains('active')) render();
+      // The host page's view id has changed over time (view-calendar, -v3), so
+      // key off the mount point instead - it is the same on every page.
+      const root = document.getElementById('calendar-app');
+      if (root && root.offsetParent !== null) render();
     }, 3500);
   }
 
