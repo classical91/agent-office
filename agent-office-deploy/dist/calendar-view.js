@@ -260,7 +260,8 @@
       events,
       tasks,
       gcalFetchStarted: false,
-      gcalConfigured: false
+      gcalConfigured: false,
+      gcalError: null
     };
   }
 
@@ -646,7 +647,7 @@
 
   function renderToolbar() {
     return '<div class="calendar-toolbar">'
-      + '<div><div class="calendar-range-main">' + escapeHtml(currentRangeLabel()) + '</div><div class="calendar-range-sub">' + escapeHtml(timezoneLabel()) + ' / Sync status: ' + (state.gcalConfigured ? 'Google Calendar connected' : 'Agent Office calendar') + '</div></div>'
+      + '<div><div class="calendar-range-main">' + escapeHtml(currentRangeLabel()) + '</div><div class="calendar-range-sub">' + escapeHtml(timezoneLabel()) + ' / Sync status: ' + (state.gcalError ? state.gcalError : (state.gcalConfigured ? 'Google Calendar connected' : 'Agent Office calendar')) + '</div></div>'
       + '<div class="calendar-toolbar-controls">'
       + '<div class="calendar-nav">'
       + '<button class="calendar-nav-btn" onclick="CAL.navigate(-1)">Prev</button>'
@@ -1730,17 +1731,45 @@
     };
   }
 
+  // Every failure below used to return silently. With no seeded events left, a
+  // silent failure is indistinguishable from an empty calendar, so say what broke.
+  function reportSyncProblem(message) {
+    state.gcalError = message;
+    setFlash(message, 'warn');
+    render();
+  }
+
   async function loadGoogleEvents() {
     try {
       const statusResp = await fetch('/api/calendar/status');
-      if (!statusResp.ok) return;
+      if (!statusResp.ok) {
+        reportSyncProblem('Calendar status check failed (HTTP ' + statusResp.status + ').');
+        return;
+      }
       const status = await statusResp.json();
-      if (!status.configured) return;
+      if (!status.configured) {
+        reportSyncProblem('Calendar API is not configured on the server.');
+        return;
+      }
       state.gcalConfigured = Boolean(status.connected);
+      if (!status.connected) {
+        reportSyncProblem(status.googleConfigured
+          ? 'Google Calendar is not connected. Use Connect Google Calendar above.'
+          : 'Google OAuth is not set up on this deployment.');
+        return;
+      }
 
       const resp = await fetch('/api/calendar/events');
-      if (!resp.ok) return;
+      if (!resp.ok) {
+        reportSyncProblem('Loading events failed (HTTP ' + resp.status + ').');
+        return;
+      }
       const data = await resp.json();
+      if (data.googleError) {
+        reportSyncProblem('Google: ' + data.googleError);
+      } else {
+        state.gcalError = null;
+      }
       const gEvents = (data.events || []).filter(e => e.start);
       const converted = gEvents.map(googleEventToInternal).sort(compareEvents);
       resetEventEditor();
@@ -1755,9 +1784,12 @@
       } else {
         state.selectedEventId = null;
       }
+      if (!converted.length && !data.googleError) {
+        state.gcalError = 'Connected, but Google returned no events for this window.';
+      }
       render();
-    } catch (_) {
-      // Keep seed data on any error
+    } catch (error) {
+      reportSyncProblem('Could not reach the calendar API: ' + (error && error.message ? error.message : error));
     }
   }
 
