@@ -530,6 +530,60 @@ body > .statusbar,
 </style>
 
 
+
+<style id="calendar-v3-mobile-menu-style">
+/* Calendar v3 mobile menu restoration: keep compact view but allow sidebar overlay. */
+.calendar-mobile-menu-btn {
+  display: none;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  color: var(--text);
+  border-radius: 999px;
+  width: 34px;
+  height: 30px;
+  min-width: 34px;
+  padding: 0;
+  font-size: 17px;
+  line-height: 28px;
+  cursor: pointer;
+}
+@media (max-width: 640px) {
+  .calendar-mobile-menu-btn { display: inline-flex !important; align-items: center; justify-content: center; flex: 0 0 34px !important; }
+  .layout > .nav.mobile-open {
+    display: flex !important;
+    flex-direction: column !important;
+    position: fixed !important;
+    top: 52px !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    width: min(82vw, 300px) !important;
+    z-index: 10001 !important;
+    background: var(--panel) !important;
+    border-right: 1px solid var(--border) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-top: 8px !important;
+  }
+  #mobile-overlay[style*="block"] {
+    display: block !important;
+    position: fixed !important;
+    inset: 52px 0 0 0 !important;
+    z-index: 10000 !important;
+    background: rgba(0,0,0,0.55) !important;
+  }
+  .calendar-compact-board .calendar-toolbar > div:first-child {
+    min-width: 78px !important;
+  }
+  .calendar-compact-board .calendar-range-main {
+    font-size: 15px !important;
+  }
+  .calendar-compact-board .calendar-nav-btn,
+  .calendar-compact-board .calendar-view-btn {
+    padding: 0 8px !important;
+  }
+}
+</style>
+
 </head>
 <body>
 

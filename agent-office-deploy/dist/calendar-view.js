@@ -647,6 +647,7 @@
 
   function renderToolbar() {
     return '<div class="calendar-toolbar">'
+      + '<button class="calendar-mobile-menu-btn" type="button" aria-label="Open menu" onclick="toggleMobileNav()">☰</button>'
       + '<div><div class="calendar-range-main">' + escapeHtml(currentRangeLabel()) + '</div><div class="calendar-range-sub">' + escapeHtml(timezoneLabel()) + ' / Sync status: ' + (state.gcalError ? state.gcalError : (state.gcalConfigured ? 'Google Calendar connected' : 'Agent Office calendar')) + '</div></div>'
       + '<div class="calendar-toolbar-controls">'
       + '<div class="calendar-nav">'
