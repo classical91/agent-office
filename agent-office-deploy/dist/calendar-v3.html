@@ -409,6 +409,112 @@ body > .statusbar,
 }
 </style>
 
+
+<style id="calendar-v3-mobile-fix-style">
+/* Calendar v3 mobile cleanup: prevent toolbar overlap and keep month grid readable. */
+@media (max-width: 640px) {
+  html, body { height: 100dvh !important; overflow: hidden !important; }
+  #view-calendar-v3,
+  #calendar-app,
+  .calendar-compact-shell,
+  .calendar-compact-stage,
+  .calendar-compact-board {
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  .calendar-compact-board .calendar-toolbar {
+    flex: 0 0 86px !important;
+    height: 86px !important;
+    min-height: 86px !important;
+    padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px 8px !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    grid-template-rows: 28px 34px !important;
+    align-items: center !important;
+    gap: 6px !important;
+    overflow: hidden !important;
+  }
+  .calendar-compact-board .calendar-toolbar > div:first-child {
+    min-width: 0 !important;
+  }
+  .calendar-compact-board .calendar-range-main {
+    font-size: 21px !important;
+    line-height: 28px !important;
+  }
+  .calendar-compact-board .calendar-toolbar-controls {
+    display: flex !important;
+    gap: 6px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding-bottom: 2px !important;
+  }
+  .calendar-compact-board .calendar-toolbar-controls::-webkit-scrollbar { display: none !important; }
+  .calendar-compact-board .calendar-nav,
+  .calendar-compact-board .calendar-view-switcher {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    gap: 6px !important;
+  }
+  .calendar-compact-board .calendar-nav-btn,
+  .calendar-compact-board .calendar-view-btn {
+    height: 30px !important;
+    min-height: 30px !important;
+    padding: 0 11px !important;
+    font-size: 11px !important;
+    line-height: 30px !important;
+    white-space: nowrap !important;
+  }
+  .calendar-compact-board .calendar-month-grid {
+    height: calc(100dvh - 86px) !important;
+    min-height: 0 !important;
+    grid-template-rows: 28px repeat(6, minmax(0, 1fr)) !important;
+    overflow: hidden !important;
+  }
+  .calendar-compact-board .calendar-month-weekday {
+    height: 28px !important;
+    min-height: 28px !important;
+    padding: 7px 2px 4px !important;
+    font-size: 10px !important;
+    letter-spacing: 0.08em !important;
+    text-align: center !important;
+  }
+  .calendar-compact-board .calendar-month-cell {
+    min-height: 0 !important;
+    padding: 6px 3px 3px !important;
+    overflow: hidden !important;
+  }
+  .calendar-compact-board .calendar-day-number {
+    font-size: 13px !important;
+    line-height: 18px !important;
+    margin-bottom: 2px !important;
+  }
+  .calendar-compact-board .calendar-month-events {
+    gap: 2px !important;
+    overflow: hidden !important;
+  }
+  .calendar-compact-board .calendar-event.small {
+    display: block !important;
+    width: 7px !important;
+    height: 7px !important;
+    min-height: 7px !important;
+    max-height: 7px !important;
+    padding: 0 !important;
+    border-radius: 999px !important;
+    overflow: hidden !important;
+    margin: 1px auto 0 !important;
+  }
+  .calendar-compact-board .calendar-event.small .calendar-event-time,
+  .calendar-compact-board .calendar-event.small .calendar-event-title,
+  .calendar-compact-board .calendar-more {
+    display: none !important;
+  }
+}
+</style>
+
 </head>
 <body>
 
