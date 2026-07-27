@@ -112,6 +112,79 @@
     .calendar-connection-bar { padding: 9px 10px; }
     .calendar-connection-copy { order: 3; flex-basis: 100%; min-width: 0; }
   }
+
+
+/* Calendar v3 compact focus mode: Google Calendar-style top bar, calendar-first layout. */
+.calendar-connection-bar,
+.calendar-range-sub,
+.calendar-status-chip,
+.calendar-mini-month,
+.calendar-detail-panel,
+.calendar-details-panel,
+.calendar-inspector,
+.calendar-side-panel,
+.calendar-sidebar-panel,
+.calendar-right-panel,
+.calendar-command-panel,
+.calendar-smart-panel,
+.calendar-agenda-panel {
+  display: none !important;
+}
+
+.calendar-shell,
+.calendar-app,
+.calendar-stage,
+.calendar-main,
+.calendar-workspace {
+  min-height: 100vh !important;
+}
+
+.calendar-layout,
+.calendar-content,
+.calendar-grid-layout,
+.calendar-body {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+  padding-top: 0 !important;
+}
+
+.calendar-toolbar,
+.calendar-header,
+.calendar-topbar,
+.calendar-controls {
+  min-height: 48px !important;
+  padding: 6px 12px !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+.calendar-range-main {
+  font-size: 18px !important;
+  line-height: 1.2 !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+}
+
+.calendar-view-btn,
+.calendar-nav-btn,
+.calendar-today-btn,
+.calendar-action-btn,
+.calendar-icon-btn {
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 0 12px !important;
+  border-radius: 999px !important;
+  font-size: 13px !important;
+}
+
+.calendar-month-grid {
+  min-height: calc(100vh - 56px) !important;
+}
+
+.calendar-month-cell {
+  min-height: 112px !important;
+}
+
 </style>
 <style>
   /* The renderer's grid needs a real height once #calendar-app scrolls. */
