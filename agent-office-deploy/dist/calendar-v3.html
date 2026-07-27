@@ -410,8 +410,9 @@ body > .statusbar,
 </style>
 
 
+
 <style id="calendar-v3-mobile-fix-style">
-/* Calendar v3 mobile cleanup: prevent toolbar overlap and keep month grid readable. */
+/* Calendar v3 mobile cleanup: single compact bar, calendar-first. */
 @media (max-width: 640px) {
   html, body { height: 100dvh !important; overflow: hidden !important; }
   #view-calendar-v3,
@@ -425,59 +426,72 @@ body > .statusbar,
     overflow: hidden !important;
   }
   .calendar-compact-board .calendar-toolbar {
-    flex: 0 0 86px !important;
-    height: 86px !important;
-    min-height: 86px !important;
-    padding: calc(env(safe-area-inset-top, 0px) + 8px) 12px 8px !important;
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    grid-template-rows: 28px 34px !important;
-    align-items: center !important;
-    gap: 6px !important;
-    overflow: hidden !important;
-  }
-  .calendar-compact-board .calendar-toolbar > div:first-child {
-    min-width: 0 !important;
-  }
-  .calendar-compact-board .calendar-range-main {
-    font-size: 21px !important;
-    line-height: 28px !important;
-  }
-  .calendar-compact-board .calendar-toolbar-controls {
+    flex: 0 0 52px !important;
+    height: 52px !important;
+    min-height: 52px !important;
+    padding: calc(env(safe-area-inset-top, 0px) + 6px) 8px 6px !important;
     display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
     gap: 6px !important;
     overflow-x: auto !important;
     overflow-y: hidden !important;
     -webkit-overflow-scrolling: touch !important;
     scrollbar-width: none !important;
-    padding-bottom: 2px !important;
+    box-sizing: border-box !important;
   }
-  .calendar-compact-board .calendar-toolbar-controls::-webkit-scrollbar { display: none !important; }
+  .calendar-compact-board .calendar-toolbar::-webkit-scrollbar { display: none !important; }
+  .calendar-compact-board .calendar-toolbar > div:first-child {
+    flex: 0 0 auto !important;
+    min-width: 86px !important;
+  }
+  .calendar-compact-board .calendar-range-main {
+    font-size: 16px !important;
+    line-height: 30px !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+  }
+  .calendar-compact-board .calendar-range-sub,
+  .calendar-compact-board .calendar-status-chip { display: none !important; }
+  .calendar-compact-board .calendar-toolbar-controls {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
   .calendar-compact-board .calendar-nav,
   .calendar-compact-board .calendar-view-switcher {
     flex: 0 0 auto !important;
     display: flex !important;
-    gap: 6px !important;
+    align-items: center !important;
+    gap: 5px !important;
+  }
+  .calendar-compact-board .calendar-view-btn:not(.active) {
+    display: none !important;
   }
   .calendar-compact-board .calendar-nav-btn,
   .calendar-compact-board .calendar-view-btn {
     height: 30px !important;
     min-height: 30px !important;
-    padding: 0 11px !important;
-    font-size: 11px !important;
+    padding: 0 9px !important;
+    border-radius: 999px !important;
+    font-size: 10px !important;
     line-height: 30px !important;
+    letter-spacing: 0.12em !important;
     white-space: nowrap !important;
   }
   .calendar-compact-board .calendar-month-grid {
-    height: calc(100dvh - 86px) !important;
+    height: calc(100dvh - 52px) !important;
     min-height: 0 !important;
-    grid-template-rows: 28px repeat(6, minmax(0, 1fr)) !important;
+    grid-template-rows: 24px repeat(6, minmax(0, 1fr)) !important;
     overflow: hidden !important;
   }
   .calendar-compact-board .calendar-month-weekday {
-    height: 28px !important;
-    min-height: 28px !important;
-    padding: 7px 2px 4px !important;
+    height: 24px !important;
+    min-height: 24px !important;
+    padding: 6px 2px 3px !important;
     font-size: 10px !important;
     letter-spacing: 0.08em !important;
     text-align: center !important;
@@ -514,6 +528,7 @@ body > .statusbar,
   }
 }
 </style>
+
 
 </head>
 <body>
