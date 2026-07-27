@@ -111,7 +111,6 @@
         background: rgba(30, 41, 59, 0.68);
         color: #e2e8f0;
         text-align: left;
-        text-decoration: none;
       }
       .calendar-mobile-day-event-time {
         display: block;
@@ -138,12 +137,46 @@
         line-height: 1.45;
         overflow-wrap: anywhere;
       }
+      .calendar-mobile-day-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .calendar-mobile-day-open,
+      .calendar-mobile-day-delete {
+        min-height: 34px;
+        border-radius: 10px;
+        padding: 7px 10px;
+        box-sizing: border-box;
+        font: 700 11px/18px system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        text-decoration: none;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+      }
       .calendar-mobile-day-open {
-        display: inline-block;
-        margin-top: 8px;
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid rgba(56, 189, 248, 0.24);
+        background: rgba(56, 189, 248, 0.08);
         color: #7dd3fc;
-        font-size: 11px;
-        font-weight: 700;
+      }
+      .calendar-mobile-day-delete {
+        margin-left: auto;
+        border: 1px solid rgba(248, 113, 113, 0.34);
+        background: rgba(239, 68, 68, 0.10);
+        color: #fca5a5;
+      }
+      .calendar-mobile-day-delete:disabled {
+        opacity: 0.55;
+        cursor: wait;
+      }
+      .calendar-mobile-day-error {
+        margin-top: 8px;
+        color: #fca5a5;
+        font-size: 12px;
+        line-height: 1.4;
       }
       .calendar-mobile-day-empty,
       .calendar-mobile-day-loading {
@@ -177,6 +210,10 @@
     }
     if (start.date) return start.date;
     return start.dateTime ? localDateKey(start.dateTime) : '';
+  }
+
+  function eventIdentifier(event) {
+    return String((event && (event.id || event.serverId)) || '');
   }
 
   function eventType(event) {
@@ -230,8 +267,8 @@
     }));
   }
 
-  async function allCalendarEvents() {
-    if (Date.now() - eventCache.loadedAt < 30000) return eventCache.events;
+  async function allCalendarEvents(forceRefresh) {
+    if (!forceRefresh && Date.now() - eventCache.loadedAt < 30000) return eventCache.events;
     const response = await fetch('/api/calendar/events', { credentials: 'same-origin' });
     if (!response.ok) throw new Error('Calendar request failed');
     const payload = await response.json();
@@ -255,18 +292,81 @@
       const title = event.summary || event.title || 'Untitled event';
       const time = event.startLabel || eventTimeLabel(event) || 'Scheduled';
       const detail = event.location || event.description || type.charAt(0).toUpperCase() + type.slice(1);
-      const openCopy = event.htmlLink ? '<span class="calendar-mobile-day-open">Open in Google Calendar ↗</span>' : '';
-      const tag = event.htmlLink ? 'a' : 'div';
-      const href = event.htmlLink
-        ? ' href="' + escapeHtml(event.htmlLink) + '" target="_blank" rel="noopener noreferrer"'
+      const id = eventIdentifier(event);
+      const openAction = event.htmlLink
+        ? '<a class="calendar-mobile-day-open" href="' + escapeHtml(event.htmlLink) + '" target="_blank" rel="noopener noreferrer">Open in Google Calendar ↗</a>'
         : '';
-      return '<' + tag + ' class="calendar-mobile-day-event" style="--calendar-event-color:' + color + ';"' + href + '>'
+      const deleteAction = id
+        ? '<button class="calendar-mobile-day-delete" type="button" data-event-id="' + escapeHtml(id) + '" data-event-title="' + escapeHtml(title) + '">Delete</button>'
+        : '';
+      const actions = openAction || deleteAction
+        ? '<div class="calendar-mobile-day-actions">' + openAction + deleteAction + '</div>'
+        : '';
+
+      return '<article class="calendar-mobile-day-event" style="--calendar-event-color:' + color + ';" data-event-id="' + escapeHtml(id) + '">'
         + '<span class="calendar-mobile-day-event-time">' + escapeHtml(time) + ' · ' + escapeHtml(type) + '</span>'
         + '<span class="calendar-mobile-day-event-title">' + escapeHtml(title) + '</span>'
         + '<span class="calendar-mobile-day-event-meta">' + escapeHtml(detail) + '</span>'
-        + openCopy
-        + '</' + tag + '>';
+        + actions
+        + '</article>';
     }).join('');
+  }
+
+  function updatePopupEvents(popup, dateKey, events) {
+    if (!popup || !document.body.contains(popup)) return;
+    const visibleEvents = events.filter(event => eventDateKey(event) === dateKey);
+    const count = visibleEvents.length;
+    const countNode = popup.querySelector('.calendar-mobile-day-count');
+    const listNode = popup.querySelector('.calendar-mobile-day-list');
+    countNode.textContent = count === 1 ? '1 event' : count + ' events';
+    listNode.innerHTML = eventRows(visibleEvents);
+  }
+
+  async function deleteEventFromPopup(button, popup) {
+    const eventId = button.getAttribute('data-event-id');
+    const title = button.getAttribute('data-event-title') || 'this event';
+    if (!eventId || !window.confirm('Delete "' + title + '" from Google Calendar?')) return;
+
+    button.disabled = true;
+    button.textContent = 'Deleting…';
+    const card = button.closest('.calendar-mobile-day-event');
+    let errorNode = card && card.querySelector('.calendar-mobile-day-error');
+
+    try {
+      const response = await fetch('/api/calendar/events/' + encodeURIComponent(eventId), {
+        method: 'DELETE',
+        credentials: 'same-origin'
+      });
+      if (!response.ok) {
+        let message = 'Delete failed (' + response.status + ').';
+        try {
+          const payload = await response.json();
+          if (payload && payload.error) message = payload.error;
+        } catch (error) {}
+        throw new Error(message);
+      }
+
+      eventCache.events = eventCache.events.filter(event => eventIdentifier(event) !== eventId);
+      eventCache.loadedAt = Date.now();
+
+      const dateKey = popup.getAttribute('data-date-key');
+      updatePopupEvents(popup, dateKey, eventCache.events);
+
+      if (window.CAL && typeof window.CAL.loadGoogleEvents === 'function') {
+        window.CAL.loadGoogleEvents();
+      }
+    } catch (error) {
+      button.disabled = false;
+      button.textContent = 'Delete';
+      if (!errorNode && card) {
+        errorNode = document.createElement('div');
+        errorNode.className = 'calendar-mobile-day-error';
+        card.appendChild(errorNode);
+      }
+      if (errorNode) {
+        errorNode.textContent = error && error.message ? error.message : 'Could not delete this event.';
+      }
+    }
   }
 
   function createPopup(dateKey) {
@@ -276,6 +376,7 @@
     popup.id = POPUP_ID;
     popup.className = 'calendar-mobile-day-popup';
     popup.setAttribute('role', 'presentation');
+    popup.setAttribute('data-date-key', dateKey);
     popup.innerHTML = '<section class="calendar-mobile-day-sheet" role="dialog" aria-modal="true" aria-label="Events for selected date">'
       + '<div class="calendar-mobile-day-grabber"></div>'
       + '<div class="calendar-mobile-day-head">'
@@ -286,6 +387,13 @@
       + '<div class="calendar-mobile-day-list"><div class="calendar-mobile-day-loading">Loading events…</div></div>'
       + '</section>';
     popup.addEventListener('click', event => {
+      const deleteButton = event.target.closest && event.target.closest('.calendar-mobile-day-delete');
+      if (deleteButton) {
+        event.preventDefault();
+        event.stopPropagation();
+        deleteEventFromPopup(deleteButton, popup);
+        return;
+      }
       if (event.target === popup || event.target.closest('.calendar-mobile-day-close')) closePopup();
     });
     document.body.appendChild(popup);
