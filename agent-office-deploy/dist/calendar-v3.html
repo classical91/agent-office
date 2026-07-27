@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
-<title>Memory - Agent Office</title>
+<title>Calendar v3 - Agent Office</title>
 <link rel="stylesheet" href="shared.css?v=office-submenu-20260727"/>
 <!-- Apply saved theme before first paint to avoid a flash of the default theme. Mirrors THEMES in app-shared.js. -->
 <script>
@@ -19,6 +19,110 @@
   }catch(e){}
 })();
 </script>
+<link rel="stylesheet" href="calendar-view.css?v=office-submenu-20260727"/>
+<style>
+  .calendar-connection-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--panel) 92%, transparent);
+  }
+  .calendar-connection-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 10px;
+    color: var(--muted);
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .calendar-connection-status::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .calendar-connection-status.connected {
+    color: #86efac;
+    border-color: color-mix(in srgb, #22c55e 38%, var(--border));
+  }
+  .calendar-connection-status.connected::before {
+    background: #22c55e;
+    box-shadow: 0 0 7px color-mix(in srgb, #22c55e 65%, transparent);
+  }
+  .calendar-connection-status.error {
+    color: #fca5a5;
+    border-color: color-mix(in srgb, #ef4444 42%, var(--border));
+  }
+  .calendar-connection-status.error::before { background: #ef4444; }
+  .calendar-connection-account {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text);
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .calendar-connection-copy {
+    flex: 1;
+    min-width: 220px;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .calendar-connection-action {
+    border: 1px solid var(--accent);
+    border-radius: 7px;
+    padding: 6px 11px;
+    background: var(--accent);
+    color: #fff;
+    font: 600 11px 'Inter', sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .calendar-connection-action.secondary {
+    border-color: var(--border);
+    background: transparent;
+    color: var(--muted);
+  }
+  .calendar-connection-action:hover { filter: brightness(1.08); }
+  .calendar-connection-action.secondary:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+  .calendar-connection-action:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    filter: none;
+  }
+  .calendar-google-link {
+    color: var(--accent);
+    font-size: 11px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .calendar-google-link:hover { text-decoration: underline; }
+  [hidden] { display: none !important; }
+  @media (max-width: 768px) {
+    .calendar-connection-bar { padding: 9px 10px; }
+    .calendar-connection-copy { order: 3; flex-basis: 100%; min-width: 0; }
+  }
+</style>
+<style>
+  /* The renderer's grid needs a real height once #calendar-app scrolls. */
+  #calendar-app .calendar-shell { display: block; }
+  #calendar-app .calendar-workspace { min-height: 560px; }
+  #calendar-app .calendar-rail,
+  #calendar-app .calendar-stage { overflow: visible; }
+  @media (max-width: 900px) {
+    #calendar-app .calendar-workspace { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  }
+</style>
 </head>
 <body>
 
@@ -56,7 +160,7 @@
         <div class="nav-group">
           <a class="nav-item nav-item-parent" href="/" data-nav-sub="office"><span class="icon">🏢</span> Office<span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Office pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">▾</span></a>
           <div class="nav-sub">
-            <a class="nav-item active" href="/memory.html"><span class="icon">🧠</span> Memory</a>
+            <a class="nav-item" href="/memory.html"><span class="icon">🧠</span> Memory</a>
             <a class="nav-item" href="/org-chart.html"><span class="icon">🗂️</span> Org Chart</a>
             <a class="nav-item" href="/agent-registry.html"><span class="icon">◎</span> Agent Registry</a>
             <a class="nav-item" href="/mission-board.html"><span class="icon">📥</span> Mission Board</a>
@@ -65,7 +169,7 @@
         </div>
         <a class="nav-item" href="https://main-page-production-9927.up.railway.app/ai.html" target="_blank" rel="noopener noreferrer"><span class="icon">🧭</span> AI Portal <span class="link-ext">↗</span></a>
         <a class="nav-item" href="/calendar-v2.html"><span class="icon">🗓️</span> Calendar v2</a>
-        <a class="nav-item" href="/calendar-v3.html"><span class="icon">🗓️</span> Calendar v3</a>
+        <a class="nav-item active" href="/calendar-v3.html"><span class="icon">🗓️</span> Calendar v3</a>
         <a class="nav-item" href="/resets.html"><span class="icon">&#9201;</span> Resets</a>
         <a class="nav-item" href="/ai-landscape.html" data-ai-landscape-nav="true"><span class="icon">AI</span> AI Models</a>
         <div class="nav-item" onclick="window.open('/prompt-builder.html', '_blank')"><span class="icon">📝</span> AI Prompt Engineer</div>
@@ -120,49 +224,16 @@
 
   </nav>
 
-  <div class="view" id="view-memory" style="flex-direction:column; background:var(--view-bg); overflow-y:auto;">
-    <div id="memory-app" style="max-width:900px; width:100%; margin:0 auto; padding:40px 28px 80px;">
-
-      <!-- Header -->
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:32px; gap:16px;">
-        <div>
-          <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">🧠 MEMORY</div>
-          <div style="font-size:13px; color:var(--muted);">Agent memory banks — notes, learnings, and context per bot.</div>
-        </div>
-        <button onclick="MEM.showForm()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 20px; font-size:13px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:8px; white-space:nowrap; -webkit-tap-highlight-color:transparent;">
-          <span>＋</span> New Memory
-        </button>
-      </div>
-
-      <!-- Add form (hidden by default) -->
-      <div id="mem-form" style="display:none; background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:28px;">
-        <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:16px;">New Memory Entry</div>
-        <!-- Agent tabs -->
-        <div id="mem-agent-tabs" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:16px;"></div>
-        <input type="hidden" id="mem-agent" value="">
-        <div style="margin-bottom:12px;">
-          <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">Memory</label>
-          <textarea id="mem-content" rows="6" placeholder="Paste agent memory here..." style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:11px 12px; font-size:16px; color:var(--text); outline:none; resize:vertical; font-family:inherit;"></textarea>
-        </div>
-        <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;">
-          <button onclick="MEM.hideForm()" style="background:transparent; color:var(--muted); border:1px solid var(--border); border-radius:8px; padding:12px 20px; font-size:14px; cursor:pointer; -webkit-tap-highlight-color:transparent;">Cancel</button>
-          <button onclick="MEM.save()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:12px 22px; font-size:14px; font-weight:600; cursor:pointer; -webkit-tap-highlight-color:transparent;">Save Memory</button>
-        </div>
-      </div>
-
-      <!-- Agent Roster Cards -->
-      <div id="mem-roster" style="margin-bottom:32px;">
-        <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted); margin-bottom:14px;">Agent Roster</div>
-        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px;" id="mem-roster-grid"></div>
-      </div>
-
-      <!-- Agent filter tabs -->
-      <div id="mem-filters" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px;"></div>
-
-      <!-- Memory list -->
-      <div id="mem-list"></div>
-
+  <div class="view" id="view-calendar-v3" style="flex-direction:column; overflow:hidden;">
+    <div class="calendar-connection-bar" id="gcal-connection">
+      <span class="calendar-connection-status" id="gcal-status">Checking Google connection…</span>
+      <span class="calendar-connection-account" id="gcal-account" hidden></span>
+      <span class="calendar-connection-copy">Calendar events load through Google’s API, so this view does not require third-party cookies.</span>
+      <button class="calendar-connection-action" id="gcal-connect" type="button">Connect Google Calendar</button>
+      <button class="calendar-connection-action secondary" id="gcal-disconnect" type="button" hidden>Disconnect</button>
+      <a class="calendar-google-link" href="https://calendar.google.com/" target="_blank" rel="noopener noreferrer">Open Google Calendar &#8599;</a>
     </div>
+    <div id="calendar-app" style="flex:1; min-height:0; overflow:auto;"></div>
   </div>
 
   <!-- ACTIVITY FEED -->
@@ -179,9 +250,153 @@
 <div class="statusbar" id="statusbar"></div>
 
 <script src="app-shared.js?v=office-submenu-20260727"></script>
+
+
+<script src="calendar-view.js?v=office-submenu-20260727"></script>
 <script>
-switchView('memory', document.querySelector('.nav-item.active'));
+switchView('calendar-v3', document.querySelector('.nav-item.active'));
 </script>
 
+<script>
+(function () {
+  var status = document.getElementById('gcal-status');
+  var account = document.getElementById('gcal-account');
+  var connect = document.getElementById('gcal-connect');
+  var disconnect = document.getElementById('gcal-disconnect');
+  var oauthPopup = null;
+
+  function setConnectionState(kind, label, email) {
+    status.className = 'calendar-connection-status' + (kind ? ' ' + kind : '');
+    status.textContent = label;
+    account.textContent = email || '';
+    account.hidden = !email;
+  }
+
+  async function apiJson(url, options) {
+    var response = await fetch(url, Object.assign({ credentials: 'same-origin' }, options || {}));
+    var payload = {};
+    try { payload = await response.json(); } catch (error) {}
+    if (!response.ok) {
+      var requestError = new Error(payload.error || ('Request failed (' + response.status + ')'));
+      requestError.status = response.status;
+      throw requestError;
+    }
+    return payload;
+  }
+
+  async function unlockAgentOffice() {
+    var passphrase = window.prompt('Enter the Agent Office passphrase to change the Google Calendar connection.');
+    if (!passphrase) return false;
+    await apiJson('/api/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ passphrase: passphrase })
+    });
+    return true;
+  }
+
+  async function loadConnectionStatus(refreshEvents) {
+    try {
+      var data = await apiJson('/api/calendar/status');
+      connect.disabled = !data.googleConfigured;
+      connect.hidden = Boolean(data.connected);
+      disconnect.hidden = !data.connected;
+
+      if (!data.googleConfigured) {
+        setConnectionState('error', 'OAuth setup required', '');
+        connect.title = 'Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET on the deployment first.';
+        return data;
+      }
+
+      connect.title = '';
+      if (data.connected) {
+        var email = data.account && data.account.email || '';
+        setConnectionState('connected', 'Google Calendar connected', email);
+        if (refreshEvents && window.CAL) await window.CAL.loadGoogleEvents();
+      } else {
+        setConnectionState('', 'Google Calendar not connected', '');
+      }
+      return data;
+    } catch (error) {
+      setConnectionState('error', 'Connection check failed', '');
+      connect.disabled = false;
+      throw error;
+    }
+  }
+
+  async function beginGoogleConnection() {
+    if (connect.disabled) return;
+    oauthPopup = window.open('about:blank', 'ao-google-calendar-oauth', 'popup=yes,width=560,height=720');
+    if (!oauthPopup) {
+      window.alert('Allow pop-ups for Agent Office, then try connecting again.');
+      return;
+    }
+    setConnectionState('', 'Opening Google…', '');
+    try {
+      var data = await apiJson('/api/calendar/oauth/start');
+      oauthPopup.location.href = data.url;
+    } catch (error) {
+      oauthPopup.close();
+      oauthPopup = null;
+      if (error.status === 401) {
+        try {
+          if (await unlockAgentOffice()) return beginGoogleConnection();
+        } catch (unlockError) {
+          window.alert(unlockError.message);
+        }
+      } else {
+        window.alert(error.message);
+      }
+      await loadConnectionStatus(false).catch(function () {});
+    }
+  }
+
+  async function disconnectGoogleCalendar() {
+    if (!window.confirm('Disconnect Google Calendar from Agent Office? Existing events will stay in Google Calendar.')) return;
+    try {
+      await apiJson('/api/calendar/oauth/connection', { method: 'DELETE' });
+    } catch (error) {
+      if (error.status === 401) {
+        try {
+          if (await unlockAgentOffice()) return disconnectGoogleCalendar();
+        } catch (unlockError) {
+          window.alert(unlockError.message);
+          return;
+        }
+      } else {
+        window.alert(error.message);
+      }
+      return;
+    }
+    window.location.reload();
+  }
+
+  function showConnection() {
+    document.getElementById('gcal-connection').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  connect.addEventListener('click', beginGoogleConnection);
+  disconnect.addEventListener('click', disconnectGoogleCalendar);
+  window.addEventListener('message', function (event) {
+    if (event.origin !== window.location.origin || !event.data) return;
+    if (event.data.type === 'ao-google-calendar-connected') {
+      loadConnectionStatus(true).catch(function () {});
+    } else if (event.data.type === 'ao-google-calendar-error') {
+      setConnectionState('error', 'Google connection failed', '');
+    }
+  });
+  window.addEventListener('focus', function () {
+    if (oauthPopup && oauthPopup.closed) oauthPopup = null;
+    loadConnectionStatus(false).catch(function () {});
+  });
+
+  window.AOCalendarConnection = {
+    begin: beginGoogleConnection,
+    show: showConnection,
+    refresh: loadConnectionStatus
+  };
+  loadConnectionStatus(false).catch(function () {});
+})();
+</script>
 </body>
 </html>

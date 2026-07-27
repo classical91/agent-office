@@ -2631,6 +2631,7 @@ VIEW_HANDLERS.dropbox    = { enter: () => enterDropboxView() };
 VIEW_HANDLERS.projects   = { enter: () => { if (window.ProjectRooms) ProjectRooms.render(); } };
 VIEW_HANDLERS.agents     = { enter: () => { if (window.AgentRegistry) AgentRegistry.render(); } };
 VIEW_HANDLERS.memory     = { enter: () => { if (typeof MEM !== 'undefined') MEM.render(); } };
+VIEW_HANDLERS['calendar-v3'] = { enter: () => { if (window.CAL) window.CAL.render(); } };
 VIEW_HANDLERS.office     = { enter: null };
 VIEW_HANDLERS.org        = { enter: null };
 
