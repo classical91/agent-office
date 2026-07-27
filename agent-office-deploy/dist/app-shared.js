@@ -1913,8 +1913,53 @@ function toggleNav(labelEl) {
   saveNavState(state);
 }
 
+// Sub-menus nested under a nav item (Office → Memory, Org Chart, …).
+// The row itself stays a link; only the chevron opens and closes the sub-menu.
+function setNavSubOpen(parentEl, open, animate) {
+  const sub = parentEl.parentElement && parentEl.parentElement.querySelector('.nav-sub');
+  if (!sub) return;
+  const chevron = parentEl.querySelector('.nav-sub-chevron');
+  parentEl.classList.toggle('collapsed', !open);
+  if (chevron) chevron.setAttribute('aria-expanded', String(open));
+  if (!animate) {
+    sub.style.maxHeight = open ? 'none' : '0px';
+    return;
+  }
+  if (open) {
+    sub.style.maxHeight = sub.scrollHeight + 'px';
+    sub.addEventListener('transitionend', () => {
+      if (!parentEl.classList.contains('collapsed')) sub.style.maxHeight = 'none';
+    }, { once: true });
+  } else {
+    sub.style.maxHeight = sub.scrollHeight + 'px';
+    requestAnimationFrame(() => { sub.style.maxHeight = '0px'; });
+  }
+}
+
+function toggleNavSub(e, chevronEl) {
+  if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+  // Don't follow the parent link, and don't let the mobile nav close on us.
+  e.preventDefault();
+  e.stopPropagation();
+  const parentEl = chevronEl.closest('.nav-item-parent');
+  if (!parentEl) return;
+  const open = parentEl.classList.contains('collapsed');
+  setNavSubOpen(parentEl, open, true);
+  const state = getNavState();
+  state['sub:' + (parentEl.dataset.navSub || 'nav')] = !open;
+  saveNavState(state);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const state = getNavState();
+  document.querySelectorAll('.nav-item-parent').forEach(parentEl => {
+    const sub = parentEl.parentElement && parentEl.parentElement.querySelector('.nav-sub');
+    if (!sub) return;
+    // Open by default; always reveal the page you're on, otherwise honour the saved choice.
+    const hasActiveChild = !!sub.querySelector('.nav-item.active');
+    const open = hasActiveChild || state['sub:' + (parentEl.dataset.navSub || 'nav')] !== true;
+    setNavSubOpen(parentEl, open, false);
+  });
   document.querySelectorAll('.nav-label').forEach(labelEl => {
     const wrap = labelEl.nextElementSibling;
     if (!wrap || !wrap.classList.contains('nav-items-wrap')) return;
