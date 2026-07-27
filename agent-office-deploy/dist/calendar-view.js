@@ -247,7 +247,7 @@
       editingEventId: null,
       editDraft: null,
       creatingEvent: false,
-      view: 'week',
+      view: 'month',
       search: '',
       command: 'call client next Tuesday at 2pm',
       flash: null,

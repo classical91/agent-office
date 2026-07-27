@@ -273,7 +273,7 @@
       selectedEventId: upcoming ? upcoming.id : events[0].id,
       editingEventId: null,
       editDraft: null,
-      view: 'week',
+      view: 'month',
       search: '',
       command: 'call client next Tuesday at 2pm',
       flash: null,
