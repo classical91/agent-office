@@ -332,29 +332,41 @@ switchView('calendar-v3', document.querySelector('.nav-item.active'));
 
   async function beginGoogleConnection() {
     if (connect.disabled) return;
-    oauthPopup = window.open('about:blank', 'ao-google-calendar-oauth', 'popup=yes,width=560,height=720');
-    if (!oauthPopup) {
-      window.alert('Allow pop-ups for Agent Office, then try connecting again.');
+    setConnectionState('', 'Opening Google\u2026', '');
+
+    // Fetch the consent URL first: opening a blank pop-up and closing it on
+    // failure just made the window flash with no explanation.
+    var data;
+    try {
+      data = await apiJson('/api/calendar/oauth/start');
+    } catch (error) {
+      if (error.status === 401) {
+        setConnectionState('error', 'Unlock Agent Office to reconnect', '');
+        var unlocked = false;
+        try {
+          unlocked = await unlockAgentOffice();
+        } catch (unlockError) {
+          setConnectionState('error', unlockError.message, '');
+          return;
+        }
+        if (unlocked) return beginGoogleConnection();
+        setConnectionState('error', 'Unlock cancelled - not reconnected', '');
+        return;
+      }
+      setConnectionState('error', error.message, '');
+      await loadConnectionStatus(false).catch(function () {});
       return;
     }
-    setConnectionState('', 'Opening Google…', '');
-    try {
-      var data = await apiJson('/api/calendar/oauth/start');
-      oauthPopup.location.href = data.url;
-    } catch (error) {
-      oauthPopup.close();
-      oauthPopup = null;
-      if (error.status === 401) {
-        try {
-          if (await unlockAgentOffice()) return beginGoogleConnection();
-        } catch (unlockError) {
-          window.alert(unlockError.message);
-        }
-      } else {
-        window.alert(error.message);
-      }
-      await loadConnectionStatus(false).catch(function () {});
+
+    var popup = window.open(data.url, 'ao-google-calendar-oauth', 'popup=yes,width=560,height=720');
+    if (!popup || popup.closed) {
+      // Safari and Brave commonly block pop-ups opened after an await, so fall
+      // back to the current tab rather than failing silently.
+      setConnectionState('', 'Pop-up blocked - continuing in this tab\u2026', '');
+      window.location.href = data.url;
+      return;
     }
+    oauthPopup = popup;
   }
 
   async function disconnectGoogleCalendar() {
