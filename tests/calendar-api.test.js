@@ -1,76 +1,53 @@
 const assert = require('node:assert/strict');
-const { spawn } = require('node:child_process');
 const fs = require('node:fs');
-const net = require('node:net');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
+
+const { startTestServer } = require('./helpers/test-server.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const DIST = path.join(REPO_ROOT, 'agent-office-deploy', 'dist');
 const SERVER_PATH = path.join(DIST, 'server.js');
 
-function getFreePort() {
-  return new Promise((resolve, reject) => {
-    const server = net.createServer();
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', () => {
-      const { port } = server.address();
-      server.close(error => (error ? reject(error) : resolve(port)));
-    });
-  });
-}
-
 // Each server gets its own JSON files so the suite never touches a developer's
 // real data - and so state cannot leak between tests.
 async function startServer(options = {}) {
-  const port = await getFreePort();
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-office-test-'));
-  const environment = {
-    ...process.env,
-    PORT: String(port),
-    PUBLIC_APP_URL: `http://127.0.0.1:${port}`,
-    // server.js pins process.env.TZ from APP_TIMEZONE; fixing it to UTC keeps
-    // "inside the working day" assertions independent of the host timezone.
-    APP_TIMEZONE: 'UTC',
-    APP_SETTINGS_FILE: path.join(scratch, 'settings.json'),
-    CALENDAR_EVENTS_FILE: path.join(scratch, 'calendar-events.json'),
-    AGENTS_FILE: path.join(scratch, 'agents.json'),
-    MEMORIES_FILE: path.join(scratch, 'memories.json'),
-    DROPS_FILE: path.join(scratch, 'drops.json'),
-    PROJECTS_FILE: path.join(scratch, 'projects.json'),
+
+  // Built per start attempt: a retry gets a different port, and PORT and
+  // PUBLIC_APP_URL have to agree with it.
+  const buildEnv = port => {
+    const environment = {
+      ...process.env,
+      PORT: String(port),
+      PUBLIC_APP_URL: `http://127.0.0.1:${port}`,
+      // server.js pins process.env.TZ from APP_TIMEZONE; fixing it to UTC keeps
+      // "inside the working day" assertions independent of the host timezone.
+      APP_TIMEZONE: 'UTC',
+      APP_SETTINGS_FILE: path.join(scratch, 'settings.json'),
+      CALENDAR_EVENTS_FILE: path.join(scratch, 'calendar-events.json'),
+      AGENTS_FILE: path.join(scratch, 'agents.json'),
+      MEMORIES_FILE: path.join(scratch, 'memories.json'),
+      DROPS_FILE: path.join(scratch, 'drops.json'),
+      PROJECTS_FILE: path.join(scratch, 'projects.json'),
+    };
+    ['DATABASE_URL', 'GOOGLE_REFRESH_TOKEN', 'DROPS_PASSPHRASE', 'DROPS_PASSPHRASE_HASH'].forEach(key => {
+      delete environment[key];
+    });
+    if (options.passphrase) environment.DROPS_PASSPHRASE = options.passphrase;
+    if (options.google !== false) {
+      environment.GOOGLE_CLIENT_ID = 'calendar-api-test.apps.googleusercontent.com';
+      environment.GOOGLE_CLIENT_SECRET = 'calendar-api-test-secret';
+    } else {
+      delete environment.GOOGLE_CLIENT_ID;
+      delete environment.GOOGLE_CLIENT_SECRET;
+    }
+    return environment;
   };
-  ['DATABASE_URL', 'GOOGLE_REFRESH_TOKEN', 'DROPS_PASSPHRASE', 'DROPS_PASSPHRASE_HASH'].forEach(key => {
-    delete environment[key];
-  });
-  if (options.passphrase) environment.DROPS_PASSPHRASE = options.passphrase;
-  if (options.google !== false) {
-    environment.GOOGLE_CLIENT_ID = 'calendar-api-test.apps.googleusercontent.com';
-    environment.GOOGLE_CLIENT_SECRET = 'calendar-api-test-secret';
-  } else {
-    delete environment.GOOGLE_CLIENT_ID;
-    delete environment.GOOGLE_CLIENT_SECRET;
-  }
 
-  const child = spawn(process.execPath, [SERVER_PATH], {
-    cwd: DIST,
-    env: environment,
-    stdio: 'ignore',
-    windowsHide: true,
-  });
-  const origin = `http://127.0.0.1:${port}`;
-
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    if (child.exitCode !== null) throw new Error(`Test server exited with code ${child.exitCode}.`);
-    try {
-      const response = await fetch(`${origin}/api/calendar/status`);
-      if (response.ok) return { child, origin, scratch };
-    } catch {}
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  child.kill();
-  throw new Error('Test server did not become ready.');
+  const server = await startTestServer({ serverPath: SERVER_PATH, cwd: DIST, buildEnv });
+  return { ...server, scratch };
 }
 
 async function json(response) {

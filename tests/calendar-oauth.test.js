@@ -1,9 +1,9 @@
 const assert = require('node:assert/strict');
-const { spawn } = require('node:child_process');
 const fs = require('node:fs');
-const net = require('node:net');
 const path = require('node:path');
 const test = require('node:test');
+
+const { startTestServer } = require('./helpers/test-server.js');
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 const SERVER_PATH = path.join(REPO_ROOT, 'agent-office-deploy', 'dist', 'server.js');
@@ -11,54 +11,32 @@ const CALENDAR_HTML_PATH = path.join(REPO_ROOT, 'agent-office-deploy', 'dist', '
 const CALENDAR_V2_HTML_PATH = path.join(REPO_ROOT, 'agent-office-deploy', 'dist', 'calendar-v2.html');
 const CALENDAR_V3_HTML_PATH = path.join(REPO_ROOT, 'agent-office-deploy', 'dist', 'calendar-v3.html');
 
-function getFreePort() {
-  return new Promise((resolve, reject) => {
-    const server = net.createServer();
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', () => {
-      const { port } = server.address();
-      server.close(error => error ? reject(error) : resolve(port));
-    });
-  });
-}
-
 async function startServer(options = {}) {
-  const port = await getFreePort();
-  const environment = {
-    ...process.env,
-    PORT: String(port),
-    PUBLIC_APP_URL: `http://127.0.0.1:${port}`,
-    GOOGLE_CLIENT_ID: 'calendar-oauth-test.apps.googleusercontent.com',
-    GOOGLE_CLIENT_SECRET: 'calendar-oauth-test-secret',
+  // Built per start attempt so a retry gets a port that matches its env.
+  const buildEnv = port => {
+    const environment = {
+      ...process.env,
+      PORT: String(port),
+      PUBLIC_APP_URL: `http://127.0.0.1:${port}`,
+      GOOGLE_CLIENT_ID: 'calendar-oauth-test.apps.googleusercontent.com',
+      GOOGLE_CLIENT_SECRET: 'calendar-oauth-test-secret',
+    };
+    [
+      'DATABASE_URL',
+      'GOOGLE_REFRESH_TOKEN',
+      'DROPS_PASSPHRASE',
+      'DROPS_PASSPHRASE_HASH',
+      'GOOGLE_REDIRECT_URI',
+    ].forEach(key => delete environment[key]);
+    if (options.passphrase) environment.DROPS_PASSPHRASE = options.passphrase;
+    return environment;
   };
-  [
-    'DATABASE_URL',
-    'GOOGLE_REFRESH_TOKEN',
-    'DROPS_PASSPHRASE',
-    'DROPS_PASSPHRASE_HASH',
-    'GOOGLE_REDIRECT_URI',
-  ].forEach(key => delete environment[key]);
-  if (options.passphrase) environment.DROPS_PASSPHRASE = options.passphrase;
 
-  const child = spawn(process.execPath, [SERVER_PATH], {
+  return startTestServer({
+    serverPath: SERVER_PATH,
     cwd: path.dirname(SERVER_PATH),
-    env: environment,
-    stdio: 'ignore',
-    windowsHide: true,
+    buildEnv,
   });
-  const origin = `http://127.0.0.1:${port}`;
-
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    if (child.exitCode !== null) throw new Error(`Test server exited with code ${child.exitCode}.`);
-    try {
-      const response = await fetch(`${origin}/api/calendar/status`);
-      if (response.ok) return { child, origin };
-    } catch {}
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  child.kill();
-  throw new Error('Test server did not become ready.');
 }
 
 async function readJson(response) {
