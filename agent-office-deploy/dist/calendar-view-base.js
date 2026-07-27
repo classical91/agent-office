@@ -47,6 +47,22 @@
       surface: 'rgba(59, 130, 246, 0.18)',
       border: 'rgba(96, 165, 250, 0.40)',
       dot: '#60a5fa'
+    },
+    // Agent-owned kinds. These are what make the calendar an Agent Office
+    // surface rather than a Google Calendar clone.
+    'agent-run': {
+      label: 'Agent run',
+      color: '#fde68a',
+      surface: 'rgba(245, 158, 11, 0.18)',
+      border: 'rgba(251, 191, 36, 0.42)',
+      dot: '#fbbf24'
+    },
+    review: {
+      label: 'Review',
+      color: '#f9a8d4',
+      surface: 'rgba(236, 72, 153, 0.18)',
+      border: 'rgba(244, 114, 182, 0.42)',
+      dot: '#f472b6'
     }
   };
 
@@ -261,8 +277,119 @@
       tasks,
       gcalFetchStarted: false,
       gcalConfigured: false,
-      gcalError: null
+      gcalError: null,
+      // Explicit states instead of "no events means something is wrong". An
+      // empty connected calendar and a broken sync look identical otherwise.
+      calendarState: 'loading',
+      syncState: 'loading',
+      lastSyncedAt: null,
+      accountEmail: null,
+      // Agent Timeline lanes: which slice of the calendar is on screen.
+      lane: 'all',
+      agentFilter: '',
+      projectFilter: '',
+      // Filled in from /api/calendar/preferences; the defaults here only cover
+      // the first paint.
+      preferences: null
     };
+  }
+
+  // "Synced 2 min ago" - a status the toolbar can show without the user having
+  // to open anything.
+  function relativeTime(value) {
+    if (!value) return '';
+    const then = new Date(value);
+    if (Number.isNaN(then.getTime())) return '';
+    const seconds = Math.max(0, Math.round((Date.now() - then.getTime()) / 1000));
+    if (seconds < 45) return 'just now';
+    const minutes = Math.round(seconds / 60);
+    if (minutes < 60) return minutes + ' min ago';
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return hours + (hours === 1 ? ' hour ago' : ' hours ago');
+    return Math.round(hours / 24) + ' days ago';
+  }
+
+  const LANES = [
+    { id: 'all', label: 'My calendar' },
+    { id: 'agent-runs', label: 'Agent runs' },
+    { id: 'automations', label: 'Automations' },
+    { id: 'deadlines', label: 'Deadlines' },
+    { id: 'waiting', label: 'Waiting for me' },
+    { id: 'completed', label: 'Completed outputs' }
+  ];
+
+  function eventMeta(event) {
+    return (event && event.meta) || {};
+  }
+
+  function matchesLane(event) {
+    const meta = eventMeta(event);
+    switch (state.lane) {
+      case 'agent-runs':
+        return Boolean(meta.agentId) || meta.executionMode === 'agent-run' || meta.eventKind === 'agent-run';
+      case 'automations':
+        return event.type === 'automation' || meta.eventKind === 'automation';
+      case 'deadlines':
+        return event.type === 'deadline' || meta.eventKind === 'deadline';
+      case 'waiting':
+        return meta.runStatus === 'needs_input';
+      case 'completed':
+        return meta.runStatus === 'completed';
+      default:
+        return true;
+    }
+  }
+
+  function matchesAgentFilters(event) {
+    const meta = eventMeta(event);
+    if (state.agentFilter && meta.agentId !== state.agentFilter) return false;
+    if (state.projectFilter && meta.projectId !== state.projectFilter) return false;
+    return true;
+  }
+
+  function knownAgentIds() {
+    const seen = [];
+    state.events.forEach(event => {
+      const id = eventMeta(event).agentId;
+      if (id && seen.indexOf(id) === -1) seen.push(id);
+    });
+    return seen.sort();
+  }
+
+  function knownProjectIds() {
+    const seen = [];
+    state.events.forEach(event => {
+      const id = eventMeta(event).projectId;
+      if (id && seen.indexOf(id) === -1) seen.push(id);
+    });
+    return seen.sort();
+  }
+
+  const RUN_LABELS = {
+    scheduled: 'Scheduled',
+    running: 'Running',
+    needs_input: 'Needs input',
+    completed: 'Completed',
+    failed: 'Failed'
+  };
+
+  // The single line that turns a calendar block into a status readout:
+  // "Running · 18 minutes elapsed · 3 findings".
+  function runStatusLine(event) {
+    const meta = eventMeta(event);
+    if (!meta.runStatus) return '';
+    const parts = [RUN_LABELS[meta.runStatus] || meta.runStatus];
+    if (meta.runStartedAt) {
+      const started = new Date(meta.runStartedAt);
+      if (!Number.isNaN(started.getTime())) {
+        const until = meta.runEndedAt ? new Date(meta.runEndedAt) : new Date();
+        const minutes = Math.max(0, Math.round((until.getTime() - started.getTime()) / 60000));
+        parts.push(minutes + (meta.runEndedAt ? ' minutes total' : ' minutes elapsed'));
+      }
+    }
+    if (meta.runFindings) parts.push(meta.runFindings + ' findings');
+    if (meta.runProgress) parts.push(meta.runProgress);
+    return parts.join(' · ');
   }
 
   const state = seedState();
@@ -270,6 +397,8 @@
     const term = state.search.trim().toLowerCase();
     return state.events.filter(event => {
       if (!state.filters[event.type]) return false;
+      if (!matchesLane(event)) return false;
+      if (!matchesAgentFilters(event)) return false;
       if (!term) return true;
       const haystack = [event.title, event.notes, event.location]
         .concat(event.attachments || [])
@@ -347,10 +476,21 @@
     return laidOut;
   }
 
+  function clockToParts(text, fallbackHour) {
+    const match = /^(\d{1,2}):(\d{2})$/.exec(String(text || ''));
+    if (!match) return [fallbackHour, 0];
+    return [Number(match[1]), Number(match[2])];
+  }
+
+  // The working day is whatever the user declared in scheduling preferences,
+  // not a hardcoded 08:00-18:00.
   function freeWindows(date, minimumMinutes) {
-    const minMinutes = minimumMinutes || MIN_WINDOW_MINUTES;
-    const dayStart = withTime(date, 8, 0);
-    const dayEnd = withTime(date, 18, 0);
+    const preferences = state.preferences || {};
+    const minMinutes = minimumMinutes || preferences.minFocusMinutes || MIN_WINDOW_MINUTES;
+    const startParts = clockToParts(preferences.workdayStart, 8);
+    const endParts = clockToParts(preferences.workdayEnd, 18);
+    const dayStart = withTime(date, startParts[0], startParts[1]);
+    const dayEnd = withTime(date, endParts[0], endParts[1]);
     const busy = allEventsForDate(date)
       .map(event => ({
         start: new Date(Math.max(parseLocalIso(event.start), dayStart)),
@@ -638,17 +778,38 @@
     return '<div class="calendar-deadline-strip">' + deadlines.map(item => {
       const date = parseLocalIso(item.due);
       return '<button class="calendar-deadline-pill" onclick="' + (item.kind === 'event' ? 'CAL.selectEvent(\'' + item.id + '\')' : 'CAL.blockTask(\'' + item.id + '\')') + '">'
-        + '<span class="calendar-chip-swatch" style="background:' + TYPE_META[item.type].dot + '"></span>'
+        + '<span class="calendar-chip-swatch" style="background:' + (TYPE_META[item.type] || TYPE_META.meeting).dot + '"></span>'
         + escapeHtml(item.title)
         + '<span class="calendar-deadline-day">' + escapeHtml(formatShortDate(date)) + '</span>'
         + '</button>';
     }).join('') + '</div>';
   }
 
+  // One truthful indicator, derived from the server's canonical sync state -
+  // no more hardcoded status text sitting next to a live connection.
+  function syncIndicator() {
+    const map = {
+      loading: { tone: 'pending', label: 'Checking sync…' },
+      healthy: { tone: 'ok', label: state.lastSyncedAt ? 'Synced ' + relativeTime(state.lastSyncedAt) : 'Synced' },
+      disconnected: { tone: 'idle', label: 'Connect Google Calendar' },
+      unconfigured: { tone: 'idle', label: 'Google OAuth not set up' },
+      'auth-error': { tone: 'bad', label: 'Reconnect Google Calendar' },
+      error: { tone: 'bad', label: 'Sync failed' }
+    };
+    const chip = map[state.syncState] || map.loading;
+    const title = state.gcalError || (state.accountEmail || '');
+    return '<button class="calendar-sync-chip is-' + chip.tone + '" type="button"'
+      + (title ? ' title="' + escapeHtml(title) + '"' : '')
+      + ' onclick="CAL.openSyncPanel()">'
+      + '<span class="calendar-sync-dot"></span>'
+      + escapeHtml(chip.label)
+      + '</button>';
+  }
+
   function renderToolbar() {
     return '<div class="calendar-toolbar">'
       + '<button class="calendar-mobile-menu-btn" type="button" aria-label="Open menu" onclick="toggleMobileNav()">☰</button>'
-      + '<div><div class="calendar-range-main">' + escapeHtml(currentRangeLabel()) + '</div><div class="calendar-range-sub">' + escapeHtml(timezoneLabel()) + ' / Sync status: ' + (state.gcalError ? state.gcalError : (state.gcalConfigured ? 'Google Calendar connected' : 'Agent Office calendar')) + '</div></div>'
+      + '<div><div class="calendar-range-main">' + escapeHtml(currentRangeLabel()) + '</div><div class="calendar-range-sub">' + escapeHtml(timezoneLabel()) + (state.accountEmail ? ' / ' + escapeHtml(state.accountEmail) : '') + '</div></div>'
       + '<div class="calendar-toolbar-controls">'
       + '<div class="calendar-nav">'
       + '<button class="calendar-nav-btn" onclick="CAL.navigate(-1)">Prev</button>'
@@ -658,8 +819,79 @@
       + '<div class="calendar-view-switcher">'
       + ['day', 'week', 'month', 'agenda'].map(view => '<button class="calendar-view-btn' + (state.view === view ? ' active' : '') + '" onclick="CAL.changeView(\'' + view + '\')">' + view + '</button>').join('')
       + '</div>'
-      + '<button class="calendar-status-chip" type="button" onclick="if (window.AOCalendarConnection) window.AOCalendarConnection.show()">' + (state.gcalConfigured ? 'Google Calendar connected' : 'Connect Google Calendar') + '</button>'
+      + syncIndicator()
       + '</div></div>';
+  }
+
+  // The Agent Timeline: answer "what are my agents doing today?" without every
+  // agent action being mixed into ordinary appointments.
+  function renderLaneBar() {
+    const agents = knownAgentIds();
+    const projects = knownProjectIds();
+    const laneButtons = LANES.map(lane => {
+      const count = lane.id === 'all'
+        ? state.events.length
+        : state.events.filter(event => {
+          const previous = state.lane;
+          state.lane = lane.id;
+          const matched = matchesLane(event);
+          state.lane = previous;
+          return matched;
+        }).length;
+      return '<button class="calendar-lane' + (state.lane === lane.id ? ' active' : '') + '" type="button"'
+        + ' onclick="CAL.setLane(\'' + lane.id + '\')">' + escapeHtml(lane.label)
+        + '<span class="calendar-lane-count">' + count + '</span></button>';
+    }).join('');
+
+    const agentChips = agents.map(id => '<button class="calendar-lane-chip' + (state.agentFilter === id ? ' active' : '') + '" type="button"'
+      + ' onclick="CAL.setAgentFilter(\'' + escapeHtml(id) + '\')">' + escapeHtml(id) + '</button>').join('');
+    const projectChips = projects.map(id => '<button class="calendar-lane-chip' + (state.projectFilter === id ? ' active' : '') + '" type="button"'
+      + ' onclick="CAL.setProjectFilter(\'' + escapeHtml(id) + '\')">' + escapeHtml(id) + '</button>').join('');
+
+    return '<div class="calendar-lane-bar">'
+      + '<div class="calendar-lane-row">' + laneButtons + '</div>'
+      + (agentChips || projectChips
+        ? '<div class="calendar-lane-row secondary">' + agentChips + projectChips
+          + ((state.agentFilter || state.projectFilter)
+            ? '<button class="calendar-lane-chip clear" type="button" onclick="CAL.clearAgentFilters()">Clear</button>'
+            : '')
+          + '</div>'
+        : '')
+      + '</div>';
+  }
+
+  // What the board shows when there is nothing to draw, and why.
+  function renderCalendarStateNotice() {
+    if (state.calendarState === 'connected-with-events') return '';
+    const notices = {
+      loading: { title: 'Loading your calendar…', copy: 'Checking the Google Calendar connection.' },
+      'connected-empty': {
+        title: 'Your Google Calendar is connected.',
+        copy: 'Nothing is scheduled in this range.'
+      },
+      'local-only': {
+        title: 'Google Calendar is not connected.',
+        copy: 'Showing the blocks Agent Office stores locally. Connect an account to sync them with Google.',
+        action: 'Connect Google Calendar'
+      },
+      disconnected: {
+        title: 'Google Calendar is not connected.',
+        copy: 'Connect an account to see real events here. Agent Office does not invent placeholder events.',
+        action: 'Connect Google Calendar'
+      },
+      'sync-error': {
+        title: 'Sync failed.',
+        copy: state.gcalError || 'Google could not be reached.',
+        action: 'Open sync settings'
+      }
+    };
+    const notice = notices[state.calendarState];
+    if (!notice) return '';
+    return '<div class="calendar-state-notice">'
+      + '<div class="calendar-state-title">' + escapeHtml(notice.title) + '</div>'
+      + '<div class="calendar-state-copy">' + escapeHtml(notice.copy) + '</div>'
+      + (notice.action ? '<button class="calendar-btn primary" onclick="CAL.openSyncPanel()">' + escapeHtml(notice.action) + '</button>' : '')
+      + '</div>';
   }
 
   function renderMonthView() {
@@ -683,14 +915,33 @@
     return '<div class="calendar-month-grid">' + dayNames + cells + '</div>';
   }
 
+  // An agent-owned block shows who owns it and how the run is going, so the
+  // calendar reads as work in flight rather than a title and a time.
+  function agentBadge(event) {
+    const meta = eventMeta(event);
+    if (!meta.agentId && !meta.projectId) return '';
+    const label = [meta.agentId, meta.projectId].filter(Boolean).join(' · ');
+    return '<span class="calendar-agent-badge">' + escapeHtml(label) + '</span>';
+  }
+
+  function runStatusBadge(event) {
+    const meta = eventMeta(event);
+    if (!meta.runStatus) return '';
+    return '<span class="calendar-run-badge is-' + escapeHtml(meta.runStatus) + '">' + escapeHtml(runStatusLine(event)) + '</span>';
+  }
+
   function renderEventPill(event, small) {
-    const meta = TYPE_META[event.type];
+    const meta = TYPE_META[event.type] || TYPE_META.meeting;
     const start = parseLocalIso(event.start);
     const end = parseLocalIso(event.end);
-    return '<button class="calendar-event' + (small ? ' small' : '') + (state.selectedEventId === event.id ? ' active' : '') + '" style="background:' + meta.surface + ';border-color:' + meta.border + ';color:' + meta.color + ';" onclick="CAL.selectEvent(\'' + event.id + '\')">'
+    const agentMetaFields = eventMeta(event);
+    return '<button class="calendar-event' + (small ? ' small' : '') + (state.selectedEventId === event.id ? ' active' : '')
+      + (agentMetaFields.runStatus ? ' run-' + escapeHtml(agentMetaFields.runStatus) : '')
+      + '" style="background:' + meta.surface + ';border-color:' + meta.border + ';color:' + meta.color + ';" onclick="CAL.selectEvent(\'' + event.id + '\')">'
       + '<span class="calendar-event-time">' + escapeHtml(formatTime(start)) + '</span>'
       + '<span class="calendar-event-title">' + escapeHtml(event.title) + '</span>'
       + (!small ? '<span class="calendar-event-meta">' + escapeHtml(formatRange(start, end)) + '</span>' : '')
+      + (!small ? agentBadge(event) + runStatusBadge(event) : '')
       + '</button>';
   }
 
@@ -728,16 +979,21 @@
 
   function renderEventBlock(layout) {
     const event = layout.event;
-    const meta = TYPE_META[event.type];
+    const meta = TYPE_META[event.type] || TYPE_META.meeting;
     const start = parseLocalIso(event.start);
     const end = parseLocalIso(event.end);
     const top = ((start.getHours() + start.getMinutes() / 60) - HOUR_START) * ROW_HEIGHT + 6;
     const height = Math.max(48, durationMinutes(event) / 60 * ROW_HEIGHT - 4);
     const widthPct = 100 / layout.columns;
     const leftPct = widthPct * layout.column;
-    return '<button class="calendar-event-block' + (state.selectedEventId === event.id ? ' active' : '') + '" style="top:' + top + 'px;height:' + height + 'px;left:calc(' + leftPct + '% + 6px);width:calc(' + widthPct + '% - 12px);background:' + meta.surface + ';border-color:' + meta.border + ';color:' + meta.color + ';" onclick="CAL.selectEvent(\'' + event.id + '\')">'
+    const runStatus = eventMeta(event).runStatus;
+    return '<button class="calendar-event-block' + (state.selectedEventId === event.id ? ' active' : '')
+      + (runStatus ? ' run-' + escapeHtml(runStatus) : '')
+      + '" style="top:' + top + 'px;height:' + height + 'px;left:calc(' + leftPct + '% + 6px);width:calc(' + widthPct + '% - 12px);background:' + meta.surface + ';border-color:' + meta.border + ';color:' + meta.color + ';" onclick="CAL.selectEvent(\'' + event.id + '\')">'
       + '<span class="calendar-event-time">' + escapeHtml(formatTime(start)) + '</span>'
       + '<span class="calendar-event-block-title">' + escapeHtml(event.title) + '</span>'
+      + agentBadge(event)
+      + runStatusBadge(event)
       + '</button>';
   }
 
@@ -751,12 +1007,16 @@
     }
     if (!grouped.length) return '<div class="calendar-empty" style="margin:20px;">Nothing is scheduled in this range yet.</div>';
     return '<div class="calendar-agenda">' + grouped.map(group => '<div class="calendar-agenda-group"><div class="calendar-agenda-date">' + escapeHtml(formatLongDate(group.day)) + '</div><div class="calendar-agenda-list">' + group.items.map(event => {
-      const meta = TYPE_META[event.type];
+      const meta = TYPE_META[event.type] || TYPE_META.meeting;
       const startDate = parseLocalIso(event.start);
       const endDate = parseLocalIso(event.end);
+      const status = runStatusLine(event);
       return '<button class="calendar-agenda-row" onclick="CAL.selectEvent(\'' + event.id + '\')">'
         + '<div class="calendar-agenda-row-time">' + escapeHtml(formatRange(startDate, endDate)) + '</div>'
-        + '<div class="calendar-agenda-row-copy"><strong>' + escapeHtml(event.title) + '</strong><span>' + escapeHtml(event.notes || meta.label) + '</span></div>'
+        + '<div class="calendar-agenda-row-copy"><strong>' + escapeHtml(event.title) + '</strong>'
+        + '<span>' + escapeHtml(status || event.notes || meta.label) + '</span>'
+        + agentBadge(event)
+        + '</div>'
         + '<span class="calendar-status-chip"><span class="calendar-chip-swatch" style="background:' + meta.dot + '"></span>' + meta.label + '</span>'
         + '</button>';
     }).join('') + '</div></div>').join('') + '</div>';
@@ -783,7 +1043,7 @@
     const upcoming = nextUpcoming(3);
     if (!upcoming.length) return '<div class="calendar-empty">Your calendar is wide open.</div>';
     return upcoming.map(event => {
-      const meta = TYPE_META[event.type];
+      const meta = TYPE_META[event.type] || TYPE_META.meeting;
       const start = parseLocalIso(event.start);
       return '<button class="calendar-next-item" onclick="CAL.selectEvent(\'' + event.id + '\')">'
         + '<div class="calendar-next-time">' + escapeHtml(formatShortDate(start)) + ' / ' + escapeHtml(formatTime(start)) + '</div>'
@@ -1111,7 +1371,7 @@
     if (state.creatingEvent) return renderNewEventForm();
     const event = selectedEvent();
     if (!event) return '<div class="calendar-empty">Select an event to see notes and quick actions.</div>';
-    const meta = TYPE_META[event.type];
+    const meta = TYPE_META[event.type] || TYPE_META.meeting;
     const start = parseLocalIso(event.start);
     const end = parseLocalIso(event.end);
     const snoozeLabel = snoozeActionLabel(event);
@@ -1198,12 +1458,18 @@
     syncEventEditor();
     if (!state.gcalFetchStarted) {
       state.gcalFetchStarted = true;
+      loadSchedulingPreferences();
       loadGoogleEvents();
     }
     root.innerHTML = '<div class="calendar-shell calendar-compact-shell">'
       + '<section class="calendar-stage calendar-compact-stage calendar-view-' + state.view + '">'
       + renderFlash()
-      + '<div class="calendar-board calendar-compact-board">' + renderToolbar() + renderMainBoard() + '</div>'
+      + '<div class="calendar-board calendar-compact-board">'
+      + renderToolbar()
+      + renderLaneBar()
+      + renderCalendarStateNotice()
+      + renderMainBoard()
+      + '</div>'
       + '</section></div>';
   }
   function jumpToDate(value) {
@@ -1703,8 +1969,13 @@
     const start = formatLocalIso(new Date(startRaw));
     const end = formatLocalIso(new Date(endRaw));
     const summary = (gEvent.summary || '').toLowerCase();
-    let type = gEvent.type || 'meeting';
-    if (!gEvent.type) {
+    const meta = gEvent.meta && typeof gEvent.meta === 'object' ? gEvent.meta : {};
+    // Explicit Agent Office metadata beats guessing the type from title words;
+    // the keyword sniffing below is only the fallback for events created
+    // outside Agent Office.
+    let type = meta.eventKind || gEvent.type || 'meeting';
+    if (!TYPE_META[type]) type = 'meeting';
+    if (!meta.eventKind && !gEvent.type) {
       if (summary.includes('focus') || summary.includes('deep work')) type = 'focus';
       else if (summary.includes('deadline') || summary.includes('due')) type = 'deadline';
       else if (summary.includes('remind') || summary.includes('reminder')) type = 'reminder';
@@ -1728,7 +1999,8 @@
       recurring: gEvent.recurring || (seriesId ? 'Daily' : null),
       seriesId: seriesId || null,
       gcalId: gEvent.gcalId || null,
-      htmlLink: gEvent.htmlLink || null
+      htmlLink: gEvent.htmlLink || null,
+      meta
     };
   }
 
@@ -1740,43 +2012,52 @@
     render();
   }
 
-  async function loadGoogleEvents() {
+  // The server is the authority on sync state; this only mirrors it. Seeded
+  // demo events used to fill the gap when the calendar was empty, which made a
+  // connected-but-empty account look like a populated one.
+  async function loadGoogleEvents(options) {
+    const force = Boolean(options && options.force);
     try {
       const statusResp = await fetch('/api/calendar/status');
       if (!statusResp.ok) {
+        state.syncState = 'error';
+        state.calendarState = 'sync-error';
         reportSyncProblem('Calendar status check failed (HTTP ' + statusResp.status + ').');
         return;
       }
       const status = await statusResp.json();
-      if (!status.configured) {
-        reportSyncProblem('Calendar API is not configured on the server.');
-        return;
-      }
+      state.syncState = status.syncState || (status.connected ? 'healthy' : 'disconnected');
+      state.accountEmail = status.accountEmail || null;
+      state.lastSyncedAt = status.lastSyncedAt || null;
       state.gcalConfigured = Boolean(status.connected);
-      if (!status.connected) {
-        reportSyncProblem(status.googleConfigured
-          ? 'Google Calendar is not connected. Use Connect Google Calendar above.'
-          : 'Google OAuth is not set up on this deployment.');
-        return;
-      }
-      // Connected only means a token is stored; the server also tells us
-      // whether that token still works.
-      if (status.tokenValid === false) {
-        reportSyncProblem(status.tokenError || 'The stored Google token is no longer valid. Reconnect Google Calendar.');
+
+      if (state.syncState === 'auth-error') {
+        state.calendarState = 'sync-error';
+        reportSyncProblem(status.error || 'The stored Google token is no longer valid. Reconnect Google Calendar.');
         return;
       }
 
-      const resp = await fetch('/api/calendar/events');
+      // Even when Google is disconnected the server still returns the blocks
+      // Agent Office created locally, so this request runs in every state.
+      const resp = await fetch('/api/calendar/events' + (force ? '?refresh=full' : ''));
       if (!resp.ok) {
+        state.syncState = 'error';
+        state.calendarState = 'sync-error';
         reportSyncProblem('Loading events failed (HTTP ' + resp.status + ').');
         return;
       }
       const data = await resp.json();
+      state.calendarState = data.calendarState || (data.events && data.events.length ? 'connected-with-events' : 'connected-empty');
+      state.syncState = data.syncState || state.syncState;
+      state.lastSyncedAt = data.lastSyncedAt || state.lastSyncedAt;
+
       if (data.googleError) {
+        state.calendarState = 'sync-error';
         reportSyncProblem('Google: ' + data.googleError);
-      } else {
-        state.gcalError = null;
+        return;
       }
+      state.gcalError = null;
+
       const gEvents = (data.events || []).filter(e => e.start);
       const converted = gEvents.map(googleEventToInternal).sort(compareEvents);
       resetEventEditor();
@@ -1791,12 +2072,80 @@
       } else {
         state.selectedEventId = null;
       }
-      if (!converted.length && !data.googleError) {
-        state.gcalError = 'Connected, but Google returned no events for this window.';
-      }
       render();
     } catch (error) {
+      state.syncState = 'error';
+      state.calendarState = 'sync-error';
       reportSyncProblem('Could not reach the calendar API: ' + (error && error.message ? error.message : error));
+    }
+  }
+
+  async function loadSchedulingPreferences() {
+    try {
+      const resp = await fetch('/api/calendar/preferences');
+      if (!resp.ok) return;
+      const data = await resp.json();
+      state.preferences = data.preferences || null;
+      render();
+    } catch (error) {
+      // Preferences are an enhancement: the calendar still renders without them.
+    }
+  }
+
+  function setLane(lane) {
+    state.lane = lane;
+    render();
+  }
+
+  function setAgentFilter(agentId) {
+    state.agentFilter = state.agentFilter === agentId ? '' : agentId;
+    render();
+  }
+
+  function setProjectFilter(projectId) {
+    state.projectFilter = state.projectFilter === projectId ? '' : projectId;
+    render();
+  }
+
+  function clearAgentFilters() {
+    state.agentFilter = '';
+    state.projectFilter = '';
+    render();
+  }
+
+  function openSyncPanel() {
+    if (window.AOCalendarConnection && window.AOCalendarConnection.show) {
+      window.AOCalendarConnection.show();
+      return;
+    }
+    loadGoogleEvents({ force: true });
+  }
+
+  // Drive one agent-owned block through its run lifecycle.
+  async function runAction(eventId, action, payload) {
+    const event = findEvent(eventId);
+    const serverId = (event && event.serverId) || eventId;
+    try {
+      const resp = await fetch('/api/calendar/events/' + encodeURIComponent(serverId) + '/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(Object.assign({ action }, payload || {}))
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        setFlash(data.error || 'Could not update the run.', 'warn');
+        render();
+        return null;
+      }
+      if (event) event.meta = data.meta || {};
+      setFlash(event ? event.title + ': ' + (data.status || action) : 'Run updated.', 'info');
+      render();
+      return data;
+    } catch (error) {
+      setFlash('Network error - the run was not updated.', 'warn');
+      render();
+      return null;
     }
   }
 
@@ -1870,6 +2219,23 @@
     prepareBrief,
     createRecapFor,
     shiftEvent,
-    loadGoogleEvents
+    loadGoogleEvents,
+    // Agent Office control surface: lanes, run lifecycle, and the state the
+    // Agent Assistant drawer reads.
+    setLane,
+    setAgentFilter,
+    setProjectFilter,
+    clearAgentFilters,
+    openSyncPanel,
+    runAction,
+    freeWindows,
+    getState: () => state,
+    getEvents: () => state.events.slice(),
+    getTasks: () => state.tasks.slice(),
+    setFlash,
+    findEvent,
+    formatRange,
+    parseLocalIso,
+    TYPE_META
   };
 })();

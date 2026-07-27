@@ -53,6 +53,28 @@
         background: rgba(15, 23, 42, 0.78);
       }
       .calendar-mobile-add-form.open { display: block; }
+      .calendar-mobile-add-advanced-toggle {
+        width: 100%;
+        min-height: 36px;
+        margin: 0 0 11px;
+        border: 1px dashed rgba(148, 163, 184, 0.32);
+        border-radius: 11px;
+        background: transparent;
+        color: #94a3b8;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .calendar-mobile-add-advanced { display: none; }
+      .calendar-mobile-add-advanced.open { display: block; }
+      .calendar-mobile-add-check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        color: #cbd5e1;
+        font-size: 12px;
+      }
       .calendar-mobile-add-field { margin-bottom: 11px; }
       .calendar-mobile-add-label {
         display: block;
@@ -247,6 +269,42 @@
     node.textContent = message || '';
   }
 
+  const EVENT_KINDS = [
+    { id: 'meeting', label: 'Meeting' },
+    { id: 'task', label: 'Task' },
+    { id: 'focus', label: 'Focus' },
+    { id: 'deadline', label: 'Deadline' },
+    { id: 'reminder', label: 'Reminder' },
+    { id: 'automation', label: 'Automation' },
+    { id: 'agent-run', label: 'Agent run' },
+    { id: 'review', label: 'Review' }
+  ];
+
+  // Only send what was actually filled in - an empty string clears the field
+  // server-side, which is not what leaving a box untouched should mean.
+  function collectMeta(form) {
+    const meta = {};
+    const text = name => (form.elements[name] ? form.elements[name].value.trim() : '');
+    if (text('agentId')) meta.agentId = text('agentId');
+    if (text('projectId')) meta.projectId = text('projectId');
+    if (text('expectedOutput')) meta.expectedOutput = text('expectedOutput');
+    meta.eventKind = form.elements.eventKind.value;
+    meta.priority = form.elements.priority.value;
+    meta.movable = Boolean(form.elements.movable.checked);
+    if (form.elements.agentRun.checked) {
+      meta.executionMode = 'agent-run';
+      meta.runStatus = 'scheduled';
+    }
+    const startMinutes = form.elements.start.value.split(':');
+    const endMinutes = form.elements.end.value.split(':');
+    if (startMinutes.length === 2 && endMinutes.length === 2) {
+      const minutes = (Number(endMinutes[0]) * 60 + Number(endMinutes[1]))
+        - (Number(startMinutes[0]) * 60 + Number(startMinutes[1]));
+      if (minutes > 0) meta.estimatedDuration = minutes;
+    }
+    return meta;
+  }
+
   function buildForm(dateKey) {
     const defaults = defaultTimes(dateKey);
     const form = document.createElement('form');
@@ -262,6 +320,33 @@
       + '<div class="calendar-mobile-add-field">'
       + '<label class="calendar-mobile-add-label">Notes</label>'
       + '<textarea class="calendar-mobile-add-textarea" name="notes" maxlength="2000" placeholder="Optional notes"></textarea>'
+      + '</div>'
+      // The first four fields stay the whole form for a quick entry; everything
+      // that makes a block an Agent Office block lives behind this disclosure.
+      + '<button class="calendar-mobile-add-advanced-toggle" type="button">More options</button>'
+      + '<div class="calendar-mobile-add-advanced">'
+      + '<div class="calendar-mobile-add-time-row">'
+      + '<div class="calendar-mobile-add-field"><label class="calendar-mobile-add-label">Type</label>'
+      + '<select class="calendar-mobile-add-input" name="eventKind">'
+      + EVENT_KINDS.map(kind => '<option value="' + kind.id + '">' + escapeHtml(kind.label) + '</option>').join('')
+      + '</select></div>'
+      + '<div class="calendar-mobile-add-field"><label class="calendar-mobile-add-label">Priority</label>'
+      + '<select class="calendar-mobile-add-input" name="priority">'
+      + ['normal', 'low', 'high', 'urgent'].map(value => '<option value="' + value + '">' + value + '</option>').join('')
+      + '</select></div>'
+      + '</div>'
+      + '<div class="calendar-mobile-add-time-row">'
+      + '<div class="calendar-mobile-add-field"><label class="calendar-mobile-add-label">Agent</label>'
+      + '<input class="calendar-mobile-add-input" name="agentId" type="text" maxlength="60" autocomplete="off" placeholder="codex"></div>'
+      + '<div class="calendar-mobile-add-field"><label class="calendar-mobile-add-label">Project</label>'
+      + '<input class="calendar-mobile-add-input" name="projectId" type="text" maxlength="60" autocomplete="off" placeholder="flashcards"></div>'
+      + '</div>'
+      + '<div class="calendar-mobile-add-field"><label class="calendar-mobile-add-label">Location or meeting link</label>'
+      + '<input class="calendar-mobile-add-input" name="location" type="text" maxlength="300" autocomplete="off" placeholder="Optional"></div>'
+      + '<div class="calendar-mobile-add-field"><label class="calendar-mobile-add-label">Expected output</label>'
+      + '<input class="calendar-mobile-add-input" name="expectedOutput" type="text" maxlength="200" autocomplete="off" placeholder="Draft pull request"></div>'
+      + '<label class="calendar-mobile-add-check"><input type="checkbox" name="movable" checked> Flexible - Agent Office may move this</label>'
+      + '<label class="calendar-mobile-add-check"><input type="checkbox" name="agentRun"> Run automatically at this time</label>'
       + '</div>'
       + '<div class="calendar-mobile-add-actions">'
       + '<button class="calendar-mobile-add-cancel" type="button">Cancel</button>'
@@ -297,6 +382,14 @@
       toggle.textContent = opening ? '− Hide add form' : '+ Add event';
       setMessage(form, '', '');
       if (opening) window.setTimeout(() => form.elements.title.focus(), 40);
+    });
+
+    const advancedToggle = form.querySelector('.calendar-mobile-add-advanced-toggle');
+    const advanced = form.querySelector('.calendar-mobile-add-advanced');
+    advancedToggle.addEventListener('click', () => {
+      const opening = !advanced.classList.contains('open');
+      advanced.classList.toggle('open', opening);
+      advancedToggle.textContent = opening ? 'Fewer options' : 'More options';
     });
 
     form.querySelector('.calendar-mobile-add-cancel').addEventListener('click', () => {
@@ -336,7 +429,10 @@
             title: title,
             start: dateKey + 'T' + startTime,
             end: dateKey + 'T' + endTime,
-            notes: notes
+            notes: notes,
+            location: form.elements.location.value.trim(),
+            type: form.elements.eventKind.value,
+            meta: collectMeta(form)
           })
         });
         let payload = {};

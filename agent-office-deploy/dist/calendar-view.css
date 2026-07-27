@@ -1209,3 +1209,133 @@
     min-width: 720px;
   }
 }
+
+/* ── Agent Office calendar surface ─────────────────────────────────────────
+   The live sync indicator, the Agent Timeline lanes, and the agent/run badges
+   that turn a calendar block into a status readout. */
+
+.calendar-sync-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 999px;
+  padding: 8px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(15, 23, 42, 0.66);
+  color: color-mix(in srgb, var(--text) 78%, var(--muted));
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.calendar-sync-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex: none;
+}
+
+.calendar-sync-chip.is-ok { color: #86efac; border-color: rgba(34, 197, 94, 0.34); }
+.calendar-sync-chip.is-ok .calendar-sync-dot {
+  background: #22c55e;
+  box-shadow: 0 0 7px rgba(34, 197, 94, 0.65);
+}
+.calendar-sync-chip.is-bad { color: #fca5a5; border-color: rgba(239, 68, 68, 0.34); }
+.calendar-sync-chip.is-bad .calendar-sync-dot { background: #ef4444; }
+.calendar-sync-chip.is-pending .calendar-sync-dot { background: #facc15; }
+
+.calendar-lane-bar {
+  display: grid;
+  gap: 6px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.calendar-lane-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.calendar-lane-row::-webkit-scrollbar { display: none; }
+
+.calendar-lane,
+.calendar-lane-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  min-height: 30px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.6);
+  color: color-mix(in srgb, var(--text) 72%, var(--muted));
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.calendar-lane.active,
+.calendar-lane-chip.active {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 18%, rgba(15, 23, 42, 0.6));
+}
+
+.calendar-lane-count {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.calendar-lane-chip.clear { color: #fca5a5; }
+
+/* Kept to one wrapping row: the notice explains the state, it should not eat
+   the calendar grid. */
+.calendar-state-notice {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 8px 14px;
+  padding: 9px 12px;
+  border: 1px dashed rgba(148, 163, 184, 0.28);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.calendar-state-title { font-size: 12px; font-weight: 700; }
+.calendar-state-copy { font-size: 12px; color: var(--muted); flex: 1 1 200px; }
+.calendar-state-notice .calendar-btn { padding: 5px 11px; font-size: 11px; min-height: 30px; }
+
+.calendar-agent-badge,
+.calendar-run-badge {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  opacity: 0.85;
+}
+
+.calendar-run-badge.is-running { color: #fde68a; }
+.calendar-run-badge.is-needs_input { color: #fca5a5; }
+.calendar-run-badge.is-completed { color: #86efac; }
+.calendar-run-badge.is-failed { color: #fca5a5; }
+
+.calendar-event.run-running { box-shadow: inset 2px 0 0 #fbbf24; }
+.calendar-event.run-needs_input { box-shadow: inset 2px 0 0 #f87171; }
+.calendar-event.run-completed { box-shadow: inset 2px 0 0 #4ade80; }
+.calendar-event-block.run-running { box-shadow: inset 3px 0 0 #fbbf24; }
+.calendar-event-block.run-needs_input { box-shadow: inset 3px 0 0 #f87171; }
+.calendar-event-block.run-completed { box-shadow: inset 3px 0 0 #4ade80; }
+
+@media (max-width: 760px) {
+  .calendar-lane-bar { padding: 6px 10px; }
+  .calendar-state-notice { margin: 6px 10px; padding: 8px 10px; }
+}

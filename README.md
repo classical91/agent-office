@@ -6,7 +6,7 @@ A multi-page web app that acts as a personal "office" for AI agents — a place 
 
 - **Dropbox / Mission Board** — capture notes, ideas, reminders, and tasks with subject, status, priority, and tags. Tap any note to open it in a full-screen reading view.
 - **Memory** — per-agent memory entries that agents can reference across sessions.
-- **Calendar** — calendar view with Google Calendar OAuth, recurring events, and quick-add.
+- **Calendar** — a Google Calendar-backed control surface for the office: agent/project metadata on every block, live run status, an Agent Assistant drawer, agent-timeline filters, and a scored scheduling policy instead of first-available-slot.
 - **Org chart** — a visual layout of the agent team.
 - **Office view** — a "room" view with each agent's avatar and current status.
 - **AI Landscape** — a tracker page for the AI model/tooling landscape.
@@ -47,6 +47,10 @@ agent-office-deploy/
     project-rooms.js           # Project Rooms-only logic
     agent-registry.js          # Agent Registry-only logic
     calendar-view.{js,css}     # Calendar-only logic
+    calendar-view-base.js      # Calendar renderer (states, lanes, agent badges)
+    calendar-agent-assistant.js # Agent Assistant drawer
+    calendar-agent-meta.js     # Agent Office event metadata + run lifecycle
+    calendar-scheduling.js     # Scheduling preferences, slot scoring, NL parsing
     ai-landscape.{js,css}      # AI Landscape-only logic
     server.js                  # Node HTTP server
     config-files/              # Per-agent config snapshots
@@ -66,6 +70,17 @@ PORT=3000 npm start
 ```
 
 Then open <http://localhost:3000>.
+
+## Tests
+
+```bash
+npm test
+```
+
+`tests/` covers the Google OAuth flow and passphrase gating, the canonical sync
+status and calendar states, event metadata round-trips (including through
+Google's extended properties), the agent run lifecycle, the scheduling policy
+and slot scoring, and natural-language plan preview/commit.
 
 ## API
 
@@ -92,8 +107,62 @@ All endpoints return JSON.
 | POST   | `/api/calendar/events`            | Create an event                  |
 | PATCH  | `/api/calendar/events/:id`        | Update an event                  |
 | DELETE | `/api/calendar/events/:id`        | Delete an event                  |
+| POST   | `/api/calendar/events/:id/run`    | Drive a block's agent run        |
+| GET    | `/api/calendar/agent-timeline`    | Agent work grouped by agent      |
+| GET    | `/api/calendar/preferences`       | Read scheduling preferences      |
+| PUT    | `/api/calendar/preferences`       | Update scheduling preferences    |
+| POST   | `/api/calendar/schedule/suggest`  | Scored candidate slots           |
+| POST   | `/api/calendar/schedule/plan`     | Preview a natural-language plan  |
+| POST   | `/api/calendar/schedule/commit`   | Create the previewed blocks      |
 | POST   | `/api/calendar/quick-add`         | Natural-language event entry     |
 | GET    | `/api/config-files/:agent`        | Read an agent's config snapshot  |
+
+### The calendar as an agent control surface
+
+The calendar is not only a view of Google Calendar; every block can carry Agent
+Office metadata, launch work, report live status, and keep its result.
+
+**Sync status.** `/api/calendar/status` returns one canonical object —
+`configured`, `connected`, `accountEmail`, `lastSyncedAt`, `syncState`, `error`
+(the older `googleConfigured` / `tokenValid` keys are still returned for
+compatibility). `syncState` is one of `unconfigured`, `disconnected`,
+`auth-error`, `healthy`. `/api/calendar/events` adds an explicit
+`calendarState`: `disconnected`, `local-only`, `connected-empty`,
+`connected-with-events` or `sync-error`, so a connected but empty calendar can
+never be confused with a broken sync. No demo events are ever seeded.
+
+**Event metadata** (`agent-office-deploy/dist/calendar-agent-meta.js`). Events
+accept a `meta` object with `agentId`, `projectId`, `taskId`, `eventKind`,
+`priority`, `executionMode`, `movable`, `estimatedDuration`, `prepMinutes`,
+`followUpMinutes`, `requiredInputs`, `expectedOutput`, `runStatus` and
+`resultUrl`. It is written to Google `extendedProperties.private` (prefixed
+`ao*`) and mirrored into a local mapping table keyed by event id; the local
+table is authoritative, so a failed Google write cannot lose a run's status.
+
+**Run lifecycle.** `POST /api/calendar/events/:id/run` takes an `action` of
+`schedule`, `start`, `progress`, `needs_input`, `complete`, `fail` or `reset`.
+Each transition updates the block *and* the agent record (status, current task
+and project, heartbeat), enforces the concurrent-run cap, and writes a summary
+into agent memory when a run finishes.
+
+**Scheduling policy** (`agent-office-deploy/dist/calendar-scheduling.js`).
+Working hours, sleep, commitments, lunch, meeting buffers, minimum focus
+length, deep-work windows and the maximum number of concurrent agent runs are
+configurable. Candidate slots are scored rather than taken first-fit:
+
+```
+slotScore = urgency + preferredTime + projectPriority + dependencyReadiness
+          - interruptionCost - contextSwitchCost - conflictRisk
+```
+
+Every suggestion returns its own score breakdown, its reasons, and any
+warnings.
+
+**Agent Assistant.** One floating button opens a bottom sheet on mobile and a
+right-hand drawer on desktop, with "What should I do next?", "Schedule my
+highest-priority task", "Protect two hours for Agent Office", "Prepare me for
+my next meeting" and "Show conflicts and overdue work", plus a
+natural-language field that previews a plan before anything is created.
 
 ## Deployment
 

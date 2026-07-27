@@ -3,19 +3,21 @@ const https = require('https');
 const fs = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
+const agentMeta = require('./calendar-agent-meta.js');
+const scheduling = require('./calendar-scheduling.js');
 
 process.env.TZ = process.env.APP_TIMEZONE || 'America/Vancouver';
 
 const PORT = process.env.PORT || 3000;
-const DROPS_FILE = path.join(__dirname, process.env.DROPS_FILE || 'drops.json');
-const MEMORIES_FILE = path.join(__dirname, process.env.MEMORIES_FILE || 'memories.json');
-const PROJECTS_FILE = path.join(__dirname, process.env.PROJECTS_FILE || 'projects.json');
-const AGENTS_FILE = path.join(__dirname, process.env.AGENTS_FILE || 'agents.json');
-const CALENDAR_EVENTS_FILE = path.join(__dirname, process.env.CALENDAR_EVENTS_FILE || 'calendar-events.json');
-const CALENDAR_DISABLED_RECURRING_FILE = path.join(__dirname, process.env.CALENDAR_DISABLED_RECURRING_FILE || 'calendar-disabled-recurring.json');
-const CALENDAR_RECURRING_OVERRIDES_FILE = path.join(__dirname, process.env.CALENDAR_RECURRING_OVERRIDES_FILE || 'calendar-recurring-overrides.json');
-const APP_SETTINGS_FILE = path.join(__dirname, process.env.APP_SETTINGS_FILE || '.app-settings.json');
-const PROMPTS_FILE = path.join(__dirname, process.env.PROMPTS_FILE || 'prompts.json');
+const DROPS_FILE = path.resolve(__dirname, process.env.DROPS_FILE || 'drops.json');
+const MEMORIES_FILE = path.resolve(__dirname, process.env.MEMORIES_FILE || 'memories.json');
+const PROJECTS_FILE = path.resolve(__dirname, process.env.PROJECTS_FILE || 'projects.json');
+const AGENTS_FILE = path.resolve(__dirname, process.env.AGENTS_FILE || 'agents.json');
+const CALENDAR_EVENTS_FILE = path.resolve(__dirname, process.env.CALENDAR_EVENTS_FILE || 'calendar-events.json');
+const CALENDAR_DISABLED_RECURRING_FILE = path.resolve(__dirname, process.env.CALENDAR_DISABLED_RECURRING_FILE || 'calendar-disabled-recurring.json');
+const CALENDAR_RECURRING_OVERRIDES_FILE = path.resolve(__dirname, process.env.CALENDAR_RECURRING_OVERRIDES_FILE || 'calendar-recurring-overrides.json');
+const APP_SETTINGS_FILE = path.resolve(__dirname, process.env.APP_SETTINGS_FILE || '.app-settings.json');
+const PROMPTS_FILE = path.resolve(__dirname, process.env.PROMPTS_FILE || 'prompts.json');
 const MAX_BODY_BYTES = 50 * 1024;
 const SESSION_COOKIE = 'agent_office_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
@@ -1734,6 +1736,8 @@ async function handleStatic(req, res, pathname) {
 
 const GOOGLE_REFRESH_TOKEN_SETTING = 'google_calendar_refresh_token';
 const GOOGLE_ACCOUNT_SETTING = 'google_calendar_account';
+const CALENDAR_EVENT_META_SETTING = 'calendar_event_meta';
+const CALENDAR_PREFERENCES_SETTING = 'calendar_scheduling_preferences';
 const GOOGLE_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 const GOOGLE_SCOPES = [
   'openid',
@@ -1803,6 +1807,77 @@ async function setStoredGcalSecret(key, value) {
 async function deleteStoredGcalSecret(key) {
   const storage = await storageReady;
   return storage.deleteAppSetting(key);
+}
+
+// ── Agent Office event metadata store ──────────────────────────────────────
+//
+// Keyed by the same event id the client uses ("gcal:<googleId>" for Google
+// events, the local row id otherwise). This is the authoritative copy; Google
+// extendedProperties are written best effort on top of it so the data survives
+// outside Agent Office.
+
+let eventMetaCache = null;
+
+async function loadEventMetaMap() {
+  if (eventMetaCache) return eventMetaCache;
+  const storage = await storageReady;
+  const raw = await storage.getAppSetting(CALENDAR_EVENT_META_SETTING);
+  try {
+    const parsed = raw ? JSON.parse(raw) : {};
+    eventMetaCache = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch (error) {
+    console.error('Calendar event metadata was unreadable; starting from empty.', error.message);
+    eventMetaCache = {};
+  }
+  return eventMetaCache;
+}
+
+async function saveEventMetaMap(map) {
+  eventMetaCache = map;
+  const storage = await storageReady;
+  await storage.setAppSetting(CALENDAR_EVENT_META_SETTING, JSON.stringify(map));
+}
+
+async function getEventMeta(eventId) {
+  if (!eventId) return {};
+  const map = await loadEventMetaMap();
+  return agentMeta.normalizeMeta(map[eventId]);
+}
+
+async function patchEventMeta(eventId, patch) {
+  if (!eventId) return {};
+  const map = await loadEventMetaMap();
+  const merged = agentMeta.mergeMeta(map[eventId], patch);
+  if (agentMeta.isEmptyMeta(merged)) delete map[eventId];
+  else map[eventId] = merged;
+  await saveEventMetaMap(map);
+  return merged;
+}
+
+async function deleteEventMeta(eventId) {
+  if (!eventId) return;
+  const map = await loadEventMetaMap();
+  if (!Object.prototype.hasOwnProperty.call(map, eventId)) return;
+  delete map[eventId];
+  await saveEventMetaMap(map);
+}
+
+async function getSchedulingPreferences() {
+  const storage = await storageReady;
+  const raw = await storage.getAppSetting(CALENDAR_PREFERENCES_SETTING);
+  try {
+    return scheduling.normalizePreferences(raw ? JSON.parse(raw) : {});
+  } catch (error) {
+    console.error('Scheduling preferences were unreadable; using defaults.', error.message);
+    return scheduling.normalizePreferences({});
+  }
+}
+
+async function saveSchedulingPreferences(input) {
+  const normalized = scheduling.normalizePreferences(input);
+  const storage = await storageReady;
+  await storage.setAppSetting(CALENDAR_PREFERENCES_SETTING, JSON.stringify(normalized));
+  return normalized;
 }
 
 async function getGcalRefreshToken() {
@@ -2022,35 +2097,495 @@ async function fetchGcalAccount(accessToken) {
   };
 }
 
-function toClientGoogleEvent(event) {
-  const privateFields = event.extendedProperties && event.extendedProperties.private;
+function toClientGoogleEvent(event, localMeta) {
+  const privateFields = (event.extendedProperties && event.extendedProperties.private) || {};
+  const meta = agentMeta.resolveMeta(privateFields, localMeta);
   return {
     id: `gcal:${event.id}`,
     gcalId: event.id,
     summary: event.summary || '(No title)',
     description: event.description || '',
     location: event.location || '',
-    type: privateFields && privateFields.agentOfficeType || 'meeting',
+    type: meta.eventKind || privateFields.agentOfficeType || 'meeting',
     source: 'google',
     htmlLink: event.htmlLink || '',
     start: event.start || {},
     end: event.end || {},
+    recurringEventId: event.recurringEventId || '',
+    updated: event.updated || '',
+    meta,
   };
 }
 
-async function listGoogleCalendarEvents() {
-  const now = Date.now();
-  const params = new URLSearchParams({
-    singleEvents: 'true',
-    orderBy: 'startTime',
-    maxResults: '2500',
-    timeMin: new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    timeMax: new Date(now + 365 * 24 * 60 * 60 * 1000).toISOString(),
+// ── Incremental Google sync ────────────────────────────────────────────────
+//
+// A full 13-month re-fetch on every page load is both slow and unnecessary:
+// Google hands out a syncToken that returns only what changed since the last
+// call. The cache below holds the last known event set so the token has
+// something to apply changes to. It is per-process, so a restart simply falls
+// back to one full sync - and a 410 from Google (token expired) does the same.
+
+const gcalSync = {
+  token: null,
+  windowKey: '',
+  items: new Map(),
+  lastSyncedAt: null,
+};
+
+function gcalSyncWindow(now = Date.now()) {
+  const timeMin = new Date(now - 30 * 24 * 60 * 60 * 1000);
+  const timeMax = new Date(now + 365 * 24 * 60 * 60 * 1000);
+  return {
+    timeMin: timeMin.toISOString(),
+    timeMax: timeMax.toISOString(),
+    // The sync window is anchored to the day, not the millisecond, so an
+    // ordinary page refresh keeps reusing the same token.
+    key: `${timeMin.toISOString().slice(0, 10)}..${timeMax.toISOString().slice(0, 10)}`,
+  };
+}
+
+function applyGcalPage(items) {
+  (Array.isArray(items) ? items : []).forEach(event => {
+    if (!event || !event.id) return;
+    if (event.status === 'cancelled' || !event.start || !event.end) {
+      gcalSync.items.delete(event.id);
+      return;
+    }
+    gcalSync.items.set(event.id, event);
   });
-  const data = await gcalApiRequest(`/calendar/v3/calendars/primary/events?${params}`);
-  return (Array.isArray(data.items) ? data.items : [])
-    .filter(event => event && event.id && event.status !== 'cancelled' && event.start && event.end)
-    .map(toClientGoogleEvent);
+}
+
+async function fetchGcalPages(baseParams, { incremental }) {
+  let pageToken = '';
+  let syncToken = null;
+  for (let page = 0; page < 40; page += 1) {
+    const params = new URLSearchParams(baseParams);
+    if (pageToken) params.set('pageToken', pageToken);
+    const data = await gcalApiRequest(`/calendar/v3/calendars/primary/events?${params}`);
+    applyGcalPage(data.items);
+    if (data.nextSyncToken) syncToken = data.nextSyncToken;
+    if (!data.nextPageToken) break;
+    pageToken = data.nextPageToken;
+  }
+  if (!incremental && !syncToken) {
+    // No token means the next call has to be a full sync again; that is a
+    // degraded mode, not an error.
+    gcalSync.token = null;
+  }
+  return syncToken;
+}
+
+function isGcalSyncTokenExpired(error) {
+  return Boolean(error && (error.statusCode === 410 || error.status === 410));
+}
+
+async function listGoogleCalendarEvents(options = {}) {
+  const window = gcalSyncWindow();
+  const canReuseToken = Boolean(gcalSync.token) && gcalSync.windowKey === window.key && !options.force;
+
+  if (canReuseToken) {
+    try {
+      // A sync-token request may not carry timeMin/timeMax/orderBy - Google
+      // rejects it. The window is already baked into the token.
+      const token = await fetchGcalPages(
+        { singleEvents: 'true', maxResults: '2500', syncToken: gcalSync.token },
+        { incremental: true }
+      );
+      if (token) gcalSync.token = token;
+      gcalSync.lastSyncedAt = new Date().toISOString();
+      return buildGoogleEventList();
+    } catch (error) {
+      if (!isGcalSyncTokenExpired(error)) throw error;
+      gcalSync.token = null;
+      gcalSync.items.clear();
+    }
+  }
+
+  gcalSync.items.clear();
+  const token = await fetchGcalPages(
+    {
+      singleEvents: 'true',
+      orderBy: 'startTime',
+      maxResults: '2500',
+      timeMin: window.timeMin,
+      timeMax: window.timeMax,
+    },
+    { incremental: false }
+  );
+  gcalSync.token = token || null;
+  gcalSync.windowKey = window.key;
+  gcalSync.lastSyncedAt = new Date().toISOString();
+  return buildGoogleEventList();
+}
+
+async function buildGoogleEventList() {
+  const metaMap = await loadEventMetaMap();
+  return Array.from(gcalSync.items.values())
+    .filter(event => event && event.id && event.start && event.end)
+    .map(event => toClientGoogleEvent(event, metaMap[`gcal:${event.id}`]))
+    .sort((a, b) => {
+      const left = a.start.dateTime || a.start.date || '';
+      const right = b.start.dateTime || b.start.date || '';
+      return left < right ? -1 : left > right ? 1 : 0;
+    });
+}
+
+function resetGcalSyncCache() {
+  gcalSync.token = null;
+  gcalSync.windowKey = '';
+  gcalSync.items.clear();
+  gcalSync.lastSyncedAt = null;
+}
+
+// ── Agent-aware calendar operations ────────────────────────────────────────
+
+async function withLocalEventMeta(events) {
+  const map = await loadEventMetaMap();
+  return (Array.isArray(events) ? events : []).map(event => ({
+    ...event,
+    meta: agentMeta.normalizeMeta(map[event.id]),
+  }));
+}
+
+// Every scheduling decision needs the same picture of the calendar: whatever is
+// on it right now, plus the Agent Office metadata for each block. Times are
+// flattened to plain ISO strings here so callers never have to care whether the
+// event came from Google or from local storage.
+function toSchedulingEvent(event) {
+  const pick = side => {
+    const value = event[side];
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    return value.dateTime || value.date || '';
+  };
+  return {
+    id: event.id,
+    title: event.summary || event.title || '',
+    start: pick('start'),
+    end: pick('end'),
+    meta: agentMeta.normalizeMeta(event.meta),
+  };
+}
+
+async function currentCalendarEvents() {
+  const storage = await storageReady;
+  const source = await isGcalConnected()
+    ? await listGoogleCalendarEvents()
+    : await withLocalEventMeta(await storage.listCalendarEvents());
+  return source.map(toSchedulingEvent).filter(event => event.start && event.end);
+}
+
+async function suggestScheduleSlots(body = {}) {
+  const preferences = await getSchedulingPreferences();
+  const events = await currentCalendarEvents();
+  const request = body.request && typeof body.request === 'object' ? body.request : body;
+  const slots = scheduling.suggestSlots({
+    preferences,
+    events,
+    now: new Date(),
+    horizonDays: body.horizonDays,
+    limit: body.limit,
+    request: {
+      durationMinutes: request.durationMinutes,
+      priority: request.priority,
+      deadline: request.deadline,
+      energy: request.energy,
+      agentId: request.agentId,
+      projectId: request.projectId,
+      executionMode: request.executionMode,
+      dependsOn: request.dependsOn,
+      notBefore: request.notBefore,
+    },
+  });
+  return { slots, preferences };
+}
+
+// Turn one sentence into a previewable plan. Nothing is written here - the
+// caller shows the blocks, the conflicts, and only then commits.
+async function buildSchedulePlan(text) {
+  const storage = await storageReady;
+  const [agents, projects, preferences, events] = await Promise.all([
+    storage.listAgents(),
+    storage.listProjects(),
+    getSchedulingPreferences(),
+    currentCalendarEvents(),
+  ]);
+
+  const parsed = scheduling.parseScheduleRequest(text, { agents, projects, now: new Date() });
+  if (!parsed.ok) return parsed;
+  const request = parsed.request;
+
+  const notBefore = resolvePlanNotBefore(request, events);
+  const primarySlots = scheduling.suggestSlots({
+    preferences,
+    events,
+    now: new Date(),
+    limit: 3,
+    request: {
+      durationMinutes: request.durationMinutes,
+      priority: request.priority,
+      energy: request.action === 'review' ? 'medium' : 'high',
+      agentId: request.agent,
+      projectId: request.project,
+      executionMode: request.executionMode,
+      notBefore,
+    },
+  });
+
+  if (!primarySlots.length) {
+    return {
+      ok: true,
+      request,
+      blocks: [],
+      conflicts: ['No window in the next two weeks fits that request under your current scheduling preferences.'],
+    };
+  }
+
+  const primary = primarySlots[0];
+  const blocks = [{
+    title: scheduling.describeRequest(request),
+    start: primary.start,
+    end: primary.end,
+    score: primary.score,
+    reasons: primary.reasons,
+    warnings: primary.warnings,
+    meta: {
+      agentId: request.agent || '',
+      projectId: request.project || '',
+      eventKind: request.executionMode === 'agent-run' ? 'agent-run' : 'task',
+      executionMode: request.executionMode,
+      priority: request.priority,
+      movable: true,
+      estimatedDuration: request.durationMinutes,
+      runStatus: request.executionMode === 'agent-run' ? 'scheduled' : '',
+    },
+  }];
+
+  if (request.followUp) {
+    const followUp = request.followUp;
+    const followSlots = scheduling.suggestSlots({
+      preferences,
+      // The follow-up must sit after the primary block, so it has to see it.
+      events: events.concat([{ id: 'plan:primary', title: blocks[0].title, start: primary.start, end: primary.end, meta: blocks[0].meta }]),
+      now: new Date(),
+      limit: 1,
+      request: {
+        durationMinutes: followUp.durationMinutes,
+        priority: request.priority,
+        energy: 'medium',
+        agentId: followUp.agent,
+        projectId: request.project,
+        executionMode: followUp.executionMode,
+        notBefore: primary.end,
+        dependsOn: ['plan:primary'],
+      },
+    });
+    if (followSlots.length) {
+      blocks.push({
+        title: `${followUp.agentName || followUp.agent || 'Follow-up'} ${followUp.action}`,
+        start: followSlots[0].start,
+        end: followSlots[0].end,
+        score: followSlots[0].score,
+        reasons: followSlots[0].reasons,
+        warnings: followSlots[0].warnings,
+        meta: {
+          agentId: followUp.agent || '',
+          projectId: request.project || '',
+          eventKind: 'review',
+          executionMode: followUp.executionMode,
+          priority: request.priority,
+          movable: true,
+          estimatedDuration: followUp.durationMinutes,
+          runStatus: followUp.executionMode === 'agent-run' ? 'scheduled' : '',
+        },
+      });
+    }
+  }
+
+  // Only genuine problems belong here - "inside a deep-work window" is a reason
+  // the slot won, not something to warn about before confirming.
+  const conflicts = [];
+  blocks.forEach(block => {
+    (block.warnings || []).forEach(warning => {
+      if (!conflicts.includes(warning)) conflicts.push(warning);
+    });
+  });
+
+  return { ok: true, request, blocks, conflicts, preferences };
+}
+
+function resolvePlanNotBefore(request, events) {
+  const now = new Date();
+  const day = request.day ? new Date(request.day) : null;
+  if (request.constraint === 'after-last-appointment') {
+    const reference = day || now;
+    const dayKey = reference.toISOString().slice(0, 10);
+    const sameDayEnds = events
+      .map(event => new Date(event.end))
+      .filter(end => !Number.isNaN(end.getTime()) && end.toISOString().slice(0, 10) === dayKey);
+    if (sameDayEnds.length) return new Date(Math.max.apply(null, sameDayEnds)).toISOString();
+  }
+  if (day) {
+    const dayStart = new Date(day);
+    dayStart.setHours(0, 0, 0, 0);
+    return (dayStart > now ? dayStart : now).toISOString();
+  }
+  return now.toISOString();
+}
+
+async function commitScheduleBlocks(blocks) {
+  const storage = await storageReady;
+  const connected = await isGcalConnected();
+  const created = [];
+  for (const block of blocks) {
+    if (!block || !block.title || !block.start || !block.end) continue;
+    const payload = {
+      title: String(block.title).slice(0, 300),
+      start: block.start,
+      end: block.end,
+      notes: typeof block.notes === 'string' ? block.notes : '',
+      type: (block.meta && block.meta.eventKind) || 'task',
+      meta: block.meta || {},
+    };
+    if (connected) {
+      created.push(await createGoogleCalendarEvent(payload));
+      continue;
+    }
+    const id = await storage.createCalendarEvent(payload);
+    if (payload.meta && Object.keys(payload.meta).length) await patchEventMeta(id, payload.meta);
+    created.push({ id, source: 'local', ...payload });
+  }
+  return created;
+}
+
+// Drive one calendar block through its run lifecycle and keep the agent roster,
+// the block, and the agent's memory in step.
+async function advanceEventRun(eventId, body = {}) {
+  const storage = await storageReady;
+  const action = String(body.action || '').trim().toLowerCase();
+  if (!agentMeta.RUN_ACTIONS.includes(action)) {
+    return { ok: false, statusCode: 400, error: `action must be one of: ${agentMeta.RUN_ACTIONS.join(', ')}.` };
+  }
+
+  const current = await getEventMeta(eventId);
+  if (action === 'start' && current.executionMode === 'agent-run') {
+    const preferences = await getSchedulingPreferences();
+    const map = await loadEventMetaMap();
+    const running = Object.keys(map).filter(key => key !== eventId && map[key] && map[key].runStatus === 'running').length;
+    if (running >= preferences.maxConcurrentAgentRuns) {
+      return {
+        ok: false,
+        statusCode: 409,
+        error: `Already at the ${preferences.maxConcurrentAgentRuns} concurrent agent run limit.`,
+      };
+    }
+  }
+
+  const transition = agentMeta.runTransition(current, action, {
+    progress: body.progress,
+    summary: body.summary,
+    resultUrl: body.resultUrl,
+    findings: body.findings,
+  });
+  if (!transition.ok) return { ok: false, statusCode: 409, error: transition.error };
+
+  const meta = await patchEventMeta(eventId, transition.meta);
+
+  // Mirror the new run state onto the Google event when there is one, so the
+  // status survives outside Agent Office. Best effort by design.
+  const googleId = gcalEventIdFromRoute(eventId);
+  if (googleId && await isGcalConnected()) {
+    try {
+      await patchGoogleCalendarEvent(googleId, { meta });
+    } catch (error) {
+      console.error('Could not mirror the run status onto Google Calendar.', error.message);
+    }
+  }
+
+  let agent = null;
+  if (transition.agentId) {
+    agent = await storage.updateAgent(transition.agentId, transition.agentPatch);
+    if (agent && (action === 'start' || action === 'progress')) {
+      agent = await storage.heartbeatAgent(transition.agentId);
+    }
+  }
+
+  // A finished run leaves a trace the agent can read back later.
+  if ((action === 'complete' || action === 'fail') && transition.agentId) {
+    const summary = [
+      action === 'complete' ? 'Completed' : 'Failed',
+      meta.projectId ? `project ${meta.projectId}` : '',
+      meta.runSummary || '',
+      meta.resultUrl || '',
+    ].filter(Boolean).join(' - ');
+    try {
+      await storage.createMemory({
+        id: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        agent: transition.agentId,
+        content: summary.slice(0, 1000),
+        created_at: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('Could not record the run summary in agent memory.', error.message);
+    }
+  }
+
+  return {
+    ok: true,
+    value: {
+      eventId,
+      from: transition.from,
+      to: transition.to,
+      meta,
+      status: agentMeta.describeRun(meta),
+      agent,
+    },
+  };
+}
+
+// "What are my agents doing today?" - one grouped answer instead of the whole
+// calendar with agent work mixed into ordinary appointments.
+async function buildAgentTimeline() {
+  const storage = await storageReady;
+  const [events, agents] = await Promise.all([currentCalendarEvents(), storage.listAgents()]);
+  const now = new Date();
+  const agentEvents = events.filter(event => agentMeta.isAgentOwned(event.meta));
+
+  const byAgent = new Map();
+  agentEvents.forEach(event => {
+    const key = event.meta.agentId || 'unassigned';
+    if (!byAgent.has(key)) byAgent.set(key, []);
+    byAgent.get(key).push({
+      id: event.id,
+      title: event.title,
+      start: event.start,
+      end: event.end,
+      projectId: event.meta.projectId || '',
+      runStatus: event.meta.runStatus || 'scheduled',
+      status: agentMeta.describeRun(event.meta, now),
+      resultUrl: event.meta.resultUrl || '',
+    });
+  });
+
+  return {
+    generatedAt: now.toISOString(),
+    agents: Array.from(byAgent.entries()).map(([agentId, blocks]) => {
+      const record = agents.find(item => item.id === agentId) || null;
+      return {
+        agentId,
+        name: record ? record.name : agentId,
+        status: record ? record.status : 'unknown',
+        lastHeartbeat: record ? record.last_heartbeat : null,
+        blocks: blocks.sort((a, b) => new Date(a.start) - new Date(b.start)),
+      };
+    }),
+    waitingForYou: agentEvents
+      .filter(event => event.meta.runStatus === 'needs_input')
+      .map(event => ({ id: event.id, title: event.title, agentId: event.meta.agentId || '' })),
+    completedOutputs: agentEvents
+      .filter(event => event.meta.runStatus === 'completed' && event.meta.resultUrl)
+      .map(event => ({ id: event.id, title: event.title, resultUrl: event.meta.resultUrl })),
+  };
 }
 
 function toGoogleDateTime(value) {
@@ -2064,41 +2599,68 @@ function toGoogleDateTime(value) {
 }
 
 async function createGoogleCalendarEvent(event) {
+  const meta = agentMeta.normalizeMeta({ eventKind: event.type || 'meeting', ...(event.meta || {}) });
   const created = await gcalApiRequest('/calendar/v3/calendars/primary/events', {
     method: 'POST',
     body: {
       summary: event.title,
       description: event.notes || '',
+      location: typeof event.location === 'string' ? event.location : undefined,
       start: { dateTime: toGoogleDateTime(event.start), timeZone: process.env.APP_TIMEZONE || 'America/Vancouver' },
       end: { dateTime: toGoogleDateTime(event.end), timeZone: process.env.APP_TIMEZONE || 'America/Vancouver' },
       extendedProperties: {
-        private: { agentOfficeType: event.type || 'meeting' },
+        private: {
+          agentOfficeType: event.type || meta.eventKind || 'meeting',
+          ...agentMeta.metaToGooglePrivate(meta),
+        },
       },
     },
   });
-  return toClientGoogleEvent(created);
+  // Keep the local mapping table in step so a later Google write failure cannot
+  // lose the Agent Office side of the event.
+  const clientEvent = toClientGoogleEvent(created, meta);
+  if (!agentMeta.isEmptyMeta(meta)) await patchEventMeta(clientEvent.id, meta);
+  gcalSync.items.set(created.id, created);
+  return clientEvent;
 }
 
 async function patchGoogleCalendarEvent(eventId, patch) {
   const body = {};
   if (typeof patch.title === 'string' && patch.title.trim()) body.summary = patch.title.trim();
   if (patch.notes !== undefined) body.description = typeof patch.notes === 'string' ? patch.notes : '';
+  if (patch.location !== undefined) body.location = typeof patch.location === 'string' ? patch.location : '';
   if (patch.start) body.start = { dateTime: toGoogleDateTime(patch.start), timeZone: process.env.APP_TIMEZONE || 'America/Vancouver' };
   if (patch.end) body.end = { dateTime: toGoogleDateTime(patch.end), timeZone: process.env.APP_TIMEZONE || 'America/Vancouver' };
-  if (patch.type) {
-    body.extendedProperties = { private: { agentOfficeType: String(patch.type) } };
+
+  const metaPatch = patch.meta && typeof patch.meta === 'object' ? { ...patch.meta } : {};
+  if (patch.type) metaPatch.eventKind = String(patch.type);
+  if (patch.type || Object.keys(metaPatch).length) {
+    // Google replaces the whole private bag on a patch, so merge against what
+    // Agent Office already knows rather than sending the delta alone.
+    const merged = await patchEventMeta(`gcal:${eventId}`, metaPatch);
+    body.extendedProperties = {
+      private: {
+        agentOfficeType: merged.eventKind || String(patch.type || 'meeting'),
+        ...agentMeta.metaToGooglePrivate(merged),
+      },
+    };
   }
   if (Object.keys(body).length === 0) return {};
-  return gcalApiRequest(`/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`, {
+  const updated = await gcalApiRequest(`/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`, {
     method: 'PATCH',
     body,
   });
+  if (updated && updated.id) gcalSync.items.set(updated.id, updated);
+  return updated;
 }
 
 async function deleteGoogleCalendarEvent(eventId) {
-  return gcalApiRequest(`/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`, {
+  const result = await gcalApiRequest(`/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`, {
     method: 'DELETE',
   });
+  gcalSync.items.delete(eventId);
+  await deleteEventMeta(`gcal:${eventId}`);
+  return result;
 }
 
 function gcalEventIdFromRoute(id) {
@@ -2580,6 +3142,8 @@ const server = http.createServer(async (req, res) => {
         if (data.refresh_token) {
           await setStoredGcalSecret(GOOGLE_REFRESH_TOKEN_SETTING, data.refresh_token);
         }
+        // A newly authorized account invalidates any sync token from the old one.
+        resetGcalSyncCache();
         gcalToken = {
           access_token: data.access_token,
           expires_at: Date.now() + ((data.expires_in || 3600) - 60) * 1000,
@@ -2615,10 +3179,25 @@ const server = http.createServer(async (req, res) => {
           tokenError = describeGcalError(error);
         }
       }
+      // One canonical shape. Everything else in the app - the toolbar chip, the
+      // connection bar, the tests - reads these six fields; the legacy keys
+      // below stay only so older clients keep working.
+      let syncState = 'disconnected';
+      if (!googleConfigured) syncState = 'unconfigured';
+      else if (!connected) syncState = 'disconnected';
+      else if (tokenValid === false) syncState = 'auth-error';
+      else syncState = 'healthy';
+
       sendJson(res, 200, {
-        configured: true,
+        configured: googleConfigured,
+        connected: connected && tokenValid !== false,
+        accountEmail: (account && account.email) || null,
+        lastSyncedAt: gcalSync.lastSyncedAt,
+        syncState,
+        error: tokenError || null,
+
+        // Legacy fields.
         googleConfigured,
-        connected,
         tokenValid,
         tokenError,
         account,
@@ -2642,32 +3221,109 @@ const server = http.createServer(async (req, res) => {
         deleteStoredGcalSecret(GOOGLE_ACCOUNT_SETTING),
       ]);
       gcalToken = null;
-      sendJson(res, 200, { connected: false });
+      resetGcalSyncCache();
+      sendJson(res, 200, { connected: false, syncState: 'disconnected' });
       return;
     }
 
     if (req.method === 'GET' && pathname === '/api/calendar/events') {
-      const localEvents = await storage.listCalendarEvents();
+      // The client needs to tell "nothing is scheduled" apart from "the sync
+      // broke" apart from "you never connected". One explicit state does that;
+      // an empty array on its own never could.
       if (!await isGcalConnected()) {
-        sendJson(res, 200, { events: localEvents, googleConnected: false });
+        const localEvents = await withLocalEventMeta(await storage.listCalendarEvents());
+        sendJson(res, 200, {
+          events: localEvents,
+          googleConnected: false,
+          // Blocks created inside Agent Office still exist without Google, so
+          // "disconnected" and "disconnected with local work" are not the same
+          // thing to show the user.
+          calendarState: localEvents.length ? 'local-only' : 'disconnected',
+          syncState: hasGcalClientCredentials() ? 'disconnected' : 'unconfigured',
+          lastSyncedAt: null,
+        });
         return;
       }
       try {
         // Google is the single source of truth once connected - locally stored
         // events are not merged in, so the calendar mirrors Google exactly.
-        const googleEvents = await listGoogleCalendarEvents();
+        const googleEvents = await listGoogleCalendarEvents({
+          force: parsedUrl.searchParams.get('refresh') === 'full',
+        });
         sendJson(res, 200, {
           events: googleEvents,
           googleConnected: true,
+          calendarState: googleEvents.length ? 'connected-with-events' : 'connected-empty',
+          syncState: 'healthy',
+          lastSyncedAt: gcalSync.lastSyncedAt,
         });
       } catch (error) {
         console.error('Unable to load Google Calendar events.', error);
         sendJson(res, 200, {
           events: [],
           googleConnected: true,
+          calendarState: 'sync-error',
+          syncState: 'error',
+          lastSyncedAt: gcalSync.lastSyncedAt,
           googleError: describeGcalError(error),
         });
       }
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/api/calendar/preferences') {
+      sendJson(res, 200, { preferences: await getSchedulingPreferences() });
+      return;
+    }
+
+    if (req.method === 'PUT' && pathname === '/api/calendar/preferences') {
+      if (!requireCalendarSetupAuth(req, res)) return;
+      const body = await readJsonBody(req);
+      const preferences = await saveSchedulingPreferences(body.preferences || body);
+      sendJson(res, 200, { preferences });
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/calendar/schedule/suggest') {
+      const body = await readJsonBody(req);
+      sendJson(res, 200, await suggestScheduleSlots(body));
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/calendar/schedule/plan') {
+      const body = await readJsonBody(req);
+      const plan = await buildSchedulePlan(typeof body.text === 'string' ? body.text : '');
+      if (!plan.ok) {
+        sendJson(res, 400, { error: plan.error });
+        return;
+      }
+      sendJson(res, 200, plan);
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/calendar/schedule/commit') {
+      if (!requireCalendarSetupAuth(req, res)) return;
+      const body = await readJsonBody(req);
+      const blocks = Array.isArray(body.blocks) ? body.blocks : [];
+      if (!blocks.length) {
+        sendJson(res, 400, { error: 'No blocks to schedule.' });
+        return;
+      }
+      sendJson(res, 201, { created: await commitScheduleBlocks(blocks) });
+      return;
+    }
+
+    if (req.method === 'POST' && /^\/api\/calendar\/events\/.+\/run$/.test(pathname)) {
+      if (!requireCalendarSetupAuth(req, res)) return;
+      const id = decodeURIComponent(pathname.slice('/api/calendar/events/'.length, -'/run'.length));
+      const body = await readJsonBody(req);
+      const result = await advanceEventRun(id, body);
+      sendJson(res, result.ok ? 200 : (result.statusCode || 409), result.ok ? result.value : { error: result.error });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/api/calendar/agent-timeline') {
+      sendJson(res, 200, await buildAgentTimeline());
       return;
     }
 
@@ -2680,7 +3336,11 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       const id = await storage.createCalendarEvent(body);
-      sendJson(res, 201, { id, source: 'local' });
+      const meta = await patchEventMeta(id, agentMeta.normalizeMeta({
+        eventKind: body.type || 'meeting',
+        ...(body.meta || {}),
+      }));
+      sendJson(res, 201, { id, source: 'local', meta });
       return;
     }
 
@@ -2724,6 +3384,7 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       await storage.deleteCalendarEvent(id);
+      await deleteEventMeta(id);
       sendJson(res, 200, { ok: true, source: 'local' });
       return;
     }
@@ -2734,11 +3395,14 @@ const server = http.createServer(async (req, res) => {
       const googleEventId = gcalEventIdFromRoute(id);
       if (googleEventId) {
         await patchGoogleCalendarEvent(googleEventId, body);
-        sendJson(res, 200, { ok: true, source: 'google' });
+        sendJson(res, 200, { ok: true, source: 'google', meta: await getEventMeta(id) });
         return;
       }
       await storage.patchCalendarEvent(id, body);
-      sendJson(res, 200, { ok: true, source: 'local' });
+      const metaPatch = body.meta && typeof body.meta === 'object' ? { ...body.meta } : {};
+      if (body.type) metaPatch.eventKind = String(body.type);
+      const meta = Object.keys(metaPatch).length ? await patchEventMeta(id, metaPatch) : await getEventMeta(id);
+      sendJson(res, 200, { ok: true, source: 'local', meta });
       return;
     }
 
@@ -2758,6 +3422,9 @@ const server = http.createServer(async (req, res) => {
       const created = await gcalApiRequest(`/calendar/v3/calendars/primary/events/quickAdd?${qs}`, {
         method: 'POST',
       });
+      if (created && created.id) gcalSync.items.set(created.id, created);
+      // quickAdd events start as plain meetings; the Agent Assistant's planner
+      // is what attaches agent/project metadata.
       sendJson(res, 201, created);
       return;
     }
