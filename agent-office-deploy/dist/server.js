@@ -1825,6 +1825,26 @@ async function getGcalAccount() {
   }
 }
 
+// Google's own message is far more useful than a generic failure string, and
+// the common causes have a clear next step.
+function describeGcalError(error) {
+  const raw = (error && error.message ? String(error.message) : '').trim();
+  const lower = raw.toLowerCase();
+  if (lower.includes('invalid_grant')) {
+    return 'The saved Google refresh token is no longer valid (invalid_grant). Reconnect Google Calendar.';
+  }
+  if (lower.includes('invalid_client')) {
+    return 'Google rejected the OAuth client (invalid_client). Check GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET on the deployment.';
+  }
+  if (lower.includes('insufficient') || lower.includes('scope')) {
+    return raw + ' - reconnect and grant calendar access.';
+  }
+  if (lower.includes('has not been used') || lower.includes('is disabled')) {
+    return raw + ' - enable the Google Calendar API for this project.';
+  }
+  return raw || 'Google Calendar could not be refreshed.';
+}
+
 async function isGcalConnected() {
   return hasGcalClientCredentials() && Boolean(await getGcalRefreshToken());
 }
@@ -2582,10 +2602,25 @@ const server = http.createServer(async (req, res) => {
       const googleConfigured = hasGcalClientCredentials();
       const connected = googleConfigured && await isGcalConnected();
       const account = connected ? await getGcalAccount() : null;
+      // A stored refresh token is not proof it still works - check it, so the
+      // UI cannot report "connected" while every call is failing.
+      let tokenValid = null;
+      let tokenError = null;
+      if (connected) {
+        try {
+          await getGcalToken();
+          tokenValid = true;
+        } catch (error) {
+          tokenValid = false;
+          tokenError = describeGcalError(error);
+        }
+      }
       sendJson(res, 200, {
         configured: true,
         googleConfigured,
         connected,
+        tokenValid,
+        tokenError,
         account,
         authRequired: Boolean(PASSPHRASE_HASH),
         authenticated: !PASSPHRASE_HASH || Boolean(getSession(req)),
@@ -2630,7 +2665,7 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, 200, {
           events: [],
           googleConnected: true,
-          googleError: 'Google Calendar could not be refreshed.',
+          googleError: describeGcalError(error),
         });
       }
       return;
