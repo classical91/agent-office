@@ -5,6 +5,7 @@ const path = require('path');
 const crypto = require('crypto');
 const agentMeta = require('./calendar-agent-meta.js');
 const scheduling = require('./calendar-scheduling.js');
+const googleSync = require('./calendar-google-sync.js');
 
 process.env.TZ = process.env.APP_TIMEZONE || 'America/Vancouver';
 
@@ -2119,122 +2120,21 @@ function toClientGoogleEvent(event, localMeta) {
 
 // ── Incremental Google sync ────────────────────────────────────────────────
 //
-// A full 13-month re-fetch on every page load is both slow and unnecessary:
-// Google hands out a syncToken that returns only what changed since the last
-// call. The cache below holds the last known event set so the token has
-// something to apply changes to. It is per-process, so a restart simply falls
-// back to one full sync - and a 410 from Google (token expired) does the same.
+// The state machine lives in calendar-google-sync.js so it can be driven by a
+// scripted fake Google in tests; here it is just wired to the real HTTP call.
 
-const gcalSync = {
-  token: null,
-  windowKey: '',
-  items: new Map(),
-  lastSyncedAt: null,
-};
-
-function gcalSyncWindow(now = Date.now()) {
-  const timeMin = new Date(now - 30 * 24 * 60 * 60 * 1000);
-  const timeMax = new Date(now + 365 * 24 * 60 * 60 * 1000);
-  return {
-    timeMin: timeMin.toISOString(),
-    timeMax: timeMax.toISOString(),
-    // The sync window is anchored to the day, not the millisecond, so an
-    // ordinary page refresh keeps reusing the same token.
-    key: `${timeMin.toISOString().slice(0, 10)}..${timeMax.toISOString().slice(0, 10)}`,
-  };
-}
-
-function applyGcalPage(items) {
-  (Array.isArray(items) ? items : []).forEach(event => {
-    if (!event || !event.id) return;
-    if (event.status === 'cancelled' || !event.start || !event.end) {
-      gcalSync.items.delete(event.id);
-      return;
-    }
-    gcalSync.items.set(event.id, event);
-  });
-}
-
-async function fetchGcalPages(baseParams, { incremental }) {
-  let pageToken = '';
-  let syncToken = null;
-  for (let page = 0; page < 40; page += 1) {
-    const params = new URLSearchParams(baseParams);
-    if (pageToken) params.set('pageToken', pageToken);
-    const data = await gcalApiRequest(`/calendar/v3/calendars/primary/events?${params}`);
-    applyGcalPage(data.items);
-    if (data.nextSyncToken) syncToken = data.nextSyncToken;
-    if (!data.nextPageToken) break;
-    pageToken = data.nextPageToken;
-  }
-  if (!incremental && !syncToken) {
-    // No token means the next call has to be a full sync again; that is a
-    // degraded mode, not an error.
-    gcalSync.token = null;
-  }
-  return syncToken;
-}
-
-function isGcalSyncTokenExpired(error) {
-  return Boolean(error && (error.statusCode === 410 || error.status === 410));
-}
+const gcalSync = googleSync.createGoogleSync({
+  request: path => gcalApiRequest(path),
+});
 
 async function listGoogleCalendarEvents(options = {}) {
-  const window = gcalSyncWindow();
-  const canReuseToken = Boolean(gcalSync.token) && gcalSync.windowKey === window.key && !options.force;
-
-  if (canReuseToken) {
-    try {
-      // A sync-token request may not carry timeMin/timeMax/orderBy - Google
-      // rejects it. The window is already baked into the token.
-      const token = await fetchGcalPages(
-        { singleEvents: 'true', maxResults: '2500', syncToken: gcalSync.token },
-        { incremental: true }
-      );
-      if (token) gcalSync.token = token;
-      gcalSync.lastSyncedAt = new Date().toISOString();
-      return buildGoogleEventList();
-    } catch (error) {
-      if (!isGcalSyncTokenExpired(error)) throw error;
-      gcalSync.token = null;
-      gcalSync.items.clear();
-    }
-  }
-
-  gcalSync.items.clear();
-  const token = await fetchGcalPages(
-    {
-      singleEvents: 'true',
-      orderBy: 'startTime',
-      maxResults: '2500',
-      timeMin: window.timeMin,
-      timeMax: window.timeMax,
-    },
-    { incremental: false }
-  );
-  gcalSync.token = token || null;
-  gcalSync.windowKey = window.key;
-  gcalSync.lastSyncedAt = new Date().toISOString();
-  return buildGoogleEventList();
-}
-
-async function buildGoogleEventList() {
+  const items = await gcalSync.list(options);
   const metaMap = await loadEventMetaMap();
-  return Array.from(gcalSync.items.values())
-    .filter(event => event && event.id && event.start && event.end)
-    .map(event => toClientGoogleEvent(event, metaMap[`gcal:${event.id}`]))
-    .sort((a, b) => {
-      const left = a.start.dateTime || a.start.date || '';
-      const right = b.start.dateTime || b.start.date || '';
-      return left < right ? -1 : left > right ? 1 : 0;
-    });
+  return items.map(event => toClientGoogleEvent(event, metaMap[`gcal:${event.id}`]));
 }
 
 function resetGcalSyncCache() {
-  gcalSync.token = null;
-  gcalSync.windowKey = '';
-  gcalSync.items.clear();
-  gcalSync.lastSyncedAt = null;
+  gcalSync.reset();
 }
 
 // ── Agent-aware calendar operations ────────────────────────────────────────
@@ -2620,7 +2520,7 @@ async function createGoogleCalendarEvent(event) {
   // lose the Agent Office side of the event.
   const clientEvent = toClientGoogleEvent(created, meta);
   if (!agentMeta.isEmptyMeta(meta)) await patchEventMeta(clientEvent.id, meta);
-  gcalSync.items.set(created.id, created);
+  gcalSync.upsert(created);
   return clientEvent;
 }
 
@@ -2650,7 +2550,7 @@ async function patchGoogleCalendarEvent(eventId, patch) {
     method: 'PATCH',
     body,
   });
-  if (updated && updated.id) gcalSync.items.set(updated.id, updated);
+  if (updated && updated.id) gcalSync.upsert(updated);
   return updated;
 }
 
@@ -2658,7 +2558,7 @@ async function deleteGoogleCalendarEvent(eventId) {
   const result = await gcalApiRequest(`/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`, {
     method: 'DELETE',
   });
-  gcalSync.items.delete(eventId);
+  gcalSync.remove(eventId);
   await deleteEventMeta(`gcal:${eventId}`);
   return result;
 }
@@ -3422,7 +3322,7 @@ const server = http.createServer(async (req, res) => {
       const created = await gcalApiRequest(`/calendar/v3/calendars/primary/events/quickAdd?${qs}`, {
         method: 'POST',
       });
-      if (created && created.id) gcalSync.items.set(created.id, created);
+      if (created && created.id) gcalSync.upsert(created);
       // quickAdd events start as plain meetings; the Agent Assistant's planner
       // is what attaches agent/project metadata.
       sendJson(res, 201, created);

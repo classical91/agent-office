@@ -51,6 +51,7 @@ agent-office-deploy/
     calendar-agent-assistant.js # Agent Assistant drawer
     calendar-agent-meta.js     # Agent Office event metadata + run lifecycle
     calendar-scheduling.js     # Scheduling preferences, slot scoring, NL parsing
+    calendar-google-sync.js    # Incremental Google sync (sync tokens, paging, 410 recovery)
     ai-landscape.{js,css}      # AI Landscape-only logic
     server.js                  # Node HTTP server
     config-files/              # Per-agent config snapshots
@@ -80,7 +81,14 @@ npm test
 `tests/` covers the Google OAuth flow and passphrase gating, the canonical sync
 status and calendar states, event metadata round-trips (including through
 Google's extended properties), the agent run lifecycle, the scheduling policy
-and slot scoring, and natural-language plan preview/commit.
+and slot scoring, natural-language plan preview/commit, and the incremental
+Google sync state machine.
+
+`calendar-google-sync.js` takes its HTTP call as an injected function, so
+`tests/calendar-google-sync.test.js` drives the whole state machine against a
+scripted fake Google: token reuse, delta merges, cancellations, pagination, an
+expired (410) token forcing a full resync, and a transient 5xx leaving a good
+token alone.
 
 ## API
 
