@@ -1758,6 +1758,12 @@
           : 'Google OAuth is not set up on this deployment.');
         return;
       }
+      // Connected only means a token is stored; the server also tells us
+      // whether that token still works.
+      if (status.tokenValid === false) {
+        reportSyncProblem(status.tokenError || 'The stored Google token is no longer valid. Reconnect Google Calendar.');
+        return;
+      }
 
       const resp = await fetch('/api/calendar/events');
       if (!resp.ok) {
