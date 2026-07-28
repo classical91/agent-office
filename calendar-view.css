@@ -611,15 +611,19 @@
 
 .calendar-month-cell {
   min-height: 134px;
-  padding: 12px;
+  padding: 10px 8px;
   border-right: 1px solid rgba(148, 163, 184, 0.08);
   border-bottom: 1px solid rgba(148, 163, 184, 0.08);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
   background: transparent;
   transition: background 0.18s ease;
+  /* Month rows are a fixed fraction of the viewport, so a busy day has to
+     clip inside its own cell instead of bleeding into the week below. */
+  overflow: hidden;
+  min-width: 0;
 }
 
 .calendar-month-cell:nth-child(7n) {
@@ -644,8 +648,9 @@
 
 .calendar-day-number {
   display: inline-flex;
-  width: 30px;
-  height: 30px;
+  flex: none;
+  width: 26px;
+  height: 26px;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
@@ -666,13 +671,20 @@
 .calendar-month-events {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 3px;
+  /* Takes the room left under the date and clips there; the "+N more" line
+     lives outside this list so it survives the clip. */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .calendar-more {
+  flex: none;
   font-size: 11px;
   color: #38bdf8;
   font-weight: 600;
+  padding-left: 2px;
 }
 
 .calendar-event {
@@ -682,11 +694,18 @@
   padding: 8px 10px;
   cursor: pointer;
   background: rgba(15, 23, 42, 0.82);
+  min-width: 0;
 }
 
+/* Month pill: time on the left, title filling the rest of one line. */
 .calendar-event.small {
-  padding: 6px 8px;
-  border-radius: 12px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex: none;
+  padding: 3px 7px;
+  border-radius: 6px;
+  line-height: 1.4;
 }
 
 .calendar-event.active {
@@ -701,6 +720,15 @@
   text-transform: uppercase;
 }
 
+.calendar-event.small .calendar-event-time {
+  flex: none;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.78;
+}
+
 .calendar-event-title {
   display: block;
   margin-top: 3px;
@@ -708,6 +736,17 @@
   font-size: 12px;
   line-height: 1.35;
   font-weight: 700;
+}
+
+.calendar-event.small .calendar-event-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-top: 0;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .calendar-event-meta {
@@ -829,6 +868,35 @@
 
 .calendar-event-block.active {
   box-shadow: inset 0 0 0 1px rgba(248, 250, 252, 0.22), 0 12px 22px rgba(2, 6, 23, 0.24);
+}
+
+/* Short blocks put the time beside the title instead of above it. */
+.calendar-event-block.is-compact {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 8px;
+}
+
+.calendar-event-block.is-compact .calendar-event-time {
+  flex: none;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.78;
+}
+
+.calendar-event-block.is-compact .calendar-event-block-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-top: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendar-event-block.is-compact .calendar-agent-badge,
+.calendar-event-block.is-compact .calendar-run-badge {
+  display: none;
 }
 
 .calendar-event-block-title {

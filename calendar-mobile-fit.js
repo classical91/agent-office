@@ -110,6 +110,11 @@
         overflow: visible !important;
       }
 
+      /* Dots carry the day on mobile; tapping the cell opens the full list. */
+      .calendar-compact-board .calendar-more {
+        display: none !important;
+      }
+
       .calendar-compact-board .calendar-event.small {
         width: 10px !important;
         height: 10px !important;
@@ -119,6 +124,7 @@
         max-height: 10px !important;
         padding: 0 !important;
         margin: 1px auto 0 !important;
+        overflow: hidden !important;
         border: 2px solid rgba(255, 255, 255, 0.92) !important;
         border-radius: 999px !important;
         background: currentColor !important;

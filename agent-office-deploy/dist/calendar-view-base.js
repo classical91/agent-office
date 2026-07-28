@@ -151,10 +151,21 @@
     return Math.round((end - start) / 60000);
   }
 
+  // en-CA renders "3:00 p.m."; the periods read as noise once the label sits
+  // beside a title, so the calendar uses the plain "3:00 PM" form everywhere.
   function formatTime(date) {
-    return new Intl.DateTimeFormat('en-CA', {
+    return new Intl.DateTimeFormat('en-US', {
       hour: 'numeric',
       minute: '2-digit'
+    }).format(date);
+  }
+
+  // Month pills share one line with the title, so an on-the-hour event drops
+  // the ":00" and keeps the width for the title.
+  function formatPillTime(date) {
+    return new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: date.getMinutes() ? '2-digit' : undefined
     }).format(date);
   }
 
@@ -309,8 +320,12 @@
     return Math.round(hours / 24) + ' days ago';
   }
 
+  // Upper bound on pills drawn into one month cell; fitMonthCells() trims this
+  // down to whatever the row height actually allows.
+  const MONTH_PILL_CAP = 8;
+
   const LANES = [
-    { id: 'all', label: 'My calendar' },
+    { id: 'all', label: 'Calendar' },
     { id: 'agent-runs', label: 'Agent runs' },
     { id: 'automations', label: 'Automations' },
     { id: 'deadlines', label: 'Deadlines' },
@@ -423,7 +438,9 @@
   }
 
   function eventsForDate(date) {
-    return visibleEvents().filter(event => sameDay(event.start, date));
+    return visibleEvents()
+      .filter(event => sameDay(event.start, date))
+      .sort((a, b) => parseLocalIso(a.start) - parseLocalIso(b.start));
   }
 
   function findEvent(id) {
@@ -899,7 +916,7 @@
     const dayNames = WEEKDAY_LABELS.map(label => '<div class="calendar-month-weekday">' + label + '</div>').join('');
     const cells = days.map(day => {
       const dateEvents = eventsForDate(day);
-      const dayEvents = dateEvents.slice(0, 3);
+      const dayEvents = dateEvents.slice(0, MONTH_PILL_CAP);
       const more = Math.max(0, dateEvents.length - dayEvents.length);
       const classes = ['calendar-month-cell'];
       if (!sameMonth(day, state.cursorDate)) classes.push('is-other');
@@ -907,12 +924,68 @@
       if (sameDay(day, state.selectedDate)) classes.push('selected');
       return '<div class="' + classes.join(' ') + '" onclick="CAL.jumpToDate(\'' + dateKey(day) + '\')" ondragover="CAL.allowTaskDrop(event)" ondrop="CAL.dropTask(event, \'' + dateKey(day) + '\', 10)">'
         + '<div class="calendar-day-number">' + day.getDate() + '</div>'
-        + '<div class="calendar-month-events">'
+        + '<div class="calendar-month-events" data-extra="' + more + '">'
         + dayEvents.map(event => renderEventPill(event, true)).join('')
-        + (more ? '<div class="calendar-more">+' + more + ' more</div>' : '')
-        + '</div></div>';
+        + '</div>'
+        // The overflow line sits outside the clipped pill list so it stays
+        // readable in short month rows. fitMonthCells() fills in the count once
+        // the cell has been laid out; the line keeps its space either way so
+        // the measurement does not chase its own reflow.
+        + '<div class="calendar-more"' + (more ? '' : ' style="visibility:hidden;"') + '>'
+        + (more ? '+' + more + ' more' : '')
+        + '</div>'
+        + '</div>';
     }).join('');
     return '<div class="calendar-month-grid">' + dayNames + cells + '</div>';
+  }
+
+  // How many pills fit in a month cell depends on the row height, which is a
+  // fraction of the viewport. Rather than guess a constant, hide the pills that
+  // spill past the cell and fold them into the "+N more" line. Hidden pills stay
+  // in the DOM so the mobile day popup still reads the full day off the cell.
+  function fitMonthCells() {
+    if (state.view !== 'month') return;
+    const cells = document.querySelectorAll('.calendar-month-cell');
+    cells.forEach(cell => {
+      const list = cell.querySelector('.calendar-month-events');
+      const moreLine = cell.querySelector('.calendar-more');
+      if (!list || !moreLine) return;
+      const pills = Array.from(list.querySelectorAll('.calendar-event'));
+      // Measure from a clean slate every pass — pills visible and the overflow
+      // line holding its space — so repeated passes settle on the same answer.
+      pills.forEach(pill => { pill.style.display = ''; });
+      moreLine.style.display = '';
+      moreLine.style.visibility = 'hidden';
+      const gap = parseFloat(getComputedStyle(list).rowGap) || 0;
+      // Sub-pixel heights are the norm here, so measure with rects and keep a
+      // pixel of slack: a cell that grows with its content must never decide
+      // its own last pill does not fit.
+      const available = list.getBoundingClientRect().height;
+      let extra = Number(list.dataset.extra || 0);
+      let used = 0;
+      let overflowing = false;
+      pills.forEach((pill, index) => {
+        const needed = pill.getBoundingClientRect().height + (index ? gap : 0);
+        if (overflowing || used + needed > available + 1) {
+          overflowing = true;
+          pill.style.display = 'none';
+          extra += 1;
+          return;
+        }
+        used += needed;
+      });
+      moreLine.textContent = extra ? '+' + extra + ' more' : '';
+      if (extra) moreLine.style.visibility = 'visible';
+      else moreLine.style.display = 'none';
+    });
+  }
+
+  // The first measurement can land before the surrounding chrome has settled
+  // (the toolbar and lane bar size themselves as the board mounts), so measure
+  // again on the next frame.
+  function scheduleMonthFit() {
+    fitMonthCells();
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(fitMonthCells);
   }
 
   // An agent-owned block shows who owns it and how the run is going, so the
@@ -937,8 +1010,8 @@
     const agentMetaFields = eventMeta(event);
     return '<button class="calendar-event' + (small ? ' small' : '') + (state.selectedEventId === event.id ? ' active' : '')
       + (agentMetaFields.runStatus ? ' run-' + escapeHtml(agentMetaFields.runStatus) : '')
-      + '" style="background:' + meta.surface + ';border-color:' + meta.border + ';color:' + meta.color + ';" onclick="CAL.selectEvent(\'' + event.id + '\')">'
-      + '<span class="calendar-event-time">' + escapeHtml(formatTime(start)) + '</span>'
+      + '" style="background:' + meta.surface + ';border-color:' + meta.border + ';color:' + meta.color + ';" onclick="CAL.selectEvent(\'' + event.id + '\')" title="' + escapeHtml(formatRange(start, end) + ' · ' + event.title) + '">'
+      + '<span class="calendar-event-time">' + escapeHtml(small ? formatPillTime(start) : formatTime(start)) + '</span>'
       + '<span class="calendar-event-title">' + escapeHtml(event.title) + '</span>'
       + (!small ? '<span class="calendar-event-meta">' + escapeHtml(formatRange(start, end)) + '</span>' : '')
       + (!small ? agentBadge(event) + runStatusBadge(event) : '')
@@ -987,7 +1060,9 @@
     const widthPct = 100 / layout.columns;
     const leftPct = widthPct * layout.column;
     const runStatus = eventMeta(event).runStatus;
-    return '<button class="calendar-event-block' + (state.selectedEventId === event.id ? ' active' : '')
+    // A short block has no room for a stacked time and title, so those keep
+    // the time on the same line as the title.
+    return '<button class="calendar-event-block' + (height < 64 ? ' is-compact' : '') + (state.selectedEventId === event.id ? ' active' : '')
       + (runStatus ? ' run-' + escapeHtml(runStatus) : '')
       + '" style="top:' + top + 'px;height:' + height + 'px;left:calc(' + leftPct + '% + 6px);width:calc(' + widthPct + '% - 12px);background:' + meta.surface + ';border-color:' + meta.border + ';color:' + meta.color + ';" onclick="CAL.selectEvent(\'' + event.id + '\')">'
       + '<span class="calendar-event-time">' + escapeHtml(formatTime(start)) + '</span>'
@@ -1471,7 +1546,16 @@
       + renderMainBoard()
       + '</div>'
       + '</section></div>';
+    scheduleMonthFit();
   }
+
+  // Month rows resize with the window, so the pill count has to be recomputed
+  // rather than fixed at first paint.
+  let refitTimer = null;
+  window.addEventListener('resize', () => {
+    if (refitTimer) clearTimeout(refitTimer);
+    refitTimer = setTimeout(fitMonthCells, 120);
+  });
   function jumpToDate(value) {
     const date = typeof value === 'string' ? parseDateKey(value) : startOfDay(value);
     state.selectedDate = date;

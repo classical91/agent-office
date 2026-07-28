@@ -290,12 +290,15 @@ body > .statusbar,
   border-radius: 999px !important;
   font-size: 13px !important;
 }
+/* Sizing belongs to the flex column below (toolbar + lane bar + grid); a
+   viewport-minus-toolbar height ignored the lane bar and cut the last week off
+   the bottom of the screen. */
 #calendar-app .calendar-month-grid {
-  min-height: calc(100vh - 48px) !important;
-  height: calc(100vh - 48px) !important;
+  min-height: 0 !important;
+  height: auto !important;
 }
 #calendar-app .calendar-month-cell {
-  min-height: 100px !important;
+  min-height: 0 !important;
 }
 @media (max-width: 900px) {
   #calendar-app .calendar-toolbar,
@@ -389,11 +392,17 @@ body > .statusbar,
   border-radius: 999px !important;
   font-size: 12px !important;
 }
+.calendar-compact-board .calendar-lane-bar {
+  flex: 0 0 auto !important;
+}
+/* The board is a full-height flex column, so the grid takes whatever the
+   toolbar and the lane bar leave behind. A fixed 100vh-minus-toolbar height
+   ignored the lane bar and pushed the last week off screen. */
 .calendar-compact-board .calendar-month-grid,
 .calendar-compact-board .calendar-time-grid,
 .calendar-compact-board .calendar-agenda {
   flex: 1 1 auto !important;
-  height: calc(100vh - 44px) !important;
+  height: auto !important;
   min-height: 0 !important;
   overflow: auto !important;
 }
