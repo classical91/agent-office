@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node agent-office-deploy/dist/server.js",
+    "sync:dist": "node scripts/sync-dist.js",
     "test": "node --test tests/*.test.js"
   },
   "dependencies": {

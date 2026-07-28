@@ -114,91 +114,13 @@
   }
 
 
-/* Calendar v3 compact focus mode: Google Calendar-style top bar, calendar-first layout. */
-.calendar-connection-bar,
-.calendar-range-sub,
-.calendar-status-chip,
-.calendar-mini-month,
-.calendar-detail-panel,
-.calendar-details-panel,
-.calendar-inspector,
-.calendar-side-panel,
-.calendar-sidebar-panel,
-.calendar-right-panel,
-.calendar-command-panel,
-.calendar-smart-panel,
-.calendar-agenda-panel {
-  display: none !important;
-}
-
-.calendar-shell,
-.calendar-app,
-.calendar-stage,
-.calendar-main,
-.calendar-workspace {
-  min-height: 100vh !important;
-}
-
-.calendar-layout,
-.calendar-content,
-.calendar-grid-layout,
-.calendar-body {
-  grid-template-columns: minmax(0, 1fr) !important;
-  gap: 0 !important;
-  padding-top: 0 !important;
-}
-
-.calendar-toolbar,
-.calendar-header,
-.calendar-topbar,
-.calendar-controls {
-  min-height: 48px !important;
-  padding: 6px 12px !important;
-  gap: 8px !important;
-  align-items: center !important;
-}
-
-.calendar-range-main {
-  font-size: 18px !important;
-  line-height: 1.2 !important;
-  font-weight: 600 !important;
-  white-space: nowrap !important;
-}
-
-.calendar-view-btn,
-.calendar-nav-btn,
-.calendar-today-btn,
-.calendar-action-btn,
-.calendar-icon-btn {
-  min-height: 32px !important;
-  height: 32px !important;
-  padding: 0 12px !important;
-  border-radius: 999px !important;
-  font-size: 13px !important;
-}
-
-.calendar-month-grid {
-  min-height: calc(100vh - 56px) !important;
-}
-
-.calendar-month-cell {
-  min-height: 112px !important;
-}
 
 </style>
-<style>
-  /* The renderer's grid needs a real height once #calendar-app scrolls. */
-  #calendar-app .calendar-shell { display: block; }
-  #calendar-app .calendar-workspace { min-height: 560px; }
-  #calendar-app .calendar-rail,
-  #calendar-app .calendar-stage { overflow: visible; }
-  @media (max-width: 900px) {
-    #calendar-app .calendar-workspace { grid-template-columns: minmax(0, 1fr); min-height: 0; }
-  }
-</style>
-
 <style id="calendar-v3-compact-focus-style">
-/* Calendar v3 compact focus mode */
+/* Calendar v3 compact focus mode: hides the app chrome and gives the calendar
+   the whole viewport. Everything inside the board — toolbar, lane bar, grid —
+   is sized by the .calendar-compact-board layer below, so it stays in one
+   place instead of being fought over from here. */
 html, body { height: 100%; overflow: hidden; }
 body > .topbar,
 body > .statusbar,
@@ -245,14 +167,6 @@ body > .statusbar,
   min-height: 0 !important;
   overflow: hidden !important;
 }
-#calendar-app .calendar-shell,
-#calendar-app .calendar-app,
-#calendar-app .calendar-stage,
-#calendar-app .calendar-main,
-#calendar-app .calendar-workspace {
-  min-height: 100vh !important;
-  height: 100vh !important;
-}
 #calendar-app .calendar-layout,
 #calendar-app .calendar-content,
 #calendar-app .calendar-grid-layout,
@@ -262,62 +176,13 @@ body > .statusbar,
   gap: 0 !important;
   padding-top: 0 !important;
 }
-#calendar-app .calendar-toolbar,
-#calendar-app .calendar-header,
-#calendar-app .calendar-topbar,
-#calendar-app .calendar-controls {
-  min-height: 48px !important;
-  height: 48px !important;
-  padding: 6px 12px !important;
-  gap: 8px !important;
-  align-items: center !important;
-  box-sizing: border-box !important;
-}
-#calendar-app .calendar-range-main {
-  font-size: 18px !important;
-  line-height: 1.2 !important;
-  font-weight: 600 !important;
-  white-space: nowrap !important;
-}
-#calendar-app .calendar-view-btn,
-#calendar-app .calendar-nav-btn,
-#calendar-app .calendar-today-btn,
-#calendar-app .calendar-action-btn,
-#calendar-app .calendar-icon-btn {
-  min-height: 32px !important;
-  height: 32px !important;
-  padding: 0 12px !important;
-  border-radius: 999px !important;
-  font-size: 13px !important;
-}
-/* Sizing belongs to the flex column below (toolbar + lane bar + grid); a
-   viewport-minus-toolbar height ignored the lane bar and cut the last week off
-   the bottom of the screen. */
-#calendar-app .calendar-month-grid {
-  min-height: 0 !important;
-  height: auto !important;
-}
-#calendar-app .calendar-month-cell {
-  min-height: 0 !important;
-}
-@media (max-width: 900px) {
-  #calendar-app .calendar-toolbar,
-  #calendar-app .calendar-header,
-  #calendar-app .calendar-topbar,
-  #calendar-app .calendar-controls { overflow-x: auto !important; }
-}
 </style>
 
 
 <style id="calendar-v3-true-compact-style">
-/* Calendar v3 true compact view: browser opens straight to the calendar. */
-html, body { height: 100%; overflow: hidden; }
-body > .topbar,
-body > .statusbar,
-.layout > .nav,
-.layout > .feed,
-#mobile-overlay,
-.calendar-connection-bar { display: none !important; }
+/* Calendar v3 true compact view: the board fills the viewport and every piece
+   inside it — toolbar, lane bar, month grid, day/week shell, agenda — is sized
+   here. This is the only layer that sizes the board. */
 /* The sync chip in the toolbar opens the connection bar on demand, so hiding it
    by default no longer means it is unreachable. */
 .calendar-connection-bar.is-open {
@@ -331,16 +196,6 @@ body > .statusbar,
   box-shadow: 0 16px 34px rgba(2, 6, 23, 0.55);
 }
 #view-calendar-v3 { position: relative; }
-.layout,
-.layout.feed-collapsed {
-  display: block !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  min-height: 100vh !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-}
 #view-calendar-v3,
 #calendar-app,
 .calendar-compact-shell,
