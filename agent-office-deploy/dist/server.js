@@ -42,12 +42,7 @@ const DEFAULT_AGENTS = [
   { id: 'rankforge', name: 'RankForge', role: 'SEO Agent', model: 'Claude Sonnet', status: 'idle', source: 'Railway', notes: 'SEO scans, local search, and content positioning.' },
   { id: 'world-monitor', name: 'World Monitor', role: 'Monitoring Agent', model: 'GPT-5', status: 'idle', source: 'Railway', notes: 'World events and geopolitical watch loops.' },
 ];
-// Comma-separated so other origins (e.g. the main-page hub, which serves the
-// prompt builder but has no backend of its own) can reach the open APIs.
-const ALLOWED_ORIGINS = (process.env.APP_ORIGIN || process.env.PUBLIC_APP_URL || '')
-  .split(',')
-  .map(origin => origin.trim())
-  .filter(Boolean);
+const ALLOWED_ORIGIN = process.env.APP_ORIGIN || process.env.PUBLIC_APP_URL || '';
 const PASSPHRASE_HASH = resolvePassphraseHash();
 const sessions = new Map();
 // Nothing is hardcoded here any more: the calendar reflects Google only.
@@ -501,10 +496,10 @@ function requireDropsAuth(res, req) {
 }
 
 function applyCorsHeaders(req, res) {
-  const origin = req.headers.origin;
-  if (!origin || !ALLOWED_ORIGINS.includes(origin)) return;
+  if (!ALLOWED_ORIGIN) return;
+  if (req.headers.origin !== ALLOWED_ORIGIN) return;
 
-  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -1940,10 +1935,7 @@ function safeWebOrigin(value) {
 }
 
 function getRequestOrigin(req) {
-  // APP_ORIGIN may list several origins; the app's own is the first one.
-  const configuredOrigin = safeWebOrigin(
-    String(process.env.PUBLIC_APP_URL || process.env.APP_ORIGIN || '').split(',')[0].trim()
-  );
+  const configuredOrigin = safeWebOrigin(process.env.PUBLIC_APP_URL || process.env.APP_ORIGIN || '');
   if (configuredOrigin) return configuredOrigin;
   const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
   const protocol = forwardedProto === 'https' ? 'https' : 'http';
