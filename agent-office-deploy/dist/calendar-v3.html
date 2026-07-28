@@ -399,12 +399,25 @@ body > .statusbar,
    toolbar and the lane bar leave behind. A fixed 100vh-minus-toolbar height
    ignored the lane bar and pushed the last week off screen. */
 .calendar-compact-board .calendar-month-grid,
-.calendar-compact-board .calendar-time-grid,
+.calendar-compact-board .calendar-time-shell,
 .calendar-compact-board .calendar-agenda {
   flex: 1 1 auto !important;
   height: auto !important;
   min-height: 0 !important;
   overflow: auto !important;
+}
+/* The day/week shell holds the fixed day header and scrolls the hours below
+   it, so the shell takes the height and the grid inside it does the scrolling. */
+.calendar-compact-board .calendar-time-shell {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  padding-bottom: 0 !important;
+}
+.calendar-compact-board .calendar-time-grid {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
 }
 .calendar-compact-board .calendar-month-grid {
   grid-template-rows: 28px repeat(6, minmax(0, 1fr)) !important;
