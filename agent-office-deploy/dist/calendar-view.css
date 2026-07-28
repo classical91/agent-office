@@ -757,12 +757,18 @@
   line-height: 1.45;
 }
 
+/* Head stays put, hours scroll: the shell owns the height and the grid inside
+   it is the scroller. */
 .calendar-time-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   padding-bottom: 8px;
 }
 
 .calendar-time-head {
   display: grid;
+  flex: none;
   border-bottom: 1px solid rgba(148, 163, 184, 0.10);
   background: rgba(15, 23, 42, 0.78);
 }
@@ -802,6 +808,8 @@
 
 .calendar-time-grid {
   display: grid;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .calendar-time-axis,
@@ -875,7 +883,7 @@
   display: flex;
   align-items: baseline;
   gap: 6px;
-  padding: 4px 8px;
+  padding: 2px 8px;
 }
 
 .calendar-event-block.is-compact .calendar-event-time {

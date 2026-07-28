@@ -1,7 +1,12 @@
 (function () {
-  const ROW_HEIGHT = 200;
-  const HOUR_START = 7;
-  const HOUR_END = 21;
+  // The day and week grids cover the whole day so nothing can fall outside the
+  // drawn window, and one hour is a readable band rather than a screenful — at
+  // 200px an hour a laptop showed about three hours at a time.
+  const ROW_HEIGHT = 56;
+  const HOUR_START = 0;
+  const HOUR_END = 24;
+  // Where the grid parks itself when a day has no events to scroll to.
+  const DEFAULT_SCROLL_HOUR = 8;
   const MIN_WINDOW_MINUTES = 45;
   const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const PRIORITY_RANK = { normal: 1, high: 2, urgent: 3 };
@@ -988,6 +993,56 @@
     if (typeof requestAnimationFrame === 'function') requestAnimationFrame(fitMonthCells);
   }
 
+  // The grid now spans midnight to midnight, so where it opens matters: land on
+  // the day's first event. Re-renders within the same day (selecting an event,
+  // editing one) keep whatever the reader had scrolled to.
+  let timeScroll = { key: null, top: 0 };
+
+  function firstEventHour(days) {
+    let earliest = null;
+    days.forEach(day => {
+      eventsForDate(day).forEach(event => {
+        const start = parseLocalIso(event.start);
+        const hour = start.getHours() + start.getMinutes() / 60;
+        if (earliest === null || hour < earliest) earliest = hour;
+      });
+    });
+    return earliest;
+  }
+
+  function visibleTimeGridDays() {
+    if (state.view === 'day') return [state.selectedDate];
+    const weekStart = startOfWeek(state.cursorDate);
+    return Array.from({ length: 7 }).map((_, index) => addDays(weekStart, index));
+  }
+
+  function syncTimeGridScroll() {
+    if (state.view !== 'day' && state.view !== 'week') return;
+    const grid = document.querySelector('.calendar-time-grid');
+    if (!grid || grid.scrollHeight <= grid.clientHeight) return;
+    const key = state.view + ':' + dateKey(state.view === 'day' ? state.selectedDate : startOfWeek(state.cursorDate));
+    if (timeScroll.key === key) {
+      grid.scrollTop = timeScroll.top;
+    } else {
+      const hour = firstEventHour(visibleTimeGridDays());
+      const target = (hour === null ? DEFAULT_SCROLL_HOUR : hour - 0.5) - HOUR_START;
+      grid.scrollTop = Math.max(0, target * ROW_HEIGHT);
+      timeScroll = { key, top: grid.scrollTop };
+    }
+    if (!grid.dataset.scrollBound) {
+      grid.dataset.scrollBound = '1';
+      grid.addEventListener('scroll', () => {
+        timeScroll = { key, top: grid.scrollTop };
+      });
+    }
+  }
+
+  function afterRender() {
+    scheduleMonthFit();
+    syncTimeGridScroll();
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(syncTimeGridScroll);
+  }
+
   // An agent-owned block shows who owns it and how the run is going, so the
   // calendar reads as work in flight rather than a title and a time.
   function agentBadge(event) {
@@ -1032,7 +1087,9 @@
     const axis = '<div class="calendar-time-axis" style="height:' + totalHeight + 'px;">'
       + Array.from({ length: HOUR_END - HOUR_START + 1 }).map((_, index) => {
         const hour = HOUR_START + index;
-        return '<div class="calendar-time-label" style="top:' + (index * ROW_HEIGHT - 8) + 'px;">' + escapeHtml(formatTime(withTime(state.selectedDate, hour, 0))) + '</div>';
+        // "8 AM" rather than "8:00 AM": the axis is 72px wide and every label
+        // sits on the hour.
+        return '<div class="calendar-time-label" style="top:' + (index * ROW_HEIGHT - 6) + 'px;">' + escapeHtml(formatPillTime(withTime(state.selectedDate, hour % 24, 0))) + '</div>';
       }).join('')
       + '</div>';
 
@@ -1055,14 +1112,14 @@
     const meta = TYPE_META[event.type] || TYPE_META.meeting;
     const start = parseLocalIso(event.start);
     const end = parseLocalIso(event.end);
-    const top = ((start.getHours() + start.getMinutes() / 60) - HOUR_START) * ROW_HEIGHT + 6;
-    const height = Math.max(48, durationMinutes(event) / 60 * ROW_HEIGHT - 4);
+    const top = ((start.getHours() + start.getMinutes() / 60) - HOUR_START) * ROW_HEIGHT + 2;
+    const height = Math.max(22, durationMinutes(event) / 60 * ROW_HEIGHT - 3);
     const widthPct = 100 / layout.columns;
     const leftPct = widthPct * layout.column;
     const runStatus = eventMeta(event).runStatus;
     // A short block has no room for a stacked time and title, so those keep
     // the time on the same line as the title.
-    return '<button class="calendar-event-block' + (height < 64 ? ' is-compact' : '') + (state.selectedEventId === event.id ? ' active' : '')
+    return '<button class="calendar-event-block' + (height < 42 ? ' is-compact' : '') + (state.selectedEventId === event.id ? ' active' : '')
       + (runStatus ? ' run-' + escapeHtml(runStatus) : '')
       + '" style="top:' + top + 'px;height:' + height + 'px;left:calc(' + leftPct + '% + 6px);width:calc(' + widthPct + '% - 12px);background:' + meta.surface + ';border-color:' + meta.border + ';color:' + meta.color + ';" onclick="CAL.selectEvent(\'' + event.id + '\')">'
       + '<span class="calendar-event-time">' + escapeHtml(formatTime(start)) + '</span>'
@@ -1546,7 +1603,7 @@
       + renderMainBoard()
       + '</div>'
       + '</section></div>';
-    scheduleMonthFit();
+    afterRender();
   }
 
   // Month rows resize with the window, so the pill count has to be recomputed
