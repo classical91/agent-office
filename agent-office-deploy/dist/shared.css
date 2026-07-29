@@ -1782,6 +1782,80 @@
     .resets-controls { grid-template-columns: 1fr; }
     .reset-timer { grid-template-columns: repeat(2, 1fr); }
   }
+/* Sticky filter bar for the dev room. --view-bg is transparent, so the bar
+   frosts the body gradient instead of painting a flat colour over it. */
+.dev-search {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0 14px;
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+
+.dev-search-field {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.dev-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  color: var(--muted);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.dev-search-field input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px 10px 32px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color .16s ease, background .16s ease;
+}
+
+.dev-search-field input::placeholder { color: var(--muted); }
+
+.dev-search-field input:focus {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel));
+}
+
+.dev-search-count {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.dev-search-empty {
+  margin-top: 24px;
+  padding: 26px 18px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* .dev-link-section and .dev-link-card set display, which outranks [hidden]. */
+.dev-link-section[hidden],
+.dev-link-card[hidden],
+.dev-search-empty[hidden] { display: none; }
+
 .dev-link-section {
   margin-top: 26px;
 }
@@ -1854,6 +1928,14 @@
 }
 
 @media (max-width: 640px) {
+  .dev-search {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .dev-search-count { text-align: right; }
+
   .dev-section-heading {
     align-items: flex-start;
     flex-direction: column;
