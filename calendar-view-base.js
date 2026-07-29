@@ -935,10 +935,12 @@
         // The overflow line sits outside the clipped pill list so it stays
         // readable in short month rows. fitMonthCells() fills in the count once
         // the cell has been laid out; the line keeps its space either way so
-        // the measurement does not chase its own reflow.
-        + '<div class="calendar-more"' + (more ? '' : ' style="visibility:hidden;"') + '>'
+        // the measurement does not chase its own reflow. Clicking it opens the
+        // day, which is the only place the hidden events can be read.
+        + '<button type="button" class="calendar-more"' + (more ? '' : ' style="visibility:hidden;"')
+        + ' onclick="event.stopPropagation(); CAL.openDay(\'' + dateKey(day) + '\')">'
         + (more ? '+' + more + ' more' : '')
-        + '</div>'
+        + '</button>'
         + '</div>';
     }).join('');
     return '<div class="calendar-month-grid">' + dayNames + cells + '</div>';
@@ -1646,6 +1648,16 @@
     render();
   }
 
+  // Month cells only show the events that fit, so "+N more" has to lead
+  // somewhere: the day view lists all of them.
+  function openDay(value) {
+    const date = typeof value === 'string' ? parseDateKey(value) : startOfDay(value);
+    state.selectedDate = date;
+    state.cursorDate = date;
+    state.view = 'day';
+    render();
+  }
+
   function selectEvent(id) {
     const event = findEvent(id);
     if (!event) return;
@@ -2334,6 +2346,7 @@
     navigate,
     goToday,
     changeView,
+    openDay,
     selectEvent,
     deleteEvent,
     toggleFilter,

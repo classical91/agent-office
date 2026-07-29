@@ -681,10 +681,18 @@
 
 .calendar-more {
   flex: none;
+  align-self: flex-start;
+  border: 0;
+  background: none;
   font-size: 11px;
   color: #38bdf8;
   font-weight: 600;
-  padding-left: 2px;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+.calendar-more:hover {
+  text-decoration: underline;
 }
 
 .calendar-event {
