@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="shared.css?v=office-submenu-20260727"/>
+<link rel="stylesheet" href="shared.css?v=dev-search-20260729"/>
 <!-- Apply saved theme before first paint to avoid a flash of the default theme. Mirrors THEMES in app-shared.js. -->
 <script>
 (function(){
@@ -90,7 +90,17 @@
     <div style="max-width:1180px; margin:0 auto; padding:32px 28px 48px; width:100%; box-sizing:border-box;">
       <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">⌘ DEV LINKS</div>
       <h1 style="font-size:34px; line-height:1.1; margin:0 0 10px; color:var(--text);">External control room</h1>
-      <p style="margin:0 0 26px; color:var(--muted); max-width:720px; line-height:1.6;">Quick exits for model routing, automation, deploys, repos, observability, and docs that support Agent Office work.</p>
+      <p style="margin:0 0 12px; color:var(--muted); max-width:720px; line-height:1.6;">Quick exits for model routing, automation, deploys, repos, observability, and docs that support Agent Office work.</p>
+
+      <div class="dev-search">
+        <div class="dev-search-field">
+          <span class="dev-search-icon" aria-hidden="true">⌕</span>
+          <input id="dev-search" type="search" placeholder="Search links…" title="Press / to focus" autocomplete="off" spellcheck="false" aria-label="Search dev links by name, description, URL, or section" aria-describedby="dev-search-count"/>
+        </div>
+        <div class="dev-search-count" id="dev-search-count" role="status" aria-live="polite"></div>
+      </div>
+
+      <p class="dev-search-empty" id="dev-search-empty" hidden>No links match <strong id="dev-search-empty-term"></strong>.</p>
 
       <section class="dev-link-section">
         <div class="dev-section-heading">
@@ -230,6 +240,77 @@
 <script src="app-shared.js?v=office-submenu-20260727"></script>
 <script>
 switchView('dev', document.querySelector('.nav-item.active'));
+
+// Live filter over the link cards. Every card carries its own text, its href and
+// its section heading, so "docs", "railway" or "localhost" all narrow the room.
+(function(){
+  var input = document.getElementById('dev-search');
+  if (!input) return;
+
+  var countEl = document.getElementById('dev-search-count');
+  var emptyEl = document.getElementById('dev-search-empty');
+  var emptyTermEl = document.getElementById('dev-search-empty-term');
+  var sections = Array.prototype.slice.call(document.querySelectorAll('.dev-link-section'));
+  var cards = [];
+
+  sections.forEach(function(section){
+    var heading = section.querySelector('.dev-section-heading');
+    var headingText = heading ? heading.textContent : '';
+    Array.prototype.forEach.call(section.querySelectorAll('.dev-link-card'), function(el){
+      cards.push({
+        el: el,
+        haystack: (el.textContent + ' ' + (el.getAttribute('href') || '') + ' ' + headingText)
+          .replace(/\s+/g, ' ')
+          .toLowerCase()
+      });
+    });
+  });
+
+  function applyFilter(){
+    var query = input.value.trim().toLowerCase();
+    // Every term has to hit, so "railway docs" narrows instead of widening.
+    var terms = query ? query.split(/\s+/) : [];
+    var shown = 0;
+
+    cards.forEach(function(card){
+      var match = terms.every(function(term){ return card.haystack.indexOf(term) !== -1; });
+      card.el.hidden = !match;
+      if (match) shown += 1;
+    });
+
+    sections.forEach(function(section){
+      section.hidden = !section.querySelector('.dev-link-card:not([hidden])');
+    });
+
+    countEl.textContent = terms.length
+      ? shown + ' of ' + cards.length + ' links'
+      : cards.length + ' links';
+    emptyTermEl.textContent = '“' + input.value.trim() + '”';
+    emptyEl.hidden = !(terms.length && shown === 0);
+  }
+
+  input.addEventListener('input', applyFilter);
+  input.addEventListener('search', applyFilter); // the native clear button
+  input.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && input.value) {
+      e.stopPropagation();
+      input.value = '';
+      applyFilter();
+    }
+  });
+
+  // "/" focuses the box unless something else is already taking typing.
+  document.addEventListener('keydown', function(e){
+    if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+    var el = document.activeElement;
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+    e.preventDefault();
+    input.focus();
+    input.select();
+  });
+
+  applyFilter();
+})();
 </script>
 
 </body>
