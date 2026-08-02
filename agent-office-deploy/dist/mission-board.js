@@ -30,7 +30,7 @@
 
   function ensureMissionControls() {
     const title = document.querySelector('#dropbox-view .dropbox-toolbar h2');
-    if (title) title.textContent = 'Mission Board';
+    if (title) title.textContent = 'Dropbox';
     const save = document.getElementById('save-drop-btn');
     if (save) save.textContent = 'Save Task';
     const newBtn = document.getElementById('new-drop-btn');
