@@ -4,6 +4,7 @@
     {name:'Penny', role:'Sole Orchestrator', color:'#f59e0b'},
     {name:'WebClaw', role:'Web Agency Specialist', color:'#3b82f6'},
     {name:'NutriMind', role:'Nutrition App Specialist', color:'#22c55e'},
+    {name:'PC', role:'Windows Workstation Specialist', color:'#10b981'},
   ];
   const el = document.getElementById('svg-roster');
   if (el) {
@@ -40,7 +41,7 @@ const AGENTS = [
       'Preparing operator reports',
     ],
     feed: [
-      'NutriMind Telegram route is live',
+      'PC agent added to OpenClaw roster',
       'OpenClaw active roster synced',
       'Gateway health check passed',
       'Delegation allow-list verified',
@@ -102,6 +103,34 @@ const AGENTS = [
       'Search/content scope documented',
       'Telegram allow-list restricted to Jason',
     ]
+  },
+  {
+    id: 'pc',
+    name: 'PC',
+    emoji: 'PC',
+    color: '#10b981',
+    role: 'Windows Workstation Specialist',
+    model: 'GPT-5.4',
+    authority: 'specialist',
+    memory: true,
+    workspace: 'workspace-pc',
+    repo: 'local Windows PC',
+    desc: 'Local Windows PC specialist for cleanup audits, security checks, optimization, troubleshooting, file/app search, and approved maintenance.',
+    tasks: [
+      'Auditing disk usage',
+      'Reviewing startup items',
+      'Checking Windows security posture',
+      'Finding local files and apps',
+      'Spotting performance issues',
+      'Preparing safe cleanup plans',
+    ],
+    feed: [
+      'PC workspace created',
+      'Local maintenance scope documented',
+      'Destructive actions require approval',
+      'Security and cleanup checklist ready',
+      'Windows troubleshooting profile active',
+    ]
   }
 ];
 
@@ -145,6 +174,7 @@ let AGENT_STATIONS = {
   oss:        { gx:  5, gy: 1, facing: 'N' },
   webclaw:    { gx:  1, gy: 4, facing: 'W' },
   nutrimind:  { gx:  8, gy: 5, facing: 'N' },
+  pc:         { gx: 10, gy: 5, facing: 'N' },
 };
 // <<<END GENERATED ROOM GEOMETRY>>>
 
@@ -336,6 +366,7 @@ function shadeHex(hex, amount = 0) {
 const SPRITE_ALIASES = {
   oss: 'penny',
   nutrimind: 'nova',
+  pc: 'rig',
   forge: 'rig',
   command: 'jason',
 };
@@ -550,6 +581,7 @@ function applyRoomGeometry(geometry, stations) {
   AGENT_STATIONS.oss = { gx: 5, gy: 1, facing: 'N' };
   AGENT_STATIONS.webclaw = { gx: 1, gy: 4, facing: 'W' };
   AGENT_STATIONS.nutrimind = { gx: 8, gy: 5, facing: 'N' };
+  AGENT_STATIONS.pc = { gx: 10, gy: 5, facing: 'N' };
   agentState.forEach((agent, index) => {
     agent.station = stationFor(agent.id, index);
     agent.pos = { gx: agent.station.gx, gy: agent.station.gy };
