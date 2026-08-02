@@ -657,8 +657,138 @@ try {
   setInterval(() => { updateRoomStatusBar(); cycleRoomTicker(); }, 3000);
 } catch (e) { /* agentState not ready yet */ }
 
+// ─── BUILD MODE: FLOOR & WALL STYLING ─────────────────────────────
+// The room SVG paints its tiles and wallpaper through CSS custom properties
+// (see gen_room.js), so restyling the room is just setting variables on :root
+// — no re-render, and it survives the room being regenerated.
+const ROOM_STYLE_KEY = 'office-room-style';
+
+const FLOOR_PRESETS = [
+  { id: 'violet', name: 'Violet', base: '#7B6FA0' },
+  { id: 'slate',  name: 'Slate',  base: '#6B7280' },
+  { id: 'ocean',  name: 'Ocean',  base: '#4A7A96' },
+  { id: 'moss',   name: 'Moss',   base: '#5F7F63' },
+  { id: 'sand',   name: 'Sand',   base: '#C0A578' },
+  { id: 'ash',    name: 'Ash',    base: '#41415A' },
+];
+
+const WALL_PRESETS = [
+  { id: 'lilac',  name: 'Lilac',  base: '#C8B8E8' },
+  { id: 'bone',   name: 'Bone',   base: '#DED8CC' },
+  { id: 'mint',   name: 'Mint',   base: '#B4D8C8' },
+  { id: 'sky',    name: 'Sky',    base: '#B4CCE8' },
+  { id: 'rose',   name: 'Rose',   base: '#E4C0C8' },
+  { id: 'carbon', name: 'Carbon', base: '#5A5A6E' },
+];
+
+// One picked colour drives the whole surface: the checker's second tile, the
+// grid lines, and the right-hand wall (which catches less light than the left).
+function floorVars(base) {
+  return {
+    '--tile-a': base,
+    '--tile-b': shadeHex(base, -0.10),
+    '--tile-line': shadeHex(base, -0.28),
+  };
+}
+
+function wallVars(base) {
+  return {
+    '--wall-a': base,
+    '--wall-b': shadeHex(base, -0.07),
+    '--wall-ra': shadeHex(base, -0.10),
+    '--wall-rb': shadeHex(base, -0.17),
+    '--wall-shade': shadeHex(base, -0.32),
+  };
+}
+
+function loadRoomStyle() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(ROOM_STYLE_KEY) || '{}');
+    return {
+      floor: saved.floor || FLOOR_PRESETS[0].base,
+      wall: saved.wall || WALL_PRESETS[0].base,
+    };
+  } catch (e) {
+    return { floor: FLOOR_PRESETS[0].base, wall: WALL_PRESETS[0].base };
+  }
+}
+
+function applyRoomStyle(style, persist = true) {
+  const root = document.documentElement;
+  Object.entries({ ...floorVars(style.floor), ...wallVars(style.wall) })
+    .forEach(([name, value]) => root.style.setProperty(name, value));
+  if (persist) {
+    try { localStorage.setItem(ROOM_STYLE_KEY, JSON.stringify(style)); } catch (e) { /* private mode */ }
+  }
+}
+
+let roomStyle = loadRoomStyle();
+applyRoomStyle(roomStyle, false);
+
+function setRoomStyle(part, value) {
+  roomStyle = { ...roomStyle, [part]: value };
+  applyRoomStyle(roomStyle);
+  renderBuildPanel();
+}
+
+function resetRoomStyle() {
+  roomStyle = { floor: FLOOR_PRESETS[0].base, wall: WALL_PRESETS[0].base };
+  applyRoomStyle(roomStyle);
+  renderBuildPanel();
+}
+
+function buildSwatchRow(label, presets, part, current) {
+  const swatches = presets.map(p => {
+    const active = p.base.toLowerCase() === current.toLowerCase();
+    return `<button type="button" title="${p.name}" aria-label="${p.name}" aria-pressed="${active}"
+      onclick="setRoomStyle('${part}', '${p.base}')"
+      style="width:26px; height:26px; border-radius:7px; cursor:pointer; background:${p.base};
+             border:2px solid ${active ? 'var(--accent, #6366f1)' : 'rgba(255,255,255,0.16)'};
+             box-shadow:${active ? '0 0 0 2px color-mix(in srgb, var(--accent, #6366f1) 35%, transparent)' : 'none'};"></button>`;
+  }).join('');
+
+  return `<div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+    <span style="font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted); width:44px; flex-shrink:0;">${label}</span>
+    <div style="display:flex; gap:6px; flex-wrap:wrap;">${swatches}</div>
+    <label style="display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); cursor:pointer;">
+      Custom
+      <input type="color" value="${current}" oninput="setRoomStyle('${part}', this.value)"
+        style="width:28px; height:26px; padding:0; border:1px solid var(--border); border-radius:7px; background:none; cursor:pointer;">
+    </label>
+  </div>`;
+}
+
+function renderBuildPanel() {
+  const panel = document.getElementById('room-build-panel');
+  if (!panel || panel.hidden) return;
+  panel.innerHTML =
+    buildSwatchRow('Floor', FLOOR_PRESETS, 'floor', roomStyle.floor) +
+    buildSwatchRow('Walls', WALL_PRESETS, 'wall', roomStyle.wall) +
+    `<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:2px;">
+      <span style="font-size:11px; color:var(--muted);">Saved to this browser.</span>
+      <button type="button" onclick="resetRoomStyle()"
+        style="background:var(--border); border:1px solid var(--border); border-radius:8px; padding:0 12px; height:28px; font-size:12px; color:color-mix(in srgb, var(--text) 78%, var(--muted)); cursor:pointer;">Reset</button>
+    </div>`;
+}
+
+function toggleBuildPanel() {
+  const panel = document.getElementById('room-build-panel');
+  const btn = document.getElementById('room-build-btn');
+  if (!panel) return;
+  panel.hidden = !panel.hidden;
+  if (btn) btn.setAttribute('aria-expanded', String(!panel.hidden));
+  renderBuildPanel();
+}
+
+// Below this room scale a name chip is wider than the tile it sits on, so the
+// chips are dropped rather than left to pile up on top of each other.
+const COMPACT_ROOM_SCALE = 0.62;
+
 function renderAgents() {
   document.querySelectorAll('.agent-char').forEach(el => el.remove());
+
+  const metrics = getOfficeMetrics(officeArea.clientWidth, officeArea.clientHeight);
+  officeArea.classList.toggle('room-compact', metrics.scale < COMPACT_ROOM_SCALE);
 
   agentState.forEach(agent => {
     const el = document.createElement('div');

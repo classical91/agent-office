@@ -383,7 +383,16 @@
     will-change: left, top, filter;
   }
 
+  /* Anchored to the avatar's *visual* head, not its layout box. transform:
+     scale() does not change layout, so .agent-avatar always reserves its full
+     102px however small the room draws it — leaving the label in the flex flow
+     pushed it ~102px above the feet at every zoom, and it escaped the panel on
+     narrow screens. */
   .agent-label {
+    position: absolute;
+    left: 50%;
+    bottom: calc(102px * var(--agent-scale, 1) + 5px);
+    transform: translateX(-50%);
     background: linear-gradient(180deg, rgba(17,24,39,0.95), rgba(7,10,18,0.88));
     border: 1px solid rgba(148,163,184,0.22);
     border-radius: 9px;
@@ -391,7 +400,6 @@
     font-size: 9px;
     color: #dbe6f4;
     white-space: nowrap;
-    margin-bottom: 4px;
     backdrop-filter: blur(10px);
     box-shadow: 0 10px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
     max-width: 120px;
@@ -403,6 +411,11 @@
     align-items: center;
     gap: 4px;
   }
+
+  /* Name chips do not scale with the room, so on a small room thirteen of them
+     are unreadable overlapping boxes. The status bar below lists every agent
+     with their task, so drop the chips rather than shrink them further. */
+  .room-compact .agent-label { display: none; }
 
   .agent-label-text {
     display: flex;
