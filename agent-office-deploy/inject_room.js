@@ -11,7 +11,15 @@
 const fs = require('fs');
 const path = require('path');
 
-const room = require('./gen_room.js');
+const { buildRoom } = require('./dist/room-builder.js');
+
+let room;
+try {
+  room = buildRoom();
+} catch (err) {
+  console.error(err.message);
+  process.exit(1);
+}
 const { OX, OY, HW, HH, GW, GH, viewBox } = room.geometry;
 
 const DIST = path.join(__dirname, 'dist');
@@ -57,9 +65,12 @@ const stationLines = room.stations.map(s => {
 }).join('\n');
 
 const block = `${BEGIN}
-// Written by agent-office-deploy/inject_room.js from gen_room.js.
-// DO NOT EDIT BY HAND — change gen_room.js and re-run:
+// Written by agent-office-deploy/inject_room.js from dist/room-builder.js.
+// DO NOT EDIT BY HAND — change the room builder and re-run:
 //   node agent-office-deploy/inject_room.js
+//
+// These are \`let\`, not \`const\`: build mode rebuilds the room in the browser
+// when it is resized, and applyRoomGeometry() reassigns them to match.
 
 // Tile grid the room SVG was drawn with. Tiles are addressed 0..gridW-1 across
 // and 0..gridH-1 deep; anything outside that is off the floor.
@@ -73,19 +84,19 @@ const OFFICE_SCENE = {
 //   tile rhombus is ${HW * 2} wide x ${HH * 2} tall; centre = top + (0, ${HH})
 // Agent <div>s are positioned in CSS px, so viewBox -> CSS px is
 // (clientWidth / SVG_VB_W) after subtracting the viewBox origin.
-const SVG_VB_X = ${viewBox.x};
-const SVG_VB_Y = ${viewBox.y};
-const SVG_VB_W = ${viewBox.w};
-const SVG_VB_H = ${viewBox.h};
-const SVG_OX = ${OX};   // viewBox x of tile (0,0) top
-const SVG_OY = ${OY};   // viewBox y of tile (0,0) top
-const SVG_HW = ${HW};    // half tile width  (viewBox)
-const SVG_HH = ${HH};    // half tile height (viewBox)
+let SVG_VB_X = ${viewBox.x};
+let SVG_VB_Y = ${viewBox.y};
+let SVG_VB_W = ${viewBox.w};
+let SVG_VB_H = ${viewBox.h};
+let SVG_OX = ${OX};   // viewBox x of tile (0,0) top
+let SVG_OY = ${OY};   // viewBox y of tile (0,0) top
+let SVG_HW = ${HW};    // half tile width  (viewBox)
+let SVG_HH = ${HH};    // half tile height (viewBox)
 
 // One whole tile per agent: the tile directly in front of that agent's desk.
 // In *front* of the desk, because agents are DOM nodes layered over the room
 // SVG and would otherwise paint straight over the desk they sit at.
-const AGENT_STATIONS = {
+let AGENT_STATIONS = {
 ${stationLines}
 };
 ${END}`;

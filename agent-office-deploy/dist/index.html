@@ -104,33 +104,33 @@
     <div style="display:grid; grid-template-columns:minmax(0,1fr); gap:12px;">
       <div style="background:var(--panel); border:1px solid var(--border); border-radius:12px; overflow:hidden; position:relative;">
         <div style="position:absolute; top:8px; left:10px; font-size:10px; color:var(--muted); letter-spacing:0.04em; z-index:2;">HQ · floor 1</div>
-        <div style="position:absolute; top:8px; right:10px; font-size:10px; color:var(--muted); font-family:monospace; z-index:2;">12 × 9</div>
+        <div id="room-grid-label" style="position:absolute; top:8px; right:10px; font-size:10px; color:var(--muted); font-family:monospace; z-index:2;">12 × 9</div>
         <!-- Cropped to the room's own bounds (walls at y=185, front corner at
              y=715, x 190..1030) so the floor fills the panel instead of
              floating in dead space. SVG_VB_* in app-shared.js must match. -->
         <svg id="officesvg" viewBox="206 186 786 497" width="100%" style="display:block; shape-rendering:crispEdges;" xmlns="http://www.w3.org/2000/svg">
 <defs>
   <pattern id="wallstripe" x="0" y="0" width="20" height="40" patternUnits="userSpaceOnUse" patternTransform="skewX(-26)">
-    <rect width="20" height="40" fill="var(--wall-a, #C8B8E8)"/>
-    <rect x="0" y="0" width="8" height="40" fill="var(--wall-b, #BCA8DC)" opacity="0.5"/>
-  </pattern>
+      <rect width="20" height="40" fill="var(--wall-a, #C8B8E8)"/>
+      <rect x="0" y="0" width="8" height="40" fill="var(--wall-b, #BCA8DC)" opacity="0.5"/>
+    </pattern>
   <pattern id="wallstripeR" x="0" y="0" width="20" height="40" patternUnits="userSpaceOnUse" patternTransform="skewX(26)">
-    <rect width="20" height="40" fill="var(--wall-ra, #B8A8D8)"/>
-    <rect x="0" y="0" width="8" height="40" fill="var(--wall-rb, #AC9CCC)" opacity="0.5"/>
-  </pattern>
+      <rect width="20" height="40" fill="var(--wall-ra, #B8A8D8)"/>
+      <rect x="0" y="0" width="8" height="40" fill="var(--wall-rb, #AC9CCC)" opacity="0.5"/>
+    </pattern>
   <radialGradient id="floorLight" cx="604" cy="484" r="270" gradientUnits="userSpaceOnUse">
-    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12"/>
-    <stop offset="60%" stop-color="#ffffff" stop-opacity="0.04"/>
-    <stop offset="100%" stop-color="#000000" stop-opacity="0.1"/>
-  </radialGradient>
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0.04"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.1"/>
+    </radialGradient>
   <filter id="screenGlow" x="-50%" y="-50%" width="200%" height="200%">
-    <feGaussianBlur stdDeviation="2" result="blur"/>
-    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-  </filter>
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
   <radialGradient id="shadowGrad" cx="50%" cy="50%" r="50%">
-    <stop offset="0%" stop-color="#000000" stop-opacity="0.35"/>
-    <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-  </radialGradient>
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
 </defs>
 <polygon points="550,196 226,358 226,457 550,295" fill="url(#wallstripe)"/>
 <polygon points="550,196 226,358 226,457 550,295" fill="var(--wall-shade, #8878b8)" opacity="0.28"/>
@@ -311,8 +311,8 @@
   </g>
 </g>
 <polygon points="550,295 982,511 658,673 226,457" fill="url(#floorLight)"/>
-<polygon points="514,493 658,565 550,619 406,547" fill="#3d2060" opacity="0.55"/>
-<polygon points="514,502 640,565 550,610 424,547" fill="none" stroke="#7030a0" stroke-width="1.5" opacity="0.6"/>
+<polygon points="514,493 658,565 550,619 406,547" fill="var(--rug-fill, #3d2060)" opacity="0.55"/>
+<polygon points="514,502 640,565 550,610 424,547" fill="none" stroke="var(--rug-line, #7030a0)" stroke-width="1.5" opacity="0.6"/>
 <!-- Bookshelf -->
 <polygon points="802,385 874,421 874,493 802,457" fill="#5a3510"/>
 <polygon points="910,403 874,421 874,493 910,475" fill="#4a2e08"/>
@@ -777,7 +777,10 @@
 <!-- BOTTOM STATUS BAR -->
 <div class="statusbar" id="statusbar"></div>
 
-<script src="app-shared.js?v=office-submenu-20260727"></script>
+<!-- The room generator, so build mode can rebuild the room when it is resized.
+     Same file the build step runs under Node. -->
+<script src="room-builder.js?v=room-resize-20260802"></script>
+<script src="app-shared.js?v=room-resize-20260802"></script>
 
 </body>
 </html>
