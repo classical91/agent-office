@@ -376,8 +376,8 @@
     transform-style: preserve-3d;
     pointer-events: none;
     transition:
-      left var(--travel-ms, 2200ms) cubic-bezier(0.22, 0.9, 0.24, 1),
-      top var(--travel-ms, 2200ms) cubic-bezier(0.22, 0.9, 0.24, 1),
+      left var(--travel-ms, 240ms) cubic-bezier(0.22, 0.9, 0.24, 1),
+      top var(--travel-ms, 240ms) cubic-bezier(0.22, 0.9, 0.24, 1),
       filter 0.35s ease;
     z-index: var(--agent-z, 10);
     will-change: left, top, filter;
@@ -386,22 +386,22 @@
   .agent-label {
     background: linear-gradient(180deg, rgba(17,24,39,0.95), rgba(7,10,18,0.88));
     border: 1px solid rgba(148,163,184,0.22);
-    border-radius: 11px;
-    padding: 6px 10px 6px 8px;
+    border-radius: 9px;
+    padding: 3px 8px 3px 6px;
     font-size: 9px;
     color: #dbe6f4;
     white-space: nowrap;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
     backdrop-filter: blur(10px);
     box-shadow: 0 10px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08);
-    max-width: 170px;
+    max-width: 120px;
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: center;
     transition: opacity 0.2s ease, transform 0.2s ease;
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
   }
 
   .agent-label-text {
@@ -413,7 +413,6 @@
     color: white;
     display: block;
     font-size: 8px;
-    margin-bottom: 2px;
     letter-spacing: 0.04em;
   }
 
@@ -438,10 +437,6 @@
     transform: scale(var(--agent-scale, 1));
   }
 
-  .agent-char.agent-moving .agent-label {
-    opacity: 0.72;
-    transform: translateY(-3px);
-  }
 
   .agent-avatar.motion-typing {
     animation: typingBob 0.96s ease-in-out infinite;
@@ -472,29 +467,34 @@
     z-index: 1;
   }
 
+  /* Office chair the seated avatar sits on: a mostly-neutral seat with a hint
+     of the agent's colour, not a brightly coloured cushion. */
   .agent-chair {
     position: absolute;
     left: 50%;
-    bottom: 14px;
-    width: 36px;
-    height: 18px;
+    bottom: 6px;
+    width: 30px;
+    height: 13px;
     transform: translateX(-50%);
-    border-radius: 10px 10px 7px 7px;
-    background: linear-gradient(180deg, var(--chair, rgba(71,85,105,0.9)), rgba(15,23,42,0.95));
-    border: 1px solid rgba(255,255,255,0.12);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+    border-radius: 6px 6px 9px 9px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--chair, #475569) 45%, #1e293b), #0f172a);
+    border: 1px solid rgba(255,255,255,0.10);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.10);
     opacity: 0;
   }
 
+  /* Gas cylinder + star base */
   .agent-chair::before {
     content: '';
     position: absolute;
     left: 50%;
-    bottom: -12px;
-    width: 4px;
-    height: 14px;
+    bottom: -6px;
+    width: 17px;
+    height: 8px;
     transform: translateX(-50%);
-    background: rgba(30,41,59,0.92);
+    border-radius: 50%;
+    background: rgba(15,23,42,0.92);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.06);
   }
 
   .agent-avatar.seated .agent-chair { opacity: 1; }
