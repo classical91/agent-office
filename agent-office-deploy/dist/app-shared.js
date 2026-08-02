@@ -322,115 +322,73 @@ const AGENTS = [
   }
 ];
 
-// ─── POSITIONS (grid slots in office) ─────────────────────────
-const POSITIONS = [
-  { x: 0.49, y: 0.36 },
-  { x: 0.27, y: 0.59 },
-  { x: 0.70, y: 0.58 },
-  { x: 0.77, y: 0.41 },
-  { x: 0.20, y: 0.39 },
-  { x: 0.18, y: 0.71 },
-  { x: 0.86, y: 0.24 },
-  { x: 0.54, y: 0.23 },
-  { x: 0.78, y: 0.71 },
-  { x: 0.35, y: 0.45 },
-  { x: 0.62, y: 0.45 },
-  { x: 0.42, y: 0.68 },
+// ─── STATE ────────────────────────────────────────────────────
+// Must match the GW/GH the room SVG was generated with
+// (agent-office-deploy/gen_room.js). Tiles are addressed 0..gridW-1 across and
+// 0..gridH-1 deep; anything outside that is off the floor.
+const OFFICE_SCENE = {
+  gridW: 12,
+  gridH: 9,
+};
+
+// ─── WORKSTATIONS ─────────────────────────────────────────────
+// One tile per agent, and every agent stays on it — this is an office, not a
+// wander sim. Coordinates are whole tiles, so an avatar always lands on a tile
+// centre, and each one is the tile directly in front of that agent's desk in
+// the generated room (gen_room.js → STATIONS). In *front* of the desk, because
+// agents are DOM nodes layered over the room SVG: an agent standing behind a
+// desk would paint straight over it.
+const AGENT_STATIONS = {
+  // Back-wall bank
+  devin:      { gx: 0,  gy: 1, facing: 'N' },
+  fatherclaw: { gx: 1,  gy: 1, facing: 'N' },
+  command:    { gx: 2,  gy: 1, facing: 'N' },
+  forge:      { gx: 3,  gy: 1, facing: 'N' },
+  swarm:      { gx: 4,  gy: 1, facing: 'N' },
+  penny:      { gx: 5,  gy: 1, facing: 'N' },
+  // Left-wall bank
+  traderclaw: { gx: 1,  gy: 3, facing: 'W' },
+  webclaw:    { gx: 1,  gy: 4, facing: 'W' },
+  lyra:       { gx: 1,  gy: 5, facing: 'W' },
+  reaper:     { gx: 1,  gy: 6, facing: 'W' },
+  // Right island
+  xhunter:    { gx: 8,  gy: 5, facing: 'N' },
+  xbot:       { gx: 9,  gy: 5, facing: 'N' },
+  guardian:   { gx: 10, gy: 5, facing: 'N' },
+};
+
+// Hot-desks for anyone added to AGENTS without a station of their own, so a new
+// agent stands somewhere sensible instead of stacking on top of a colleague.
+const SPARE_STATIONS = [
+  { gx: 7, gy: 1, facing: 'N' },
+  { gx: 8, gy: 1, facing: 'N' },
+  { gx: 2, gy: 4, facing: 'W' },
+  { gx: 2, gy: 6, facing: 'W' },
+  { gx: 11, gy: 5, facing: 'N' },
+  { gx: 7, gy: 5, facing: 'N' },
 ];
 
-// ─── STATE ────────────────────────────────────────────────────
-const OFFICE_SCENE = {
-  gridW: 14,
-  gridH: 11,
-  tileRatio: 0.06,
-  maxTileW: 84,
-  originXRatio: 0.5,
-  originYRatio: 0.14,
-  platformLiftRatio: 1.55,
-};
-
-const OFFICE_ROUTES = {
-  devin: [
-    { gx: 6.35, gy: 3.45, pose: 'stand', facing: 'S', motion: 'monitoring', tasks: ['Reviewing project status', 'Coordinating agents', 'Planning next sprint'] },
-    { gx: 4.95, gy: 6.35, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Updating MEMORY.md', 'Coordinating agents', 'Planning next sprint'] },
-    { gx: 2.15, gy: 8.35, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Updating MEMORY.md', 'Reviewing project status', 'Flagged open TODOs for Jason'] },
-    { gx: 7.2, gy: 8.15, pose: 'stand', facing: 'N', motion: 'monitoring', tasks: ['Planning next sprint', 'Coordinating agents', 'Reviewing project status'] },
-  ],
-  traderclaw: [
-    { gx: 1.82, gy: 2.56, pose: 'seated', facing: 'NE', motion: 'typing', tasks: ['Monitoring BTC 1H signal', 'Scanning RSI divergence', 'Checking Polymarket odds'] },
-    { gx: 2.72, gy: 3.26, pose: 'stand', facing: 'E', motion: 'monitoring', tasks: ['Scanning RSI divergence', 'Monitoring BTC 1H signal', 'Logging trade to history'] },
-    { gx: 3.28, gy: 8.08, pose: 'stand', facing: 'S', motion: 'reading', tasks: ['Checking Polymarket odds', 'Logging trade to history', 'Screener refresh (4H)'] },
-    { gx: 6.18, gy: 6.14, pose: 'stand', facing: 'E', motion: 'monitoring', tasks: ['Paper trade open: BTC long', 'Monitoring BTC 1H signal', 'Screener refresh (4H)'] },
-  ],
-  webclaw: [
-    { gx: 10.22, gy: 2.56, pose: 'seated', facing: 'NW', motion: 'typing', tasks: ['Building demo site', 'Generating client HTML', 'Optimizing for mobile'] },
-    { gx: 8.95, gy: 2.02, pose: 'stand', facing: 'N', motion: 'reading', tasks: ['Writing pitch copy', 'Optimizing for mobile', 'Building demo site'] },
-    { gx: 8.24, gy: 5.96, pose: 'stand', facing: 'W', motion: 'monitoring', tasks: ['Customizing template', 'Generating client HTML', 'Deploying to Railway'] },
-    { gx: 6.48, gy: 3.86, pose: 'stand', facing: 'S', motion: 'monitoring', tasks: ['Building demo site', 'Writing pitch copy', 'Deploying to Railway'] },
-  ],
-  xhunter: [
-    { gx: 10.12, gy: 5.38, pose: 'seated', facing: 'NW', motion: 'typing', tasks: ['Scanning trending crypto posts', 'Drafting reply to @BitcoinMagazine', 'Checking X notifications'] },
-    { gx: 12.28, gy: 3.18, pose: 'stand', facing: 'W', motion: 'monitoring', tasks: ['Monitoring @CoinDesk feed', 'Analyzing engagement metrics', 'Scanning trending crypto posts'] },
-    { gx: 10.56, gy: 6.08, pose: 'stand', facing: 'S', motion: 'monitoring', tasks: ['Scheduling repost', 'Checking X notifications', 'Analyzing engagement metrics'] },
-    { gx: 8.78, gy: 4.58, pose: 'stand', facing: 'W', motion: 'reading', tasks: ['Drafting reply to @BitcoinMagazine', 'Scanning trending crypto posts', 'Monitoring @CoinDesk feed'] },
-  ],
-  nova: [
-    { gx: 1.84, gy: 5.42, pose: 'seated', facing: 'NE', motion: 'typing', tasks: ['Researching niche pain points', 'Analyzing competitor products', 'Drafting positioning brief'] },
-    { gx: 1.24, gy: 7.18, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Analyzing competitor products', 'Evaluating market size', 'Researching niche pain points'] },
-    { gx: 4.96, gy: 5.54, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Drafting positioning brief', 'Evaluating market size', 'Writing lead magnet outline'] },
-    { gx: 3.42, gy: 8.48, pose: 'stand', facing: 'N', motion: 'monitoring', tasks: ['Writing lead magnet outline', 'Researching niche pain points', 'Drafting positioning brief'] },
-  ],
-  lyra: [
-    { gx: 4.46, gy: 7.46, pose: 'stand', facing: 'NE', motion: 'reading', tasks: ['Working on Innerverse...', 'Crafting narrative', 'Building world lore'] },
-    { gx: 2.18, gy: 8.52, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Building world lore', 'Writing chapter draft', 'Crafting narrative'] },
-    { gx: 5.32, gy: 6.74, pose: 'stand', facing: 'N', motion: 'monitoring', tasks: ['Crafting narrative', 'Working on Innerverse...', 'Writing chapter draft'] },
-    { gx: 7.88, gy: 8.66, pose: 'stand', facing: 'W', motion: 'reading', tasks: ['Writing chapter draft', 'Building world lore', 'Crafting narrative'] },
-  ],
-  xbot: [
-    { gx: 10.82, gy: 8.08, pose: 'seated', facing: 'NW', motion: 'typing', tasks: ['Queuing scheduled posts', 'Posting to X', 'Monitoring mentions'] },
-    { gx: 12.16, gy: 6.68, pose: 'stand', facing: 'W', motion: 'monitoring', tasks: ['Monitoring mentions', 'Engaging with replies', 'Posting to X'] },
-    { gx: 10.94, gy: 6.16, pose: 'stand', facing: 'N', motion: 'monitoring', tasks: ['Posting to X', 'Queuing scheduled posts', 'Engaging with replies'] },
-    { gx: 8.82, gy: 7.18, pose: 'stand', facing: 'W', motion: 'reading', tasks: ['Monitoring mentions', 'Engaging with replies', 'Queuing scheduled posts'] },
-  ],
-  guardian: [
-    { gx: 12.28, gy: 2.12, pose: 'stand', facing: 'W', motion: 'monitoring', tasks: ['Monitoring gateway access', 'Reviewing auth logs', 'Scanning for anomalies'] },
-    { gx: 12.18, gy: 8.16, pose: 'stand', facing: 'W', motion: 'monitoring', tasks: ['Scanning for anomalies', 'Hardening firewall rules', 'Monitoring gateway access'] },
-    { gx: 9.68, gy: 1.42, pose: 'stand', facing: 'S', motion: 'monitoring', tasks: ['Reviewing auth logs', 'Monitoring gateway access', 'Hardening firewall rules'] },
-    { gx: 10.44, gy: 4.12, pose: 'stand', facing: 'W', motion: 'reading', tasks: ['Reviewing auth logs', 'Scanning for anomalies', 'Idle - all clear'] },
-  ],
-  fatherclaw: [
-    { gx: 6.9, gy: 8.32, pose: 'seated', facing: 'N', motion: 'typing', tasks: ['Routing tasks between agents', 'Monitoring agent health', 'Queuing cross-agent workflow'] },
-    { gx: 7.04, gy: 6.56, pose: 'stand', facing: 'N', motion: 'monitoring', tasks: ['Monitoring agent health', 'Routing tasks between agents', 'Logging inter-agent comms'] },
-    { gx: 7.34, gy: 4.32, pose: 'stand', facing: 'S', motion: 'monitoring', tasks: ['Queuing cross-agent workflow', 'Routing tasks between agents', 'Monitoring agent health'] },
-    { gx: 4.28, gy: 6.92, pose: 'stand', facing: 'E', motion: 'reading', tasks: ['Logging inter-agent comms', 'Monitoring agent health', 'Queuing cross-agent workflow'] },
-  ],
-};
-
-function cloneRoute(route) {
-  return (route || []).map(stop => ({
-    ...stop,
-    tasks: stop.tasks ? [...stop.tasks] : null,
-  }));
+function stationFor(agentId, index) {
+  const station = AGENT_STATIONS[agentId] || SPARE_STATIONS[index % SPARE_STATIONS.length];
+  return {
+    // A tile only exists for 0..gridW-1 / 0..gridH-1; clamping here is what
+    // keeps a mistyped station on the floor instead of out past the wall.
+    gx: Math.max(0, Math.min(OFFICE_SCENE.gridW - 1, Math.round(station.gx))),
+    gy: Math.max(0, Math.min(OFFICE_SCENE.gridH - 1, Math.round(station.gy))),
+    facing: station.facing || 'S',
+  };
 }
 
-let agentState = AGENTS.map((agent) => {
-  const route = cloneRoute(OFFICE_ROUTES[agent.id]);
-  const start = route[0] || { gx: 6.5, gy: 5.5, pose: 'stand', facing: 'S', motion: 'monitoring', status: 'active' };
+let agentState = AGENTS.map((agent, index) => {
+  const station = stationFor(agent.id, index);
   return {
     ...agent,
-    route,
-    routeIndex: 0,
-    pos: { gx: start.gx, gy: start.gy },
-    currentTask: (start.tasks && start.tasks[0]) || agent.tasks[0],
-    status: start.status || 'active',
-    lookState: {
-      pose: start.pose || 'stand',
-      facing: start.facing || 'S',
-      motion: start.motion || (start.pose === 'seated' ? 'typing' : 'monitoring'),
-    },
-    travelMs: 2200,
+    station,
+    pos: { gx: station.gx, gy: station.gy },
+    currentTask: agent.tasks[0],
+    status: 'active',
+    lookState: { pose: 'seated', facing: station.facing, motion: 'typing' },
     availableAt: 0,
-    arrivalTimer: null,
   };
 });
 
@@ -458,33 +416,37 @@ const HABBO_SPRITES = {
 const officesvg = document.getElementById('officesvg');
 const officeArea = officesvg ? officesvg.parentElement : document.getElementById('view-office');
 const canvas = {
-  get width() { return officesvg ? officesvg.clientWidth || 1100 : 1100; },
-  get height() { return officesvg ? officesvg.clientHeight || 720 : 720; }
+  get width() { return officesvg ? officesvg.clientWidth || 880 : 880; },
+  get height() { return officesvg ? officesvg.clientHeight || 570 : 570; }
 };
 const ctx = null; // SVG mode - no canvas context
 // SVG floor is drawn in viewBox coords (see gen_room.js):
 //   tile (gx, gy) top point = (550 + (gx - gy) * 40, 295 + (gx + gy) * 20)
 //   tile rhombus is 80 wide × 40 tall; center = top + (0, 20)
 // The agent <div> is positioned in CSS px relative to officeArea, so we scale
-// viewBox → CSS px by (clientWidth / viewBoxWidth).
-const SVG_VB_W = 1100;
-const SVG_VB_H = 720;
+// viewBox → CSS px by (clientWidth / viewBoxWidth) and subtract the viewBox
+// origin. These four values have to match the viewBox on #officesvg.
+const SVG_VB_X = 160;
+const SVG_VB_Y = 160;
+const SVG_VB_W = 880;
+const SVG_VB_H = 570;
 const SVG_OX = 550;   // viewBox x of tile (0,0) top
 const SVG_OY = 295;   // viewBox y of tile (0,0) top
 const SVG_HW = 40;    // half tile width  (viewBox)
 const SVG_HH = 20;    // half tile height (viewBox)
 
-// Habbo sprite canvas sits at bottom:8px and the sprite's feet land near the
-// canvas bottom, so feet are ~10px above the avatar's bottom edge. Shift the
-// projection down by that amount so the feet plant on the tile.
+// The sprite canvas sits at bottom:10px inside a seated avatar and the sprite's
+// feet land on the canvas bottom, so the feet are ~10px above the avatar's own
+// bottom edge. The projection shifts down by that much so the feet plant on the
+// tile rather than hovering over it.
 const AGENT_FOOT_OFFSET_PX = 10;
 
 function getOfficeMetrics(width = canvas.width, height = canvas.height) {
   const scale = width / SVG_VB_W;
   const tileW = 2 * SVG_HW * scale;
   const tileH = 2 * SVG_HH * scale;
-  const originX = SVG_OX * scale;
-  const originY = (SVG_OY + SVG_HH) * scale; // tile (0,0) center, CSS px
+  const originX = (SVG_OX - SVG_VB_X) * scale;
+  const originY = (SVG_OY + SVG_HH - SVG_VB_Y) * scale; // tile (0,0) center, CSS px
   const iso = (gx, gy, z = 0) => ({
     x: originX + (gx - gy) * tileW / 2,
     y: originY + (gx + gy) * tileH / 2 - z,
@@ -498,42 +460,42 @@ function getOfficeMetrics(width = canvas.width, height = canvas.height) {
     originY,
     gridW: OFFICE_SCENE.gridW,
     gridH: OFFICE_SCENE.gridH,
-    platformLift: 0,
     scale,
     iso,
   };
 }
 
+// Habbo's camera is orthographic: an avatar is exactly the same size wherever
+// it stands and only its stacking order changes with depth. The room does
+// scale with the viewport though, so the avatars scale with it — and with it
+// only — which is what keeps a character one tile wide at every window size.
+function agentScale(metrics) {
+  return metrics.scale;
+}
+
 function projectAgentPosition(agent, metrics = getOfficeMetrics(officeArea.clientWidth, officeArea.clientHeight)) {
   const point = metrics.iso(agent.pos.gx, agent.pos.gy, 0);
-  const depth = Math.max(0.08, Math.min(0.96, (agent.pos.gx + agent.pos.gy) / (metrics.gridW + metrics.gridH)));
-  const ds = depthScale(depth);
-  // The canvas sits at bottom:8px inside the avatar; after the avatar is
-  // scaled by ds (transform-origin: bottom), the canvas visual bottom lands
-  // at projected.y − 8*ds.  We want that to equal the tile's front vertex
-  // (iso.y + tileH/2), so projected.y = iso.y + tileH/2 + 8*ds.
-  return { x: point.x, y: point.y + metrics.tileH / 2 + 8 * ds, depth };
+  const depth = Math.max(0, Math.min(1, (agent.pos.gx + agent.pos.gy) / (metrics.gridW + metrics.gridH)));
+  const scale = agentScale(metrics);
+  // iso() returns the centre of the tile, which is where a Habbo avatar's feet
+  // go. The avatar is scaled from its bottom edge and its feet sit
+  // AGENT_FOOT_OFFSET_PX above that edge, so push the element down by the
+  // scaled offset to land the feet on the tile centre.
+  return { x: point.x, y: point.y + AGENT_FOOT_OFFSET_PX * scale, depth, scale };
 }
 
 function resizeCanvas() {
-  canvas.width = officeArea.clientWidth;
-  canvas.height = officeArea.clientHeight;
   drawOffice();
 }
 
 function drawOffice() { /* SVG mode: rendering handled by renderAgents() */ }
 
-function depthScale(yNorm) {
-  return 0.78 + (yNorm * 0.5);
-}
-
-function applyAgentDepth(el, yNorm) {
-  const scale = depthScale(yNorm);
-  el.style.setProperty('--agent-scale', scale.toFixed(2));
-  el.style.setProperty('--agent-z', String(100 + Math.round(yNorm * 100)));
-  el.style.filter = `drop-shadow(0 1px ${Math.round(5 * scale)}px rgba(0,0,0,0.35))`;
-  const label = el.querySelector('.agent-label');
-  if (label) label.style.opacity = (0.84 + yNorm * 0.18).toFixed(2);
+function applyAgentDepth(el, projected) {
+  el.style.setProperty('--agent-scale', projected.scale.toFixed(3));
+  // Deeper into the room = drawn first, so agents nearer the camera overlap
+  // the ones behind them.
+  el.style.setProperty('--agent-z', String(100 + Math.round(projected.depth * 100)));
+  el.style.filter = 'drop-shadow(0 1px 5px rgba(0,0,0,0.35))';
 }
 
 function getAgentLook(agent) {
@@ -589,10 +551,18 @@ function shadeHex(hex, amount = 0) {
   return `rgb(${Math.max(0, Math.min(255, Math.round(mix(r))))}, ${Math.max(0, Math.min(255, Math.round(mix(g))))}, ${Math.max(0, Math.min(255, Math.round(mix(b))))})`;
 }
 
+// Agents that never got a sprite of their own borrow one, so the room reads as
+// a single cast instead of a few Habbo avatars next to some loose pixel art.
+const SPRITE_ALIASES = {
+  forge: 'rig',
+  command: 'jason',
+};
+
 function drawPixelAgent(canvasEl, look, agent) {
   if (!canvasEl) return;
   const agentId = agent ? agent.id : null;
-  const spriteKey = agentId && HABBO_SPRITES[agentId] ? agentId : null;
+  const aliased = agentId && SPRITE_ALIASES[agentId];
+  const spriteKey = [agentId, aliased].find(key => key && HABBO_SPRITES[key]) || null;
 
   if (spriteKey) {
     // Use real Habbo sprite
@@ -677,12 +647,14 @@ function renderAgents() {
     el.className = 'agent-char';
     el.id = 'agent-' + agent.id;
 
+    // Name chip only: thirteen agents at adjacent desks means thirteen
+    // overlapping labels, and the task text is already on every agent's card in
+    // the status bar and in the room ticker.
     el.innerHTML = `
       <div class="agent-label">
         <div class="agent-status-dot"></div>
         <div class="agent-label-text">
           <strong>${agent.name}</strong>
-          <span>${agent.currentTask}</span>
         </div>
       </div>
       <div class="agent-avatar">
@@ -759,12 +731,6 @@ function addFeedItem(agent, msg) {
 // ─── AUTO-UPDATE LOOP ─────────────────────────────────────────
 function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-function screenFacingFromDelta(dx, dy, fallback = 'S') {
-  const vertical = Math.abs(dy) < 6 ? '' : (dy < 0 ? 'N' : 'S');
-  const horizontal = Math.abs(dx) < 6 ? '' : (dx < 0 ? 'W' : 'E');
-  return (vertical + horizontal) || fallback;
-}
-
 function syncAgentElement(agent) {
   const el = document.getElementById('agent-' + agent.id);
   if (!el) return;
@@ -773,13 +739,9 @@ function syncAgentElement(agent) {
   const projected = projectAgentPosition(agent);
   el.style.left = projected.x + 'px';
   el.style.top = projected.y + 'px';
-  el.style.setProperty('--travel-ms', `${agent.travelMs || 2200}ms`);
-  el.classList.toggle('agent-moving', look.motion === 'walking');
 
   const labelName = el.querySelector('.agent-label strong');
-  const labelTask = el.querySelector('.agent-label span');
   if (labelName) labelName.textContent = agent.name;
-  if (labelTask) labelTask.textContent = agent.currentTask;
 
   const avatar = el.querySelector('.agent-avatar');
   if (avatar) {
@@ -807,75 +769,30 @@ function syncAgentElement(agent) {
         : 'var(--muted)';
   }
 
-  applyAgentDepth(el, projected.depth);
+  applyAgentDepth(el, projected);
   drawPixelAgent(el.querySelector('.agent-pixel'), look, agent);
 }
 
-function nextWorkStop(agent) {
-  const route = agent.route || [];
-  if (!route.length) {
-    return { gx: agent.pos.gx, gy: agent.pos.gy, pose: 'stand', facing: agent.lookState?.facing || 'S', motion: 'monitoring', tasks: agent.tasks };
-  }
-
-  if (Math.random() < 0.24) {
-    return route[agent.routeIndex];
-  }
-
-  const stride = route.length > 3 && Math.random() > 0.78 ? 2 : 1;
-  agent.routeIndex = (agent.routeIndex + stride) % route.length;
-  return route[agent.routeIndex];
-}
-
+// Nobody leaves their desk: a tick only swaps the task an agent is working on
+// and the little animation that goes with it.
 function updateAgentTask(agent) {
   const now = Date.now();
   if (agent.availableAt && now < agent.availableAt) return false;
 
-  const stop = nextWorkStop(agent);
-  const metrics = getOfficeMetrics(officeArea.clientWidth, officeArea.clientHeight);
-  const fromPoint = projectAgentPosition({ pos: { gx: agent.pos.gx, gy: agent.pos.gy } }, metrics);
-  const toPoint = projectAgentPosition({ pos: { gx: stop.gx, gy: stop.gy } }, metrics);
-  const dx = toPoint.x - fromPoint.x;
-  const dy = toPoint.y - fromPoint.y;
-  const taskPool = stop.tasks && stop.tasks.length ? stop.tasks : agent.tasks;
-  const nextTask = randomFrom(taskPool);
+  const nextTask = randomFrom(agent.tasks);
   const isIdleTask = nextTask.toLowerCase().includes('idle');
-  const isMoving = Math.hypot(dx, dy) > 10;
 
-  window.clearTimeout(agent.arrivalTimer);
   agent.currentTask = nextTask;
-  agent.status = isIdleTask ? 'idle' : (stop.status || (Math.random() > 0.18 ? 'active' : 'idle'));
-  agent.pos = { gx: stop.gx, gy: stop.gy };
-
-  if (!isMoving) {
-    agent.lookState = {
-      pose: stop.pose || 'stand',
-      facing: stop.facing || agent.lookState?.facing || 'S',
-      motion: stop.motion || (stop.pose === 'seated' ? 'typing' : 'monitoring'),
-    };
-    agent.travelMs = 1000;
-    agent.availableAt = now + 900;
-    syncAgentElement(agent);
-    return true;
-  }
-
-  agent.travelMs = Math.max(1450, Math.min(3200, Math.round(900 + Math.hypot(dx, dy) * 3.15)));
-  agent.availableAt = now + agent.travelMs + 260;
+  agent.status = isIdleTask ? 'idle' : (Math.random() > 0.18 ? 'active' : 'idle');
+  agent.pos = { gx: agent.station.gx, gy: agent.station.gy };
   agent.lookState = {
-    pose: 'stand',
-    facing: screenFacingFromDelta(dx, dy, stop.facing || agent.lookState?.facing || 'S'),
-    motion: 'walking',
+    pose: 'seated',
+    facing: agent.station.facing,
+    motion: isIdleTask ? 'reading' : (Math.random() > 0.3 ? 'typing' : 'monitoring'),
   };
+  agent.availableAt = now + 2600 + Math.round(Math.random() * 2600);
+
   syncAgentElement(agent);
-
-  agent.arrivalTimer = window.setTimeout(() => {
-    agent.lookState = {
-      pose: stop.pose || 'stand',
-      facing: stop.facing || screenFacingFromDelta(dx, dy, agent.lookState?.facing || 'S'),
-      motion: stop.motion || (stop.pose === 'seated' ? 'typing' : 'monitoring'),
-    };
-    syncAgentElement(agent);
-  }, Math.max(240, agent.travelMs - 180));
-
   return true;
 }
 
