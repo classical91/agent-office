@@ -164,14 +164,14 @@ emit('<defs>');
 
 // Wall stripe pattern
 emit(`  <pattern id="wallstripe" x="0" y="0" width="20" height="40" patternUnits="userSpaceOnUse" patternTransform="skewX(-26)">
-    <rect width="20" height="40" fill="#C8B8E8"/>
-    <rect x="0" y="0" width="8" height="40" fill="#BCA8DC" opacity="0.5"/>
+    <rect width="20" height="40" fill="var(--wall-a, #C8B8E8)"/>
+    <rect x="0" y="0" width="8" height="40" fill="var(--wall-b, #BCA8DC)" opacity="0.5"/>
   </pattern>`);
 
 // Wall stripe pattern right side (skew other way)
 emit(`  <pattern id="wallstripeR" x="0" y="0" width="20" height="40" patternUnits="userSpaceOnUse" patternTransform="skewX(26)">
-    <rect width="20" height="40" fill="#B8A8D8"/>
-    <rect x="0" y="0" width="8" height="40" fill="#AC9CCC" opacity="0.5"/>
+    <rect width="20" height="40" fill="var(--wall-ra, #B8A8D8)"/>
+    <rect x="0" y="0" width="8" height="40" fill="var(--wall-rb, #AC9CCC)" opacity="0.5"/>
   </pattern>`);
 
 // Radial gradient for floor lighting
@@ -206,7 +206,7 @@ const leftFront = g2s(0, GH);
 const wlTL = [backCorner[0], backCorner[1] - WALL_H];
 const wlBL = [leftFront[0], leftFront[1] - WALL_H];
 emit(`<polygon points="${pts(wlTL, wlBL, leftFront, backCorner)}" fill="url(#wallstripe)"/>`);
-emit(`<polygon points="${pts(wlTL, wlBL, leftFront, backCorner)}" fill="#8878b8" opacity="0.28"/>`);
+emit(`<polygon points="${pts(wlTL, wlBL, leftFront, backCorner)}" fill="var(--wall-shade, #8878b8)" opacity="0.28"/>`);
 
 // North (back) wall face
 const wnTR = [rightBack[0], rightBack[1] - WALL_H];
@@ -244,10 +244,12 @@ function wallWindow(gyFrom, gyTo) {
 wallWindow(2, 4);
 wallWindow(4, 6);
 
-// Presentation screen on the LEFT wall, over the lounge end
+// Presentation screen on the LEFT wall, over the lounge end. It stops a tile
+// short of GH: a fitting that runs to the very end of a wall lines up with the
+// point where the wall tapers out, and reads as hanging off the room.
 {
-  const base1 = g2s(0, 7);
-  const base2 = g2s(0, 9);
+  const base1 = g2s(0, 6);
+  const base2 = g2s(0, 8);
   const t1 = [base1[0], base1[1] - 92 * U];
   const t2 = [base2[0], base2[1] - 92 * U];
   const b1 = [base1[0], base1[1] - 32 * U];
@@ -296,12 +298,12 @@ for (let gy = 0; gy < GH; gy++) {
     const [bx, by] = g2s(gx + 1, gy + 1);
     const [lx, ly] = g2s(gx, gy + 1);
     const even = (gx + gy) % 2 === 0;
-    const color = even ? '#7B6FA0' : '#6B5F90';
+    const color = even ? 'var(--tile-a, #7B6FA0)' : 'var(--tile-b, #6B5F90)';
     emit(`  <polygon points="${r1(tx)},${r1(ty)} ${r1(rx)},${r1(ry)} ${r1(bx)},${r1(by)} ${r1(lx)},${r1(ly)}" fill="${color}"/>`);
   }
 }
 // Tile grid lines (subtle)
-emit(`  <g stroke="#5a5080" stroke-width="0.4" opacity="0.5">`);
+emit(`  <g stroke="var(--tile-line, #5a5080)" stroke-width="0.4" opacity="0.5">`);
 for (let gy = 0; gy <= GH; gy++) {
   const [ax, ay] = g2s(0, gy);
   const [bx, by] = g2s(GW, gy);
@@ -456,29 +458,40 @@ STATIONS.forEach(s => {
 // ─── MEETING TABLE (2x2 tiles) ──────────────────────────────────────
 emit(`<!-- Meeting Table -->`);
 {
-  const t = place('meeting table', 6, 7, 2, 2);
+  const t = place('meeting table', 6, 6, 2, 2);
   const cx = t.i + 1, cy = t.j + 1, r = 1;   // centred on the shared tile corner
   const tableH = 18 * U;
-  const tableTopPts = [
+  // Floor-plane outline of the table, then the same ring lifted to table
+  // height. Everything else in the room is built by isoBox, which raises the
+  // top face and drops the sides *to* the floor; this used to draw its top at
+  // floor level and hang the skirt below it, which pushed the table through the
+  // floor and out of the room at the front edge.
+  const footprint = [
     g2s(cx - r / 2, cy - r), g2s(cx + r / 2, cy - r), g2s(cx + r, cy - r / 2), g2s(cx + r, cy + r / 2),
     g2s(cx + r / 2, cy + r), g2s(cx - r / 2, cy + r), g2s(cx - r, cy + r / 2), g2s(cx - r, cy - r / 2)
   ];
+  const tableTopPts = footprint.map(([x, y]) => [x, y - tableH]);
+  // Skirt on the four edges facing the camera, from the raised top down to the
+  // floor the table actually stands on.
   for (let i = 3; i < 7; i++) {
-    const p1 = tableTopPts[i];
-    const p2 = tableTopPts[(i + 1) % tableTopPts.length];
-    emit(`<polygon points="${pts(p1, p2, [p2[0], p2[1] + tableH], [p1[0], p1[1] + tableH])}" fill="${i < 5 ? '#7a4820' : '#5a3010'}"/>`);
+    const top1 = tableTopPts[i];
+    const top2 = tableTopPts[(i + 1) % tableTopPts.length];
+    const base1 = footprint[i];
+    const base2 = footprint[(i + 1) % footprint.length];
+    emit(`<polygon points="${pts(top1, top2, base2, base1)}" fill="${i < 5 ? '#7a4820' : '#5a3010'}"/>`);
   }
   emit(`<polygon points="${pts(...tableTopPts)}" fill="#8B5E2A"/>`);
   emit(`<polygon points="${pts(...tableTopPts)}" fill="#A06830" opacity="0.6"/>`);
   emit(`<polygon points="${pts(...tableTopPts)}" fill="none" stroke="#c09040" stroke-width="1" opacity="0.5"/>`);
   const [tcx, tcy] = g2s(cx, cy);
-  emit(`<ellipse cx="${r1(tcx)}" cy="${r1(tcy)}" rx="${r1(HW * 0.6)}" ry="${r1(HH * 0.6)}" fill="none" stroke="#c09040" stroke-width="0.8" opacity="0.4"/>`);
+  emit(`<ellipse cx="${r1(tcx)}" cy="${r1(tcy - tableH)}" rx="${r1(HW * 0.6)}" ry="${r1(HH * 0.6)}" fill="none" stroke="#c09040" stroke-width="0.8" opacity="0.4"/>`);
 
   const seats = [g2s(cx - 0.45, cy - 0.45), g2s(cx + 0.45, cy - 0.45), g2s(cx - 0.45, cy + 0.45), g2s(cx + 0.45, cy + 0.45)];
   const colors = ['var(--accent)', '#22c55e', '#f59e0b', '#ec4899'];
   seats.forEach(([lx, ly], i) => {
-    emit(`<rect x="${r1(lx - 5.5 * U)}" y="${r1(ly - 11 * U)}" width="${r1(11 * U)}" height="${r1(7.5 * U)}" fill="#1a2030" rx="1"/>`);
-    emit(`<rect x="${r1(lx - 4.5 * U)}" y="${r1(ly - 10 * U)}" width="${r1(9 * U)}" height="${r1(5.5 * U)}" fill="${colors[i]}" opacity="0.35"/>`);
+    const ty = ly - tableH;
+    emit(`<rect x="${r1(lx - 5.5 * U)}" y="${r1(ty - 11 * U)}" width="${r1(11 * U)}" height="${r1(7.5 * U)}" fill="#1a2030" rx="1"/>`);
+    emit(`<rect x="${r1(lx - 4.5 * U)}" y="${r1(ty - 10 * U)}" width="${r1(9 * U)}" height="${r1(5.5 * U)}" fill="${colors[i]}" opacity="0.35"/>`);
   });
 }
 
