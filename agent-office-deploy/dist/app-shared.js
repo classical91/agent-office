@@ -1,19 +1,9 @@
 // Populate SVG roster panel
 (function() {
   const roster = [
-    {name:'Devin', role:'Primary Agent', color:'#6366f1'},
-    {name:'FatherClaw', role:'Orchestrator', color:'#6366f1'},
-    {name:'Rig', role:'Execution Dev', color:'#10b981'},
-    {name:'Nova', role:'Product Researcher', color:'#f97316'},
-    {name:'Penny', role:'Research & Strategy', color:'#f59e0b'},
-    {name:'TraderClaw', role:'Trading Bot', color:'#22c55e'},
-    {name:'WebClaw', role:'Web Developer', color:'#3b82f6'},
-    {name:'X-Hunter', role:'Social Scout', color:'#06b6d4'},
-    {name:'Swarm', role:'Lightweight Coder', color:'#eab308'},
-    {name:'Reaper', role:'Farm Bot', color:'#78716c'},
-    {name:'Lyra', role:'Innerverse', color:'#a855f7'},
-    {name:'XBot', role:'X Publisher', color:'#ec4899'},
-    {name:'Guardian', role:'Security', color:'#ef4444'},
+    {name:'Penny', role:'Sole Orchestrator', color:'#f59e0b'},
+    {name:'WebClaw', role:'Web Agency Specialist', color:'#3b82f6'},
+    {name:'NutriMind', role:'Nutrition App Specialist', color:'#22c55e'},
   ];
   const el = document.getElementById('svg-roster');
   if (el) {
@@ -30,299 +20,92 @@
 // ─── AGENT DATA ───────────────────────────────────────────────
 const AGENTS = [
   {
-    id: 'devin',
-    name: 'Devin',
-    emoji: '🛠️',
-    color: '#6366f1',
-    role: 'Project Overseer',
-    model: 'Claude Sonnet 4.6',
+    id: 'oss',
+    name: 'Penny',
+    emoji: 'P',
+    color: '#f59e0b',
+    role: 'Sole Orchestrator',
+    model: 'GPT-5.5',
+    authority: 'command',
+    memory: true,
+    workspace: 'workspace-oss',
+    repo: 'OpenClaw orchestration',
+    desc: "Jason's command agent. Owns delegation, cron governance, routing, delivery, failure handling, and operator communication.",
     tasks: [
-      'Reviewing project status',
-      'Coordinating agents',
-      'Updating MEMORY.md',
-      'Checking on TraderClaw',
-      'Overseeing WebClaw demo',
-      'Planning next sprint',
+      'Routing Jason requests',
+      'Checking OpenClaw gateway health',
+      'Coordinating specialist agents',
+      'Reviewing active memory',
+      'Maintaining the agent roster',
+      'Preparing operator reports',
     ],
     feed: [
-      'Updated MEMORY.md with new project notes',
-      'Reviewed TraderClaw dashboard - all green',
-      'Coordinated WebClaw demo deployment',
-      'Flagged open TODOs for Jason',
-      'Cross-checked agent activity logs',
-    ]
-  },
-  {
-    id: 'traderclaw',
-    name: 'TraderClaw',
-    emoji: '📈',
-    color: '#22c55e',
-    role: 'Trading Bot',
-    model: 'Claude Sonnet 4.6',
-    tasks: [
-      'Monitoring BTC 1H signal',
-      'Scanning RSI divergence',
-      'Paper trade open: BTC long',
-      'Screener refresh (4H)',
-      'Checking Polymarket odds',
-      'Logging trade to history',
-    ],
-    feed: [
-      'BTC screener refreshed - RSI 58 on 4H',
-      'Paper trade opened: BTC long @ 84,200',
-      'Polymarket opportunity scan complete',
-      'Stop-loss moved to breakeven on BTC',
-      'Dashboard updated - 3 open positions',
+      'NutriMind Telegram route is live',
+      'OpenClaw active roster synced',
+      'Gateway health check passed',
+      'Delegation allow-list verified',
+      'Agent Office registry refresh complete',
     ]
   },
   {
     id: 'webclaw',
     name: 'WebClaw',
-    emoji: '🌐',
+    emoji: 'W',
     color: '#3b82f6',
-    role: 'Web Developer',
+    role: 'Web Agency Specialist',
     model: 'GPT-5.4',
+    authority: 'specialist',
+    memory: true,
+    workspace: 'workspace-webclaw',
+    repo: 'WebClaw agency work',
+    desc: 'Primary specialist for local WebClaw prospects, demos, follow-ups, and service-hub implementation.',
     tasks: [
-      'Building demo site',
-      'Generating client HTML',
-      'Deploying to Railway',
-      'Customizing template',
-      'Writing pitch copy',
-      'Optimizing for mobile',
+      'Building local business demos',
+      'Preparing WebClaw follow-ups',
+      'Updating service-hub code',
+      'Reviewing prospect notes',
+      'Testing landing pages',
+      'Drafting client-ready copy',
     ],
     feed: [
-      'Demo deployed: trail-appliances.up.railway.app',
-      'Generated HTML for new client prospect',
-      'Customized color scheme for local bakery',
-      'Deployed 3 demo sites this session',
-      'Updated base template with new CTA block',
+      'WebClaw remains active under Penny',
+      'Local prospect workflow is ready',
+      'Demo-site implementation queue checked',
+      'Service hub project linked',
+      'Follow-up context available in memory',
     ]
   },
   {
-    id: 'xhunter',
-    name: 'X-Hunter',
-    emoji: '🐦',
-    color: '#06b6d4',
-    role: 'Social / X Agent',
-    model: 'Claude Sonnet 4.6',
-    tasks: [
-      'Scanning trending crypto posts',
-      'Drafting reply to @BitcoinMagazine',
-      'Monitoring @CoinDesk feed',
-      'Scheduling repost',
-      'Checking X notifications',
-      'Analyzing engagement metrics',
-    ],
-    feed: [
-      'Trending: BTC ETF inflows spiking on X',
-      'Replied to 3 crypto threads',
-      'Scheduled evening post - Ripple news',
-      'Engagement up 12% from yesterday',
-      'Found hot narrative: AI + crypto tools',
-    ]
-  },
-  {
-    id: 'swarm',
-    name: 'Swarm',
-    emoji: '🐝',
-    color: '#eab308',
-    role: 'Codex Agent',
-    model: 'GPT-4o-mini',
-    tasks: [
-      'Processing codex tasks',
-      'Running batch operations',
-      'Indexing project data',
-      'Syncing agent state',
-      'Idle',
-    ],
-    feed: [
-      'Codex batch complete - 12 tasks processed',
-      'Project index refreshed',
-      'Agent state synced across cluster',
-      'Batch queue cleared',
-      'Task pipeline healthy',
-    ]
-  },
-  {
-    id: 'penny',
-    name: 'Penny',
-    emoji: '🪙',
-    color: '#f59e0b',
-    role: 'OSS Agent',
+    id: 'nutrimind',
+    name: 'NutriMind',
+    emoji: 'N',
+    color: '#22c55e',
+    role: 'Nutrition App Specialist',
     model: 'GPT-5.4',
+    authority: 'specialist',
+    memory: true,
+    workspace: 'workspace-nutrimind',
+    repo: 'diet-plan',
+    desc: 'Diet-plan repo specialist for the NutriMind nutrition app, content, search index, planner tests, keto planning profile, and repo maintenance.',
     tasks: [
-      'Scanning open-source repos',
-      'Evaluating dependencies',
-      'Checking license compliance',
-      'Reviewing PR activity',
-      'Idle',
+      'Maintaining diet-plan repo',
+      'Planning keto grocery meals',
+      'Updating nutrition content',
+      'Checking search index coverage',
+      'Running planner tests',
+      'Keeping meal guidance practical',
     ],
     feed: [
-      'OSS scan complete - 3 repos reviewed',
-      'License check passed for all deps',
-      'Flagged outdated dependency in trader',
-      'PR activity summary generated',
-      'Vulnerability scan clean',
-    ]
-  },
-  {
-    id: 'reaper',
-    name: 'Reaper',
-    emoji: '💀',
-    color: '#78716c',
-    role: 'Farm Bot',
-    model: 'GPT-4o-mini',
-    tasks: [
-      'Running discover pipeline',
-      'Posting scheduled content',
-      'Farming engagement',
-      'Cron job active',
-      'Idle',
-    ],
-    feed: [
-      'Morning discover pipeline complete',
-      'Scheduled 5 posts for today',
-      'Engagement farm cycle finished',
-      'Cron job triggered - next run in 4H',
-      'Content queue replenished',
-    ]
-  },
-  {
-    id: 'forge',
-    name: 'Forge',
-    emoji: '⚙️',
-    color: '#8b5cf6',
-    role: 'Dev Agent',
-    model: 'Claude Sonnet 4.6',
-    tasks: [
-      'Writing feature code',
-      'Debugging issue',
-      'Shipping to production',
-      'Code review',
-      'Idle',
-    ],
-    feed: [
-      'Feature branch merged to main',
-      'Bug fix deployed - auth flow',
-      'Code review complete on PR #47',
-      'New endpoint shipped to Railway',
-      'Test suite passing - 100%',
-    ]
-  },
-  {
-    id: 'lyra',
-    name: 'Lyra',
-    emoji: '✨',
-    color: '#a855f7',
-    role: 'Innerverse',
-    model: 'Claude Sonnet 4.6',
-    tasks: [
-      'Working on Innerverse...',
-      'Crafting narrative',
-      'Building world lore',
-      'Writing chapter draft',
-      'Idle',
-    ],
-    feed: [
-      'New chapter draft saved - 1,200 words',
-      'Updated Innerverse world map notes',
-      'Character arc revised for Volume 2',
-      'Added lore entry: The Hollow Spire',
-      'Outline complete for next arc',
-    ]
-  },
-  {
-    id: 'xbot',
-    name: 'XBot',
-    emoji: '🤖',
-    color: '#ec4899',
-    role: 'X Bot',
-    model: 'GPT-5',
-    tasks: [
-      'Posting to X',
-      'Idle',
-      'Monitoring mentions',
-      'Queuing scheduled posts',
-      'Engaging with replies',
-    ],
-    feed: [
-      'Post published @DiamondHands811',
-      'Reposted: BTC dominance chart',
-      '3 mentions replied to',
-      'Evening wrap-up posted',
-      'Engagement metric logged',
-    ]
-  },
-  {
-    id: 'guardian',
-    name: 'Guardian',
-    emoji: '🛡',
-    color: '#ef4444',
-    role: 'Security',
-    model: 'Claude Sonnet 4.6',
-    tasks: [
-      'Monitoring gateway access',
-      'Scanning for anomalies',
-      'Reviewing auth logs',
-      'Hardening firewall rules',
-      'Idle - all clear',
-    ],
-    feed: [
-      'Gateway access log reviewed - clean',
-      'No unauthorized access attempts',
-      'SSH hardening rules applied',
-      'All agent permissions verified',
-      'Security posture: green',
-    ]
-  },
-  {
-    id: 'fatherclaw',
-    name: 'FatherClaw',
-    emoji: '👑',
-    color: '#64748b',
-    role: 'Orchestrator',
-    model: 'Claude Sonnet 4.6',
-    tasks: [
-      'Routing tasks between agents',
-      'Monitoring agent health',
-      'Idle',
-      'Queuing cross-agent workflow',
-      'Logging inter-agent comms',
-    ],
-    feed: [
-      'Routed WebClaw brief from Swarm',
-      'All 12 agents healthy',
-      'Cross-agent workflow complete',
-      'Task queue: 2 pending',
-      'Inter-agent log updated',
-    ]
-  }
-,
-  {
-    id: 'command',
-    name: 'Command',
-    emoji: '📡',
-    color: '#64748b',
-    role: 'Orchestrator',
-    model: 'Claude Sonnet 4.6',
-    tasks: [
-      'Routing tasks between agents',
-      'Monitoring agent health',
-      'Idle',
-      'Queuing cross-agent workflow',
-      'Logging inter-agent comms',
-    ],
-    feed: [
-      'Routed WebClaw brief from Swarm',
-      'All 12 agents healthy',
-      'Cross-agent workflow complete',
-      'Task queue: 2 pending',
-      'Inter-agent log updated',
+      'NutriMind Telegram bot configured',
+      'Keto planning profile ready for memory',
+      'Diet-plan repo ownership assigned',
+      'Search/content scope documented',
+      'Telegram allow-list restricted to Jason',
     ]
   }
 ];
 
-// ─── ROOM GEOMETRY & WORKSTATIONS ─────────────────────────────
+// ??? ROOM GEOMETRY & WORKSTATIONS ─────────────────────────────
 // Every agent owns one tile and stays on it — this is an office, not a wander
 // sim. The block below is generated from the room itself so the two can never
 // disagree about how big the floor is or where the desks are.
@@ -359,19 +142,9 @@ let SVG_HH = 18;    // half tile height (viewBox)
 // In *front* of the desk, because agents are DOM nodes layered over the room
 // SVG and would otherwise paint straight over the desk they sit at.
 let AGENT_STATIONS = {
-  devin:       { gx:  0, gy: 1, facing: 'N' },
-  fatherclaw:  { gx:  1, gy: 1, facing: 'N' },
-  command:     { gx:  2, gy: 1, facing: 'N' },
-  forge:       { gx:  3, gy: 1, facing: 'N' },
-  swarm:       { gx:  4, gy: 1, facing: 'N' },
-  penny:       { gx:  5, gy: 1, facing: 'N' },
-  traderclaw:  { gx:  1, gy: 3, facing: 'W' },
-  webclaw:     { gx:  1, gy: 4, facing: 'W' },
-  lyra:        { gx:  1, gy: 5, facing: 'W' },
-  reaper:      { gx:  1, gy: 6, facing: 'W' },
-  xhunter:     { gx:  8, gy: 5, facing: 'N' },
-  xbot:        { gx:  9, gy: 5, facing: 'N' },
-  guardian:    { gx: 10, gy: 5, facing: 'N' },
+  oss:        { gx:  5, gy: 1, facing: 'N' },
+  webclaw:    { gx:  1, gy: 4, facing: 'W' },
+  nutrimind:  { gx:  8, gy: 5, facing: 'N' },
 };
 // <<<END GENERATED ROOM GEOMETRY>>>
 
@@ -561,6 +334,8 @@ function shadeHex(hex, amount = 0) {
 // Agents that never got a sprite of their own borrow one, so the room reads as
 // a single cast instead of a few Habbo avatars next to some loose pixel art.
 const SPRITE_ALIASES = {
+  oss: 'penny',
+  nutrimind: 'nova',
   forge: 'rig',
   command: 'jason',
 };
@@ -772,6 +547,9 @@ function applyRoomGeometry(geometry, stations) {
     map[s.agent] = { gx: s.gx, gy: s.gy, facing: s.facing };
     return map;
   }, {});
+  AGENT_STATIONS.oss = { gx: 5, gy: 1, facing: 'N' };
+  AGENT_STATIONS.webclaw = { gx: 1, gy: 4, facing: 'W' };
+  AGENT_STATIONS.nutrimind = { gx: 8, gy: 5, facing: 'N' };
   agentState.forEach((agent, index) => {
     agent.station = stationFor(agent.id, index);
     agent.pos = { gx: agent.station.gx, gy: agent.station.gy };
@@ -2043,21 +1821,18 @@ function handleFileUpload(e){
 
 return{render};
 })();
-const AGENT_DESCRIPTIONS = {
-  'devin':      { name: 'Devin',      role: 'Project Overseer',    model: 'Claude Sonnet 4.6', memory: true,  desc: "The overseer. Coordinates all agents, tracks every active project, and is Jason main developer assistant. Handles new builds, cross-agent strategy, and big-picture planning." },
-  'traderclaw': { name: 'TraderClaw', role: 'Trading Bot',          model: 'Claude Sonnet 4.6', memory: true,  desc: "Autonomous trading agent. Monitors BTC 1H/4H/1D signals, RSI divergence, BTC.D and USDT.D. Runs paper trades on Bitget and shadows Polymarket. Live at traderclaw-production.up.railway.app." },
-  'webclaw':    { name: 'WebClaw',    role: 'Web Developer',        model: 'GPT-5.4',           memory: true,  desc: "AI web agency agent. Builds pitch-ready demo sites for local Nanaimo businesses. Generates HTML and deploys a live URL for cold-call pitches. $300-500 setup + $50-100/month." },
-  'xhunter':    { name: 'X-Hunter',  role: 'Social / X Agent',     model: 'Claude Sonnet 4.6', memory: true,  desc: "Crypto Twitter monitor and content agent. Tracks @BitcoinMagazine, @CoinDesk, and other major handles for trending narratives. Posts content and manages Jason X presence." },
-  'swarm':      { name: 'Swarm',     role: 'Codex Agent',          model: 'GPT-4o-mini',       memory: false, desc: "OpenClaw Codex harness agent (@codex87bot on Telegram). Runs coding tasks in isolated ACP sessions. Stateless - no persistent memory between runs. Formerly called Codex." },
-  'penny':      { name: 'Penny',     role: 'General Utility',      model: 'GPT-5.4',           memory: true,  desc: "General-purpose utility agent (@oss bot). Handles miscellaneous tasks, research, and one-off jobs. Switched to GPT-5.4 on 2026-04-11 after free models kept hitting rate limits." },
-  'reaper':     { name: 'Reaper',    role: 'CommentFarm Operator', model: 'GPT-4o-mini',       memory: false, desc: "Runs the CommentFarm pipeline autonomously. Fetches trending X posts via xAI, ranks and queues them for review, then posts approved content to @DiamondHands811. Cron-driven." },
-  'forge':      { name: 'Forge',     role: 'Dev Agent',            model: 'Claude Sonnet 4.6', memory: true,  desc: "General coding and development agent (@dev bot). Handles feature work, bug fixes, and dev tasks. A solid pair programmer for focused coding sessions." },
-  'lyra':       { name: 'Lyra',      role: 'Innerverse Agent',     model: 'Claude Sonnet 4.6', memory: true,  desc: "Creative and narrative agent for the Innerverse project (@sora bot). Handles world-building, storytelling, character arcs, and all creative work tied to the Innerverse universe." },
-  'xbot':       { name: 'XBot',      role: 'X Posting Bot',        model: 'GPT-5',             memory: false, desc: "Automated posting bot for @DiamondHands811. Handles scheduled X posts, content queuing, and crypto narrative amplification. Stateless - no memory, just executes the post queue." },
-  'guardian':   { name: 'Guardian',  role: 'Security Agent',       model: 'Claude Sonnet 4.6', memory: true,  desc: "Security and hardening agent. Monitors OpenClaw gateway access, reviews auth logs, scans for anomalies, and hardens firewall and SSH rules. Quiet by default - speaks up when something is wrong." },
-  'command':    { name: 'Command',   role: 'Orchestrator',         model: 'Claude Sonnet 4.6', memory: true,  desc: "Cross-agent orchestration layer. Routes tasks between agents, monitors agent health, and manages multi-agent workflows. The system internal air traffic control." },
-  'fatherclaw': { name: 'FatherClaw',role: 'Orchestrator',         model: 'Claude Sonnet 4.6', memory: true,  desc: "Senior orchestrator. Jason top-level system coordinator. Oversees all agents, manages inter-agent dependencies, and handles escalations." },
-};
+const AGENT_DESCRIPTIONS = Object.fromEntries(
+  AGENTS.map(agent => [agent.id, {
+    name: agent.name,
+    role: agent.role,
+    model: agent.model,
+    memory: agent.memory,
+    desc: agent.desc,
+    workspace: agent.workspace,
+    repo: agent.repo,
+    authority: agent.authority,
+  }])
+);
 
 function showAgentInfo(id) {
   closeMobileNav();
@@ -2075,6 +1850,59 @@ function showAgentInfo(id) {
   panel.style.display = 'block';
   const nav = document.querySelector('.nav');
   if (nav) nav.scrollTop = 99999;
+}
+
+
+function renderOrgChart() {
+  const orgView = document.getElementById('view-org');
+  if (!orgView) return;
+  const command = AGENTS.find(agent => agent.authority === 'command') || AGENTS[0];
+  const specialists = AGENTS.filter(agent => agent.id !== command.id);
+  const memoryBadge = agent => agent.memory
+    ? '<span class="org-tag org-tag-green">Memory</span>'
+    : '<span class="org-tag">Stateless</span>';
+  const orgCard = (agent, wide = false) => `
+    <div class="org-card ${wide ? 'org-card-wide glow-indigo' : 'glow-blue'}" onclick="showAgentInfo('${agent.id}')" style="cursor:pointer; border-left:3px solid ${agent.color};">
+      <div class="org-card-inner">
+        <div class="org-avatar" style="background:${agent.color}22;border-color:${agent.color}55;">${agent.emoji}</div>
+        <div class="org-body">
+          <div class="org-name">${escHTML(agent.name)}</div>
+          <div class="org-title">${escHTML(agent.role)} ? ${escHTML(agent.model)}</div>
+          <div class="org-desc">${escHTML(agent.desc || '')}</div>
+          <div class="org-tags">
+            <span class="org-tag org-tag-indigo">${escHTML(agent.authority || 'agent')}</span>
+            ${memoryBadge(agent)}
+            <span class="org-tag org-tag-blue">${escHTML(agent.workspace || 'workspace')}</span>
+          </div>
+        </div>
+      </div>
+      <div class="org-cta">VIEW AGENT ?</div>
+    </div>`;
+  orgView.innerHTML = `
+    <div class="org-page">
+      <div class="org-section-label"><div class="line"></div><div class="text">OPENCLAW COMMAND</div><div class="line"></div></div>
+      <div class="org-row-center">${orgCard(command, true)}</div>
+      <div class="org-connector-v"></div><div class="org-connector-fork"></div>
+      <div class="org-section-label"><div class="line"></div><div class="text">SPECIALIST AGENTS</div><div class="line"></div></div>
+      <div class="org-row-2" style="max-width:760px; margin:0 auto;">${specialists.map(agent => orgCard(agent)).join('')}</div>
+      <div class="org-flow-divider"><div class="line"></div><div class="org-flow-label">shared registry feeds office, chart, and memory</div><div class="line"></div></div>
+      <div class="org-section-label"><div class="line"></div><div class="text">MEMORY LINKS</div><div class="line"></div></div>
+      <div class="org-row-3" style="width:100%;">
+        ${AGENTS.map(agent => `
+          <div class="org-card" onclick="window.location.href='/memory.html'" style="cursor:pointer; border-left:3px solid ${agent.color};">
+            <div class="org-card-inner">
+              <div class="org-avatar" style="background:${agent.color}18;border-color:${agent.color}44;">${agent.emoji}</div>
+              <div class="org-body">
+                <div class="org-name">${escHTML(agent.name)}</div>
+                <div class="org-title">${agent.memory ? 'Memory bank enabled' : 'No durable memory'}</div>
+                <div class="org-desc">${escHTML(agent.repo || agent.workspace || 'OpenClaw agent')}</div>
+                <div class="org-tags">${memoryBadge(agent)}<span class="org-tag org-tag-teal">${escHTML(agent.id)}</span></div>
+              </div>
+            </div>
+            <div class="org-cta">OPEN MEMORY ?</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
 }
 
 
@@ -2819,7 +2647,8 @@ VIEW_HANDLERS.agents     = { enter: () => { if (window.AgentRegistry) AgentRegis
 VIEW_HANDLERS.memory     = { enter: () => { if (typeof MEM !== 'undefined') MEM.render(); } };
 VIEW_HANDLERS['calendar-v3'] = { enter: () => { if (window.CAL) window.CAL.render(); } };
 VIEW_HANDLERS.office     = { enter: null };
-VIEW_HANDLERS.org        = { enter: null };
+VIEW_HANDLERS.org        = { enter: () => renderOrgChart() };
+if (document.getElementById('view-org')) renderOrgChart();
 
 
 // ─── MEMORY MODULE ───────────────────────────────────────────────────────────
