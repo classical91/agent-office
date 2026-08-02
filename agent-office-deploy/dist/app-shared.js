@@ -322,40 +322,55 @@ const AGENTS = [
   }
 ];
 
-// ─── STATE ────────────────────────────────────────────────────
-// Must match the GW/GH the room SVG was generated with
-// (agent-office-deploy/gen_room.js). Tiles are addressed 0..gridW-1 across and
-// 0..gridH-1 deep; anything outside that is off the floor.
+// ─── ROOM GEOMETRY & WORKSTATIONS ─────────────────────────────
+// Every agent owns one tile and stays on it — this is an office, not a wander
+// sim. The block below is generated from the room itself so the two can never
+// disagree about how big the floor is or where the desks are.
+// <<<BEGIN GENERATED ROOM GEOMETRY>>>
+// Written by agent-office-deploy/inject_room.js from gen_room.js.
+// DO NOT EDIT BY HAND — change gen_room.js and re-run:
+//   node agent-office-deploy/inject_room.js
+
+// Tile grid the room SVG was drawn with. Tiles are addressed 0..gridW-1 across
+// and 0..gridH-1 deep; anything outside that is off the floor.
 const OFFICE_SCENE = {
   gridW: 12,
   gridH: 9,
 };
 
-// ─── WORKSTATIONS ─────────────────────────────────────────────
-// One tile per agent, and every agent stays on it — this is an office, not a
-// wander sim. Coordinates are whole tiles, so an avatar always lands on a tile
-// centre, and each one is the tile directly in front of that agent's desk in
-// the generated room (gen_room.js → STATIONS). In *front* of the desk, because
-// agents are DOM nodes layered over the room SVG: an agent standing behind a
-// desk would paint straight over it.
+// The room is drawn in viewBox coords:
+//   tile (gx, gy) top point = (550 + (gx - gy) * 36, 295 + (gx + gy) * 18)
+//   tile rhombus is 72 wide x 36 tall; centre = top + (0, 18)
+// Agent <div>s are positioned in CSS px, so viewBox -> CSS px is
+// (clientWidth / SVG_VB_W) after subtracting the viewBox origin.
+const SVG_VB_X = 206;
+const SVG_VB_Y = 186;
+const SVG_VB_W = 786;
+const SVG_VB_H = 497;
+const SVG_OX = 550;   // viewBox x of tile (0,0) top
+const SVG_OY = 295;   // viewBox y of tile (0,0) top
+const SVG_HW = 36;    // half tile width  (viewBox)
+const SVG_HH = 18;    // half tile height (viewBox)
+
+// One whole tile per agent: the tile directly in front of that agent's desk.
+// In *front* of the desk, because agents are DOM nodes layered over the room
+// SVG and would otherwise paint straight over the desk they sit at.
 const AGENT_STATIONS = {
-  // Back-wall bank
-  devin:      { gx: 0,  gy: 1, facing: 'N' },
-  fatherclaw: { gx: 1,  gy: 1, facing: 'N' },
-  command:    { gx: 2,  gy: 1, facing: 'N' },
-  forge:      { gx: 3,  gy: 1, facing: 'N' },
-  swarm:      { gx: 4,  gy: 1, facing: 'N' },
-  penny:      { gx: 5,  gy: 1, facing: 'N' },
-  // Left-wall bank
-  traderclaw: { gx: 1,  gy: 3, facing: 'W' },
-  webclaw:    { gx: 1,  gy: 4, facing: 'W' },
-  lyra:       { gx: 1,  gy: 5, facing: 'W' },
-  reaper:     { gx: 1,  gy: 6, facing: 'W' },
-  // Right island
-  xhunter:    { gx: 8,  gy: 5, facing: 'N' },
-  xbot:       { gx: 9,  gy: 5, facing: 'N' },
-  guardian:   { gx: 10, gy: 5, facing: 'N' },
+  devin:       { gx:  0, gy: 1, facing: 'N' },
+  fatherclaw:  { gx:  1, gy: 1, facing: 'N' },
+  command:     { gx:  2, gy: 1, facing: 'N' },
+  forge:       { gx:  3, gy: 1, facing: 'N' },
+  swarm:       { gx:  4, gy: 1, facing: 'N' },
+  penny:       { gx:  5, gy: 1, facing: 'N' },
+  traderclaw:  { gx:  1, gy: 3, facing: 'W' },
+  webclaw:     { gx:  1, gy: 4, facing: 'W' },
+  lyra:        { gx:  1, gy: 5, facing: 'W' },
+  reaper:      { gx:  1, gy: 6, facing: 'W' },
+  xhunter:     { gx:  8, gy: 5, facing: 'N' },
+  xbot:        { gx:  9, gy: 5, facing: 'N' },
+  guardian:    { gx: 10, gy: 5, facing: 'N' },
 };
+// <<<END GENERATED ROOM GEOMETRY>>>
 
 // Hot-desks for anyone added to AGENTS without a station of their own, so a new
 // agent stands somewhere sensible instead of stacking on top of a colleague.
@@ -387,7 +402,10 @@ let agentState = AGENTS.map((agent, index) => {
     pos: { gx: station.gx, gy: station.gy },
     currentTask: agent.tasks[0],
     status: 'active',
-    lookState: { pose: 'seated', facing: station.facing, motion: 'typing' },
+    // The Habbo sprites are all standing poses, so agents stand at their
+    // workstation. Drawing the chair prop under a standing sprite just reads as
+    // a dark blob around their feet.
+    lookState: { pose: 'stand', facing: station.facing, motion: 'typing' },
     availableAt: 0,
   };
 });
@@ -416,30 +434,16 @@ const HABBO_SPRITES = {
 const officesvg = document.getElementById('officesvg');
 const officeArea = officesvg ? officesvg.parentElement : document.getElementById('view-office');
 const canvas = {
-  get width() { return officesvg ? officesvg.clientWidth || 880 : 880; },
-  get height() { return officesvg ? officesvg.clientHeight || 570 : 570; }
+  get width() { return officesvg ? officesvg.clientWidth || SVG_VB_W : SVG_VB_W; },
+  get height() { return officesvg ? officesvg.clientHeight || SVG_VB_H : SVG_VB_H; }
 };
 const ctx = null; // SVG mode - no canvas context
-// SVG floor is drawn in viewBox coords (see gen_room.js):
-//   tile (gx, gy) top point = (550 + (gx - gy) * 40, 295 + (gx + gy) * 20)
-//   tile rhombus is 80 wide × 40 tall; center = top + (0, 20)
-// The agent <div> is positioned in CSS px relative to officeArea, so we scale
-// viewBox → CSS px by (clientWidth / viewBoxWidth) and subtract the viewBox
-// origin. These four values have to match the viewBox on #officesvg.
-const SVG_VB_X = 160;
-const SVG_VB_Y = 160;
-const SVG_VB_W = 880;
-const SVG_VB_H = 570;
-const SVG_OX = 550;   // viewBox x of tile (0,0) top
-const SVG_OY = 295;   // viewBox y of tile (0,0) top
-const SVG_HW = 40;    // half tile width  (viewBox)
-const SVG_HH = 20;    // half tile height (viewBox)
 
-// The sprite canvas sits at bottom:10px inside a seated avatar and the sprite's
-// feet land on the canvas bottom, so the feet are ~10px above the avatar's own
-// bottom edge. The projection shifts down by that much so the feet plant on the
-// tile rather than hovering over it.
-const AGENT_FOOT_OFFSET_PX = 10;
+// The sprite canvas sits at bottom:8px inside a standing avatar and the
+// sprite's feet land on the canvas bottom, so the feet are ~8px above the
+// avatar's own bottom edge. The projection shifts down by that much so the feet
+// plant on the tile rather than hovering over it.
+const AGENT_FOOT_OFFSET_PX = 8;
 
 function getOfficeMetrics(width = canvas.width, height = canvas.height) {
   const scale = width / SVG_VB_W;
@@ -558,6 +562,15 @@ const SPRITE_ALIASES = {
   command: 'jason',
 };
 
+// The sprites are 64x110 PNGs. The canvas backing store used to be 26x36, which
+// threw away most of the source pixels — faces came out as mush — before CSS
+// scaled the result back up. The buffer below keeps the CSS box's 52:72 aspect
+// (so nothing is stretched) while being large enough to hold a sprite at 1:1.
+const SPRITE_NATIVE_W = 64;
+const SPRITE_NATIVE_H = 110;
+const SPRITE_BUFFER_W = 78;
+const SPRITE_BUFFER_H = 108;
+
 function drawPixelAgent(canvasEl, look, agent) {
   if (!canvasEl) return;
   const agentId = agent ? agent.id : null;
@@ -567,13 +580,16 @@ function drawPixelAgent(canvasEl, look, agent) {
   if (spriteKey) {
     // Use real Habbo sprite
     const c = canvasEl.getContext('2d', { willReadFrequently: true });
+    c.setTransform(1, 0, 0, 1, 0, 0);
     c.imageSmoothingEnabled = false;
     c.clearRect(0, 0, canvasEl.width, canvasEl.height);
     const img = new Image();
     img.onload = () => {
+      c.setTransform(1, 0, 0, 1, 0, 0);
       c.clearRect(0, 0, canvasEl.width, canvasEl.height);
-      // Scale to fit canvas maintaining aspect ratio
-      const scale = Math.min(canvasEl.width / img.width, canvasEl.height / img.height);
+      // Fit to the buffer without distorting, and never magnify past 1:1 —
+      // upscaling here would only cost detail when CSS scales it again.
+      const scale = Math.min(canvasEl.width / img.width, canvasEl.height / img.height, 1);
       const w = Math.round(img.width * scale);
       const h = Math.round(img.height * scale);
       const x = Math.round((canvasEl.width - w) / 2);
@@ -584,11 +600,13 @@ function drawPixelAgent(canvasEl, look, agent) {
     return;
   }
 
-  // Fallback: original pixel art renderer
+  // Fallback: original pixel art renderer. It was drawn for a 26x36 buffer, so
+  // scale its coordinate space up to whatever the buffer is now.
   const c = canvasEl.getContext('2d', { willReadFrequently: true });
   c.imageSmoothingEnabled = false;
+  c.setTransform(1, 0, 0, 1, 0, 0);
   c.clearRect(0, 0, canvasEl.width, canvasEl.height);
-  const dot = (x, y, color) => { c.fillStyle = color; c.fillRect(x, y, 1, 1); };
+  c.setTransform(canvasEl.width / 26, 0, 0, canvasEl.height / 36, 0, 0);
   const bx = (x, y, w, h, color) => { c.fillStyle = color; c.fillRect(x, y, w, h); };
   const sk = look.skin || '#f1c8a1';
   const hr = look.hair || '#334155';
@@ -660,7 +678,7 @@ function renderAgents() {
       <div class="agent-avatar">
         <div class="agent-shadow"></div>
         <div class="agent-chair"></div>
-        <canvas class="agent-pixel" width="26" height="36"></canvas>
+        <canvas class="agent-pixel" width="${SPRITE_BUFFER_W}" height="${SPRITE_BUFFER_H}"></canvas>
       </div>
     `;
 
@@ -786,7 +804,7 @@ function updateAgentTask(agent) {
   agent.status = isIdleTask ? 'idle' : (Math.random() > 0.18 ? 'active' : 'idle');
   agent.pos = { gx: agent.station.gx, gy: agent.station.gy };
   agent.lookState = {
-    pose: 'seated',
+    pose: 'stand',
     facing: agent.station.facing,
     motion: isIdleTask ? 'reading' : (Math.random() > 0.3 ? 'typing' : 'monitoring'),
   };

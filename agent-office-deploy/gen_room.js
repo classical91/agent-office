@@ -1,26 +1,39 @@
 // Habbo Hotel Isometric Room Generator
-// Outputs SVG content to replace inside <svg id="officesvg" ...>
 //
-// Everything in here is laid out on the tile grid — never in raw pixels — so the
-// room and the agents (positioned by app-shared.js) agree on where a tile is.
+// This module is the single source of truth for the office room: the tile
+// grid, the viewBox, every piece of furniture, and which tile each agent
+// works on. `inject_room.js` renders it into dist/index.html AND writes the
+// matching geometry + station table into dist/app-shared.js, so the room and
+// the agents standing in it can no longer drift apart.
+//
+// Everything is laid out on the tile grid, never in raw pixels:
 //   tile (i, j) corner  = (OX + (i - j) * HW, OY + (i + j) * HH)
 //   tile (i, j) centre  = corner of (i + 0.5, j + 0.5)
-// The camera looks from +gx/+gy, so a bigger (gx + gy) is nearer the viewer:
-// every workstation puts the agent one tile *in front of* their desk, which is
+// The camera looks from +gx/+gy, so a bigger (gx + gy) is nearer the viewer.
+// Every workstation puts the agent one tile *in front of* their desk, which is
 // what keeps the avatars (plain DOM nodes stacked over this SVG) from covering
 // furniture they are supposed to be standing behind.
+//
+// Furniture occupies whole tiles. A footprint is [i, j, w, d] in tiles, with
+// w and d whole numbers, so nothing straddles a tile boundary. Only details
+// sitting *on* a surface (a monitor, a keyboard, a mug) use fractions.
 
 const OX = 550;  // origin X (back corner)
 const OY = 295;  // origin Y (back corner)
-const HW = 40;   // half tile width
-const HH = 20;   // half tile height
+const HW = 36;   // half tile width
+const HH = 18;   // half tile height
 const GW = 12;   // grid width (tiles)
 const GH = 9;    // grid height/depth (tiles)
-const WALL_H = 110; // wall height in SVG px
 
-// Skew angle of the +gx axis, used when placing flat details on a wall/shelf
-// face. tan = HH / HW, and skewY() shifts by x * tan, so anything drawn with
-// the transform has to subtract that shift back out of its y.
+// Heights are authored against a 40x20 tile and scaled with it, so changing
+// HW/HH rescales the whole room instead of leaving furniture the wrong height.
+const U = HH / 20;
+const WALL_H = 110 * U;
+const DESK_H = 22 * U;
+
+// Skew angle of the +gx axis, used when placing flat details on a shelf face.
+// tan = HH / HW, and skewY() shifts by x * tan, so anything drawn with the
+// transform has to subtract that shift back out of its y.
 const SKEW_DEG = Math.atan2(HH, HW) * 180 / Math.PI;
 const SKEW_TAN = HH / HW;
 
@@ -32,32 +45,115 @@ function pts(...coords) {
   return coords.map(([x, y]) => `${Math.round(x * 10) / 10},${Math.round(y * 10) / 10}`).join(' ');
 }
 
+function r1(n) { return Math.round(n * 10) / 10; }
+
 // ─── WORKSTATIONS ───────────────────────────────────────────────────
-// The single source of truth for where desks go. `AGENT_STATIONS` in
-// agent-office-deploy/dist/app-shared.js mirrors the agent tiles below; the two
-// lists have to be edited together.
-//
-//   tile   — the desk's tile
-//   orient — 'front': agent sits on (gx, gy + 1), desk faces the viewer
-//            'side' : agent sits on (gx + 1, gy), desk faces right
+// tile   — the desk's tile, one whole tile
+// orient — 'front': agent works from (i, j + 1), desk faces the viewer
+//          'side' : agent works from (i + 1, j), desk faces right
+// The agent tile is derived, never written down twice.
 const STATIONS = [
-  // Back-wall bank (agents on row gy = 1)
-  { tile: [0, 0], orient: 'front', screen: '#6366f1' }, // Devin
-  { tile: [1, 0], orient: 'front', screen: '#94a3b8' }, // FatherClaw
-  { tile: [2, 0], orient: 'front', screen: '#38bdf8' }, // Command
-  { tile: [3, 0], orient: 'front', screen: '#8b5cf6' }, // Forge
-  { tile: [4, 0], orient: 'front', screen: '#eab308' }, // Swarm
-  { tile: [5, 0], orient: 'front', screen: '#f59e0b' }, // Penny
-  // Left-wall bank (agents on column gx = 1)
-  { tile: [0, 3], orient: 'side', screen: '#22c55e' },  // TraderClaw
-  { tile: [0, 4], orient: 'side', screen: '#3b82f6' },  // WebClaw
-  { tile: [0, 5], orient: 'side', screen: '#a855f7' },  // Lyra
-  { tile: [0, 6], orient: 'side', screen: '#78716c' },  // Reaper
-  // Right island (agents on row gy = 5)
-  { tile: [8, 4], orient: 'front', screen: '#06b6d4' }, // X-Hunter
-  { tile: [9, 4], orient: 'front', screen: '#ec4899' }, // XBot
-  { tile: [10, 4], orient: 'front', screen: '#ef4444' }, // Guardian
+  // Back-wall bank (agents end up on row gy = 1)
+  { agent: 'devin', tile: [0, 0], orient: 'front', screen: '#6366f1' },
+  { agent: 'fatherclaw', tile: [1, 0], orient: 'front', screen: '#94a3b8' },
+  { agent: 'command', tile: [2, 0], orient: 'front', screen: '#38bdf8' },
+  { agent: 'forge', tile: [3, 0], orient: 'front', screen: '#8b5cf6' },
+  { agent: 'swarm', tile: [4, 0], orient: 'front', screen: '#eab308' },
+  { agent: 'penny', tile: [5, 0], orient: 'front', screen: '#f59e0b' },
+  // Left-wall bank (agents end up on column gx = 1)
+  { agent: 'traderclaw', tile: [0, 3], orient: 'side', screen: '#22c55e' },
+  { agent: 'webclaw', tile: [0, 4], orient: 'side', screen: '#3b82f6' },
+  { agent: 'lyra', tile: [0, 5], orient: 'side', screen: '#a855f7' },
+  { agent: 'reaper', tile: [0, 6], orient: 'side', screen: '#78716c' },
+  // Right island (agents end up on row gy = 5)
+  { agent: 'xhunter', tile: [8, 4], orient: 'front', screen: '#06b6d4' },
+  { agent: 'xbot', tile: [9, 4], orient: 'front', screen: '#ec4899' },
+  { agent: 'guardian', tile: [10, 4], orient: 'front', screen: '#ef4444' },
 ];
+
+// Where an agent stands, given the desk they work at.
+function agentTile(station) {
+  const [i, j] = station.tile;
+  return station.orient === 'front'
+    ? { gx: i, gy: j + 1, facing: 'N' }
+    : { gx: i + 1, gy: j, facing: 'W' };
+}
+
+// ─── FLOOR PLAN ─────────────────────────────────────────────────────
+// Every piece of floor furniture registers its footprint in whole tiles, which
+// is then checked against the agent tiles. Agents are DOM nodes stacked over
+// this SVG, so anything standing between an agent and the camera would be
+// painted over by that agent — the checks below catch it at build time instead
+// of leaving it to be spotted in a screenshot.
+const FURNITURE = [];
+
+// i, j, w, d in whole tiles. `flat` marks something with no height (a rug),
+// which can sit anywhere because nothing can be drawn "in front of" it.
+function place(name, i, j, w, d, { flat = false } = {}) {
+  FURNITURE.push({ name, i, j, w, d, flat });
+  return { i, j, w, d };
+}
+
+function tilesOf({ i, j, w, d }) {
+  const out = [];
+  for (let y = j; y < j + d; y++) for (let x = i; x < i + w; x++) out.push(`${x},${y}`);
+  return out;
+}
+
+function validateFloorPlan() {
+  const problems = [];
+  const agentTiles = new Map();
+  STATIONS.forEach(s => {
+    const a = agentTile(s);
+    agentTiles.set(`${a.gx},${a.gy}`, s.agent);
+  });
+
+  // Two agents must never share a tile.
+  const seen = new Set();
+  STATIONS.forEach(s => {
+    const a = agentTile(s);
+    const key = `${a.gx},${a.gy}`;
+    if (seen.has(key)) problems.push(`two agents share tile ${key}`);
+    seen.add(key);
+    if (a.gx < 0 || a.gx >= GW || a.gy < 0 || a.gy >= GH) {
+      problems.push(`${s.agent} stands on ${key}, outside the ${GW}x${GH} floor`);
+    }
+  });
+
+  // Tiles between an agent and the camera: +gy, +gx and the diagonal.
+  const protectedTiles = new Map();
+  agentTiles.forEach((agent, key) => {
+    const [gx, gy] = key.split(',').map(Number);
+    [[gx, gy + 1], [gx + 1, gy], [gx + 1, gy + 1]].forEach(([x, y]) => {
+      if (!agentTiles.has(`${x},${y}`)) protectedTiles.set(`${x},${y}`, agent);
+    });
+  });
+
+  const occupied = new Map();
+  FURNITURE.forEach(f => {
+    if (![f.i, f.j, f.w, f.d].every(n => Number.isInteger(n))) {
+      problems.push(`${f.name} footprint [${f.i},${f.j},${f.w},${f.d}] is not whole tiles`);
+    }
+    if (f.i < 0 || f.j < 0 || f.i + f.w > GW || f.j + f.d > GH) {
+      problems.push(`${f.name} footprint [${f.i},${f.j},${f.w},${f.d}] falls off the ${GW}x${GH} floor`);
+    }
+    tilesOf(f).forEach(key => {
+      if (f.flat) return;
+      if (occupied.has(key)) problems.push(`${f.name} overlaps ${occupied.get(key)} on tile ${key}`);
+      occupied.set(key, f.name);
+      if (agentTiles.has(key)) problems.push(`${f.name} sits on ${agentTiles.get(key)}'s tile ${key}`);
+      if (protectedTiles.has(key)) {
+        problems.push(`${f.name} on tile ${key} stands in front of ${protectedTiles.get(key)} and would be drawn over`);
+      }
+    });
+  });
+
+  if (problems.length) {
+    console.error('Floor plan is invalid:');
+    problems.forEach(p => console.error('  - ' + p));
+    process.exit(1);
+  }
+}
 
 const lines = [];
 
@@ -80,7 +176,7 @@ emit(`  <pattern id="wallstripeR" x="0" y="0" width="20" height="40" patternUnit
 
 // Radial gradient for floor lighting
 const [fcx, fcy] = g2s(GW / 2, GH / 2);
-emit(`  <radialGradient id="floorLight" cx="${fcx}" cy="${fcy}" r="320" gradientUnits="userSpaceOnUse">
+emit(`  <radialGradient id="floorLight" cx="${r1(fcx)}" cy="${r1(fcy)}" r="${r1(300 * U)}" gradientUnits="userSpaceOnUse">
     <stop offset="0%" stop-color="#ffffff" stop-opacity="0.12"/>
     <stop offset="60%" stop-color="#ffffff" stop-opacity="0.04"/>
     <stop offset="100%" stop-color="#000000" stop-opacity="0.1"/>
@@ -110,93 +206,83 @@ const leftFront = g2s(0, GH);
 const wlTL = [backCorner[0], backCorner[1] - WALL_H];
 const wlBL = [leftFront[0], leftFront[1] - WALL_H];
 emit(`<polygon points="${pts(wlTL, wlBL, leftFront, backCorner)}" fill="url(#wallstripe)"/>`);
-// Darker inner face
 emit(`<polygon points="${pts(wlTL, wlBL, leftFront, backCorner)}" fill="#8878b8" opacity="0.28"/>`);
 
 // North (back) wall face
 const wnTR = [rightBack[0], rightBack[1] - WALL_H];
 emit(`<polygon points="${pts(wlTL, wnTR, rightBack, backCorner)}" fill="url(#wallstripeR)"/>`);
-// Slightly lighter shade
 emit(`<polygon points="${pts(wlTL, wnTR, rightBack, backCorner)}" fill="#ffffff" opacity="0.06"/>`);
 
 // Wall top edge lines
-emit(`<line x1="${wlTL[0]}" y1="${wlTL[1]}" x2="${wlBL[0]}" y2="${wlBL[1]}" stroke="#a090c8" stroke-width="1.2"/>`);
-emit(`<line x1="${wlTL[0]}" y1="${wlTL[1]}" x2="${wnTR[0]}" y2="${wnTR[1]}" stroke="#b0a0d0" stroke-width="1.2"/>`);
-emit(`<line x1="${wlBL[0]}" y1="${wlBL[1]}" x2="${leftFront[0]}" y2="${leftFront[1]}" stroke="#7060a0" stroke-width="1"/>`);
-emit(`<line x1="${wnTR[0]}" y1="${wnTR[1]}" x2="${rightBack[0]}" y2="${rightBack[1]}" stroke="#9080b8" stroke-width="1"/>`);
+emit(`<line x1="${r1(wlTL[0])}" y1="${r1(wlTL[1])}" x2="${r1(wlBL[0])}" y2="${r1(wlBL[1])}" stroke="#a090c8" stroke-width="1.2"/>`);
+emit(`<line x1="${r1(wlTL[0])}" y1="${r1(wlTL[1])}" x2="${r1(wnTR[0])}" y2="${r1(wnTR[1])}" stroke="#b0a0d0" stroke-width="1.2"/>`);
+emit(`<line x1="${r1(wlBL[0])}" y1="${r1(wlBL[1])}" x2="${r1(leftFront[0])}" y2="${r1(leftFront[1])}" stroke="#7060a0" stroke-width="1"/>`);
+emit(`<line x1="${r1(wnTR[0])}" y1="${r1(wnTR[1])}" x2="${r1(rightBack[0])}" y2="${r1(rightBack[1])}" stroke="#9080b8" stroke-width="1"/>`);
 
 // Corner pillar line
-emit(`<line x1="${backCorner[0]}" y1="${backCorner[1]}" x2="${wlTL[0]}" y2="${wlTL[1]}" stroke="#c0b0e0" stroke-width="1.5"/>`);
+emit(`<line x1="${r1(backCorner[0])}" y1="${r1(backCorner[1])}" x2="${r1(wlTL[0])}" y2="${r1(wlTL[1])}" stroke="#c0b0e0" stroke-width="1.5"/>`);
 
 // ─── WALL DECORATIONS ───────────────────────────────────────────────
+// Wall fittings span whole tiles along the wall they hang on.
 
 // Windows on the LEFT wall, above the left-hand desk bank
-function wallWindow(gy_start) {
-  const base1 = g2s(0, gy_start);
-  const base2 = g2s(0, gy_start + 1.5);
-  const t1 = [base1[0], base1[1] - 78];
-  const t2 = [base2[0], base2[1] - 78];
-  const b1 = [base1[0], base1[1] - 30];
-  const b2 = [base2[0], base2[1] - 30];
+function wallWindow(gyFrom, gyTo) {
+  const base1 = g2s(0, gyFrom);
+  const base2 = g2s(0, gyTo);
+  const t1 = [base1[0], base1[1] - 78 * U];
+  const t2 = [base2[0], base2[1] - 78 * U];
+  const b1 = [base1[0], base1[1] - 30 * U];
+  const b2 = [base2[0], base2[1] - 30 * U];
   emit(`<polygon points="${pts(t1, t2, b2, b1)}" fill="var(--view-bg)" stroke="var(--border)" stroke-width="0.8"/>`);
   emit(`<polygon points="${pts(t1, t2, b2, b1)}" fill="#1e3a5f" opacity="0.5"/>`);
   const mid1 = [(t1[0] + t2[0]) / 2, (t1[1] + t2[1]) / 2];
   const mid2 = [(b1[0] + b2[0]) / 2, (b1[1] + b2[1]) / 2];
-  emit(`<line x1="${mid1[0]}" y1="${mid1[1]}" x2="${mid2[0]}" y2="${mid2[1]}" stroke="var(--border)" stroke-width="0.6"/>`);
-  emit(`<line x1="${t1[0]}" y1="${(t1[1] + b1[1]) / 2}" x2="${t2[0]}" y2="${(t2[1] + b2[1]) / 2}" stroke="var(--border)" stroke-width="0.6"/>`);
-  // window highlight
-  emit(`<polygon points="${pts(t1, t2, [t2[0], t2[1] + 12], [t1[0], t1[1] + 12])}" fill="#87ceeb" opacity="0.15"/>`);
+  emit(`<line x1="${r1(mid1[0])}" y1="${r1(mid1[1])}" x2="${r1(mid2[0])}" y2="${r1(mid2[1])}" stroke="var(--border)" stroke-width="0.6"/>`);
+  emit(`<line x1="${r1(t1[0])}" y1="${r1((t1[1] + b1[1]) / 2)}" x2="${r1(t2[0])}" y2="${r1((t2[1] + b2[1]) / 2)}" stroke="var(--border)" stroke-width="0.6"/>`);
+  emit(`<polygon points="${pts(t1, t2, [t2[0], t2[1] + 12 * U], [t1[0], t1[1] + 12 * U])}" fill="#87ceeb" opacity="0.15"/>`);
 }
-wallWindow(2.9);
-wallWindow(4.9);
+wallWindow(2, 4);
+wallWindow(4, 6);
 
-// TV/Presentation screen on LEFT wall, above the lounge
+// Presentation screen on the LEFT wall, over the lounge end
 {
-  const tv_gy = 6.9;
-  const base1 = g2s(0, tv_gy);
-  const base2 = g2s(0, tv_gy + 1.8);
-  const t1 = [base1[0], base1[1] - 92];
-  const t2 = [base2[0], base2[1] - 92];
-  const b1 = [base1[0], base1[1] - 32];
-  const b2 = [base2[0], base2[1] - 32];
-  // Screen frame
+  const base1 = g2s(0, 7);
+  const base2 = g2s(0, 9);
+  const t1 = [base1[0], base1[1] - 92 * U];
+  const t2 = [base2[0], base2[1] - 92 * U];
+  const b1 = [base1[0], base1[1] - 32 * U];
+  const b2 = [base2[0], base2[1] - 32 * U];
   emit(`<polygon points="${pts(t1, t2, b2, b1)}" fill="var(--view-bg)" stroke="var(--border)" stroke-width="1"/>`);
-  // Screen inner
   const inset = 4;
   const it1 = [t1[0] + inset, t1[1] + inset];
   const it2 = [t2[0] - inset, t2[1] + inset];
   const ib1 = [b1[0] + inset, b1[1] - inset];
   const ib2 = [b2[0] - inset, b2[1] - inset];
   emit(`<polygon points="${pts(it1, it2, ib2, ib1)}" fill="#1a2a3a"/>`);
-  // Screen content lines (presentation)
   for (let i = 0; i < 4; i++) {
     const y1 = it1[1] + (it2[1] - it1[1]) * (i + 1) / 5;
     const y2 = ib1[1] + (ib2[1] - ib1[1]) * (i + 1) / 5;
     const x1 = it1[0] + (ib1[0] - it1[0]) * (i + 1) / 5;
     const x2 = it2[0] + (ib2[0] - it2[0]) * (i + 1) / 5;
-    emit(`<line x1="${x1 + 4}" y1="${(y1 + y2) / 2}" x2="${x2 - 4}" y2="${(y1 + y2) / 2 + 2}" stroke="#00ff88" stroke-width="0.8" opacity="0.7"/>`);
+    emit(`<line x1="${r1(x1 + 4)}" y1="${r1((y1 + y2) / 2)}" x2="${r1(x2 - 4)}" y2="${r1((y1 + y2) / 2 + 2)}" stroke="#00ff88" stroke-width="0.8" opacity="0.7"/>`);
   }
-  // Screen title bar
   emit(`<polygon points="${pts(it1, [it2[0], it2[1]], [it2[0], it2[1] + 8], [it1[0], it1[1] + 8])}" fill="var(--accent)" opacity="0.7"/>`);
 }
 
-// Clock on back wall, in the gap between the desk bank and the shelves
+// Clock on the back wall, centred over the tile between desks and shelves
 {
-  const base = g2s(7, 0);
+  const base = g2s(6.5, 0);
   const cx = base[0];
-  const cy = base[1] - 58;
-  emit(`<circle cx="${cx}" cy="${cy}" r="14" fill="#1e1a2e" stroke="#5040a0" stroke-width="1.5"/>`);
-  emit(`<circle cx="${cx}" cy="${cy}" r="11" fill="#2a2444"/>`);
-  // clock hands
-  emit(`<line x1="${cx}" y1="${cy}" x2="${cx + 0}" y2="${cy - 8}" stroke="#c0b0e0" stroke-width="1.5" stroke-linecap="round"/>`);
-  emit(`<line x1="${cx}" y1="${cy}" x2="${cx + 6}" y2="${cy + 2}" stroke="#c0b0e0" stroke-width="1" stroke-linecap="round"/>`);
-  emit(`<circle cx="${cx}" cy="${cy}" r="1.5" fill="var(--accent)"/>`);
-  // hour marks
+  const cy = base[1] - 58 * U;
+  const r = 14 * U;
+  emit(`<circle cx="${r1(cx)}" cy="${r1(cy)}" r="${r1(r)}" fill="#1e1a2e" stroke="#5040a0" stroke-width="1.5"/>`);
+  emit(`<circle cx="${r1(cx)}" cy="${r1(cy)}" r="${r1(r * 0.79)}" fill="#2a2444"/>`);
+  emit(`<line x1="${r1(cx)}" y1="${r1(cy)}" x2="${r1(cx)}" y2="${r1(cy - r * 0.57)}" stroke="#c0b0e0" stroke-width="1.5" stroke-linecap="round"/>`);
+  emit(`<line x1="${r1(cx)}" y1="${r1(cy)}" x2="${r1(cx + r * 0.43)}" y2="${r1(cy + r * 0.14)}" stroke="#c0b0e0" stroke-width="1" stroke-linecap="round"/>`);
+  emit(`<circle cx="${r1(cx)}" cy="${r1(cy)}" r="1.5" fill="var(--accent)"/>`);
   for (let i = 0; i < 12; i++) {
     const angle = (i * 30 - 90) * Math.PI / 180;
-    const mx = cx + Math.cos(angle) * 9;
-    const my = cy + Math.sin(angle) * 9;
-    emit(`<circle cx="${mx}" cy="${my}" r="0.8" fill="#7060a0"/>`);
+    emit(`<circle cx="${r1(cx + Math.cos(angle) * r * 0.64)}" cy="${r1(cy + Math.sin(angle) * r * 0.64)}" r="0.8" fill="#7060a0"/>`);
   }
 }
 
@@ -211,7 +297,7 @@ for (let gy = 0; gy < GH; gy++) {
     const [lx, ly] = g2s(gx, gy + 1);
     const even = (gx + gy) % 2 === 0;
     const color = even ? '#7B6FA0' : '#6B5F90';
-    emit(`  <polygon points="${tx},${ty} ${rx},${ry} ${bx},${by} ${lx},${ly}" fill="${color}"/>`);
+    emit(`  <polygon points="${r1(tx)},${r1(ty)} ${r1(rx)},${r1(ry)} ${r1(bx)},${r1(by)} ${r1(lx)},${r1(ly)}" fill="${color}"/>`);
   }
 }
 // Tile grid lines (subtle)
@@ -219,26 +305,25 @@ emit(`  <g stroke="#5a5080" stroke-width="0.4" opacity="0.5">`);
 for (let gy = 0; gy <= GH; gy++) {
   const [ax, ay] = g2s(0, gy);
   const [bx, by] = g2s(GW, gy);
-  emit(`    <line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"/>`);
+  emit(`    <line x1="${r1(ax)}" y1="${r1(ay)}" x2="${r1(bx)}" y2="${r1(by)}"/>`);
 }
 for (let gx = 0; gx <= GW; gx++) {
   const [ax, ay] = g2s(gx, 0);
   const [bx, by] = g2s(gx, GH);
-  emit(`    <line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"/>`);
+  emit(`    <line x1="${r1(ax)}" y1="${r1(ay)}" x2="${r1(bx)}" y2="${r1(by)}"/>`);
 }
 emit(`  </g>`);
 emit(`</g>`);
 
 // ─── FLOOR LIGHTING OVERLAY ─────────────────────────────────────────
-const floorPts = pts(g2s(0, 0), g2s(GW, 0), g2s(GW, GH), g2s(0, GH));
-emit(`<polygon points="${floorPts}" fill="url(#floorLight)"/>`);
+emit(`<polygon points="${pts(g2s(0, 0), g2s(GW, 0), g2s(GW, GH), g2s(0, GH))}" fill="url(#floorLight)"/>`);
 
-// ─── CARPET / RUG (under the meeting area) ──────────────────────────
+// ─── CARPET / RUG ───────────────────────────────────────────────────
 {
-  const rugCorners = [g2s(3.6, 5.3), g2s(6.8, 5.3), g2s(6.8, 8), g2s(3.6, 8)];
-  emit(`<polygon points="${pts(...rugCorners)}" fill="#3d2060" opacity="0.55"/>`);
-  const rugInner = [g2s(3.9, 5.6), g2s(6.5, 5.6), g2s(6.5, 7.7), g2s(3.9, 7.7)];
-  emit(`<polygon points="${pts(...rugInner)}" fill="none" stroke="#7030a0" stroke-width="1.5" opacity="0.6"/>`);
+  const rug = place('rug', 5, 6, 4, 3, { flat: true });
+  const { i, j, w, d } = rug;
+  emit(`<polygon points="${pts(g2s(i, j), g2s(i + w, j), g2s(i + w, j + d), g2s(i, j + d))}" fill="#3d2060" opacity="0.55"/>`);
+  emit(`<polygon points="${pts(g2s(i + 0.25, j + 0.25), g2s(i + w - 0.25, j + 0.25), g2s(i + w - 0.25, j + d - 0.25), g2s(i + 0.25, j + d - 0.25))}" fill="none" stroke="#7030a0" stroke-width="1.5" opacity="0.6"/>`);
 }
 
 // ─── FURNITURE ──────────────────────────────────────────────────────
@@ -257,44 +342,38 @@ function isoBox(gx, gy, w, d, h, topColor, leftColor, rightColor, extra = '') {
   const fbl = [bl[0], bl[1] - h];
 
   const out = [];
-  // Front-left face (constant gy + d)
   out.push(`<polygon points="${pts(fbl, fbr, br, bl)}" fill="${leftColor}"${extra}/>`);
-  // Front-right face (constant gx + w)
   out.push(`<polygon points="${pts(ftr, fbr, br, tr)}" fill="${rightColor}"${extra}/>`);
-  // Top face
   out.push(`<polygon points="${pts(ftl, ftr, fbr, fbl)}" fill="${topColor}"${extra}/>`);
   return out.join('\n');
 }
 
-// ─── BOOKSHELVES (back wall, right side) ────────────────────────────
-emit(`<!-- Bookshelves -->`);
-function bookshelf(gx, gy) {
-  const w = 1.6, d = 0.45, h = 80;
-  emit(isoBox(gx, gy, w, d, h, '#6b4010', '#5a3510', '#4a2e08'));
+// ─── BOOKSHELF (back wall, tiles 8-9) ───────────────────────────────
+emit(`<!-- Bookshelf -->`);
+function bookshelf(i, j, w) {
+  const h = 80 * U;
+  emit(isoBox(i, j, w, 1, h, '#6b4010', '#5a3510', '#4a2e08'));
 
-  // Shelves + books sit on the front-left face (the one at gy + d).
-  const faceL = g2s(gx, gy + d);
-  const faceR = g2s(gx + w, gy + d);
+  // Shelves + books sit on the front-left face (the one at j + 1).
+  const faceL = g2s(i, j + 1);
+  const faceR = g2s(i + w, j + 1);
   const colors = ['#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#a855f7', '#ec4899'];
   const bandH = h / 3;
   for (let s = 0; s < 3; s++) {
-    // Shelf ledge
     const ledgeY = -h + (s + 1) * bandH;
-    emit(`<line x1="${faceL[0]}" y1="${faceL[1] + ledgeY}" x2="${faceR[0]}" y2="${faceR[1] + ledgeY}" stroke="#7a4a10" stroke-width="1"/>`);
-    // Books standing on the shelf below the ledge
-    const bookCount = 12;
+    emit(`<line x1="${r1(faceL[0])}" y1="${r1(faceL[1] + ledgeY)}" x2="${r1(faceR[0])}" y2="${r1(faceR[1] + ledgeY)}" stroke="#7a4a10" stroke-width="1"/>`);
+    const bookCount = 14 * w;
     for (let b = 0; b < bookCount; b++) {
       const t = (b + 0.6) / (bookCount + 0.2);
       const bx = faceL[0] + t * (faceR[0] - faceL[0]);
-      const bh = bandH - 12 - (b % 3) * 2;
-      const by = faceL[1] + t * (faceR[1] - faceL[1]) + ledgeY - 4 - bh;
-      const color = colors[(s * 5 + b) % colors.length];
+      const bh = bandH - 10 * U - (b % 3) * 2 * U;
+      const by = faceL[1] + t * (faceR[1] - faceL[1]) + ledgeY - 3 - bh;
       // skewY shifts everything by x * tan, so take that back out of y.
-      emit(`<rect x="${Math.round(bx * 10) / 10}" y="${Math.round((by - bx * SKEW_TAN) * 10) / 10}" width="3.2" height="${Math.round(bh * 10) / 10}" fill="${color}" transform="skewY(${Math.round(SKEW_DEG * 1000) / 1000})" opacity="0.85"/>`);
+      emit(`<rect x="${r1(bx)}" y="${r1(by - bx * SKEW_TAN)}" width="3" height="${r1(bh)}" fill="${colors[(s * 5 + b) % colors.length]}" transform="skewY(${Math.round(SKEW_DEG * 1000) / 1000})" opacity="0.85"/>`);
     }
   }
 }
-bookshelf(8.3, 0.15);
+{ const s = place('bookshelf', 8, 0, 2, 1); bookshelf(s.i, s.j, s.w); }
 
 // ─── WORKSTATION DESKS ──────────────────────────────────────────────
 emit(`<!-- Workstation desks -->`);
@@ -306,210 +385,217 @@ const LEG_COLOR = '#4a3010';
 
 // A monitor standing on the desk surface, drawn as a flat quad between two
 // grid points. `a` and `b` are grid coords of the screen's bottom edge.
-function monitor(a, b, screenColor, deskH) {
+function monitor(a, b, screenColor) {
   const p1 = g2s(a[0], a[1]);
   const p2 = g2s(b[0], b[1]);
-  const bottom = [[p1[0], p1[1] - deskH - 3], [p2[0], p2[1] - deskH - 3]];
-  const top = [[p1[0], p1[1] - deskH - 25], [p2[0], p2[1] - deskH - 25]];
-  // Stand
+  const bottom = [[p1[0], p1[1] - DESK_H - 3 * U], [p2[0], p2[1] - DESK_H - 3 * U]];
+  const top = [[p1[0], p1[1] - DESK_H - 25 * U], [p2[0], p2[1] - DESK_H - 25 * U]];
   const mid = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2];
-  emit(`<rect x="${Math.round((mid[0] - 1.5) * 10) / 10}" y="${Math.round((mid[1] - deskH - 5) * 10) / 10}" width="3" height="6" fill="#2a2a3a"/>`);
-  // Screen body
+  emit(`<rect x="${r1(mid[0] - 1.5)}" y="${r1(mid[1] - DESK_H - 5 * U)}" width="3" height="${r1(6 * U)}" fill="#2a2a3a"/>`);
   emit(`<polygon points="${pts(top[0], top[1], bottom[1], bottom[0])}" fill="#1a2a3a"/>`);
-  // Glow
   emit(`<polygon points="${pts([top[0][0] + 2, top[0][1] + 2], [top[1][0] - 2, top[1][1] + 2], [bottom[1][0] - 2, bottom[1][1] - 2], [bottom[0][0] + 2, bottom[0][1] - 2])}" fill="${screenColor}" opacity="0.5" filter="url(#screenGlow)"/>`);
-  // Scanlines
   for (let sl = 0; sl < 3; sl++) {
     const t = (sl + 1) / 4;
     const sx1 = top[0][0] + t * (bottom[0][0] - top[0][0]) + 2;
     const sy1 = top[0][1] + t * (bottom[0][1] - top[0][1]);
     const sx2 = top[1][0] + t * (bottom[1][0] - top[1][0]) - 2;
     const sy2 = top[1][1] + t * (bottom[1][1] - top[1][1]);
-    emit(`<line x1="${Math.round(sx1 * 10) / 10}" y1="${Math.round(sy1 * 10) / 10}" x2="${Math.round(sx2 * 10) / 10}" y2="${Math.round(sy2 * 10) / 10}" stroke="${screenColor}" stroke-width="0.6" opacity="0.4"/>`);
+    emit(`<line x1="${r1(sx1)}" y1="${r1(sy1)}" x2="${r1(sx2)}" y2="${r1(sy2)}" stroke="${screenColor}" stroke-width="0.6" opacity="0.4"/>`);
   }
-  // Bezel
   emit(`<polygon points="${pts(top[0], top[1], bottom[1], bottom[0])}" fill="none" stroke="var(--border)" stroke-width="0.8"/>`);
 }
 
-// Keyboards lie flat on the desk surface, so they are a single face at deck
+// Keyboards lie flat on the desk surface, so they are a single face at desk
 // height rather than a box standing on the floor.
-function keyboard(gx, gy, w, d, deskH) {
-  const lift = deskH + 1;
+function keyboard(gx, gy, w, d) {
+  const lift = DESK_H + 1;
   const a = g2s(gx, gy), b = g2s(gx + w, gy), c = g2s(gx + w, gy + d), e = g2s(gx, gy + d);
   const flat = [[a[0], a[1] - lift], [b[0], b[1] - lift], [c[0], c[1] - lift], [e[0], e[1] - lift]];
   emit(`<polygon points="${pts(...flat)}" fill="#cbd5e1" stroke="#8fa0b4" stroke-width="0.5"/>`);
   emit(`<polygon points="${pts(...flat)}" fill="#0f172a" opacity="0.25"/>`);
 }
 
-function mug(gx, gy, deskH) {
+function mug(gx, gy) {
   const [cx, cy] = g2s(gx, gy);
-  emit(`<ellipse cx="${Math.round(cx * 10) / 10}" cy="${Math.round((cy - deskH - 6) * 10) / 10}" rx="3.4" ry="1.7" fill="#fff" opacity="0.9"/>`);
-  emit(`<rect x="${Math.round((cx - 2.6) * 10) / 10}" y="${Math.round((cy - deskH - 11) * 10) / 10}" width="5.2" height="6" fill="#fff" opacity="0.9" rx="1"/>`);
-  emit(`<rect x="${Math.round((cx + 2) * 10) / 10}" y="${Math.round((cy - deskH - 9) * 10) / 10}" width="2.6" height="3" fill="none" stroke="#ccc" stroke-width="0.7" rx="1"/>`);
+  emit(`<ellipse cx="${r1(cx)}" cy="${r1(cy - DESK_H - 6 * U)}" rx="${r1(3.4 * U)}" ry="${r1(1.7 * U)}" fill="#fff" opacity="0.9"/>`);
+  emit(`<rect x="${r1(cx - 2.6 * U)}" y="${r1(cy - DESK_H - 11 * U)}" width="${r1(5.2 * U)}" height="${r1(6 * U)}" fill="#fff" opacity="0.9" rx="1"/>`);
+  emit(`<rect x="${r1(cx + 2 * U)}" y="${r1(cy - DESK_H - 9 * U)}" width="${r1(2.6 * U)}" height="${r1(3 * U)}" fill="none" stroke="#ccc" stroke-width="0.7" rx="1"/>`);
 }
 
-// Desk for one workstation. The agent tile is always the neighbouring tile
-// towards the camera, so the monitor goes on the far edge of the desk.
+// One desk fills exactly one tile, so its front edge meets the agent's tile.
 function workstation(tile, orient, screenColor) {
   const [i, j] = tile;
-  const deskH = 22;
+  emit(isoBox(i, j, 1, 1, DESK_H, DESK_TOP, DESK_LEFT, DESK_RIGHT));
+
+  // Legs at the two corners nearest the camera
+  const legs = orient === 'front'
+    ? [g2s(i, j + 1), g2s(i + 1, j + 1)]
+    : [g2s(i + 1, j), g2s(i + 1, j + 1)];
+  legs.forEach(([lx, ly]) => {
+    emit(`<rect x="${r1(lx - 1.2)}" y="${r1(ly - 14 * U)}" width="2.4" height="${r1(14 * U)}" fill="${LEG_COLOR}"/>`);
+  });
 
   if (orient === 'front') {
-    // Desk runs to the front edge of its tile so the agent on (i, j + 1) is
-    // tucked right up against it instead of standing a gap away.
-    const x0 = i + 0.05, y0 = j + 0.15, w = 0.9, d = 0.85;
-    emit(isoBox(x0, y0, w, d, deskH, DESK_TOP, DESK_LEFT, DESK_RIGHT));
-    // Legs at the two front corners
-    const [l1x, l1y] = g2s(x0, y0 + d);
-    const [l2x, l2y] = g2s(x0 + w, y0 + d);
-    emit(`<rect x="${Math.round((l1x - 1) * 10) / 10}" y="${Math.round((l1y - 14) * 10) / 10}" width="2.5" height="14" fill="${LEG_COLOR}"/>`);
-    emit(`<rect x="${Math.round((l2x - 1.5) * 10) / 10}" y="${Math.round((l2y - 14) * 10) / 10}" width="2.5" height="14" fill="${LEG_COLOR}"/>`);
-    // Monitor across the back edge, keyboard + mug near the agent
-    monitor([x0 + 0.16, y0 + 0.2], [x0 + 0.74, y0 + 0.2], screenColor, deskH);
-    keyboard(x0 + 0.22, y0 + 0.56, 0.48, 0.16, deskH);
-    mug(x0 + 0.82, y0 + 0.62, deskH);
+    // Monitor along the back edge, keyboard + mug on the agent's side
+    monitor([i + 0.18, j + 0.22], [i + 0.82, j + 0.22], screenColor);
+    keyboard(i + 0.24, j + 0.62, 0.52, 0.18);
+    mug(i + 0.86, j + 0.68);
   } else {
-    // Desk runs to the right edge of its tile so the agent on (i + 1, j) is
-    // tucked right up against it.
-    const x0 = i + 0.15, y0 = j + 0.05, w = 0.85, d = 0.9;
-    emit(isoBox(x0, y0, w, d, deskH, DESK_TOP, DESK_LEFT, DESK_RIGHT));
-    const [l1x, l1y] = g2s(x0 + w, y0);
-    const [l2x, l2y] = g2s(x0 + w, y0 + d);
-    emit(`<rect x="${Math.round((l1x - 1.5) * 10) / 10}" y="${Math.round((l1y - 14) * 10) / 10}" width="2.5" height="14" fill="${LEG_COLOR}"/>`);
-    emit(`<rect x="${Math.round((l2x - 1.5) * 10) / 10}" y="${Math.round((l2y - 14) * 10) / 10}" width="2.5" height="14" fill="${LEG_COLOR}"/>`);
     // Monitor down the far edge, keyboard + mug on the agent's side
-    monitor([x0 + 0.2, y0 + 0.16], [x0 + 0.2, y0 + 0.74], screenColor, deskH);
-    keyboard(x0 + 0.56, y0 + 0.22, 0.16, 0.48, deskH);
-    mug(x0 + 0.62, y0 + 0.82, deskH);
+    monitor([i + 0.22, j + 0.18], [i + 0.22, j + 0.82], screenColor);
+    keyboard(i + 0.62, j + 0.24, 0.18, 0.52);
+    mug(i + 0.68, j + 0.86);
   }
 }
 
-STATIONS.forEach(s => workstation(s.tile, s.orient, s.screen));
+STATIONS.forEach(s => {
+  place(`${s.agent}'s desk`, s.tile[0], s.tile[1], 1, 1);
+  workstation(s.tile, s.orient, s.screen);
+});
 
-// ─── MEETING TABLE ──────────────────────────────────────────────────
+// ─── MEETING TABLE (2x2 tiles) ──────────────────────────────────────
 emit(`<!-- Meeting Table -->`);
 {
-  const cx = 5.2, cy = 6.65, r = 1;
-  const tableH = 18;
+  const t = place('meeting table', 6, 7, 2, 2);
+  const cx = t.i + 1, cy = t.j + 1, r = 1;   // centred on the shared tile corner
+  const tableH = 18 * U;
   const tableTopPts = [
     g2s(cx - r / 2, cy - r), g2s(cx + r / 2, cy - r), g2s(cx + r, cy - r / 2), g2s(cx + r, cy + r / 2),
     g2s(cx + r / 2, cy + r), g2s(cx - r / 2, cy + r), g2s(cx - r, cy + r / 2), g2s(cx - r, cy - r / 2)
   ];
-  // Skirt below the front-facing half of the top
   for (let i = 3; i < 7; i++) {
     const p1 = tableTopPts[i];
     const p2 = tableTopPts[(i + 1) % tableTopPts.length];
-    const shading = i < 5 ? '#7a4820' : '#5a3010';
-    emit(`<polygon points="${pts(p1, p2, [p2[0], p2[1] + tableH], [p1[0], p1[1] + tableH])}" fill="${shading}"/>`);
+    emit(`<polygon points="${pts(p1, p2, [p2[0], p2[1] + tableH], [p1[0], p1[1] + tableH])}" fill="${i < 5 ? '#7a4820' : '#5a3010'}"/>`);
   }
   emit(`<polygon points="${pts(...tableTopPts)}" fill="#8B5E2A"/>`);
   emit(`<polygon points="${pts(...tableTopPts)}" fill="#A06830" opacity="0.6"/>`);
   emit(`<polygon points="${pts(...tableTopPts)}" fill="none" stroke="#c09040" stroke-width="1" opacity="0.5"/>`);
-  const [tcx2, tcy2] = g2s(cx, cy);
-  emit(`<ellipse cx="${tcx2}" cy="${tcy2}" rx="${HW * 0.6}" ry="${HH * 0.6}" fill="none" stroke="#c09040" stroke-width="0.8" opacity="0.4"/>`);
+  const [tcx, tcy] = g2s(cx, cy);
+  emit(`<ellipse cx="${r1(tcx)}" cy="${r1(tcy)}" rx="${r1(HW * 0.6)}" ry="${r1(HH * 0.6)}" fill="none" stroke="#c09040" stroke-width="0.8" opacity="0.4"/>`);
 
-  // Laptops on the table
   const seats = [g2s(cx - 0.45, cy - 0.45), g2s(cx + 0.45, cy - 0.45), g2s(cx - 0.45, cy + 0.45), g2s(cx + 0.45, cy + 0.45)];
   const colors = ['var(--accent)', '#22c55e', '#f59e0b', '#ec4899'];
   seats.forEach(([lx, ly], i) => {
-    emit(`<rect x="${Math.round((lx - 6) * 10) / 10}" y="${Math.round((ly - 12) * 10) / 10}" width="12" height="8" fill="#1a2030" rx="1"/>`);
-    emit(`<rect x="${Math.round((lx - 5) * 10) / 10}" y="${Math.round((ly - 11) * 10) / 10}" width="10" height="6" fill="${colors[i]}" opacity="0.35"/>`);
+    emit(`<rect x="${r1(lx - 5.5 * U)}" y="${r1(ly - 11 * U)}" width="${r1(11 * U)}" height="${r1(7.5 * U)}" fill="#1a2030" rx="1"/>`);
+    emit(`<rect x="${r1(lx - 4.5 * U)}" y="${r1(ly - 10 * U)}" width="${r1(9 * U)}" height="${r1(5.5 * U)}" fill="${colors[i]}" opacity="0.35"/>`);
   });
 }
 
-// ─── SOFA (front-left lounge) ───────────────────────────────────────
+// ─── SOFA ───────────────────────────────────────────────────────────
 emit(`<!-- Sofa -->`);
 {
-  const sx = 1.3, sy = 7.15;
-  // Back
-  emit(isoBox(sx, sy, 2, 0.35, 30, '#6b1d1d', '#5a1818', '#4a1010'));
-  // Seat
-  emit(isoBox(sx, sy + 0.3, 2, 0.55, 16, '#991b1b', '#7f1d1d', '#6b1010'));
-  // Armrests
-  emit(isoBox(sx, sy, 0.28, 0.85, 22, '#7a1a1a', '#661414', '#551010'));
-  emit(isoBox(sx + 1.72, sy, 0.28, 0.85, 22, '#7a1a1a', '#661414', '#551010'));
-  // Cushion seam
+  const s = place('sofa', 3, 7, 2, 1);
+  const sx = s.i, sy = s.j;
+  emit(isoBox(sx, sy, 2, 0.4, 30 * U, '#6b1d1d', '#5a1818', '#4a1010'));       // back
+  emit(isoBox(sx, sy + 0.35, 2, 0.65, 16 * U, '#991b1b', '#7f1d1d', '#6b1010')); // seat
+  emit(isoBox(sx, sy, 0.3, 1, 22 * U, '#7a1a1a', '#661414', '#551010'));        // armrest
+  emit(isoBox(sx + 1.7, sy, 0.3, 1, 22 * U, '#7a1a1a', '#661414', '#551010'));  // armrest
   const [csx, csy] = g2s(sx + 1, sy + 0.35);
-  const [cex, cey] = g2s(sx + 1, sy + 0.85);
-  emit(`<line x1="${csx}" y1="${csy - 16}" x2="${cex}" y2="${cey - 16}" stroke="#c04040" stroke-width="1" opacity="0.5"/>`);
+  const [cex, cey] = g2s(sx + 1, sy + 1);
+  emit(`<line x1="${r1(csx)}" y1="${r1(csy - 16 * U)}" x2="${r1(cex)}" y2="${r1(cey - 16 * U)}" stroke="#c04040" stroke-width="1" opacity="0.5"/>`);
 }
 
-// ─── COFFEE TABLE near sofa ─────────────────────────────────────────
+// ─── COFFEE TABLE ───────────────────────────────────────────────────
 emit(`<!-- Coffee Table -->`);
 {
-  emit(isoBox(1.7, 8.1, 1.1, 0.6, 10, '#7a5030', '#5a3820', '#4a2810'));
-  emit(`<polygon points="${pts(g2s(1.95, 8.22), g2s(2.55, 8.22), g2s(2.55, 8.5), g2s(1.95, 8.5))}" fill="#3b82f6" opacity="0.7"/>`);
+  const { i, j } = place('coffee table', 4, 8, 1, 1);
+  emit(isoBox(i + 0.1, j + 0.1, 0.8, 0.8, 10 * U, '#7a5030', '#5a3820', '#4a2810'));
+  emit(`<polygon points="${pts(g2s(i + 0.3, j + 0.3), g2s(i + 0.7, j + 0.3), g2s(i + 0.7, j + 0.65), g2s(i + 0.3, j + 0.65))}" fill="#3b82f6" opacity="0.7"/>`);
 }
 
-// ─── SERVER RACKS (back wall, right of the shelves) ─────────────────
-emit(`<!-- Server rack -->`);
-function serverRack(gx, gy) {
-  const w = 0.75, d = 0.6, h = 64;
-  emit(isoBox(gx, gy, w, d, h, '#334155', '#1e293b', '#0f172a'));
-  // Blade LEDs down the front-left face
-  const faceL = g2s(gx, gy + d);
-  const faceR = g2s(gx + w, gy + d);
+// ─── SERVER RACKS (back wall, tiles 10 and 11) ──────────────────────
+emit(`<!-- Server racks -->`);
+function serverRack(i, j) {
+  const h = 64 * U;
+  emit(isoBox(i + 0.1, j + 0.1, 0.8, 0.8, h, '#334155', '#1e293b', '#0f172a'));
+  const faceL = g2s(i + 0.1, j + 0.9);
+  const faceR = g2s(i + 0.9, j + 0.9);
   for (let row = 0; row < 6; row++) {
-    const y = -h + 8 + row * 9;
-    emit(`<line x1="${Math.round((faceL[0] + 4) * 10) / 10}" y1="${Math.round((faceL[1] + y) * 10) / 10}" x2="${Math.round((faceR[0] - 4) * 10) / 10}" y2="${Math.round((faceR[1] + y) * 10) / 10}" stroke="#0b1220" stroke-width="3"/>`);
+    const y = -h + 8 * U + row * 9 * U;
+    emit(`<line x1="${r1(faceL[0] + 4)}" y1="${r1(faceL[1] + y)}" x2="${r1(faceR[0] - 4)}" y2="${r1(faceR[1] + y)}" stroke="#0b1220" stroke-width="3"/>`);
     const t = 0.24 + (row % 3) * 0.22;
-    const lx = faceL[0] + t * (faceR[0] - faceL[0]);
-    const ly = faceL[1] + t * (faceR[1] - faceL[1]) + y;
-    emit(`<circle cx="${Math.round(lx * 10) / 10}" cy="${Math.round(ly * 10) / 10}" r="1.1" fill="${row % 2 ? '#22c55e' : '#38bdf8'}"/>`);
+    emit(`<circle cx="${r1(faceL[0] + t * (faceR[0] - faceL[0]))}" cy="${r1(faceL[1] + t * (faceR[1] - faceL[1]) + y)}" r="1.1" fill="${row % 2 ? '#22c55e' : '#38bdf8'}"/>`);
   }
 }
-serverRack(10.15, 0.18);
-serverRack(11.05, 0.18);
+[10, 11].forEach((i, n) => {
+  const s = place(`server rack ${n + 1}`, i, 0, 1, 1);
+  serverRack(s.i, s.j);
+});
 
 // ─── WATER COOLER ───────────────────────────────────────────────────
 emit(`<!-- Water cooler -->`);
 {
-  const gx = 7.55, gy = 0.25, w = 0.4, d = 0.4;
-  emit(isoBox(gx, gy, w, d, 26, '#e2e8f0', '#94a3b8', '#cbd5e1'));
-  // Bottle
-  const [bx, by] = g2s(gx + w / 2, gy + d / 2);
-  emit(`<ellipse cx="${Math.round(bx * 10) / 10}" cy="${Math.round((by - 42) * 10) / 10}" rx="9" ry="4.5" fill="#7dd3fc" opacity="0.75"/>`);
-  emit(`<rect x="${Math.round((bx - 9) * 10) / 10}" y="${Math.round((by - 42) * 10) / 10}" width="18" height="16" fill="#7dd3fc" opacity="0.6"/>`);
-  emit(`<ellipse cx="${Math.round(bx * 10) / 10}" cy="${Math.round((by - 26) * 10) / 10}" rx="9" ry="4.5" fill="#38bdf8" opacity="0.7"/>`);
+  const { i, j } = place('water cooler', 7, 0, 1, 1);
+  emit(isoBox(i + 0.3, j + 0.3, 0.4, 0.4, 26 * U, '#e2e8f0', '#94a3b8', '#cbd5e1'));
+  const [bx, by] = g2s(i + 0.5, j + 0.5);
+  emit(`<ellipse cx="${r1(bx)}" cy="${r1(by - 42 * U)}" rx="${r1(9 * U)}" ry="${r1(4.5 * U)}" fill="#7dd3fc" opacity="0.75"/>`);
+  emit(`<rect x="${r1(bx - 9 * U)}" y="${r1(by - 42 * U)}" width="${r1(18 * U)}" height="${r1(16 * U)}" fill="#7dd3fc" opacity="0.6"/>`);
+  emit(`<ellipse cx="${r1(bx)}" cy="${r1(by - 26 * U)}" rx="${r1(9 * U)}" ry="${r1(4.5 * U)}" fill="#38bdf8" opacity="0.7"/>`);
 }
 
-// ─── PRINTER (end of the island) ────────────────────────────────────
+// ─── PRINTER (at the end of the island) ─────────────────────────────
 emit(`<!-- Printer -->`);
 {
-  const gx = 11.0, gy = 4.15, w = 0.8, d = 0.7;
-  emit(isoBox(gx, gy, w, d, 24, '#475569', '#1e293b', '#334155'));
-  // Paper tray sticking out of the top
-  emit(`<polygon points="${pts(
-    [g2s(gx + 0.15, gy + 0.15)[0], g2s(gx + 0.15, gy + 0.15)[1] - 27],
-    [g2s(gx + 0.65, gy + 0.15)[0], g2s(gx + 0.65, gy + 0.15)[1] - 27],
-    [g2s(gx + 0.65, gy + 0.55)[0], g2s(gx + 0.65, gy + 0.55)[1] - 27],
-    [g2s(gx + 0.15, gy + 0.55)[0], g2s(gx + 0.15, gy + 0.55)[1] - 27]
-  )}" fill="#f8fafc" opacity="0.9"/>`);
-  const [px, py] = g2s(gx + 0.2, gy + d);
-  emit(`<circle cx="${Math.round(px * 10) / 10}" cy="${Math.round((py - 12) * 10) / 10}" r="1.4" fill="#22c55e"/>`);
+  const { i, j } = place('printer', 11, 4, 1, 1);
+  emit(isoBox(i + 0.1, j + 0.15, 0.8, 0.7, 24 * U, '#475569', '#1e293b', '#334155'));
+  const tray = [g2s(i + 0.25, j + 0.3), g2s(i + 0.75, j + 0.3), g2s(i + 0.75, j + 0.7), g2s(i + 0.25, j + 0.7)]
+    .map(([x, y]) => [x, y - 27 * U]);
+  emit(`<polygon points="${pts(...tray)}" fill="#f8fafc" opacity="0.9"/>`);
+  const [px, py] = g2s(i + 0.3, j + 0.85);
+  emit(`<circle cx="${r1(px)}" cy="${r1(py - 12 * U)}" r="1.4" fill="#22c55e"/>`);
 }
 
 // ─── PLANTS ─────────────────────────────────────────────────────────
+// Each stands in the middle of its own tile.
 emit(`<!-- Plants -->`);
-function plant(gx, gy, size = 1) {
-  const [px, py] = g2s(gx, gy);
-  // Pot
-  emit(`<polygon points="${pts([px - 6 * size, py], [px + 6 * size, py + 3 * size], [px + 4 * size, py + 10 * size], [px - 4 * size, py + 7 * size])}" fill="#8B4513"/>`);
-  // Plant body - layered circles
-  emit(`<ellipse cx="${px}" cy="${py - 8 * size}" rx="${14 * size}" ry="${8 * size}" fill="#2D5A27"/>`);
-  emit(`<ellipse cx="${px - 6 * size}" cy="${py - 14 * size}" rx="${9 * size}" ry="${6 * size}" fill="#3D7A35"/>`);
-  emit(`<ellipse cx="${px + 5 * size}" cy="${py - 16 * size}" rx="${10 * size}" ry="${7 * size}" fill="#2D5A27"/>`);
-  emit(`<ellipse cx="${px}" cy="${py - 20 * size}" rx="${8 * size}" ry="${5 * size}" fill="#4a8a3d"/>`);
-  // Highlight
-  emit(`<ellipse cx="${px - 3 * size}" cy="${py - 18 * size}" rx="${4 * size}" ry="${3 * size}" fill="#5aaa4d" opacity="0.5"/>`);
-  // Shadow under pot
-  emit(`<ellipse cx="${px}" cy="${py + 4 * size}" rx="${8 * size}" ry="${3 * size}" fill="url(#shadowGrad)"/>`);
+function plant(i, j, size = 1) {
+  place(`plant ${i},${j}`, i, j, 1, 1);
+  const s = size * U;
+  const [px, py] = g2s(i + 0.5, j + 0.5);
+  emit(`<polygon points="${pts([px - 6 * s, py], [px + 6 * s, py + 3 * s], [px + 4 * s, py + 10 * s], [px - 4 * s, py + 7 * s])}" fill="#8B4513"/>`);
+  emit(`<ellipse cx="${r1(px)}" cy="${r1(py - 8 * s)}" rx="${r1(14 * s)}" ry="${r1(8 * s)}" fill="#2D5A27"/>`);
+  emit(`<ellipse cx="${r1(px - 6 * s)}" cy="${r1(py - 14 * s)}" rx="${r1(9 * s)}" ry="${r1(6 * s)}" fill="#3D7A35"/>`);
+  emit(`<ellipse cx="${r1(px + 5 * s)}" cy="${r1(py - 16 * s)}" rx="${r1(10 * s)}" ry="${r1(7 * s)}" fill="#2D5A27"/>`);
+  emit(`<ellipse cx="${r1(px)}" cy="${r1(py - 20 * s)}" rx="${r1(8 * s)}" ry="${r1(5 * s)}" fill="#4a8a3d"/>`);
+  emit(`<ellipse cx="${r1(px - 3 * s)}" cy="${r1(py - 18 * s)}" rx="${r1(4 * s)}" ry="${r1(3 * s)}" fill="#5aaa4d" opacity="0.5"/>`);
+  emit(`<ellipse cx="${r1(px)}" cy="${r1(py + 4 * s)}" rx="${r1(8 * s)}" ry="${r1(3 * s)}" fill="url(#shadowGrad)"/>`);
 }
 
-plant(6.7, 0.45, 1);      // between the desk bank and the shelves
-plant(11.55, 2.4, 0.9);   // right-hand wall
-plant(0.45, 8.45, 0.85);  // front-left corner
-plant(11.4, 7.4, 0.9);    // front-right corner
-plant(7.6, 8.4, 0.85);    // front edge
+plant(6, 0, 1);      // back wall, under the clock
+plant(11, 1, 0.9);   // right of the shelves
+plant(0, 8, 0.85);   // front-left corner
+plant(11, 7, 0.9);   // front-right corner
+plant(2, 8, 0.85);   // lounge end
 
-console.log(lines.join('\n'));
+// ─── VALIDATE ───────────────────────────────────────────────────────
+validateFloorPlan();
+
+// ─── EXPORTS ────────────────────────────────────────────────────────
+// The viewBox is cropped to what the room actually covers — walls at the top,
+// the floor's front corner at the bottom — so the room fills its panel instead
+// of floating in dead space. A little padding keeps plants and shadows inside.
+const PAD = 10;
+const bounds = {
+  minX: g2s(0, GH)[0] - 20,
+  maxX: g2s(GW, 0)[0] + PAD,
+  minY: OY - WALL_H - PAD,
+  maxY: g2s(GW, GH)[1] + PAD,
+};
+const viewBox = {
+  x: Math.round(bounds.minX),
+  y: Math.round(bounds.minY),
+  w: Math.round(bounds.maxX - bounds.minX),
+  h: Math.round(bounds.maxY - bounds.minY),
+};
+
+module.exports = {
+  svg: lines.join('\n'),
+  geometry: { OX, OY, HW, HH, GW, GH, viewBox },
+  // agent id → the tile that agent works from, derived from their desk.
+  stations: STATIONS.map(s => ({ agent: s.agent, ...agentTile(s) })),
+};
+
+if (require.main === module) {
+  console.log(module.exports.svg);
+}
