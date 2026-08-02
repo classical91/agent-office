@@ -327,9 +327,12 @@ const AGENTS = [
 // sim. The block below is generated from the room itself so the two can never
 // disagree about how big the floor is or where the desks are.
 // <<<BEGIN GENERATED ROOM GEOMETRY>>>
-// Written by agent-office-deploy/inject_room.js from gen_room.js.
-// DO NOT EDIT BY HAND — change gen_room.js and re-run:
+// Written by agent-office-deploy/inject_room.js from dist/room-builder.js.
+// DO NOT EDIT BY HAND — change the room builder and re-run:
 //   node agent-office-deploy/inject_room.js
+//
+// These are `let`, not `const`: build mode rebuilds the room in the browser
+// when it is resized, and applyRoomGeometry() reassigns them to match.
 
 // Tile grid the room SVG was drawn with. Tiles are addressed 0..gridW-1 across
 // and 0..gridH-1 deep; anything outside that is off the floor.
@@ -343,19 +346,19 @@ const OFFICE_SCENE = {
 //   tile rhombus is 72 wide x 36 tall; centre = top + (0, 18)
 // Agent <div>s are positioned in CSS px, so viewBox -> CSS px is
 // (clientWidth / SVG_VB_W) after subtracting the viewBox origin.
-const SVG_VB_X = 206;
-const SVG_VB_Y = 186;
-const SVG_VB_W = 786;
-const SVG_VB_H = 497;
-const SVG_OX = 550;   // viewBox x of tile (0,0) top
-const SVG_OY = 295;   // viewBox y of tile (0,0) top
-const SVG_HW = 36;    // half tile width  (viewBox)
-const SVG_HH = 18;    // half tile height (viewBox)
+let SVG_VB_X = 206;
+let SVG_VB_Y = 186;
+let SVG_VB_W = 786;
+let SVG_VB_H = 497;
+let SVG_OX = 550;   // viewBox x of tile (0,0) top
+let SVG_OY = 295;   // viewBox y of tile (0,0) top
+let SVG_HW = 36;    // half tile width  (viewBox)
+let SVG_HH = 18;    // half tile height (viewBox)
 
 // One whole tile per agent: the tile directly in front of that agent's desk.
 // In *front* of the desk, because agents are DOM nodes layered over the room
 // SVG and would otherwise paint straight over the desk they sit at.
-const AGENT_STATIONS = {
+let AGENT_STATIONS = {
   devin:       { gx:  0, gy: 1, facing: 'N' },
   fatherclaw:  { gx:  1, gy: 1, facing: 'N' },
   command:     { gx:  2, gy: 1, facing: 'N' },
@@ -688,6 +691,10 @@ function floorVars(base) {
     '--tile-a': base,
     '--tile-b': shadeHex(base, -0.10),
     '--tile-line': shadeHex(base, -0.28),
+    // The rug is a patch of the floor, so it is derived from the same colour —
+    // a fixed purple clashed with every floor preset that was not violet.
+    '--rug-fill': shadeHex(base, -0.55),
+    '--rug-line': shadeHex(base, 0.22),
   };
 }
 
@@ -701,15 +708,30 @@ function wallVars(base) {
   };
 }
 
+const ROOM_MAX = { gridW: 20, gridH: 16 };
+
+function roomDefaults() {
+  const d = (window.OfficeRoom && window.OfficeRoom.DEFAULTS) || { gridW: 12, gridH: 9 };
+  return {
+    floor: FLOOR_PRESETS[0].base,
+    wall: WALL_PRESETS[0].base,
+    gridW: d.gridW,
+    gridH: d.gridH,
+  };
+}
+
 function loadRoomStyle() {
+  const base = roomDefaults();
   try {
     const saved = JSON.parse(localStorage.getItem(ROOM_STYLE_KEY) || '{}');
     return {
-      floor: saved.floor || FLOOR_PRESETS[0].base,
-      wall: saved.wall || WALL_PRESETS[0].base,
+      floor: saved.floor || base.floor,
+      wall: saved.wall || base.wall,
+      gridW: Number.isFinite(saved.gridW) ? saved.gridW : base.gridW,
+      gridH: Number.isFinite(saved.gridH) ? saved.gridH : base.gridH,
     };
   } catch (e) {
-    return { floor: FLOOR_PRESETS[0].base, wall: WALL_PRESETS[0].base };
+    return base;
   }
 }
 
@@ -725,15 +747,103 @@ function applyRoomStyle(style, persist = true) {
 let roomStyle = loadRoomStyle();
 applyRoomStyle(roomStyle, false);
 
+// ─── ROOM SIZE ────────────────────────────────────────────────────
+// Resizing re-runs the same generator the build step uses, then swaps in the
+// new SVG and re-points the projection at it. The smallest grid the layout
+// still fits on comes back from the generator, so the controls clamp
+// themselves instead of second-guessing where the furniture is.
+let roomMinSize = { gridW: 1, gridH: 1 };
+let roomSizeError = '';
+
+function applyRoomGeometry(geometry, stations) {
+  OFFICE_SCENE.gridW = geometry.GW;
+  OFFICE_SCENE.gridH = geometry.GH;
+  SVG_OX = geometry.OX;
+  SVG_OY = geometry.OY;
+  SVG_HW = geometry.HW;
+  SVG_HH = geometry.HH;
+  SVG_VB_X = geometry.viewBox.x;
+  SVG_VB_Y = geometry.viewBox.y;
+  SVG_VB_W = geometry.viewBox.w;
+  SVG_VB_H = geometry.viewBox.h;
+  roomMinSize = { gridW: geometry.gridW, gridH: geometry.gridH };
+
+  AGENT_STATIONS = stations.reduce((map, s) => {
+    map[s.agent] = { gx: s.gx, gy: s.gy, facing: s.facing };
+    return map;
+  }, {});
+  agentState.forEach((agent, index) => {
+    agent.station = stationFor(agent.id, index);
+    agent.pos = { gx: agent.station.gx, gy: agent.station.gy };
+  });
+}
+
+function rebuildRoom() {
+  if (!officesvg || !window.OfficeRoom) return false;
+  let room;
+  try {
+    room = window.OfficeRoom.buildRoom({ gridW: roomStyle.gridW, gridH: roomStyle.gridH });
+  } catch (err) {
+    // The generator refuses layouts that would put furniture or an agent off
+    // the floor. Surface that instead of leaving a half-drawn room.
+    roomSizeError = (err.problems && err.problems[0]) || err.message;
+    return false;
+  }
+  roomSizeError = '';
+  officesvg.setAttribute('viewBox', `${room.geometry.viewBox.x} ${room.geometry.viewBox.y} ${room.geometry.viewBox.w} ${room.geometry.viewBox.h}`);
+  officesvg.innerHTML = room.svg;
+  applyRoomGeometry(room.geometry, room.stations);
+  renderAgents();
+  // A taller room leaves the old scroll position part-way down it, which cuts
+  // off the back wall, so re-centre on the new size.
+  officeHasAutoCentered = false;
+  centerOfficeView(true);
+  const label = document.getElementById('room-grid-label');
+  if (label) label.textContent = `${room.geometry.GW} × ${room.geometry.GH}`;
+  return true;
+}
+
+// Only pays the cost of a rebuild when the saved size differs from the one the
+// build step baked into the page. Either way the layout's minimum size is
+// recorded, so the size steppers know where to stop.
+function rebuildRoomIfResized() {
+  if (!window.OfficeRoom) return false;
+  if (roomStyle.gridW === OFFICE_SCENE.gridW && roomStyle.gridH === OFFICE_SCENE.gridH) {
+    try {
+      const probe = window.OfficeRoom.buildRoom({ gridW: roomStyle.gridW, gridH: roomStyle.gridH });
+      roomMinSize = { gridW: probe.geometry.gridW, gridH: probe.geometry.gridH };
+    } catch (e) { /* leave the recorded minimum alone */ }
+    return false;
+  }
+  return rebuildRoom();
+}
+
 function setRoomStyle(part, value) {
   roomStyle = { ...roomStyle, [part]: value };
   applyRoomStyle(roomStyle);
   renderBuildPanel();
 }
 
+function setRoomSize(part, value) {
+  const max = ROOM_MAX[part];
+  const min = roomMinSize[part] || 1;
+  const next = Math.max(min, Math.min(max, Math.round(value)));
+  if (next === roomStyle[part]) return;
+  const previous = roomStyle[part];
+  roomStyle = { ...roomStyle, [part]: next };
+  if (rebuildRoom()) {
+    applyRoomStyle(roomStyle);
+  } else {
+    roomStyle = { ...roomStyle, [part]: previous };
+    rebuildRoom();
+  }
+  renderBuildPanel();
+}
+
 function resetRoomStyle() {
-  roomStyle = { floor: FLOOR_PRESETS[0].base, wall: WALL_PRESETS[0].base };
+  roomStyle = roomDefaults();
   applyRoomStyle(roomStyle);
+  rebuildRoom();
   renderBuildPanel();
 }
 
@@ -758,12 +868,40 @@ function buildSwatchRow(label, presets, part, current) {
   </div>`;
 }
 
+function buildStepper(label, part, value) {
+  const min = roomMinSize[part] || 1;
+  const max = ROOM_MAX[part];
+  const btn = (delta, glyph, disabled) => `<button type="button" aria-label="${glyph === '−' ? 'Decrease' : 'Increase'} ${label}"
+    ${disabled ? 'disabled' : ''} onclick="setRoomSize('${part}', ${value + delta})"
+    style="width:24px; height:26px; border-radius:6px; border:1px solid var(--border); background:var(--border);
+           color:color-mix(in srgb, var(--text) 78%, var(--muted)); font-size:13px; line-height:1;
+           cursor:${disabled ? 'default' : 'pointer'}; opacity:${disabled ? 0.4 : 1};">${glyph}</button>`;
+  return `<div style="display:flex; align-items:center; gap:6px;">
+    <span style="font-size:11px; color:var(--muted);">${label}</span>
+    ${btn(-1, '−', value <= min)}
+    <span style="min-width:20px; text-align:center; font-size:12px; font-variant-numeric:tabular-nums; color:#f1f5f9;">${value}</span>
+    ${btn(1, '+', value >= max)}
+  </div>`;
+}
+
 function renderBuildPanel() {
   const panel = document.getElementById('room-build-panel');
   if (!panel || panel.hidden) return;
+  const sizeRow = window.OfficeRoom
+    ? `<div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:10px;">
+        <span style="font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted); width:44px; flex-shrink:0;">Size</span>
+        ${buildStepper('Width', 'gridW', roomStyle.gridW)}
+        ${buildStepper('Depth', 'gridH', roomStyle.gridH)}
+        <span style="font-size:11px; color:var(--muted);">min ${roomMinSize.gridW} × ${roomMinSize.gridH}, max ${ROOM_MAX.gridW} × ${ROOM_MAX.gridH}</span>
+      </div>`
+    : '';
+  const error = roomSizeError
+    ? `<div style="font-size:11px; color:#fca5a5; margin-bottom:8px;">${escHTML(roomSizeError)}</div>`
+    : '';
   panel.innerHTML =
     buildSwatchRow('Floor', FLOOR_PRESETS, 'floor', roomStyle.floor) +
     buildSwatchRow('Walls', WALL_PRESETS, 'wall', roomStyle.wall) +
+    sizeRow + error +
     `<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:2px;">
       <span style="font-size:11px; color:var(--muted);">Saved to this browser.</span>
       <button type="button" onclick="resetRoomStyle()"
@@ -1097,7 +1235,10 @@ if (document.getElementById('officesvg')) {
     centerOfficeView(true);
   });
   resizeCanvas();
-  renderAgents();
+  // Rebuilds the room only when a saved size differs from the one the build
+  // step baked in; otherwise it just records the layout's minimum size so the
+  // build panel's steppers know where to stop.
+  if (!rebuildRoomIfResized()) renderAgents();
 }
 centerOfficeView(true);
 renderStatusBar();
