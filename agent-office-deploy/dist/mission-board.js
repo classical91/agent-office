@@ -51,12 +51,14 @@
       }
     }
 
-    const filters = document.querySelector('.dropbox-filters');
+    // Project and Agent belong with the rest of the secondary filters, which
+    // are the ones a phone keeps behind the More filters button.
+    const filters = document.getElementById('dropbox-filters-more') || document.querySelector('.dropbox-filters');
     if (filters && !document.getElementById('drop-filter-project')) {
       const projectFilter = document.createElement('select');
       projectFilter.id = 'drop-filter-project';
       projectFilter.innerHTML = '<option value="">All Projects</option>';
-      filters.insertBefore(projectFilter, document.getElementById('drop-filter-priority'));
+      filters.insertBefore(projectFilter, document.getElementById('drop-filter-reminder'));
       projectFilter.addEventListener('change', e => {
         dropboxState.filters.project = e.target.value;
         renderDropbox();
@@ -107,17 +109,12 @@
     }
     if (filters.subject) items = items.filter(drop => (drop.subject || '') === filters.subject);
     if (filters.status) items = items.filter(drop => (drop.status || '') === filters.status);
-    if (filters.priority) items = items.filter(drop => (drop.priority || '') === filters.priority);
     if (filters.project) items = items.filter(drop => (drop.project || '') === filters.project);
     if (filters.agent) items = items.filter(drop => (drop.agent || '') === filters.agent);
     items = applyReminderFilter(items, filters.reminder);
     items.sort((a, b) => {
       if (filters.sort === 'remind_asc') return compareReminders(a, b);
       if (filters.sort === 'updated_asc') return new Date(a.updated_at) - new Date(b.updated_at);
-      if (filters.sort === 'priority_desc') {
-        const rank = { urgent: 3, high: 2, normal: 1 };
-        return (rank[b.priority] || 0) - (rank[a.priority] || 0);
-      }
       if (filters.sort === 'title_asc') return (a.title || '').localeCompare(b.title || '');
       return new Date(b.updated_at) - new Date(a.updated_at);
     });
@@ -146,7 +143,6 @@
         ${columnItems.length ? columnItems.map(drop => `<article class="mission-ticket" data-drop-id="${escAttr(drop.id)}">
           <strong>${escHTML(drop.title || 'Untitled task')}</strong>
           <span>${escHTML(drop.project || 'No project')} / ${escHTML(agentLabel(drop.agent))}</span>
-          <span>${escHTML(drop.priority || 'normal')}</span>
         </article>`).join('') : '<div class="ops-meta">No tasks</div>'}
       </section>`;
     }).join('');
@@ -183,7 +179,6 @@
         <div class="detail-badges">
           ${dropReminderBadge(drop)}
           ${dropBadge(statusLabel(drop.status), 'status')}
-          ${dropBadge(drop.priority, 'priority')}
           ${dropBadge(drop.subject, 'subject')}
         </div>
         <h4>Remind Me</h4>

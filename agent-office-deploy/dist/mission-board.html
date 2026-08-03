@@ -96,38 +96,37 @@
         </div>
       </div>
 
+      <!-- Search and subject are the two you reach for; on a phone the rest sit
+           behind the More filters button rather than filling the screen. -->
       <div class="dropbox-filters">
         <input id="drop-search" type="search" placeholder="Search drops..." />
         <select id="drop-filter-subject">
           <option value="">All Subjects</option>
         </select>
-        <select id="drop-filter-status">
-          <option value="">All Statuses</option>
-          <option value="inbox">Inbox</option>
-          <option value="idea">Idea</option>
-          <option value="researching">Researching</option>
-          <option value="ready">Ready</option>
-          <option value="building">Building</option>
-          <option value="archived">Archived</option>
-        </select>
-        <select id="drop-filter-priority">
-          <option value="">All Priorities</option>
-          <option value="normal">Normal</option>
-          <option value="high">High</option>
-          <option value="urgent">Urgent</option>
-        </select>
-        <select id="drop-filter-reminder">
-          <option value="">All Reminders</option>
-          <option value="due">Due Now</option>
-          <option value="has">Has Reminder</option>
-        </select>
-        <select id="drop-sort">
-          <option value="updated_desc">Newest</option>
-          <option value="updated_asc">Oldest</option>
-          <option value="priority_desc">Priority</option>
-          <option value="remind_asc">Reminder Time</option>
-          <option value="title_asc">Title</option>
-        </select>
+        <button id="drop-filters-toggle" type="button" class="dropbox-filters-toggle" aria-expanded="false">More filters</button>
+
+        <div id="dropbox-filters-more" class="dropbox-filters-more is-collapsed-mobile">
+          <select id="drop-filter-status">
+            <option value="">All Statuses</option>
+            <option value="inbox">Inbox</option>
+            <option value="idea">Idea</option>
+            <option value="researching">Researching</option>
+            <option value="ready">Ready</option>
+            <option value="building">Building</option>
+            <option value="archived">Archived</option>
+          </select>
+          <select id="drop-filter-reminder">
+            <option value="">All Reminders</option>
+            <option value="due">Due Now</option>
+            <option value="has">Has Reminder</option>
+          </select>
+          <select id="drop-sort">
+            <option value="updated_desc">Newest</option>
+            <option value="updated_asc">Oldest</option>
+            <option value="remind_asc">Reminder Time</option>
+            <option value="title_asc">Title</option>
+          </select>
+        </div>
       </div>
 
       <div class="dropbox-layout">
@@ -151,11 +150,6 @@
             <input id="drop-tags" type="text" placeholder="Tags (comma separated)" />
 
             <div class="dropbox-row">
-              <select id="drop-priority">
-                <option value="normal">Normal</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
               <select id="drop-status">
                 <option value="inbox">Inbox</option>
                 <option value="idea" selected>Idea</option>
