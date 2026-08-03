@@ -1538,6 +1538,19 @@
      hidden on mobile, where it otherwise fills the screen before you have
      asked for it; the reminder panel starts closed everywhere. */
   .dropbox-reminder-capture.is-collapsed { display: none; }
+  .reminder-saved-note { font-size: 12px; color: var(--green); }
+  .reminder-saved-note.is-collapsed { display: none; }
+  /* Dropbox iOS is the capture panel and nothing else — no notes, no filters,
+     no list. It is the phone's end of the Dropbox, not a view of it. */
+  .dropbox-view.ios-mode .dropbox-filters,
+  .dropbox-view.ios-mode .dropbox-actions,
+  .dropbox-view.ios-mode .dropbox-quick-capture,
+  .dropbox-view.ios-mode .mission-pipeline,
+  .dropbox-view.ios-mode .dropbox-table-wrap,
+  .dropbox-view.ios-mode .dropbox-cards-wrap,
+  .dropbox-view.ios-mode .drop-detail-panel { display: none !important; }
+  .dropbox-view.ios-mode .dropbox-layout { grid-template-columns: minmax(0, 1fr); }
+  .dropbox-view.ios-mode .dropbox-reminder-capture { max-width: 560px; }
   .dropbox-quick-capture input,
   .dropbox-quick-capture select,
   .dropbox-quick-capture textarea,
@@ -1627,6 +1640,8 @@
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
+  .mission-edit-toggle { align-self: flex-start; margin: 4px 0 2px; }
+  .mission-edit-fields.is-collapsed { display: none; }
   /* Only shown once the list is out of the way, which is the one place you
      need a way back to it. */
   .mission-detail-back {

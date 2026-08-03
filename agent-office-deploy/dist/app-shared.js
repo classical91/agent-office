@@ -2337,10 +2337,11 @@ function dropReminderInfo(drop, now = Date.now()) {
 
   const delta = at.getTime() - now;
   const abs = Math.abs(delta);
+  // Rounded, not floored: something 2h59m away is "in 3h", not "in 2h".
   let span;
   if (abs < 60000) span = 'now';
   else if (abs < 3600000) span = `${Math.round(abs / 60000)}m`;
-  else if (abs < 86400000) span = `${Math.floor(abs / 3600000)}h`;
+  else if (abs < 86400000) span = `${Math.round(abs / 3600000)}h`;
   else span = `${Math.round(abs / 86400000)}d`;
 
   return {
@@ -2373,9 +2374,11 @@ async function enterDropboxView() {
       const select = document.getElementById('drop-filter-reminder');
       if (select) select.value = reminder;
     }
-    // What the "Dropbox iOS" side-menu item links to: the page opens with the
-    // capture panel already waiting for a reminder.
-    if (params.get('capture') === 'reminder') {
+    // Dropbox iOS is not the Dropbox with a panel open — it is its own screen,
+    // for the phone: the two capture fields and nothing else. The notes stay
+    // on the Dropbox where they belong.
+    if (params.get('view') === 'ios' || params.get('capture') === 'reminder') {
+      document.getElementById('dropbox-view')?.classList.add('ios-mode');
       document.getElementById('dropbox-reminder-capture')?.classList.remove('is-collapsed');
       document.getElementById('reminder-content')?.focus();
     }
@@ -2727,7 +2730,7 @@ async function saveReminder() {
   }
 
   try {
-    await requestJson(DROPS_API, {
+    const saved = await requestJson(DROPS_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2744,13 +2747,36 @@ async function saveReminder() {
     });
     contentEl.value = '';
     whenEl.value = '';
-    collapseCapture('dropbox-reminder-capture', 'is-collapsed');
+
+    // On the Dropbox iOS screen there is no list to watch it land in, so the
+    // panel says so itself and stays open for the next one.
+    if (isIosCaptureView()) {
+      const info = dropReminderInfo(saved);
+      showReminderSaved(info ? `Saved — reminding you ${info.relative}.` : 'Saved.');
+      contentEl.focus();
+    } else {
+      collapseCapture('dropbox-reminder-capture', 'is-collapsed');
+    }
+
     const drops = await loadDrops();
     if (drops !== null) { dropboxState.drops = drops; }
     renderDropbox();
   } catch (error) {
     handleDropboxRequestError(error, 'Failed to save the reminder.');
   }
+}
+
+function isIosCaptureView() {
+  return Boolean(document.getElementById('dropbox-view')?.classList.contains('ios-mode'));
+}
+
+function showReminderSaved(message) {
+  const note = document.getElementById('reminder-saved-note');
+  if (!note) return;
+  note.textContent = message;
+  note.classList.remove('is-collapsed');
+  clearTimeout(showReminderSaved._timer);
+  showReminderSaved._timer = setTimeout(() => note.classList.add('is-collapsed'), 6000);
 }
 
 function clearDropForm() {
@@ -2797,7 +2823,8 @@ if (document.getElementById('save-drop-btn')) {
   document.getElementById('cancel-reminder-btn')?.addEventListener('click', () => {
     document.getElementById('reminder-content').value = '';
     document.getElementById('reminder-when').value = '';
-    collapseCapture('dropbox-reminder-capture', 'is-collapsed');
+    // On the Dropbox iOS screen the panel is the page, so Cancel only clears.
+    if (!isIosCaptureView()) collapseCapture('dropbox-reminder-capture', 'is-collapsed');
   });
 
   document.getElementById('reminder-when')?.addEventListener('keydown', e => {

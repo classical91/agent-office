@@ -29,8 +29,9 @@
   }
 
   function ensureMissionControls() {
+    const view = document.getElementById('dropbox-view');
     const title = document.querySelector('#dropbox-view .dropbox-toolbar h2');
-    if (title) title.textContent = 'Dropbox';
+    if (title) title.textContent = view && view.classList.contains('ios-mode') ? 'Dropbox iOS' : 'Dropbox';
     const save = document.getElementById('save-drop-btn');
     if (save) save.textContent = 'Save Task';
     const newBtn = document.getElementById('new-drop-btn');
@@ -170,30 +171,22 @@
       panel.innerHTML = '<div class="drop-detail-empty">Select a task to view details.</div>';
       return;
     }
-    const projects = [...new Set(dropboxState.drops.map(d => d.project).filter(Boolean))].sort();
-    const reminder = dropReminderInfo(drop);
+    // Reading a note is the common case, so the note reads as a note: title,
+    // when it was written, and the text. Moving it between statuses is a rarer,
+    // deliberate act and waits behind Edit.
     panel.innerHTML = `
       <div class="drop-detail">
         <button type="button" id="mission-detail-back" class="mission-detail-back">← All tasks</button>
         <h3>${escHTML(drop.title || 'Untitled task')}</h3>
         <div class="detail-badges">
-          ${dropReminderBadge(drop)}
           ${dropBadge(statusLabel(drop.status), 'status')}
           ${dropBadge(drop.subject, 'subject')}
         </div>
-        <h4>Remind Me</h4>
-        <div class="mission-remind-row">
-          <input id="mission-detail-remind" class="mission-inline-input" type="text"
-                 placeholder="tomorrow 9am, in 2h, friday" value="" />
-          <button id="mission-remind-set" class="btn btn-secondary">Set</button>
-          ${drop.remind_at ? '<button id="mission-remind-clear" class="btn btn-secondary">Clear</button>' : ''}
+        <button type="button" id="mission-detail-edit" class="btn btn-secondary mission-edit-toggle">Edit</button>
+        <div id="mission-detail-edit-fields" class="mission-edit-fields is-collapsed">
+          <h4>Move Task</h4>
+          ${selectHtml('mission-detail-status', drop.status || 'idea', STATUSES)}
         </div>
-        ${reminder ? `<p class="mission-remind-note">Reminder ${escHTML(reminder.relative)} — ${escHTML(reminder.at.toLocaleString())}</p>` : ''}
-        <h4>Move Task</h4>
-        ${selectHtml('mission-detail-status', drop.status || 'idea', STATUSES)}
-        <h4>Assignment</h4>
-        ${selectHtml('mission-detail-agent', drop.agent || '', [['', 'Unassigned Agent']].concat(AGENT_OPTIONS))}
-        ${selectHtml('mission-detail-project', drop.project || '', [['', 'No Project']].concat(projects.map(p => [p, p])))}
         <p><strong>Created:</strong> ${dropFormatDate(drop.date)}</p>
         <p><strong>Updated:</strong> ${dropFormatDate(drop.updated_at || drop.date)}</p>
         <div class="detail-tags">${(drop.tags || []).map(t => dropBadge(t, 'tag')).join(' ')}</div>
@@ -211,24 +204,13 @@
       document.getElementById('dropbox-view')?.scrollIntoView({ block: 'start' });
     });
 
-    const remindInput = document.getElementById('mission-detail-remind');
-    const setReminder = async () => {
-      const value = remindInput.value.trim();
-      if (!value) return;
-      try {
-        await patchDrop(drop.id, { remind_at: value });
-      } catch (error) {
-        // The server is the one that understands "friday 6pm", so its
-        // complaint is the only useful thing to show here.
-        handleDropboxRequestError(error, 'Could not set that reminder.');
-      }
-    };
-    document.getElementById('mission-remind-set').addEventListener('click', setReminder);
-    remindInput.addEventListener('keydown', e => { if (e.key === 'Enter') setReminder(); });
-    document.getElementById('mission-remind-clear')?.addEventListener('click', () => patchDrop(drop.id, { remind_at: '' }));
+    const editToggle = document.getElementById('mission-detail-edit');
+    editToggle.addEventListener('click', () => {
+      const fields = document.getElementById('mission-detail-edit-fields');
+      const open = fields.classList.toggle('is-collapsed') === false;
+      editToggle.textContent = open ? 'Done editing' : 'Edit';
+    });
     document.getElementById('mission-detail-status').addEventListener('change', e => patchDrop(drop.id, { status: e.target.value }));
-    document.getElementById('mission-detail-agent').addEventListener('change', e => patchDrop(drop.id, { agent: e.target.value }));
-    document.getElementById('mission-detail-project').addEventListener('change', e => patchDrop(drop.id, { project: e.target.value }));
     document.getElementById('mission-done-btn').addEventListener('click', () => patchDrop(drop.id, { status: 'done' }));
     document.getElementById('mission-archive-btn').addEventListener('click', () => patchDrop(drop.id, { status: 'archived' }));
     document.getElementById('delete-drop-btn').addEventListener('click', async () => {

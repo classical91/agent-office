@@ -60,7 +60,7 @@
         <div class="nav-group">
           <a class="nav-item nav-item-parent active" href="/mission-board.html" data-nav-sub="dropbox"><span class="icon">📥</span> Dropbox<span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Dropbox pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">▾</span></a>
           <div class="nav-sub">
-            <a class="nav-item" href="/mission-board.html?capture=reminder"><span class="icon">⏰</span> Dropbox iOS</a>
+            <a class="nav-item" href="/mission-board.html?view=ios"><span class="icon">⏰</span> Dropbox iOS</a>
           </div>
         </div>
         <a class="nav-item" href="https://main-page-production-9927.up.railway.app/ai.html" target="_blank" rel="noopener noreferrer"><span class="icon">🧭</span> AI Portal <span class="link-ext">↗</span></a>
@@ -147,6 +147,7 @@
               <button id="save-reminder-btn" class="btn btn-primary">Save Reminder</button>
               <button id="cancel-reminder-btn" class="btn btn-secondary">Cancel</button>
             </div>
+            <div id="reminder-saved-note" class="reminder-saved-note is-collapsed"></div>
           </div>
 
           <div id="dropbox-quick-capture" class="dropbox-quick-capture is-collapsed-mobile">
