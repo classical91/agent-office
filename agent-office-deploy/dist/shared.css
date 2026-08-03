@@ -1545,17 +1545,16 @@
   .dropbox-reminder-capture.is-collapsed { display: none; }
   .reminder-saved-note { font-size: 12px; color: var(--green); }
   .reminder-saved-note.is-collapsed { display: none; }
-  /* Dropbox iOS is the capture panel and nothing else — no notes, no filters,
-     no list. It is the phone's end of the Dropbox, not a view of it. */
-  .dropbox-view.ios-mode .dropbox-filters,
-  .dropbox-view.ios-mode .dropbox-actions,
-  .dropbox-view.ios-mode .dropbox-quick-capture,
-  .dropbox-view.ios-mode .mission-pipeline,
-  .dropbox-view.ios-mode .dropbox-table-wrap,
-  .dropbox-view.ios-mode .dropbox-cards-wrap,
-  .dropbox-view.ios-mode .drop-detail-panel { display: none !important; }
+  /* Capture mode is just the phone form; regular Dropbox iOS is a filtered list. */
+  .dropbox-view.ios-capture-mode .dropbox-filters,
+  .dropbox-view.ios-capture-mode .dropbox-actions,
+  .dropbox-view.ios-capture-mode .dropbox-quick-capture,
+  .dropbox-view.ios-capture-mode .mission-pipeline,
+  .dropbox-view.ios-capture-mode .dropbox-table-wrap,
+  .dropbox-view.ios-capture-mode .dropbox-cards-wrap,
+  .dropbox-view.ios-capture-mode .drop-detail-panel { display: none !important; }
   .dropbox-view.ios-mode .dropbox-layout { grid-template-columns: minmax(0, 1fr); }
-  .dropbox-view.ios-mode .dropbox-reminder-capture { max-width: 560px; }
+  .dropbox-view.ios-capture-mode .dropbox-reminder-capture { max-width: 560px; }
   .dropbox-quick-capture input,
   .dropbox-quick-capture select,
   .dropbox-quick-capture textarea,

@@ -95,7 +95,7 @@
   function populateProjectFilter() {
     const select = document.getElementById('drop-filter-project');
     if (!select) return;
-    const current = select.value;
+    const current = dropboxState.filters.project || select.value;
     const projects = [...new Set(dropboxState.drops.map(d => d.project).filter(Boolean))].sort();
     select.innerHTML = '<option value="">All Projects</option>' + projects.map(project => `<option value="${escAttr(project)}">${escHTML(project)}</option>`).join('');
     select.value = projects.includes(current) ? current : '';

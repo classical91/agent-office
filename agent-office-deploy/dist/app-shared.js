@@ -2386,11 +2386,14 @@ async function enterDropboxView() {
       const select = document.getElementById('drop-filter-reminder');
       if (select) select.value = reminder;
     }
-    // Dropbox iOS is not the Dropbox with a panel open — it is its own screen,
-    // for the phone: the two capture fields and nothing else. The notes stay
-    // on the Dropbox where they belong.
-    if (params.get('view') === 'ios' || params.get('capture') === 'reminder') {
+    // Dropbox iOS is the iOS project lane. A capture URL can still open the
+    // phone-friendly reminder form, but the normal view shows the iOS list.
+    if (params.get('view') === 'ios') {
+      dropboxState.filters.project = 'iOS';
       document.getElementById('dropbox-view')?.classList.add('ios-mode');
+    }
+    if (params.get('capture') === 'reminder') {
+      document.getElementById('dropbox-view')?.classList.add('ios-capture-mode');
       document.getElementById('dropbox-reminder-capture')?.classList.remove('is-collapsed');
       document.getElementById('reminder-content')?.focus();
     }
