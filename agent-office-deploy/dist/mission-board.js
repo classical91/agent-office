@@ -33,11 +33,11 @@
     const title = document.querySelector('#dropbox-view .dropbox-toolbar h2');
     if (title) title.textContent = view && view.classList.contains('ios-mode') ? 'Dropbox iOS' : 'Dropbox';
     const save = document.getElementById('save-drop-btn');
-    if (save) save.textContent = 'Save Task';
+    if (save) save.textContent = 'Save Note';
     const newBtn = document.getElementById('new-drop-btn');
-    if (newBtn) newBtn.textContent = 'New Task';
+    if (newBtn) newBtn.textContent = 'New Note';
     const content = document.getElementById('drop-content');
-    if (content) content.placeholder = 'Capture the task, notes, links, acceptance details, or next action.';
+    if (content) content.placeholder = 'Capture the note, links, details, or next action.';
 
     replaceOptions(document.getElementById('drop-status'), STATUSES, 'idea');
     replaceOptions(document.getElementById('drop-filter-status'), [['', 'All Statuses']].concat(STATUSES), '');
