@@ -66,7 +66,8 @@
 .ops-form input,
 .ops-form select,
 .ops-form textarea,
-.mission-inline-select {
+.mission-inline-select,
+.mission-inline-input {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -75,6 +76,24 @@
   font: inherit;
   font-size: 13px;
   outline: none;
+}
+
+.mission-remind-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.mission-remind-row .mission-inline-input {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.mission-remind-note {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 8px 0 0;
 }
 
 .ops-form textarea {

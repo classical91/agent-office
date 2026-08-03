@@ -110,7 +110,9 @@
     if (filters.priority) items = items.filter(drop => (drop.priority || '') === filters.priority);
     if (filters.project) items = items.filter(drop => (drop.project || '') === filters.project);
     if (filters.agent) items = items.filter(drop => (drop.agent || '') === filters.agent);
+    items = applyReminderFilter(items, filters.reminder);
     items.sort((a, b) => {
+      if (filters.sort === 'remind_asc') return compareReminders(a, b);
       if (filters.sort === 'updated_asc') return new Date(a.updated_at) - new Date(b.updated_at);
       if (filters.sort === 'priority_desc') {
         const rank = { urgent: 3, high: 2, normal: 1 };
@@ -173,14 +175,24 @@
       return;
     }
     const projects = [...new Set(dropboxState.drops.map(d => d.project).filter(Boolean))].sort();
+    const reminder = dropReminderInfo(drop);
     panel.innerHTML = `
       <div class="drop-detail">
         <h3>${escHTML(drop.title || 'Untitled task')}</h3>
         <div class="detail-badges">
+          ${dropReminderBadge(drop)}
           ${dropBadge(statusLabel(drop.status), 'status')}
           ${dropBadge(drop.priority, 'priority')}
           ${dropBadge(drop.subject, 'subject')}
         </div>
+        <h4>Remind Me</h4>
+        <div class="mission-remind-row">
+          <input id="mission-detail-remind" class="mission-inline-input" type="text"
+                 placeholder="tomorrow 9am, in 2h, friday" value="" />
+          <button id="mission-remind-set" class="btn btn-secondary">Set</button>
+          ${drop.remind_at ? '<button id="mission-remind-clear" class="btn btn-secondary">Clear</button>' : ''}
+        </div>
+        ${reminder ? `<p class="mission-remind-note">Reminder ${escHTML(reminder.relative)} — ${escHTML(reminder.at.toLocaleString())}</p>` : ''}
         <h4>Move Task</h4>
         ${selectHtml('mission-detail-status', drop.status || 'idea', STATUSES)}
         <h4>Assignment</h4>
@@ -197,6 +209,21 @@
           <button id="delete-drop-btn" class="btn btn-danger">Delete</button>
         </div>
       </div>`;
+    const remindInput = document.getElementById('mission-detail-remind');
+    const setReminder = async () => {
+      const value = remindInput.value.trim();
+      if (!value) return;
+      try {
+        await patchDrop(drop.id, { remind_at: value });
+      } catch (error) {
+        // The server is the one that understands "friday 6pm", so its
+        // complaint is the only useful thing to show here.
+        handleDropboxRequestError(error, 'Could not set that reminder.');
+      }
+    };
+    document.getElementById('mission-remind-set').addEventListener('click', setReminder);
+    remindInput.addEventListener('keydown', e => { if (e.key === 'Enter') setReminder(); });
+    document.getElementById('mission-remind-clear')?.addEventListener('click', () => patchDrop(drop.id, { remind_at: '' }));
     document.getElementById('mission-detail-status').addEventListener('change', e => patchDrop(drop.id, { status: e.target.value }));
     document.getElementById('mission-detail-agent').addEventListener('change', e => patchDrop(drop.id, { agent: e.target.value }));
     document.getElementById('mission-detail-project').addEventListener('change', e => patchDrop(drop.id, { project: e.target.value }));
@@ -221,6 +248,7 @@
     if (dropboxState && dropboxState.filters) {
       dropboxState.filters.project = dropboxState.filters.project || '';
       dropboxState.filters.agent = dropboxState.filters.agent || '';
+      dropboxState.filters.reminder = dropboxState.filters.reminder || '';
     }
     window.getFilteredDrops = getFilteredDrops = filteredDrops;
     const baseRender = renderDropbox;

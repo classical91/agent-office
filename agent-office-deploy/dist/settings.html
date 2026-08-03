@@ -114,6 +114,32 @@
       <span id="settings-gateway-msg" style="font-size:12px; color:#22c55e; margin-left:14px; display:none;">Saved.</span>
     </div>
 
+    <!-- Phone inbox / Shortcuts -->
+    <div id="settings-shortcuts" style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:20px;">
+      <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px;">Phone Inbox (iOS Shortcuts)</div>
+      <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">Send a note or reminder to the Dropbox from your phone, and pull back whatever has come due. Authenticated with <code>SHORTCUTS_TOKEN</code>, not the Dropbox passphrase.</div>
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+          <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;">Status</div>
+          <div id="settings-shortcuts-state" style="font-size:13px; color:var(--text);">Checking…</div>
+        </div>
+        <div style="padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+          <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;">Send (POST)</div>
+          <div id="settings-shortcuts-send" style="font-size:12px; color:var(--text); word-break:break-all; font-family:ui-monospace,monospace;">—</div>
+        </div>
+        <div style="padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+          <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;">Pull (GET)</div>
+          <div id="settings-shortcuts-pull" style="font-size:12px; color:var(--text); word-break:break-all; font-family:ui-monospace,monospace;">—</div>
+        </div>
+        <div style="padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+          <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;">Auth Header</div>
+          <div id="settings-shortcuts-header" style="font-size:12px; color:var(--text); font-family:ui-monospace,monospace;">—</div>
+          <div style="font-size:11px; color:var(--muted); margin-top:6px;">Value is your <code>SHORTCUTS_TOKEN</code>. Step-by-step Shortcut recipes are in the README.</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Data Management -->
     <div style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:20px;">
       <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px;">Local Data</div>

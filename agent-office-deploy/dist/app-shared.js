@@ -994,6 +994,44 @@ window.SETTINGS = (() => {
     if (inpLan)   inpLan.value   = lan   || '';
     const grid = document.getElementById('settings-theme-grid');
     if (grid) renderThemePicker(grid);
+    loadShortcuts();
+  }
+
+  // The phone inbox is configured on the server (SHORTCUTS_TOKEN), so all the
+  // Settings page can do is report whether it is on and hand over the URLs to
+  // paste into Shortcuts. The token itself is never sent back here.
+  async function loadShortcuts() {
+    const wrap = document.getElementById('settings-shortcuts');
+    if (!wrap) return;
+
+    const set = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    };
+
+    try {
+      const response = await fetch('/api/shortcuts/setup', { headers: { Accept: 'application/json' } });
+      if (response.status === 401) {
+        set('settings-shortcuts-state', 'Unlock the Dropbox first, then reload this page.');
+        return;
+      }
+      const setup = await response.json();
+      if (!response.ok) {
+        set('settings-shortcuts-state', setup.error || 'Could not read the phone inbox settings.');
+        return;
+      }
+
+      set('settings-shortcuts-state', setup.configured
+        ? 'On. Use the header below as the token on your phone.'
+        : setup.token_present
+          ? `Off — SHORTCUTS_TOKEN is shorter than ${setup.min_token_length} characters.`
+          : 'Off — set SHORTCUTS_TOKEN on the server to a long random string.');
+      set('settings-shortcuts-send', setup.send_url);
+      set('settings-shortcuts-pull', setup.pull_text_url);
+      set('settings-shortcuts-header', setup.header);
+    } catch {
+      set('settings-shortcuts-state', 'Could not reach the server.');
+    }
   }
 
   function saveGateway() {
@@ -1017,7 +1055,7 @@ window.SETTINGS = (() => {
     location.reload();
   }
 
-  return { load, saveGateway, clearKey, clearAll, applyTheme };
+  return { load, saveGateway, clearKey, clearAll, applyTheme, loadShortcuts };
 })();
 
 // Apply saved theme immediately so there's no flash on load
@@ -2283,24 +2321,80 @@ const dropboxState = {
     subject: '',
     status: '',
     priority: '',
+    reminder: '',
     sort: 'updated_desc',
   },
 };
+
+// ─── Reminders ───────────────────────────────────────────────────────────────
+// A drop with a remind_at is something the user put down for later. The server
+// parses "tomorrow 9am" into a timestamp (dist/reminder-time.js); the client
+// only has to say how far away it is.
+
+function dropReminderInfo(drop, now = Date.now()) {
+  if (!drop || !drop.remind_at) return null;
+  const at = new Date(drop.remind_at);
+  if (Number.isNaN(at.getTime())) return null;
+
+  const delta = at.getTime() - now;
+  const abs = Math.abs(delta);
+  let span;
+  if (abs < 60000) span = 'now';
+  else if (abs < 3600000) span = `${Math.round(abs / 60000)}m`;
+  else if (abs < 86400000) span = `${Math.floor(abs / 3600000)}h`;
+  else span = `${Math.round(abs / 86400000)}d`;
+
+  return {
+    at,
+    due: delta <= 0,
+    label: dropFormatShortDate(drop.remind_at),
+    relative: span === 'now' ? 'due now' : delta >= 0 ? `in ${span}` : `${span} overdue`,
+  };
+}
+
+function dropReminderBadge(drop) {
+  const reminder = dropReminderInfo(drop);
+  if (!reminder) return '';
+  return `<span class="dbadge dbadge-remind${reminder.due ? ' dbadge-remind-due' : ''}" title="${escAttr(reminder.at.toLocaleString())}">⏰ ${escHTML(reminder.relative)}</span>`;
+}
 
 async function enterDropboxView() {
   if (!await ensureDropsSession(true)) return;
   const drops = await loadDrops();
   if (drops !== null) {
     dropboxState.drops = drops;
-    const taskId = new URLSearchParams(location.search).get('task');
+    const params = new URLSearchParams(location.search);
+    const taskId = params.get('task');
     if (taskId) dropboxState.selectedId = taskId;
+    // /mission-board.html?reminder=due is the no-Shortcut way to pull the
+    // Dropbox from a phone: bookmark it and it opens on what has come due.
+    const reminder = params.get('reminder');
+    if (reminder === 'due' || reminder === 'has') {
+      dropboxState.filters.reminder = reminder;
+      const select = document.getElementById('drop-filter-reminder');
+      if (select) select.value = reminder;
+    }
     renderDropbox();
   }
 }
 
+// Shared by both filter implementations (this one and the Mission Board's) so
+// "Due now" means the same thing on either view.
+function applyReminderFilter(items, reminder) {
+  if (reminder === 'due') return items.filter(drop => (dropReminderInfo(drop) || {}).due);
+  if (reminder === 'has') return items.filter(drop => Boolean(drop.remind_at));
+  return items;
+}
+
+function compareReminders(a, b) {
+  const left = a.remind_at ? new Date(a.remind_at).getTime() : Infinity;
+  const right = b.remind_at ? new Date(b.remind_at).getTime() : Infinity;
+  return left - right;
+}
+
 function getFilteredDrops() {
   let items = [...dropboxState.drops];
-  const { search, subject, status, priority, sort } = dropboxState.filters;
+  const { search, subject, status, priority, reminder, sort } = dropboxState.filters;
 
   if (search) {
     const q = search.toLowerCase();
@@ -2313,8 +2407,10 @@ function getFilteredDrops() {
   if (subject) items = items.filter(drop => (drop.subject || '') === subject);
   if (status)  items = items.filter(drop => (drop.status  || '') === status);
   if (priority) items = items.filter(drop => (drop.priority || '') === priority);
+  items = applyReminderFilter(items, reminder);
 
   items.sort((a, b) => {
+    if (sort === 'remind_asc') return compareReminders(a, b);
     if (sort === 'updated_asc') return new Date(a.updated_at) - new Date(b.updated_at);
     if (sort === 'priority_desc') {
       const rank = { urgent: 3, high: 2, normal: 1 };
@@ -2392,7 +2488,7 @@ function renderDropTable() {
     <table class="dropbox-table">
       <thead><tr>
         <th>Title</th><th>Subject</th><th>Status</th><th>Priority</th>
-        <th>Project</th><th>Tags</th><th>Updated</th>
+        <th>Remind</th><th>Project</th><th>Tags</th><th>Updated</th>
       </tr></thead>
       <tbody>
         ${items.map(drop => `
@@ -2401,6 +2497,7 @@ function renderDropTable() {
             <td>${dropBadge(drop.subject, 'subject')}</td>
             <td>${dropBadge(drop.status, 'status')}</td>
             <td>${dropBadge(drop.priority, 'priority')}</td>
+            <td>${dropReminderBadge(drop) || '—'}</td>
             <td>${escHTML(drop.project || '—')}</td>
             <td>${(drop.tags || []).slice(0, 3).map(t => dropBadge(t, 'tag')).join(' ')}</td>
             <td>${dropFormatDate(drop.updated_at || drop.date)}</td>
@@ -2428,7 +2525,7 @@ function renderDropCards() {
 
   wrap.innerHTML = items.map(drop => {
     const preview = (drop.content || '').replace(/\s+/g, ' ').trim();
-    const hasMeta = drop.status || drop.subject || (drop.tags || []).length > 0;
+    const hasMeta = drop.status || drop.subject || drop.remind_at || (drop.tags || []).length > 0;
     return `
     <article class="drop-card ${drop.id === dropboxState.selectedId ? 'selected' : ''}" data-drop-id="${escAttr(drop.id)}">
       <div class="drop-card-header">
@@ -2437,6 +2534,7 @@ function renderDropCards() {
       </div>
       ${preview ? `<p class="drop-card-preview">${escHTML(preview)}</p>` : ''}
       ${hasMeta ? `<div class="drop-card-meta">
+        ${dropReminderBadge(drop)}
         ${dropBadge(drop.status, 'status')}
         ${dropBadge(drop.subject, 'subject')}
         ${(drop.tags || []).slice(0, 2).map(t => dropBadge(t, 'tag')).join('')}
@@ -2466,6 +2564,7 @@ function openNoteView(drop) {
   );
 
   const metaParts = [];
+  if (drop.remind_at) metaParts.push(dropReminderBadge(drop));
   if (drop.subject) metaParts.push(dropBadge(drop.subject, 'subject'));
   if (drop.status)  metaParts.push(dropBadge(drop.status, 'status'));
   if (drop.priority && drop.priority !== 'normal') metaParts.push(dropBadge(drop.priority, 'priority'));
@@ -2565,6 +2664,7 @@ async function saveDrop() {
     priority: document.getElementById('drop-priority').value,
     status:   document.getElementById('drop-status').value,
     content:  document.getElementById('drop-content').value,
+    remind_at: document.getElementById('drop-remind') ? document.getElementById('drop-remind').value : '',
   };
 
   try {
@@ -2583,7 +2683,7 @@ async function saveDrop() {
 }
 
 function clearDropForm() {
-  ['drop-title', 'drop-project', 'drop-tags', 'drop-content'].forEach(id => {
+  ['drop-title', 'drop-project', 'drop-tags', 'drop-content', 'drop-remind'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -2634,6 +2734,11 @@ if (document.getElementById('save-drop-btn')) {
 
   document.getElementById('drop-sort').addEventListener('change', e => {
     dropboxState.filters.sort = e.target.value;
+    renderDropbox();
+  });
+
+  document.getElementById('drop-filter-reminder')?.addEventListener('change', e => {
+    dropboxState.filters.reminder = e.target.value;
     renderDropbox();
   });
 
