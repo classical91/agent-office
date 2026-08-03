@@ -2092,7 +2092,7 @@ function toggleMobileNav() {
   var overlay = document.getElementById('mobile-overlay');
   var isOpen = nav.classList.toggle('mobile-open');
   if (overlay) overlay.style.display = isOpen ? 'block' : 'none';
-  // Other sections are always-visible headings; the Apps & Sites dropdown keeps its own state.
+  // Other sections are always-visible headings; the My Websites & Projects dropdown keeps its own state.
 }
 function closeMobileNav() {
   var nav = document.querySelector('.nav');

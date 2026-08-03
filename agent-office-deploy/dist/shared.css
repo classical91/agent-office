@@ -124,22 +124,29 @@
   }
   .nav-label:hover { color: var(--text); }
   .nav-label .nav-chevron {
-    font-size: 8px;
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 11px;
     transition: transform 0.2s;
     color: var(--muted);
   }
   .nav-label.collapsed .nav-chevron { transform: rotate(-90deg); }
   /* MAIN APPS & SITES DROPDOWN (prominent, button-like) */
-  /* The single Apps & Sites dropdown: brighter header + clearly visible chevron */
+  /* The single My Websites & Projects dropdown: brighter header + clearly visible chevron */
   .nav-label.nav-label-dd { color: var(--text); }
   .nav-label.nav-label-dd:hover { color: var(--text); }
-  .nav-label.nav-label-dd .nav-chevron { font-size: 11px; color: var(--text); }
-  /* Plain, non-collapsible section headings (everything except Apps & Sites) */
+  .nav-label.nav-label-dd .nav-chevron { width: 24px; height: 24px; font-size: 13px; color: var(--text); }
+  /* Plain, non-collapsible section headings (everything except My Websites & Projects) */
   .nav-heading {
     font-size: 9px; text-transform: uppercase; letter-spacing: 0.15em;
     color: var(--muted); padding: 8px 16px 4px; font-weight: 700;
   }
-  /* Always-expanded section bodies (only Apps & Sites collapses) */
+  /* Always-expanded section bodies (only My Websites & Projects collapses) */
   .nav-items-wrap.nav-open { max-height: none; }
 
   .nav-items-wrap {
@@ -171,10 +178,17 @@
   /* The parent row stays a link; only the chevron toggles the sub-menu. */
   .nav-sub-chevron {
     margin-left: auto;
-    font-size: 9px;
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
     line-height: 1;
     color: var(--muted);
-    padding: 4px 0 4px 10px;
+    padding: 0;
     transition: transform 0.2s, color 0.15s;
   }
   .nav-item-parent:hover .nav-sub-chevron { color: var(--text); }
@@ -1880,9 +1894,17 @@
   gap: 16px;
   margin-bottom: 12px;
   color: var(--text);
+  cursor: pointer;
+  user-select: none;
 }
 
-.dev-section-heading span {
+.dev-section-heading:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
+.dev-section-heading > span:first-child {
   font-size: 15px;
   font-weight: 800;
   letter-spacing: 0;
@@ -1893,6 +1915,87 @@
   font-size: 12px;
   line-height: 1.4;
   text-align: right;
+}
+
+.dev-section-toggle {
+  flex-shrink: 0;
+  min-width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  background: color-mix(in srgb, var(--panel) 82%, transparent);
+}
+
+.dev-section-heading:hover .dev-section-toggle {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.dev-link-section.is-collapsed .dev-link-grid,
+.dev-link-section.is-collapsed .dev-update-groups {
+  display: none;
+}
+
+.dev-update-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dev-update-group {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+}
+
+.dev-update-group summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+
+.dev-update-group summary::-webkit-details-marker { display: none; }
+
+.dev-update-group summary::before {
+  content: '+';
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1;
+}
+
+.dev-update-group[open] summary::before {
+  content: '-';
+}
+
+.dev-update-group summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.dev-update-group .dev-link-grid {
+  padding: 0 14px 14px;
 }
 
 .dev-link-grid {

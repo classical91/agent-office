@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="shared.css?v=dev-search-20260729"/>
+<link rel="stylesheet" href="shared.css?v=side-menu-20260802"/>
 <!-- Apply saved theme before first paint to avoid a flash of the default theme. Mirrors THEMES in app-shared.js. -->
 <script>
 (function(){
@@ -61,8 +61,8 @@
           </div>
         </div>
         <a class="nav-item" href="https://main-page-production-9927.up.railway.app/ai.html" target="_blank" rel="noopener noreferrer"><span class="icon">🧭</span> AI Portal <span class="link-ext">↗</span></a>
-        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/apps.html" target="_blank" rel="noopener noreferrer"><span class="icon">🌐</span> Apps &amp; Sites <span class="link-ext">↗</span></a>
-        <a class="nav-item" href="/calendar-v3.html"><span class="icon">🗓️</span> Calendar v3</a>
+        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/apps.html" target="_blank" rel="noopener noreferrer"><span class="icon">🌐</span> My Websites &amp; Projects <span class="link-ext">↗</span></a>
+        <a class="nav-item" href="/calendar-v3.html"><span class="icon">🗓️</span> Calendar</a>
         <a class="nav-item" href="/resets.html"><span class="icon">&#9201;</span> Resets</a>
         <a class="nav-item" href="/ai-landscape.html" data-ai-landscape-nav="true"><span class="icon">AI</span> AI Models</a>
         <div class="nav-item" onclick="window.open('/prompt-builder.html', '_blank')"><span class="icon">📝</span> AI Prompt Engineer</div>
@@ -101,6 +101,131 @@
       </div>
 
       <p class="dev-search-empty" id="dev-search-empty" hidden>No links match <strong id="dev-search-empty-term"></strong>.</p>
+
+      <section class="dev-link-section">
+        <div class="dev-section-heading">
+          <span>Platform Update Feeds</span>
+          <small>YouTube, X, Brave, and iOS release tracking</small>
+        </div>
+        <div class="dev-update-groups">
+          <details class="dev-update-group" open>
+            <summary>OpenAI &amp; ChatGPT</summary>
+            <div class="dev-link-grid">
+              <a class="dev-link-card" href="https://help.openai.com/en/articles/6825453-chatgpt-release-notes" target="_blank" rel="noopener noreferrer">
+                <strong>ChatGPT Release Notes</strong>
+                <span>ChatGPT app updates, feature rollouts, model availability notes, and product changes.</span>
+              </a>
+              <a class="dev-link-card" href="https://developers.openai.com/api/docs/changelog" target="_blank" rel="noopener noreferrer">
+                <strong>OpenAI API Changelog</strong>
+                <span>OpenAI developer changelog for API, model, platform, and docs updates.</span>
+              </a>
+            </div>
+          </details>
+
+          <details class="dev-update-group" open>
+            <summary>GitHub &amp; Copilot</summary>
+            <div class="dev-link-grid">
+              <a class="dev-link-card" href="https://github.blog/changelog/label/copilot/" target="_blank" rel="noopener noreferrer">
+                <strong>Copilot Updates</strong>
+                <span>GitHub Copilot changelog posts for coding agent, IDE, chat, review, and platform changes.</span>
+              </a>
+              <a class="dev-link-card" href="https://github.blog/changelog/" target="_blank" rel="noopener noreferrer">
+                <strong>GitHub Changelog</strong>
+                <span>Latest GitHub product updates across Actions, Copilot, repos, issues, security, and APIs.</span>
+              </a>
+            </div>
+          </details>
+
+          <details class="dev-update-group" open>
+            <summary>Google</summary>
+            <div class="dev-link-grid">
+              <a class="dev-link-card" href="https://developers.googleblog.com/" target="_blank" rel="noopener noreferrer">
+                <strong>Google Developers Blog</strong>
+                <span>Google developer updates for AI, Android, Chrome, Cloud, web, and platform tooling.</span>
+              </a>
+              <a class="dev-link-card" href="https://workspaceupdates.googleblog.com/" target="_blank" rel="noopener noreferrer">
+                <strong>Google Workspace Updates</strong>
+                <span>Gmail, Drive, Docs, Meet, Calendar, Gemini for Workspace, and admin release updates.</span>
+              </a>
+              <a class="dev-link-card" href="https://cloud.google.com/blog/products/ai-machine-learning" target="_blank" rel="noopener noreferrer">
+                <strong>Google Cloud AI Updates</strong>
+                <span>Vertex AI, Gemini, infrastructure, model serving, agents, and applied AI platform posts.</span>
+              </a>
+            </div>
+          </details>
+
+          <details class="dev-update-group" open>
+            <summary>YouTube</summary>
+            <div class="dev-link-grid">
+              <a class="dev-link-card" href="https://blog.youtube/" target="_blank" rel="noopener noreferrer">
+                <strong>YouTube Official Blog</strong>
+                <span>Product announcements, creator tools, Shorts updates, and platform policy changes.</span>
+              </a>
+              <a class="dev-link-card" href="https://blog.youtube/creator-and-artist-stories/" target="_blank" rel="noopener noreferrer">
+                <strong>YouTube Creator Updates</strong>
+                <span>Creator-focused updates for channels, monetization, publishing, and studio workflows.</span>
+              </a>
+            </div>
+          </details>
+
+          <details class="dev-update-group" open>
+            <summary>X</summary>
+            <div class="dev-link-grid">
+              <a class="dev-link-card" href="https://blog.x.com/" target="_blank" rel="noopener noreferrer">
+                <strong>X Blog</strong>
+                <span>Official X product, safety, creator, ads, and platform announcements.</span>
+              </a>
+              <a class="dev-link-card" href="https://developer.x.com/en/blog" target="_blank" rel="noopener noreferrer">
+                <strong>X Developer Blog</strong>
+                <span>API, developer platform, automation, and integration changes for X.</span>
+              </a>
+            </div>
+          </details>
+
+          <details class="dev-update-group" open>
+            <summary>Brave</summary>
+            <div class="dev-link-grid">
+              <a class="dev-link-card" href="https://brave.com/latest/" target="_blank" rel="noopener noreferrer">
+                <strong>Brave Latest</strong>
+                <span>Browser, Search, Ads, Leo, privacy, and product updates from Brave.</span>
+              </a>
+              <a class="dev-link-card" href="https://github.com/brave/brave-browser/releases" target="_blank" rel="noopener noreferrer">
+                <strong>Brave Browser Releases</strong>
+                <span>Versioned desktop and mobile browser releases, fixes, and changelog details.</span>
+              </a>
+              <a class="dev-link-card" href="https://brave.com/whats-new/ios/" target="_blank" rel="noopener noreferrer">
+                <strong>Brave iOS Updates</strong>
+                <span>Brave's iPhone and iPad release highlights, new features, and mobile browser changes.</span>
+              </a>
+            </div>
+          </details>
+
+          <details class="dev-update-group" open>
+            <summary>Apple &amp; iOS</summary>
+            <div class="dev-link-grid">
+              <a class="dev-link-card" href="https://developer.apple.com/news/releases/" target="_blank" rel="noopener noreferrer">
+                <strong>Apple Developer Releases</strong>
+                <span>iOS, iPadOS, macOS, Xcode, SDK, and beta release posts for developers.</span>
+              </a>
+              <a class="dev-link-card" href="https://developer.apple.com/documentation/ios-ipados-release-notes" target="_blank" rel="noopener noreferrer">
+                <strong>iOS Release Notes</strong>
+                <span>Apple's iOS and iPadOS release notes for API changes, fixes, and platform behavior.</span>
+              </a>
+            </div>
+          </details>
+
+          <details class="dev-update-group" open>
+            <summary>Railway</summary>
+            <div class="dev-link-grid">
+              <a class="dev-link-card" href="https://railway.com/changelog" target="_blank" rel="noopener noreferrer">
+                <strong>Railway Changelog</strong>
+                <span>Railway platform updates for deploys, templates, observability, networking, and databases.</span>
+              </a>
+            </div>
+          </details>
+        </div>
+      </section>
+
 
       <section class="dev-link-section">
         <div class="dev-section-heading">
@@ -252,14 +377,70 @@ switchView('dev', document.querySelector('.nav-item.active'));
   var emptyTermEl = document.getElementById('dev-search-empty-term');
   var sections = Array.prototype.slice.call(document.querySelectorAll('.dev-link-section'));
   var cards = [];
+  var storagePrefix = 'ao-dev-section-collapsed:';
+
+  function sectionStorageKey(section){
+    return storagePrefix + (section.getAttribute('data-dev-section-id') || 'section');
+  }
+
+  function readSavedCollapsed(section){
+    try {
+      return localStorage.getItem(sectionStorageKey(section)) === '1';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function writeSavedCollapsed(section, collapsed){
+    try {
+      localStorage.setItem(sectionStorageKey(section), collapsed ? '1' : '0');
+    } catch (e) {}
+  }
+
+  function setSectionCollapsed(section, collapsed, persist){
+    var heading = section.querySelector('.dev-section-heading');
+    var toggle = section.querySelector('.dev-section-toggle');
+    section.classList.toggle('is-collapsed', collapsed);
+    if (heading) heading.setAttribute('aria-expanded', String(!collapsed));
+    if (toggle) {
+      toggle.textContent = collapsed ? '+' : '-';
+      toggle.setAttribute('title', collapsed ? 'Expand section' : 'Collapse section');
+      toggle.setAttribute('aria-label', collapsed ? 'Expand section' : 'Collapse section');
+    }
+    if (persist) writeSavedCollapsed(section, collapsed);
+  }
 
   sections.forEach(function(section){
     var heading = section.querySelector('.dev-section-heading');
     var headingText = heading ? heading.textContent : '';
+    if (heading) {
+      var titleEl = heading.querySelector('span');
+      var titleText = titleEl ? titleEl.textContent : headingText;
+      section.setAttribute('data-dev-section-id', titleText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'section');
+      var toggle = document.createElement('span');
+      toggle.className = 'dev-section-toggle';
+      toggle.setAttribute('aria-hidden', 'true');
+      heading.appendChild(toggle);
+      heading.setAttribute('role', 'button');
+      heading.setAttribute('tabindex', '0');
+      heading.setAttribute('aria-expanded', 'true');
+      heading.addEventListener('click', function(){
+        setSectionCollapsed(section, !section.classList.contains('is-collapsed'), true);
+      });
+      heading.addEventListener('keydown', function(e){
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        setSectionCollapsed(section, !section.classList.contains('is-collapsed'), true);
+      });
+      setSectionCollapsed(section, readSavedCollapsed(section), false);
+    }
     Array.prototype.forEach.call(section.querySelectorAll('.dev-link-card'), function(el){
+      var group = el.closest ? el.closest('.dev-update-group') : null;
+      var groupSummary = group ? group.querySelector('summary') : null;
+      var groupText = groupSummary ? groupSummary.textContent : '';
       cards.push({
         el: el,
-        haystack: (el.textContent + ' ' + (el.getAttribute('href') || '') + ' ' + headingText)
+        haystack: (el.textContent + ' ' + (el.getAttribute('href') || '') + ' ' + headingText + ' ' + groupText)
           .replace(/\s+/g, ' ')
           .toLowerCase()
       });
@@ -279,7 +460,15 @@ switchView('dev', document.querySelector('.nav-item.active'));
     });
 
     sections.forEach(function(section){
-      section.hidden = !section.querySelector('.dev-link-card:not([hidden])');
+      Array.prototype.forEach.call(section.querySelectorAll('.dev-update-group'), function(group){
+        var groupHasMatch = !!group.querySelector('.dev-link-card:not([hidden])');
+        group.hidden = terms.length && !groupHasMatch;
+        if (terms.length && groupHasMatch) group.open = true;
+      });
+      var hasMatch = !!section.querySelector('.dev-link-card:not([hidden])');
+      section.hidden = !hasMatch;
+      if (terms.length && hasMatch) setSectionCollapsed(section, false);
+      if (!terms.length && hasMatch) setSectionCollapsed(section, readSavedCollapsed(section), false);
     });
 
     countEl.textContent = terms.length

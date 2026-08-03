@@ -129,16 +129,16 @@
   }
   .nav-label.collapsed .nav-chevron { transform: rotate(-90deg); }
   /* MAIN APPS & SITES DROPDOWN (prominent, button-like) */
-  /* The single Apps & Sites dropdown: brighter header + clearly visible chevron */
+  /* The single My Websites & Projects dropdown: brighter header + clearly visible chevron */
   .nav-label.nav-label-dd { color: var(--text); }
   .nav-label.nav-label-dd:hover { color: var(--text); }
   .nav-label.nav-label-dd .nav-chevron { font-size: 11px; color: var(--text); }
-  /* Plain, non-collapsible section headings (everything except Apps & Sites) */
+  /* Plain, non-collapsible section headings (everything except My Websites & Projects) */
   .nav-heading {
     font-size: 9px; text-transform: uppercase; letter-spacing: 0.15em;
     color: var(--muted); padding: 8px 16px 4px; font-weight: 700;
   }
-  /* Always-expanded section bodies (only Apps & Sites collapses) */
+  /* Always-expanded section bodies (only My Websites & Projects collapses) */
   .nav-items-wrap.nav-open { max-height: none; }
 
   .nav-items-wrap {
@@ -1844,7 +1844,7 @@
 
     <!-- PROJECTS -->
     <div class="nav-section">
-      <div class="nav-label nav-label-dd" onclick="toggleNav(this)">🌐 Apps &amp; Sites <span class="nav-chevron">▾</span></div>
+      <div class="nav-label nav-label-dd" onclick="toggleNav(this)">🌐 My Websites &amp; Projects <span class="nav-chevron">▾</span></div>
       <div class="nav-items-wrap">
 
 
@@ -5016,7 +5016,7 @@ function toggleMobileNav() {
   var overlay = document.getElementById('mobile-overlay');
   var isOpen = nav.classList.toggle('mobile-open');
   if (overlay) overlay.style.display = isOpen ? 'block' : 'none';
-  // Other sections are always-visible headings; the Apps & Sites dropdown keeps its own state.
+  // Other sections are always-visible headings; the My Websites & Projects dropdown keeps its own state.
 }
 function closeMobileNav() {
   var nav = document.querySelector('.nav');

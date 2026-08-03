@@ -1215,7 +1215,7 @@
 
   function boot() {
     // Only add the AI Models nav item; do NOT consolidate the whole sidebar
-    // into one "Site Menu" — the nav keeps its own structure (Apps & Sites is the
+    // into one "Site Menu" — the nav keeps its own structure (My Websites & Projects is the
     // single dropdown, with per-site Railway/GitHub sub-dropdowns).
     addAiNavItem();
     try {
