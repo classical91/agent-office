@@ -2320,7 +2320,6 @@ const dropboxState = {
     search: '',
     subject: '',
     status: '',
-    priority: '',
     reminder: '',
     sort: 'updated_desc',
   },
@@ -2394,7 +2393,7 @@ function compareReminders(a, b) {
 
 function getFilteredDrops() {
   let items = [...dropboxState.drops];
-  const { search, subject, status, priority, reminder, sort } = dropboxState.filters;
+  const { search, subject, status, reminder, sort } = dropboxState.filters;
 
   if (search) {
     const q = search.toLowerCase();
@@ -2406,16 +2405,11 @@ function getFilteredDrops() {
 
   if (subject) items = items.filter(drop => (drop.subject || '') === subject);
   if (status)  items = items.filter(drop => (drop.status  || '') === status);
-  if (priority) items = items.filter(drop => (drop.priority || '') === priority);
   items = applyReminderFilter(items, reminder);
 
   items.sort((a, b) => {
     if (sort === 'remind_asc') return compareReminders(a, b);
     if (sort === 'updated_asc') return new Date(a.updated_at) - new Date(b.updated_at);
-    if (sort === 'priority_desc') {
-      const rank = { urgent: 3, high: 2, normal: 1 };
-      return (rank[b.priority] || 0) - (rank[a.priority] || 0);
-    }
     if (sort === 'title_asc') return (a.title || '').localeCompare(b.title || '');
     return new Date(b.updated_at) - new Date(a.updated_at);
   });
@@ -2499,7 +2493,7 @@ function renderDropTable() {
   wrap.innerHTML = `
     <table class="dropbox-table">
       <thead><tr>
-        <th>Title</th><th>Subject</th><th>Status</th><th>Priority</th>
+        <th>Title</th><th>Subject</th><th>Status</th>
         <th>Remind</th><th>Project</th><th>Tags</th><th>Updated</th>
       </tr></thead>
       <tbody>
@@ -2508,7 +2502,6 @@ function renderDropTable() {
             <td>${escHTML(drop.title || 'Untitled drop')}</td>
             <td>${dropBadge(drop.subject, 'subject')}</td>
             <td>${dropBadge(drop.status, 'status')}</td>
-            <td>${dropBadge(drop.priority, 'priority')}</td>
             <td>${dropReminderBadge(drop) || '—'}</td>
             <td>${escHTML(drop.project || '—')}</td>
             <td>${(drop.tags || []).slice(0, 3).map(t => dropBadge(t, 'tag')).join(' ')}</td>
@@ -2579,7 +2572,6 @@ function openNoteView(drop) {
   if (drop.remind_at) metaParts.push(dropReminderBadge(drop));
   if (drop.subject) metaParts.push(dropBadge(drop.subject, 'subject'));
   if (drop.status)  metaParts.push(dropBadge(drop.status, 'status'));
-  if (drop.priority && drop.priority !== 'normal') metaParts.push(dropBadge(drop.priority, 'priority'));
   if (drop.project) metaParts.push(`<span style="font-size:12px;color:var(--muted);">${escHTML(drop.project)}</span>`);
 
   const linksHtml = (drop.links || []).length
@@ -2673,7 +2665,9 @@ async function saveDrop() {
     project:  document.getElementById('drop-project').value,
     agent:    document.getElementById('drop-agent') ? document.getElementById('drop-agent').value : '',
     tags:     document.getElementById('drop-tags').value,
-    priority: document.getElementById('drop-priority').value,
+    // Priority is off the Dropbox, but the API still requires one and old
+    // drops keep whatever they were saved with.
+    priority: 'normal',
     status:   document.getElementById('drop-status').value,
     content:  document.getElementById('drop-content').value,
   };
@@ -2763,8 +2757,6 @@ function clearDropForm() {
   });
   const subjectEl = document.getElementById('drop-subject');
   if (subjectEl) subjectEl.value = dropboxState.filters.subject || '';
-  const p = document.getElementById('drop-priority');
-  if (p) p.value = 'normal';
   const s = document.getElementById('drop-status');
   if (s) s.value = 'idea';
 }
@@ -2826,11 +2818,6 @@ if (document.getElementById('save-drop-btn')) {
     renderDropbox();
   });
 
-  document.getElementById('drop-filter-priority').addEventListener('change', e => {
-    dropboxState.filters.priority = e.target.value;
-    renderDropbox();
-  });
-
   document.getElementById('drop-sort').addEventListener('change', e => {
     dropboxState.filters.sort = e.target.value;
     renderDropbox();
@@ -2839,6 +2826,16 @@ if (document.getElementById('save-drop-btn')) {
   document.getElementById('drop-filter-reminder')?.addEventListener('change', e => {
     dropboxState.filters.reminder = e.target.value;
     renderDropbox();
+  });
+
+  // Only does anything on a phone: the button is hidden on wide screens,
+  // where every filter is on show already.
+  document.getElementById('drop-filters-toggle')?.addEventListener('click', e => {
+    const more = document.getElementById('dropbox-filters-more');
+    if (!more) return;
+    const open = more.classList.toggle('is-collapsed-mobile') === false;
+    e.currentTarget.setAttribute('aria-expanded', String(open));
+    e.currentTarget.textContent = open ? 'Fewer filters' : 'More filters';
   });
 
   document.getElementById('dropbox-view-list').addEventListener('click', () => {

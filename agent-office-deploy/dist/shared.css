@@ -1493,6 +1493,22 @@
     font-family: inherit;
   }
   .dropbox-filters input[type="search"] { min-width: 180px; }
+  /* display:contents keeps the secondary filters in the same flex row as
+     search and subject on a wide screen — the wrapper only becomes a real box
+     on a phone, where it collapses behind the More filters button. */
+  .dropbox-filters-more { display: contents; }
+  .dropbox-filters-toggle {
+    display: none;
+    align-items: center;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+  }
   .dropbox-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; }
   .dropbox-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
   .dropbox-quick-capture,
@@ -1667,6 +1683,25 @@
   }
   @media (max-width: 768px) {
     .dropbox-quick-capture.is-collapsed-mobile { display: none; }
+
+    .dropbox-filters-toggle { display: inline-flex; }
+    .dropbox-filters-more { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+    .dropbox-filters-more.is-collapsed-mobile { display: none; }
+    .dropbox-filters-more select { flex: 1 1 140px; min-width: 0; }
+
+    /* Seven columns do not fit a phone, and the table was simply cut off at
+       the edge of the screen. Title, subject, status and the reminder are what
+       you scan for; the rest are a tap away in the note itself. */
+    .dropbox-table { font-size: 12px; table-layout: fixed; }
+    .dropbox-table th,
+    .dropbox-table td { padding: 9px 5px; overflow-wrap: anywhere; }
+    .dropbox-table th:nth-child(n+5),
+    .dropbox-table td:nth-child(n+5) { display: none; }
+    .dropbox-table th:nth-child(1) { width: 42%; }
+    .dropbox-table th:nth-child(2) { width: 21%; }
+    .dropbox-table th:nth-child(3) { width: 17%; }
+    .dropbox-table th:nth-child(4) { width: 20%; }
+    .dbadge { padding: 2px 6px; font-size: 10px; }
   }
   @media (max-width: 600px) {
     .dropbox-view { padding: 12px; }
