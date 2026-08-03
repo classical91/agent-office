@@ -5,7 +5,7 @@ A multi-page web app that acts as a personal "office" for AI agents — a place 
 ## Features
 
 - **Dropbox / Mission Board** — capture notes, ideas, reminders, and tasks with subject, status, priority, and tags. Tap any note to open it in a full-screen reading view. Every drop is saved under a title no other drop is using — a second "Weekly review notes" is stored as "Weekly review notes (2)" — so no two rows in the list are indistinguishable.
-- **Dropbox iOS** — its own two-field panel on the Dropbox page (what to be reminded about, and when) for things you are putting down for later rather than tasks you are working, reached from the Dropbox side-menu item of the same name. It comes back when it is due.
+- **Reminders** — its own two-field panel on the Dropbox page (what to be reminded about, and when) for things you are putting down for later rather than tasks you are working, reached from the Dropbox side-menu item of the same name. It comes back when it is due.
 - **Phone inbox** — a token-authenticated API for iOS Shortcuts: send a note or reminder to the Dropbox from your phone, and pull back whatever has come due. See [Phone inbox](#phone-inbox--ios-shortcuts).
 - **Memory** — per-agent memory entries that agents can reference across sessions.
 - **Calendar** — a Google Calendar-backed control surface for the office: agent/project metadata on every block, live run status, an Agent Assistant drawer, agent-timeline filters, and a scored scheduling policy instead of first-available-slot.
@@ -304,7 +304,7 @@ option.
 
 ### In the browser
 
-**Dropbox iOS** — the **Dropbox iOS** item under Dropbox in the side menu, or
+**Reminders** — the **Reminders** item under Dropbox in the side menu, or
 `/mission-board.html?view=ios` — is its own screen, meant for the phone: two
 fields (what to be reminded about, and when) and nothing else. No notes, no
 filters, no list; the panel stays open after saving and says when the reminder

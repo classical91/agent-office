@@ -2038,7 +2038,7 @@ function toggleNavSub(e, chevronEl) {
   saveNavState(state);
 }
 
-// Dropbox and Dropbox iOS are the same page told apart by ?view=ios, so the
+// Dropbox and Reminders are the same page told apart by ?view=ios, so the
 // markup's active item is right for only one of them.
 function markActiveNavForQuery() {
   if (new URLSearchParams(location.search).get('view') !== 'ios') return;
@@ -2386,7 +2386,7 @@ async function enterDropboxView() {
       const select = document.getElementById('drop-filter-reminder');
       if (select) select.value = reminder;
     }
-    // Dropbox iOS is the iOS project lane. A capture URL can still open the
+    // Reminders is the iOS project lane. A capture URL can still open the
     // phone-friendly reminder form, but the normal view shows the iOS list.
     if (params.get('view') === 'ios') {
       dropboxState.filters.project = 'iOS';
@@ -2711,7 +2711,7 @@ async function saveDrop() {
   }
 }
 
-// ─── Dropbox iOS capture ─────────────────────────────────────────────────────
+// ─── Reminders capture ─────────────────────────────────────────────────────
 // Its own panel, its own two fields: what to be reminded about, and when. It
 // saves an ordinary drop under the Reminder subject, so the phone inbox and
 // the Due Now filter pick it up like any other reminder.
@@ -2766,7 +2766,7 @@ async function saveReminder() {
     contentEl.value = '';
     whenEl.value = '';
 
-    // On the Dropbox iOS screen there is no list to watch it land in, so the
+    // On the Reminders screen there is no list to watch it land in, so the
     // panel says so itself and stays open for the next one.
     if (isIosCaptureView()) {
       const info = dropReminderInfo(saved);
@@ -2836,7 +2836,7 @@ if (document.getElementById('save-drop-btn')) {
   document.getElementById('cancel-reminder-btn')?.addEventListener('click', () => {
     document.getElementById('reminder-content').value = '';
     document.getElementById('reminder-when').value = '';
-    // On the Dropbox iOS screen the panel is the page, so Cancel only clears.
+    // On the Reminders screen the panel is the page, so Cancel only clears.
     if (!isIosCaptureView()) collapseCapture('dropbox-reminder-capture', 'is-collapsed');
   });
 

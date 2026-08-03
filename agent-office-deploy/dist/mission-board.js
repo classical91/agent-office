@@ -31,7 +31,7 @@
   function ensureMissionControls() {
     const view = document.getElementById('dropbox-view');
     const title = document.querySelector('#dropbox-view .dropbox-toolbar h2');
-    if (title) title.textContent = view && view.classList.contains('ios-mode') ? 'Dropbox iOS' : 'Dropbox';
+    if (title) title.textContent = view && view.classList.contains('ios-mode') ? 'Reminders' : 'Dropbox';
     const save = document.getElementById('save-drop-btn');
     if (save) save.textContent = 'Save Note';
     const newBtn = document.getElementById('new-drop-btn');

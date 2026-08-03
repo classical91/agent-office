@@ -1545,7 +1545,7 @@
   .dropbox-reminder-capture.is-collapsed { display: none; }
   .reminder-saved-note { font-size: 12px; color: var(--green); }
   .reminder-saved-note.is-collapsed { display: none; }
-  /* Capture mode is just the phone form; regular Dropbox iOS is a filtered list. */
+  /* Capture mode is just the phone form; regular Reminders is a filtered list. */
   .dropbox-view.ios-capture-mode .dropbox-filters,
   .dropbox-view.ios-capture-mode .dropbox-actions,
   .dropbox-view.ios-capture-mode .dropbox-quick-capture,
