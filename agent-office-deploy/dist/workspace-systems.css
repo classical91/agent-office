@@ -198,6 +198,13 @@
 .agent-status-failed { color: #f87171; border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.09); }
 .agent-status-needs_input { color: #fbbf24; border-color: rgba(251,191,36,0.35); background: rgba(251,191,36,0.09); }
 
+@media (max-width: 768px) {
+  /* Seven columns of tickets in a horizontal scroller means a phone shows one
+     and a half of them, above a table that already says the same thing. The
+     board earns its space on a wide screen and nowhere else. */
+  .mission-pipeline { display: none; }
+}
+
 @media (max-width: 720px) {
   .ops-view { padding: 14px; }
   .ops-toolbar { flex-direction: column; }
