@@ -1689,18 +1689,15 @@
     .dropbox-filters-more.is-collapsed-mobile { display: none; }
     .dropbox-filters-more select { flex: 1 1 140px; min-width: 0; }
 
-    /* Seven columns do not fit a phone, and the table was simply cut off at
-       the edge of the screen. Title, subject, status and the reminder are what
-       you scan for; the rest are a tap away in the note itself. */
-    .dropbox-table { font-size: 12px; table-layout: fixed; }
+    /* A phone gets the title and the subject it is filed under; project, tags
+       and the timestamp are a tap away in the note itself. */
+    .dropbox-table { font-size: 12.5px; table-layout: fixed; }
     .dropbox-table th,
-    .dropbox-table td { padding: 9px 5px; overflow-wrap: anywhere; }
-    .dropbox-table th:nth-child(n+5),
-    .dropbox-table td:nth-child(n+5) { display: none; }
-    .dropbox-table th:nth-child(1) { width: 42%; }
-    .dropbox-table th:nth-child(2) { width: 21%; }
-    .dropbox-table th:nth-child(3) { width: 17%; }
-    .dropbox-table th:nth-child(4) { width: 20%; }
+    .dropbox-table td { padding: 10px 6px; overflow-wrap: anywhere; }
+    .dropbox-table th:nth-child(n+3),
+    .dropbox-table td:nth-child(n+3) { display: none; }
+    .dropbox-table th:nth-child(1) { width: 68%; }
+    .dropbox-table th:nth-child(2) { width: 32%; }
     .dbadge { padding: 2px 6px; font-size: 10px; }
   }
   @media (max-width: 600px) {

@@ -2373,6 +2373,12 @@ async function enterDropboxView() {
       const select = document.getElementById('drop-filter-reminder');
       if (select) select.value = reminder;
     }
+    // What the "Dropbox iOS" side-menu item links to: the page opens with the
+    // capture panel already waiting for a reminder.
+    if (params.get('capture') === 'reminder') {
+      document.getElementById('dropbox-reminder-capture')?.classList.remove('is-collapsed');
+      document.getElementById('reminder-content')?.focus();
+    }
     renderDropbox();
   }
 }
@@ -2493,16 +2499,13 @@ function renderDropTable() {
   wrap.innerHTML = `
     <table class="dropbox-table">
       <thead><tr>
-        <th>Title</th><th>Subject</th><th>Status</th>
-        <th>Remind</th><th>Project</th><th>Tags</th><th>Updated</th>
+        <th>Title</th><th>Subject</th><th>Project</th><th>Tags</th><th>Updated</th>
       </tr></thead>
       <tbody>
         ${items.map(drop => `
           <tr data-drop-id="${escAttr(drop.id)}" class="${drop.id === dropboxState.selectedId ? 'selected' : ''}">
             <td>${escHTML(drop.title || 'Untitled drop')}</td>
             <td>${dropBadge(drop.subject, 'subject')}</td>
-            <td>${dropBadge(drop.status, 'status')}</td>
-            <td>${dropReminderBadge(drop) || '—'}</td>
             <td>${escHTML(drop.project || '—')}</td>
             <td>${(drop.tags || []).slice(0, 3).map(t => dropBadge(t, 'tag')).join(' ')}</td>
             <td>${dropFormatDate(drop.updated_at || drop.date)}</td>
@@ -2688,7 +2691,7 @@ async function saveDrop() {
   }
 }
 
-// ─── Dropbox Reminder capture ────────────────────────────────────────────────
+// ─── Dropbox iOS capture ─────────────────────────────────────────────────────
 // Its own panel, its own two fields: what to be reminded about, and when. It
 // saves an ordinary drop under the Reminder subject, so the phone inbox and
 // the Due Now filter pick it up like any other reminder.
