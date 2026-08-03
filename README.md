@@ -5,7 +5,7 @@ A multi-page web app that acts as a personal "office" for AI agents — a place 
 ## Features
 
 - **Dropbox / Mission Board** — capture notes, ideas, reminders, and tasks with subject, status, priority, and tags. Tap any note to open it in a full-screen reading view.
-- **Dropbox Reminder** — its own two-field panel on the Dropbox page (what to be reminded about, and when) for things you are putting down for later rather than tasks you are working. It comes back when it is due.
+- **Dropbox iOS** — its own two-field panel on the Dropbox page (what to be reminded about, and when) for things you are putting down for later rather than tasks you are working, reached from the Dropbox side-menu item of the same name. It comes back when it is due.
 - **Phone inbox** — a token-authenticated API for iOS Shortcuts: send a note or reminder to the Dropbox from your phone, and pull back whatever has come due. See [Phone inbox](#phone-inbox--ios-shortcuts).
 - **Memory** — per-agent memory entries that agents can reference across sessions.
 - **Calendar** — a Google Calendar-backed control surface for the office: agent/project metadata on every block, live run status, an Agent Assistant drawer, agent-timeline filters, and a scored scheduling policy instead of first-available-slot.
@@ -304,11 +304,12 @@ option.
 
 ### In the browser
 
-**Dropbox Reminder** is its own panel on the Dropbox page, opened by the
-toolbar button of that name: two fields — what to be reminded about, and when
-— and nothing else, because a reminder is not a task being worked. It saves an
-ordinary drop under the **Reminder** subject, so the phone inbox, the Due Now
-filter, and the Remind column all pick it up.
+**Dropbox iOS** is its own panel on the Dropbox page: two fields — what to be
+reminded about, and when — and nothing else, because a reminder is not a task
+being worked. Open it from the **Dropbox iOS** item under Dropbox in the side
+menu (which is `/mission-board.html?capture=reminder`), or from the toolbar
+button of the same name. It saves an ordinary drop under the **Reminder**
+subject, so the phone inbox and the Due Now filter pick it up.
 
 Reminders on existing tasks are set from the task's detail panel ("Remind Me"),
 not from the new-task form.

@@ -54,8 +54,13 @@
             <a class="nav-item" href="/memory.html"><span class="icon">🧠</span> Memory</a>
             <a class="nav-item" href="/org-chart.html"><span class="icon">🗂️</span> Org Chart</a>
             <a class="nav-item" href="/agent-registry.html"><span class="icon">◎</span> Agent Registry</a>
-            <a class="nav-item active" href="/mission-board.html"><span class="icon">📥</span> Dropbox</a>
             <a class="nav-item" href="/project-rooms.html"><span class="icon">▣</span> Project Rooms</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <a class="nav-item nav-item-parent active" href="/mission-board.html" data-nav-sub="dropbox"><span class="icon">📥</span> Dropbox<span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Dropbox pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">▾</span></a>
+          <div class="nav-sub">
+            <a class="nav-item" href="/mission-board.html?capture=reminder"><span class="icon">⏰</span> Dropbox iOS</a>
           </div>
         </div>
         <a class="nav-item" href="https://main-page-production-9927.up.railway.app/ai.html" target="_blank" rel="noopener noreferrer"><span class="icon">🧭</span> AI Portal <span class="link-ext">↗</span></a>
@@ -90,7 +95,7 @@
         <h2>Dropbox</h2>
         <div class="dropbox-actions">
           <button id="new-drop-btn" class="btn btn-primary">New Drop</button>
-          <button id="new-reminder-btn" class="btn btn-secondary">⏰ Dropbox Reminder</button>
+          <button id="new-reminder-btn" class="btn btn-secondary">⏰ Dropbox iOS</button>
           <button id="dropbox-view-list" class="btn btn-secondary active">Table</button>
           <button id="dropbox-view-detail" class="btn btn-secondary">Cards</button>
         </div>
@@ -131,10 +136,11 @@
 
       <div class="dropbox-layout">
         <div class="dropbox-main">
-          <!-- A Dropbox Reminder is its own thing: something to be handed back
-               later, not a task to be worked. Two fields and nothing else. -->
+          <!-- Dropbox iOS is its own thing: something to be handed back later,
+               not a task to be worked. Two fields and nothing else. It is what
+               the "Dropbox iOS" side-menu item opens. -->
           <div id="dropbox-reminder-capture" class="dropbox-reminder-capture is-collapsed">
-            <div class="capture-heading">⏰ Dropbox Reminder</div>
+            <div class="capture-heading">⏰ Dropbox iOS</div>
             <textarea id="reminder-content" rows="3" placeholder="Remind me about…"></textarea>
             <input id="reminder-when" type="text" placeholder="When? (tomorrow 9am, in 2h, friday, 6pm)" />
             <div class="dropbox-row">
