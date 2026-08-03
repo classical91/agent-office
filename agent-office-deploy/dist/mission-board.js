@@ -104,6 +104,7 @@
   function filteredDrops() {
     let items = [...dropboxState.drops];
     const filters = dropboxState.filters || {};
+    const iosMode = Boolean(document.getElementById('dropbox-view')?.classList.contains('ios-mode'));
     if (filters.search) {
       const q = filters.search.toLowerCase();
       items = items.filter(drop => [drop.title, drop.subject, drop.project, drop.agent, drop.content, ...(drop.tags || []), ...(drop.links || [])].join(' ').toLowerCase().includes(q));
@@ -111,6 +112,7 @@
     if (filters.subject) items = items.filter(drop => (drop.subject || '') === filters.subject);
     if (filters.status) items = items.filter(drop => (drop.status || '') === filters.status);
     if (filters.project) items = items.filter(drop => (drop.project || '') === filters.project);
+    else items = items.filter(drop => iosMode ? (drop.project || '') === 'iOS' : (drop.project || '') !== 'iOS');
     if (filters.agent) items = items.filter(drop => (drop.agent || '') === filters.agent);
     items = applyReminderFilter(items, filters.reminder);
     items.sort((a, b) => {

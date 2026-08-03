@@ -2418,6 +2418,7 @@ function compareReminders(a, b) {
 function getFilteredDrops() {
   let items = [...dropboxState.drops];
   const { search, subject, status, reminder, sort } = dropboxState.filters;
+  const iosMode = Boolean(document.getElementById('dropbox-view')?.classList.contains('ios-mode'));
 
   if (search) {
     const q = search.toLowerCase();
@@ -2429,6 +2430,7 @@ function getFilteredDrops() {
 
   if (subject) items = items.filter(drop => (drop.subject || '') === subject);
   if (status)  items = items.filter(drop => (drop.status  || '') === status);
+  items = items.filter(drop => iosMode ? (drop.project || '') === 'iOS' : (drop.project || '') !== 'iOS');
   items = applyReminderFilter(items, reminder);
 
   items.sort((a, b) => {
