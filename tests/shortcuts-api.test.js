@@ -108,7 +108,7 @@ test('a plain-text body from the share sheet becomes a drop', async t => {
   assert.equal(created.subject, 'Inbox');
   assert.equal(created.project, 'iOS');
   assert.equal(created.remind_at, '');
-  assert.match(created.url, /\/mission-board\.html\?task=drop-/);
+  assert.match(created.url, /\/mission-board\.html\?view=ios&task=drop-/);
 
   // With no reminder time it is not "due", so a due=now pull stays quiet.
   assert.equal((await pull(server.origin)).count, 0);

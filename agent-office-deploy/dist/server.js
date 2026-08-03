@@ -2789,7 +2789,7 @@ function endOfToday(now) {
 }
 
 function shortcutDropUrl(req, id) {
-  return `${getRequestOrigin(req)}/mission-board.html?task=${encodeURIComponent(id)}`;
+  return `${getRequestOrigin(req)}/mission-board.html?view=ios&task=${encodeURIComponent(id)}`;
 }
 
 function toShortcutItem(drop, now, req) {
