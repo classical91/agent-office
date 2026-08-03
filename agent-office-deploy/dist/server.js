@@ -268,6 +268,30 @@ function deriveDropTitle(input) {
   return firstLine.slice(0, 120);
 }
 
+const MAX_DROP_TITLE = 200;
+
+// Two notes called "Telegram Chats with Agents Commands" are two rows you
+// cannot tell apart in a list. Every drop that goes in gets a title nothing
+// else is using, by counting up: "… (2)", "… (3)".
+//
+// This is a single-user app, so the read-then-write is not guarded: two drops
+// created in the same instant could still collide, and the loser keeps the
+// duplicate.
+async function uniqueDropTitle(storage, title) {
+  const base = String(title || '').trim() || 'Untitled drop';
+  const drops = await storage.listDrops();
+  const taken = new Set(drops.map(drop => String(drop.title || '').trim().toLowerCase()));
+  if (!taken.has(base.toLowerCase())) return base;
+
+  for (let n = 2; n <= 500; n += 1) {
+    const suffix = ` (${n})`;
+    const candidate = base.slice(0, MAX_DROP_TITLE - suffix.length) + suffix;
+    if (!taken.has(candidate.toLowerCase())) return candidate;
+  }
+  // 500 notes of the same name is not a naming problem any more.
+  return base.slice(0, MAX_DROP_TITLE - 14) + ` (${Date.now() % 100000})`;
+}
+
 function extractDropLinks(content) {
   const text = typeof content === 'string' ? content : '';
   const matches = text.match(/\[\[(.*?)\]\]/g) || [];
@@ -2897,6 +2921,7 @@ async function handleShortcutsRequest(req, res, url, storage) {
       date: new Date().toISOString(),
       done: false,
       ...payload.value,
+      title: await uniqueDropTitle(storage, payload.value.title),
     });
 
     const item = toShortcutItem(drop, now, req);
@@ -3088,6 +3113,7 @@ const server = http.createServer(async (req, res) => {
         date: new Date().toISOString(),
         done: false,
         ...payload.value,
+        title: await uniqueDropTitle(storage, payload.value.title),
       });
 
       sendJson(res, 201, drop);

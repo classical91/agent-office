@@ -271,6 +271,76 @@ test('reminders set through the phone are visible to the web Dropbox', async t =
   assert.equal((await cleared.json()).remind_at, '');
 });
 
+test('every drop gets a title no other drop is using', async t => {
+  const server = await startServer();
+  t.after(() => stop(server));
+
+  const send1 = async text => (await send(server.origin, '/api/shortcuts/drops', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  })).json();
+
+  assert.equal((await send1('Telegram Chats with Agents Commands')).title, 'Telegram Chats with Agents Commands');
+  assert.equal((await send1('Telegram Chats with Agents Commands')).title, 'Telegram Chats with Agents Commands (2)');
+  assert.equal((await send1('Telegram Chats with Agents Commands')).title, 'Telegram Chats with Agents Commands (3)');
+
+  // Case and surrounding space do not make a title different.
+  assert.equal((await send1('  telegram chats with agents commands  ')).title, 'telegram chats with agents commands (4)');
+
+  // A different note is left alone.
+  assert.equal((await send1('top ways to use pushcut')).title, 'top ways to use pushcut');
+
+  // An explicit title counts the same way.
+  const explicit = await (await send(server.origin, '/api/shortcuts/drops', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: 'anything at all', title: 'top ways to use pushcut' }),
+  })).json();
+  assert.equal(explicit.title, 'top ways to use pushcut (2)');
+});
+
+test('the web Dropbox numbers duplicate titles too, and titles stay in range', async t => {
+  const server = await startServer();
+  t.after(() => stop(server));
+
+  const login = await fetch(`${server.origin}/api/session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ passphrase: PASSPHRASE }),
+  });
+  const cookie = login.headers.get('set-cookie').split(';')[0];
+
+  const create = async body => (await fetch(`${server.origin}/api/drops`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', cookie },
+    body: JSON.stringify({ priority: 'normal', ...body }),
+  })).json();
+
+  assert.equal((await create({ content: 'Weekly review notes' })).title, 'Weekly review notes');
+  assert.equal((await create({ content: 'Weekly review notes' })).title, 'Weekly review notes (2)');
+
+  // A phone drop and a web drop share one namespace.
+  const fromPhone = await (await send(server.origin, '/api/shortcuts/drops', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: 'Weekly review notes' }),
+  })).json();
+  assert.equal(fromPhone.title, 'Weekly review notes (3)');
+
+  // A title taken from the content is capped at 120 characters.
+  const long = 'x'.repeat(400);
+  assert.equal((await create({ content: long })).title.length, 120);
+
+  // An explicit title fills the 200-character column, and the suffix must not
+  // push the next one past it.
+  const full = 'y'.repeat(200);
+  assert.equal((await create({ content: 'first', title: full })).title.length, 200);
+  const second = await create({ content: 'second', title: full });
+  assert.equal(second.title.length, 200);
+  assert.match(second.title, / \(2\)$/);
+});
+
 test('the settings page can read the setup details but never the token', async t => {
   const server = await startServer();
   t.after(() => stop(server));
