@@ -106,6 +106,7 @@ test('a plain-text body from the share sheet becomes a drop', async t => {
   assert.equal(created.title, 'Book the dentist');
   assert.equal(created.content, 'Book the dentist');
   assert.equal(created.subject, 'Inbox');
+  assert.equal(created.project, 'iOS');
   assert.equal(created.remind_at, '');
   assert.match(created.url, /\/mission-board\.html\?task=drop-/);
 

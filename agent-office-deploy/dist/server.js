@@ -2874,9 +2874,10 @@ function buildShortcutDropPayload(input) {
       // reach for the subject and every phone drop would be called "Inbox".
       title: deriveDropTitle({ title: firstDefined(input, ['title']), content }),
       // Something sent with a time on it is a reminder; everything else lands
-      // in the inbox lane the way a drop typed into the web form does.
+      // in the inbox lane. Phone Shortcut drops still belong to the iOS
+      // project so they show in mission-board.html?view=ios.
       subject: explicitSubject || (when ? REMINDER_SUBJECT : 'Inbox'),
-      project: explicitProject || (when ? 'iOS' : ''),
+      project: explicitProject || 'iOS',
       agent: firstDefined(input, ['agent']) ?? '',
       tags: firstDefined(input, ['tags']) ?? '',
       priority: String(firstDefined(input, ['priority']) ?? 'normal').toLowerCase(),
