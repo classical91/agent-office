@@ -976,7 +976,12 @@
 
   /* ── MOBILE RESPONSIVE ─────────────────────────────── */
   @media (max-width: 768px) {
-    body { overflow: auto; }
+    /* The page scrolls here, but a 100vh body meant the accent wash (a
+       scroll-attached gradient) was only painted for the first screenful —
+       below that the flat colour took over and the theme visibly broke in the
+       middle of the page. Let the body grow to its content so the wash covers
+       all of it. */
+    body { overflow: auto; height: auto; min-height: 100vh; }
     .layout { grid-template-columns: 1fr !important; overflow: visible; }
     .nav { display: none !important; }
     .feed { display: none !important; }
