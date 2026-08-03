@@ -121,7 +121,7 @@ test('a reminder sent from the phone comes back when it is due', async t => {
   const past = await send(server.origin, '/api/shortcuts/drops', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: 'Call the bank', remind: '2026-01-01T09:00:00Z' }),
+    body: JSON.stringify({ text: 'Call the bank', remind: '2026-01-01T09:00:00Z', project: '' }),
   });
   assert.equal(past.status, 201);
   const due = await past.json();

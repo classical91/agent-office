@@ -2863,6 +2863,7 @@ function buildShortcutDropPayload(input) {
 
   const when = firstDefined(input, ['remind_at', 'remind', 'when', 'due']);
   const explicitSubject = String(firstDefined(input, ['subject', 'category']) ?? '').trim();
+  const explicitProject = String(firstDefined(input, ['project']) ?? '').trim();
   const url = String(firstDefined(input, ['url', 'link']) ?? '').trim();
 
   return {
@@ -2875,7 +2876,7 @@ function buildShortcutDropPayload(input) {
       // Something sent with a time on it is a reminder; everything else lands
       // in the inbox lane the way a drop typed into the web form does.
       subject: explicitSubject || (when ? REMINDER_SUBJECT : 'Inbox'),
-      project: firstDefined(input, ['project']) ?? (when ? 'iOS' : ''),
+      project: explicitProject || (when ? 'iOS' : ''),
       agent: firstDefined(input, ['agent']) ?? '',
       tags: firstDefined(input, ['tags']) ?? '',
       priority: String(firstDefined(input, ['priority']) ?? 'normal').toLowerCase(),
