@@ -2038,7 +2038,17 @@ function toggleNavSub(e, chevronEl) {
   saveNavState(state);
 }
 
+// Dropbox and Dropbox iOS are the same page told apart by ?view=ios, so the
+// markup's active item is right for only one of them.
+function markActiveNavForQuery() {
+  if (new URLSearchParams(location.search).get('view') !== 'ios') return;
+  document.querySelectorAll('.nav-item[href^="/mission-board.html"]').forEach(item => {
+    item.classList.toggle('active', item.getAttribute('href').includes('view=ios'));
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  markActiveNavForQuery();
   const state = getNavState();
   document.querySelectorAll('.nav-item-parent').forEach(parentEl => {
     const sub = parentEl.parentElement && parentEl.parentElement.querySelector('.nav-sub');
@@ -2809,11 +2819,6 @@ if (document.getElementById('save-drop-btn')) {
       return;
     }
     document.getElementById('drop-title')?.focus();
-  });
-
-  document.getElementById('new-reminder-btn')?.addEventListener('click', async () => {
-    if (!await ensureDropsSession(true)) return;
-    toggleCapture('dropbox-reminder-capture', 'is-collapsed', 'reminder-content');
   });
 
   document.getElementById('save-reminder-btn')?.addEventListener('click', () => {
