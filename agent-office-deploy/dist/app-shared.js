@@ -2664,7 +2664,6 @@ async function saveDrop() {
     priority: document.getElementById('drop-priority').value,
     status:   document.getElementById('drop-status').value,
     content:  document.getElementById('drop-content').value,
-    remind_at: document.getElementById('drop-remind') ? document.getElementById('drop-remind').value : '',
   };
 
   try {
@@ -2674,6 +2673,7 @@ async function saveDrop() {
       body: JSON.stringify(payload),
     });
     clearDropForm();
+    collapseCapture('dropbox-quick-capture', 'is-collapsed-mobile');
     const drops = await loadDrops();
     if (drops !== null) { dropboxState.drops = drops; }
     renderDropbox();
@@ -2682,8 +2682,70 @@ async function saveDrop() {
   }
 }
 
+// ─── Dropbox Reminder capture ────────────────────────────────────────────────
+// Its own panel, its own two fields: what to be reminded about, and when. It
+// saves an ordinary drop under the Reminder subject, so the phone inbox and
+// the Due Now filter pick it up like any other reminder.
+
+function toggleCapture(id, collapsedClass, focusId) {
+  const panel = document.getElementById(id);
+  if (!panel) return;
+  const opened = panel.classList.toggle(collapsedClass) === false;
+  if (opened && focusId) document.getElementById(focusId)?.focus();
+}
+
+function collapseCapture(id, collapsedClass) {
+  document.getElementById(id)?.classList.add(collapsedClass);
+}
+
+async function saveReminder() {
+  if (!await ensureDropsSession(true)) return;
+
+  const contentEl = document.getElementById('reminder-content');
+  const whenEl = document.getElementById('reminder-when');
+  const content = (contentEl?.value || '').trim();
+  const when = (whenEl?.value || '').trim();
+
+  if (!content) {
+    alert('What should the reminder say?');
+    contentEl?.focus();
+    return;
+  }
+  if (!when) {
+    alert('When should this come back? Try "tomorrow 9am", "in 2h", or "friday".');
+    whenEl?.focus();
+    return;
+  }
+
+  try {
+    await requestJson(DROPS_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content,
+        // Without a title the server falls back to the subject, and every
+        // reminder would be called "Reminder".
+        title: (content.split('\n').find(Boolean) || content).slice(0, 120),
+        subject: 'Reminder',
+        category: 'Reminder',
+        status: 'inbox',
+        priority: 'normal',
+        remind_at: when,
+      }),
+    });
+    contentEl.value = '';
+    whenEl.value = '';
+    collapseCapture('dropbox-reminder-capture', 'is-collapsed');
+    const drops = await loadDrops();
+    if (drops !== null) { dropboxState.drops = drops; }
+    renderDropbox();
+  } catch (error) {
+    handleDropboxRequestError(error, 'Failed to save the reminder.');
+  }
+}
+
 function clearDropForm() {
-  ['drop-title', 'drop-project', 'drop-tags', 'drop-content', 'drop-remind'].forEach(id => {
+  ['drop-title', 'drop-project', 'drop-tags', 'drop-content'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -2704,10 +2766,35 @@ if (document.getElementById('save-drop-btn')) {
 
   document.getElementById('clear-drop-btn').addEventListener('click', clearDropForm);
 
+  // On mobile the form is hidden until this is tapped, so the list is the
+  // first thing on screen. On desktop it is always open and this just moves
+  // the cursor into it, as it always did.
   document.getElementById('new-drop-btn').addEventListener('click', async () => {
     if (!await ensureDropsSession(true)) return;
-    const el = document.getElementById('drop-title');
-    if (el) el.focus();
+    if (window.matchMedia('(max-width: 768px)').matches) {
+      toggleCapture('dropbox-quick-capture', 'is-collapsed-mobile', 'drop-title');
+      return;
+    }
+    document.getElementById('drop-title')?.focus();
+  });
+
+  document.getElementById('new-reminder-btn')?.addEventListener('click', async () => {
+    if (!await ensureDropsSession(true)) return;
+    toggleCapture('dropbox-reminder-capture', 'is-collapsed', 'reminder-content');
+  });
+
+  document.getElementById('save-reminder-btn')?.addEventListener('click', () => {
+    saveReminder().catch(err => alert(err.message));
+  });
+
+  document.getElementById('cancel-reminder-btn')?.addEventListener('click', () => {
+    document.getElementById('reminder-content').value = '';
+    document.getElementById('reminder-when').value = '';
+    collapseCapture('dropbox-reminder-capture', 'is-collapsed');
+  });
+
+  document.getElementById('reminder-when')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') saveReminder().catch(err => alert(err.message));
   });
 
   document.getElementById('drop-search').addEventListener('input', e => {

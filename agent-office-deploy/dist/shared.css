@@ -1491,6 +1491,7 @@
   .dropbox-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; }
   .dropbox-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
   .dropbox-quick-capture,
+  .dropbox-reminder-capture,
   .dropbox-table-wrap,
   .dropbox-cards-wrap,
   .drop-detail-panel {
@@ -1500,9 +1501,27 @@
     padding: 14px;
   }
   .dropbox-quick-capture { display: grid; gap: 10px; }
+  .dropbox-reminder-capture {
+    display: grid;
+    gap: 10px;
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  .capture-heading {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  /* Both capture panels open from their toolbar button. The task form is only
+     hidden on mobile, where it otherwise fills the screen before you have
+     asked for it; the reminder panel starts closed everywhere. */
+  .dropbox-reminder-capture.is-collapsed { display: none; }
   .dropbox-quick-capture input,
   .dropbox-quick-capture select,
-  .dropbox-quick-capture textarea {
+  .dropbox-quick-capture textarea,
+  .dropbox-reminder-capture input,
+  .dropbox-reminder-capture textarea {
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.10);
     border-radius: 8px;
@@ -1601,6 +1620,9 @@
     .drop-detail-back { display: flex; }
     .dropbox-layout.has-selection .dropbox-main { display: none; }
     .dropbox-layout.has-selection .drop-detail-panel { order: 0; }
+  }
+  @media (max-width: 768px) {
+    .dropbox-quick-capture.is-collapsed-mobile { display: none; }
   }
   @media (max-width: 600px) {
     .dropbox-view { padding: 12px; }
