@@ -2424,10 +2424,22 @@ function getFilteredDrops() {
 }
 
 function renderDropbox() {
+  syncDropSelectionClass();
   populateSubjectFilter();
   if (dropboxState.view === 'table') renderDropTable();
   else renderDropCards();
   renderDetailPanel();
+}
+
+// Drives the one-column layout: with a note open, the filters and the list are
+// hidden and the note gets the screen. Wide screens ignore the class entirely
+// and keep showing both panes.
+function syncDropSelectionClass() {
+  const view = document.getElementById('dropbox-view');
+  if (!view) return;
+  const selected = Boolean(dropboxState.selectedId)
+    && dropboxState.drops.some(drop => drop.id === dropboxState.selectedId);
+  view.classList.toggle('has-selection', selected);
 }
 
 function populateSubjectFilter() {

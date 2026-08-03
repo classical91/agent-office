@@ -1595,6 +1595,38 @@
   .drop-detail-link-item { font-size: 13px; color: #a78bfa; cursor: pointer; }
   .drop-detail-link-item:hover { text-decoration: underline; }
   .detail-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.07); }
+  /* The Mission Board's detail panel is plain h3/h4/p/pre. Unstyled, that is
+     32px browser-default headings and a monospace block that never wraps, so
+     a note ran off the side of the phone. */
+  .drop-detail h3 { font-size: 17px; font-weight: 700; line-height: 1.35; margin: 0 0 8px; color: var(--text); }
+  .drop-detail h4 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 16px 0 6px; }
+  .drop-detail p { font-size: 12px; color: var(--muted); margin: 3px 0; }
+  .drop-detail p strong { color: var(--text); font-weight: 600; }
+  .drop-content-view {
+    margin: 6px 0 0;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  /* Only shown once the list is out of the way, which is the one place you
+     need a way back to it. */
+  .mission-detail-back {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 12px;
+    padding: 0;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--accent);
+    cursor: pointer;
+  }
   .dbadge { display: inline-flex; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; white-space: nowrap; }
   .dbadge-subject  { background: rgba(124,92,255,0.18); color: #a78bfa; }
   .dbadge-priority { background: rgba(255,140,0,0.18);  color: #fbbf24; }
@@ -1619,12 +1651,19 @@
   .btn-danger:hover { background: rgba(248,113,113,0.1); }
   .hidden { display: none !important; }
   .drop-detail-back { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; font-size: 14px; color: var(--accent); cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; font-weight: 500; }
+  /* One column: reading a note and browsing the list are separate screens
+     rather than two panes. Nothing selected means no empty "Select a task"
+     placeholder taking the top of the page; something selected means the
+     filters and the list step aside so the note has the screen to itself. */
   @media (max-width: 1100px) {
     .dropbox-layout { grid-template-columns: 1fr; }
     .drop-detail-panel { order: -1; }
     .drop-detail-back { display: flex; }
-    .dropbox-layout.has-selection .dropbox-main { display: none; }
-    .dropbox-layout.has-selection .drop-detail-panel { order: 0; }
+    .dropbox-view:not(.has-selection) .drop-detail-panel { display: none; }
+    .dropbox-view.has-selection .dropbox-filters,
+    .dropbox-view.has-selection .dropbox-main { display: none; }
+    .dropbox-view.has-selection .drop-detail-panel { order: 0; }
+    .mission-detail-back { display: inline-flex; }
   }
   @media (max-width: 768px) {
     .dropbox-quick-capture.is-collapsed-mobile { display: none; }
