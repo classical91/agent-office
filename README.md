@@ -4,7 +4,8 @@ A multi-page web app that acts as a personal "office" for AI agents — a place 
 
 ## Features
 
-- **Dropbox / Mission Board** — capture notes, ideas, reminders, and tasks with subject, status, priority, and tags. Tap any note to open it in a full-screen reading view. Anything given a "remind me" time comes back when it is due.
+- **Dropbox / Mission Board** — capture notes, ideas, reminders, and tasks with subject, status, priority, and tags. Tap any note to open it in a full-screen reading view.
+- **Dropbox Reminder** — its own two-field panel on the Dropbox page (what to be reminded about, and when) for things you are putting down for later rather than tasks you are working. It comes back when it is due.
 - **Phone inbox** — a token-authenticated API for iOS Shortcuts: send a note or reminder to the Dropbox from your phone, and pull back whatever has come due. See [Phone inbox](#phone-inbox--ios-shortcuts).
 - **Memory** — per-agent memory entries that agents can reference across sessions.
 - **Calendar** — a Google Calendar-backed control surface for the office: agent/project metadata on every block, live run status, an Agent Assistant drawer, agent-timeline filters, and a scored scheduling policy instead of first-available-slot.
@@ -300,6 +301,21 @@ There is also a no-Shortcut version: bookmark
 opens filtered to what has come due. The same filter is a dropdown on the
 Dropbox page ("Due Now" / "Has Reminder"), and "Reminder Time" is a sort
 option.
+
+### In the browser
+
+**Dropbox Reminder** is its own panel on the Dropbox page, opened by the
+toolbar button of that name: two fields — what to be reminded about, and when
+— and nothing else, because a reminder is not a task being worked. It saves an
+ordinary drop under the **Reminder** subject, so the phone inbox, the Due Now
+filter, and the Remind column all pick it up.
+
+Reminders on existing tasks are set from the task's detail panel ("Remind Me"),
+not from the new-task form.
+
+Both capture panels open from their toolbar button. On screens narrower than
+768px the new-task form starts closed too, so the Dropbox opens on the list
+rather than on a full screen of empty fields; **New Task** toggles it.
 
 For a Shortcut that lets you tick items off, drop `format=text` and work with
 the JSON instead: **Get Dictionary Value** `items` → **Repeat with Each** →
