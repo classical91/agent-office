@@ -126,6 +126,7 @@ test('a reminder sent from the phone comes back when it is due', async t => {
   assert.equal(past.status, 201);
   const due = await past.json();
   assert.equal(due.subject, 'Reminder');
+  assert.equal(due.project, 'iOS');
   assert.equal(due.remind_at, '2026-01-01T09:00:00.000Z');
 
   await send(server.origin, '/api/shortcuts/drops', {

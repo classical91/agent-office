@@ -256,6 +256,7 @@
       }
       return baseSave();
     };
+    if (currentView === 'dropbox') renderDropbox();
   }
 
   document.addEventListener('DOMContentLoaded', installMissionBoard);
