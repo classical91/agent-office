@@ -178,6 +178,7 @@
     const reminder = dropReminderInfo(drop);
     panel.innerHTML = `
       <div class="drop-detail">
+        <button type="button" id="mission-detail-back" class="mission-detail-back">← All tasks</button>
         <h3>${escHTML(drop.title || 'Untitled task')}</h3>
         <div class="detail-badges">
           ${dropReminderBadge(drop)}
@@ -209,6 +210,12 @@
           <button id="delete-drop-btn" class="btn btn-danger">Delete</button>
         </div>
       </div>`;
+    document.getElementById('mission-detail-back').addEventListener('click', () => {
+      dropboxState.selectedId = null;
+      renderDropbox();
+      document.getElementById('dropbox-view')?.scrollIntoView({ block: 'start' });
+    });
+
     const remindInput = document.getElementById('mission-detail-remind');
     const setReminder = async () => {
       const value = remindInput.value.trim();
@@ -253,6 +260,7 @@
     window.getFilteredDrops = getFilteredDrops = filteredDrops;
     const baseRender = renderDropbox;
     window.renderDropbox = renderDropbox = function () {
+      syncDropSelectionClass();
       ensureMissionControls();
       populateSubjectFilter();
       populateProjectFilter();
