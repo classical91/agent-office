@@ -955,9 +955,9 @@ window.SETTINGS = (() => {
 
   // Mirrors the derivations in shared.css :root, for the picker previews.
   const surface = {
-    wash:   (a) => `color-mix(in srgb, ${a} 24%, #0a0b0e)`,
-    panel:  (a) => `color-mix(in srgb, ${a} 16%, #15171d)`,
-    border: (a) => `color-mix(in srgb, ${a} 30%, #262a32)`,
+    wash:   (a) => `color-mix(in srgb, ${a} 3%, #0e1013)`,
+    panel:  (a) => `color-mix(in srgb, ${a} 5%, #15181c)`,
+    border: (a) => `color-mix(in srgb, ${a} 10%, #23282f)`,
   };
 
   function applyTheme(name) {

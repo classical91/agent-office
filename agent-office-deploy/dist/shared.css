@@ -3,14 +3,18 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    /* Themes set --accent only; every surface below derives from it, so the
-       whole app washes with one steady colour (mirrors the hub's palette). */
+    /* Themes set --accent only. The surfaces below carry a whisper of it - just
+       enough that a theme feels related to its ground - and no more: at the old
+       strengths (panel 16%, border 30%, muted 20%, page 24-46%) picking a colour
+       did not colour the controls, it put a filter over the entire product. The
+       accent earns its keep on buttons, active nav, focus rings and links, where
+       it means something. */
     --accent: #6366f1;
-    --bg: #0a0b0e;
-    --panel: color-mix(in srgb, var(--accent) 16%, #15171d);
-    --border: color-mix(in srgb, var(--accent) 30%, #262a32);
-    --text: #e8ecf5;
-    --muted: color-mix(in srgb, var(--accent) 20%, #9aa0ab);
+    --bg: color-mix(in srgb, var(--accent) 3%, #0e1013);
+    --panel: color-mix(in srgb, var(--accent) 5%, #15181c);
+    --border: color-mix(in srgb, var(--accent) 10%, #23282f);
+    --text: #e8eaed;
+    --muted: #868d96;
     --view-bg: transparent;
     --green: #22c55e;
     --yellow: #eab308;
@@ -23,9 +27,10 @@
   }
 
   body {
+    /* A faint wash off the top edge, not a coloured page. */
     background:
-      radial-gradient(1400px 900px at 50% -15%, color-mix(in srgb, var(--accent) 46%, var(--bg)) 0%, transparent 65%),
-      color-mix(in srgb, var(--accent) 24%, var(--bg)) fixed;
+      radial-gradient(1200px 800px at 50% -20%, color-mix(in srgb, var(--accent) 9%, var(--bg)) 0%, transparent 60%),
+      var(--bg) fixed;
     color: var(--text);
     font-family: 'Inter', sans-serif;
     height: 100vh;
