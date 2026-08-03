@@ -20,6 +20,8 @@ const CALENDAR_DISABLED_RECURRING_FILE = path.resolve(__dirname, process.env.CAL
 const CALENDAR_RECURRING_OVERRIDES_FILE = path.resolve(__dirname, process.env.CALENDAR_RECURRING_OVERRIDES_FILE || 'calendar-recurring-overrides.json');
 const APP_SETTINGS_FILE = path.resolve(__dirname, process.env.APP_SETTINGS_FILE || '.app-settings.json');
 const PROMPTS_FILE = path.resolve(__dirname, process.env.PROMPTS_FILE || 'prompts.json');
+const STREAKS_FILE = path.resolve(__dirname, process.env.STREAKS_FILE || 'streaks.json');
+const STREAK_DAYS_FILE = path.resolve(__dirname, process.env.STREAK_DAYS_FILE || 'streak-days.json');
 const MAX_BODY_BYTES = 50 * 1024;
 const SESSION_COOKIE = 'agent_office_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
@@ -389,6 +391,116 @@ function validateMemoryPatchInput(input) {
   return { ok: true, value: { content } };
 }
 
+// ─── Streaks ─────────────────────────────────────────────────────────────────
+// A streak is a habit you are keeping; a streak day is one date you kept it.
+// Days are stored as plain YYYY-MM-DD keys in the server's timezone, never as
+// timestamps: "did I run today" is a question about a calendar day, and a
+// timestamp would move the answer across a timezone boundary.
+
+const STREAK_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+function isDayKey(value) {
+  if (typeof value !== 'string' || !STREAK_DAY_PATTERN.test(value)) return false;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+
+function todayKey() {
+  return dateKeyForLocalDate(new Date());
+}
+
+function shiftDayKey(dayKey, days) {
+  const [year, month, day] = dayKey.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  date.setDate(date.getDate() + days);
+  return dateKeyForLocalDate(date);
+}
+
+function normalizeStreakType(value) {
+  const slug = normalizeIdPart(value).slice(0, 32);
+  return slug || 'habit';
+}
+
+function normalizeStreakColor(value) {
+  const color = cleanText(value, 7).toLowerCase();
+  return /^#[0-9a-f]{6}$/.test(color) ? color : '';
+}
+
+function validateStreakInput(input, partial = false) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return { ok: false, error: 'Body must be a JSON object.' };
+  }
+
+  const value = {};
+
+  if (input.name !== undefined || !partial) {
+    const name = cleanText(input.name, 120);
+    if (!name) return { ok: false, error: 'A streak needs a name.' };
+    value.name = name;
+  }
+  if (input.type !== undefined || !partial) value.type = normalizeStreakType(input.type);
+  if (input.color !== undefined || !partial) value.color = normalizeStreakColor(input.color);
+  if (input.notes !== undefined || !partial) value.notes = cleanText(input.notes, 500);
+  if (input.archived !== undefined) value.archived = Boolean(input.archived);
+  else if (!partial) value.archived = false;
+
+  if (partial && Object.keys(value).length === 0) {
+    return { ok: false, error: 'Nothing to update.' };
+  }
+  return { ok: true, value };
+}
+
+/**
+ * Turn a streak's marked days into the numbers the page shows.
+ *
+ * The current run is allowed to end on yesterday as well as today: a day you
+ * have not finished yet is not a day you have missed, so a streak only breaks
+ * once a full day has gone by unmarked.
+ */
+function computeStreakStats(dayKeys, today = todayKey()) {
+  const marked = new Set(dayKeys);
+  const sorted = [...marked].sort();
+  const stats = {
+    total_days: sorted.length,
+    current: 0,
+    longest: 0,
+    first_day: sorted[0] || '',
+    last_day: sorted[sorted.length - 1] || '',
+    marked_today: marked.has(today),
+  };
+
+  let run = 0;
+  let previous = '';
+  sorted.forEach(day => {
+    run = previous && shiftDayKey(previous, 1) === day ? run + 1 : 1;
+    previous = day;
+    if (run > stats.longest) stats.longest = run;
+  });
+
+  let cursor = marked.has(today) ? today : (marked.has(shiftDayKey(today, -1)) ? shiftDayKey(today, -1) : '');
+  while (cursor && marked.has(cursor)) {
+    stats.current += 1;
+    cursor = shiftDayKey(cursor, -1);
+  }
+
+  return stats;
+}
+
+function toClientStreak(row, dayKeys = []) {
+  return {
+    id: row.id,
+    name: row.name,
+    type: row.type || 'habit',
+    color: row.color || '',
+    notes: row.notes || '',
+    archived: Boolean(row.archived),
+    created_at: toIsoOrEmpty(row.created_at),
+    updated_at: toIsoOrEmpty(row.updated_at),
+    stats: computeStreakStats(dayKeys),
+  };
+}
+
 function validatePromptInput(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     return { ok: false, error: 'Body must be a JSON object.' };
@@ -656,6 +768,42 @@ async function savePromptsToFile(prompts) {
 async function saveProjectsToFile(projects) {
   writeQueue = writeQueue.then(() =>
     fs.writeFile(PROJECTS_FILE, JSON.stringify(projects, null, 2), 'utf8')
+  );
+  await writeQueue;
+}
+
+async function loadStreaksFromFile() {
+  try {
+    const raw = await fs.readFile(STREAKS_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
+}
+
+async function saveStreaksToFile(streaks) {
+  writeQueue = writeQueue.then(() =>
+    fs.writeFile(STREAKS_FILE, JSON.stringify(streaks, null, 2), 'utf8')
+  );
+  await writeQueue;
+}
+
+async function loadStreakDaysFromFile() {
+  try {
+    const raw = await fs.readFile(STREAK_DAYS_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
+}
+
+async function saveStreakDaysToFile(days) {
+  writeQueue = writeQueue.then(() =>
+    fs.writeFile(STREAK_DAYS_FILE, JSON.stringify(days, null, 2), 'utf8')
   );
   await writeQueue;
 }
@@ -1021,6 +1169,61 @@ function createFileStorage() {
       if (deleted) await saveMemoriesToFile(next);
       return deleted;
     },
+    async listStreaks() {
+      const [streaks, days] = await Promise.all([loadStreaksFromFile(), loadStreakDaysFromFile()]);
+      return streaks.map(streak =>
+        toClientStreak(streak, days.filter(day => day.streak_id === streak.id).map(day => day.day))
+      );
+    },
+    async createStreak(streak) {
+      const streaks = await loadStreaksFromFile();
+      streaks.push(streak);
+      await saveStreaksToFile(streaks);
+      return toClientStreak(streak);
+    },
+    async updateStreak(id, patch) {
+      const streaks = await loadStreaksFromFile();
+      const streak = streaks.find(item => item.id === id);
+      if (!streak) return null;
+      Object.assign(streak, patch, { updated_at: new Date().toISOString() });
+      await saveStreaksToFile(streaks);
+      const days = await loadStreakDaysFromFile();
+      return toClientStreak(streak, days.filter(day => day.streak_id === id).map(day => day.day));
+    },
+    async deleteStreak(id) {
+      const streaks = await loadStreaksFromFile();
+      const next = streaks.filter(item => item.id !== id);
+      const deleted = next.length !== streaks.length;
+      if (!deleted) return false;
+      await saveStreaksToFile(next);
+      const days = await loadStreakDaysFromFile();
+      await saveStreakDaysToFile(days.filter(day => day.streak_id !== id));
+      return true;
+    },
+    async listStreakDays(range = {}) {
+      const days = await loadStreakDaysFromFile();
+      return days
+        .filter(day => (!range.from || day.day >= range.from) && (!range.to || day.day <= range.to))
+        .sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
+    },
+    async markStreakDay(streakId, day, note) {
+      const streaks = await loadStreaksFromFile();
+      if (!streaks.some(item => item.id === streakId)) return null;
+      const days = await loadStreakDaysFromFile();
+      const existing = days.find(item => item.streak_id === streakId && item.day === day);
+      const row = existing || { streak_id: streakId, day, note: '', created_at: new Date().toISOString() };
+      row.note = note;
+      if (!existing) days.push(row);
+      await saveStreakDaysToFile(days);
+      return row;
+    },
+    async unmarkStreakDay(streakId, day) {
+      const days = await loadStreakDaysFromFile();
+      const next = days.filter(item => !(item.streak_id === streakId && item.day === day));
+      const deleted = next.length !== days.length;
+      if (deleted) await saveStreakDaysToFile(next);
+      return deleted;
+    },
     async listPrompts() {
       const prompts = await loadPromptsFromFile();
       return prompts.map(toClientPrompt);
@@ -1240,6 +1443,33 @@ async function createPostgresStorage() {
     )
   `);
   await pool.query(`ALTER TABLE prompts ADD COLUMN IF NOT EXISTS folder VARCHAR(200) NOT NULL DEFAULT ''`);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS streaks (
+      id TEXT PRIMARY KEY,
+      name VARCHAR(120) NOT NULL,
+      type VARCHAR(32) NOT NULL DEFAULT 'habit',
+      color VARCHAR(7) NOT NULL DEFAULT '',
+      notes TEXT NOT NULL DEFAULT '',
+      archived BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  // The day is a calendar key (YYYY-MM-DD) rather than a DATE or a timestamp:
+  // the app decides which day a mark belongs to, and storing it as text keeps
+  // the driver from handing back a Date that a timezone can shift.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS streak_days (
+      streak_id TEXT NOT NULL REFERENCES streaks(id) ON DELETE CASCADE,
+      day CHAR(10) NOT NULL,
+      note TEXT NOT NULL DEFAULT '',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (streak_id, day)
+    )
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS streak_days_day_idx ON streak_days (day)`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS app_settings (
@@ -1590,6 +1820,92 @@ async function createPostgresStorage() {
     },
     async deleteMemory(id) {
       const result = await pool.query('DELETE FROM memories WHERE id = $1', [id]);
+      return result.rowCount > 0;
+    },
+    async listStreaks() {
+      const streaksResult = await pool.query(`
+        SELECT id, name, type, color, notes, archived, created_at, updated_at
+        FROM streaks
+        ORDER BY created_at ASC
+      `);
+      const daysResult = await pool.query('SELECT streak_id, day FROM streak_days');
+      const byStreak = new Map();
+      daysResult.rows.forEach(row => {
+        const list = byStreak.get(row.streak_id) || [];
+        list.push(row.day);
+        byStreak.set(row.streak_id, list);
+      });
+      return streaksResult.rows.map(row => toClientStreak(row, byStreak.get(row.id) || []));
+    },
+    async createStreak(streak) {
+      const result = await pool.query(
+        `
+          INSERT INTO streaks (id, name, type, color, notes, archived, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
+          RETURNING id, name, type, color, notes, archived, created_at, updated_at
+        `,
+        [streak.id, streak.name, streak.type, streak.color, streak.notes, streak.archived, streak.created_at]
+      );
+      return toClientStreak(result.rows[0]);
+    },
+    async updateStreak(id, patch) {
+      const result = await pool.query(
+        `
+          UPDATE streaks SET
+            name = COALESCE($2, name),
+            type = COALESCE($3, type),
+            color = COALESCE($4, color),
+            notes = COALESCE($5, notes),
+            archived = COALESCE($6, archived),
+            updated_at = NOW()
+          WHERE id = $1
+          RETURNING id, name, type, color, notes, archived, created_at, updated_at
+        `,
+        [
+          id,
+          patch.name === undefined ? null : patch.name,
+          patch.type === undefined ? null : patch.type,
+          patch.color === undefined ? null : patch.color,
+          patch.notes === undefined ? null : patch.notes,
+          patch.archived === undefined ? null : patch.archived,
+        ]
+      );
+      if (!result.rows[0]) return null;
+      const days = await pool.query('SELECT day FROM streak_days WHERE streak_id = $1', [id]);
+      return toClientStreak(result.rows[0], days.rows.map(row => row.day));
+    },
+    async deleteStreak(id) {
+      const result = await pool.query('DELETE FROM streaks WHERE id = $1', [id]);
+      return result.rowCount > 0;
+    },
+    async listStreakDays(range = {}) {
+      const conditions = [];
+      const params = [];
+      if (range.from) { params.push(range.from); conditions.push(`day >= $${params.length}`); }
+      if (range.to) { params.push(range.to); conditions.push(`day <= $${params.length}`); }
+      const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+      const result = await pool.query(
+        `SELECT streak_id, day, note, created_at FROM streak_days ${where} ORDER BY day ASC`,
+        params
+      );
+      return result.rows;
+    },
+    async markStreakDay(streakId, day, note) {
+      const exists = await pool.query('SELECT 1 FROM streaks WHERE id = $1', [streakId]);
+      if (!exists.rowCount) return null;
+      const result = await pool.query(
+        `
+          INSERT INTO streak_days (streak_id, day, note)
+          VALUES ($1, $2, $3)
+          ON CONFLICT (streak_id, day) DO UPDATE SET note = EXCLUDED.note
+          RETURNING streak_id, day, note, created_at
+        `,
+        [streakId, day, note]
+      );
+      return result.rows[0];
+    },
+    async unmarkStreakDay(streakId, day) {
+      const result = await pool.query('DELETE FROM streak_days WHERE streak_id = $1 AND day = $2', [streakId, day]);
       return result.rowCount > 0;
     },
     async listPrompts() {
@@ -3345,6 +3661,118 @@ const server = http.createServer(async (req, res) => {
       const deleted = await storage.deleteMemory(id);
       if (!deleted) {
         sendJson(res, 404, { error: 'Memory not found.' });
+        return;
+      }
+
+      sendJson(res, 200, { ok: true });
+      return;
+    }
+
+    // -- STREAKS API --------------------------------------------
+    // The calendar is read in one request: the streaks with their running
+    // counts, plus every mark in the window being drawn.
+    if (req.method === 'GET' && pathname === '/api/streaks') {
+      if (!requireDropsAuth(res, req)) return;
+
+      const from = parsedUrl.searchParams.get('from') || '';
+      const to = parsedUrl.searchParams.get('to') || '';
+      if ((from && !isDayKey(from)) || (to && !isDayKey(to))) {
+        sendJson(res, 400, { error: 'from and to must be YYYY-MM-DD dates.' });
+        return;
+      }
+
+      const [streaks, days] = await Promise.all([
+        storage.listStreaks(),
+        storage.listStreakDays({ from, to }),
+      ]);
+      sendJson(res, 200, { streaks, days, today: todayKey() });
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/streaks') {
+      if (!requireDropsAuth(res, req)) return;
+
+      const payload = validateStreakInput(await readJsonBody(req));
+      if (!payload.ok) {
+        sendJson(res, 400, { error: payload.error });
+        return;
+      }
+
+      const streak = await storage.createStreak({
+        id: `streak-${typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now()}`,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        ...payload.value,
+      });
+
+      sendJson(res, 201, streak);
+      return;
+    }
+
+    // A day is marked with PUT and cleared with DELETE, so a Shortcut that
+    // fires twice on the same day cannot turn a kept day back off.
+    {
+      const dayRoute = /^\/api\/streaks\/([^/]+)\/days\/([^/]+)$/.exec(pathname);
+      if (dayRoute && (req.method === 'PUT' || req.method === 'POST' || req.method === 'DELETE')) {
+        if (!requireDropsAuth(res, req)) return;
+
+        const streakId = decodeURIComponent(dayRoute[1]);
+        const day = decodeURIComponent(dayRoute[2]);
+        if (!isDayKey(day)) {
+          sendJson(res, 400, { error: 'The day must be a YYYY-MM-DD date.' });
+          return;
+        }
+
+        if (req.method === 'DELETE') {
+          const deleted = await storage.unmarkStreakDay(streakId, day);
+          sendJson(res, 200, { ok: true, marked: false, removed: deleted, day });
+          return;
+        }
+
+        const body = await readJsonBody(req);
+        const marked = await storage.markStreakDay(streakId, day, cleanText(body.note, 300));
+        if (!marked) {
+          sendJson(res, 404, { error: 'Streak not found.' });
+          return;
+        }
+
+        sendJson(res, 200, { ok: true, marked: true, day: marked.day, note: marked.note || '' });
+        return;
+      }
+    }
+
+    if (req.method === 'PATCH' && pathname.startsWith('/api/streaks/')) {
+      if (!requireDropsAuth(res, req)) return;
+
+      const id = decodeURIComponent(pathname.slice('/api/streaks/'.length)).trim();
+      if (!id) {
+        sendJson(res, 400, { error: 'Streak id is required.' });
+        return;
+      }
+
+      const payload = validateStreakInput(await readJsonBody(req), true);
+      if (!payload.ok) {
+        sendJson(res, 400, { error: payload.error });
+        return;
+      }
+
+      const streak = await storage.updateStreak(id, payload.value);
+      if (!streak) {
+        sendJson(res, 404, { error: 'Streak not found.' });
+        return;
+      }
+
+      sendJson(res, 200, streak);
+      return;
+    }
+
+    if (req.method === 'DELETE' && pathname.startsWith('/api/streaks/')) {
+      if (!requireDropsAuth(res, req)) return;
+
+      const id = decodeURIComponent(pathname.slice('/api/streaks/'.length)).trim();
+      const deleted = await storage.deleteStreak(id);
+      if (!deleted) {
+        sendJson(res, 404, { error: 'Streak not found.' });
         return;
       }
 

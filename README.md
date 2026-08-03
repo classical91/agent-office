@@ -9,6 +9,7 @@ A multi-page web app that acts as a personal "office" for AI agents — a place 
 - **Phone inbox** — a token-authenticated API for iOS Shortcuts: send a note or reminder to the Dropbox from your phone, and pull back whatever has come due. See [Phone inbox](#phone-inbox--ios-shortcuts).
 - **Memory** — per-agent memory entries that agents can reference across sessions.
 - **Calendar** — a Google Calendar-backed control surface for the office: agent/project metadata on every block, live run status, an Agent Assistant drawer, agent-timeline filters, and a scored scheduling policy instead of first-available-slot.
+- **Streaks** — every day you kept a habit up, plotted on a month grid and a year strip. Each streak carries a type (Health, Deep Work, Avoid, …) and a colour, the calendar can be filtered down to one streak or one type, and a day is marked from the day itself or from the streak's **Mark today** button. See [Streaks](#streaks-1).
 - **Org chart** — a visual layout of the agent team.
 - **Office view** — a "room" view with each agent's avatar and current status.
 - **AI Landscape** — a tracker page for the AI model/tooling landscape.
@@ -36,6 +37,7 @@ agent-office-deploy/
     calendar.html              # Calendar page
     resets.html                # Resets page
     ai-landscape.html          # AI Landscape page
+    streaks.html               # Streaks page
     mission-board.html         # Mission Board (Dropbox) page
     project-rooms.html         # Project Rooms page
     agent-registry.html        # Agent Registry page
@@ -46,6 +48,7 @@ agent-office-deploy/
                                 #   view-switching, nav helpers, Dropbox/Memory/Settings/Resets logic
     workspace-systems.css      # Extra styles for Mission Board / Project Rooms / Agent Registry
     mission-board.js           # Mission Board-only logic
+    streaks.{js,css}           # Streaks-only logic and styles
     project-rooms.js           # Project Rooms-only logic
     agent-registry.js          # Agent Registry-only logic
     calendar-view.{js,css}     # Calendar-only logic
@@ -85,7 +88,9 @@ npm test
 status and calendar states, event metadata round-trips (including through
 Google's extended properties), the agent run lifecycle, the scheduling policy
 and slot scoring, natural-language plan preview/commit, the incremental
-Google sync state machine, reminder-time parsing, and the phone inbox
+Google sync state machine, reminder-time parsing, the streaks API (the
+passphrase gate, how a run is built and broken, repeated marks, day ranges,
+rejected dates, and deleting a streak with its days), and the phone inbox
 (token auth and throttling, the JSON/form/plain-text/query ways of sending a
 drop, the due scopes, done/snooze, and that a reminder set on the phone shows
 up in the web Dropbox).
@@ -119,6 +124,12 @@ All endpoints return JSON.
 | POST   | `/api/memories`                   | Create a memory entry            |
 | PATCH  | `/api/memories/:id`               | Update a memory entry            |
 | DELETE | `/api/memories/:id`               | Delete a memory entry            |
+| GET    | `/api/streaks`                    | Streaks with their counts, plus the marked days |
+| POST   | `/api/streaks`                    | Create a streak                  |
+| PATCH  | `/api/streaks/:id`                | Rename, retype, recolour or archive a streak |
+| DELETE | `/api/streaks/:id`                | Delete a streak and its days     |
+| PUT    | `/api/streaks/:id/days/:day`      | Mark a day as kept               |
+| DELETE | `/api/streaks/:id/days/:day`      | Clear a marked day               |
 | GET    | `/api/calendar/status`            | Check Google Calendar connection |
 | GET    | `/api/calendar/oauth/start`        | Start Google OAuth authorization |
 | GET    | `/api/calendar/oauth/callback`     | Complete Google OAuth             |
@@ -183,6 +194,41 @@ right-hand drawer on desktop, with "What should I do next?", "Schedule my
 highest-priority task", "Protect two hours for Agent Office", "Prepare me for
 my next meeting" and "Show conflicts and overdue work", plus a
 natural-language field that previews a plan before anything is created.
+
+## Streaks
+
+**Streaks** in the side menu is a calendar that only answers one question:
+which days did I keep this up? It is deliberately not the Calendar — nothing
+on it is scheduled, nothing has a start or end time, and no agent is attached.
+A day is either kept or it is not, and the month grid exists so that a run of
+kept days reads as a run.
+
+**A streak** is one thing you are keeping up: a name, a **type**, a colour and
+an optional note about what counts. The types are Habit, Health, Deep Work,
+Learning, Creative, Money, Avoid (for the ones you are breaking) and Other,
+each with its own colour, and **Custom** takes any label you like. A streak can
+be archived when you are done with it, which hides it without losing its
+history, and deleting one takes its days with it.
+
+**Marking a day.** *Mark today* on a streak's card is the daily button. Tapping
+any day on the grid opens that day and lists every streak in view with a check
+you can toggle, so a day missed on the phone can be filled in later, with a
+note if you want one. Days ahead of today cannot be marked.
+
+**Filtering.** The two dropdowns above the calendar narrow it to one streak or
+to one type. With several streaks in view each day carries a coloured dot per
+streak kept; with exactly one in view the whole cell takes that streak's colour,
+so the run shows as a band. Underneath, a year strip plots the same days a week
+per column.
+
+**The counts.** Current run, longest ever, total days and last day are worked
+out on the server, so `/api/streaks` gives a phone the same numbers the page
+shows. A run is allowed to end on yesterday as well as today: a day you have not
+finished is not a day you have missed, so a streak only breaks once a full day
+has gone by unmarked.
+
+Streaks sit behind the same `DROPS_PASSPHRASE` as the Dropbox and share its
+session cookie, so unlocking either one unlocks the other.
 
 ## Phone inbox / iOS Shortcuts
 

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<title>Streaks - Agent Office</title>
+<link rel="stylesheet" href="shared.css?v=side-menu-20260802"/>
+<link rel="stylesheet" href="streaks.css?v=streaks-20260803"/>
+<!-- Apply saved theme before first paint to avoid a flash of the default theme. Mirrors THEMES in app-shared.js. -->
+<script>
+(function(){
+  // A theme is just an accent; shared.css derives every surface from it.
+  var ACCENTS={dark:'#6366f1',midnight:'#10b981',ocean:'#38bdf8',crimson:'#ef4444',forest:'#22c55e',amber:'#f59e0b'};
+  try{
+    var a=ACCENTS[localStorage.getItem('ao-theme')];
+    if(a) document.documentElement.style.setProperty('--accent',a);
+  }catch(e){}
+})();
+</script>
+</head>
+<body>
+
+<!-- Mobile nav overlay -->
+<div id="mobile-overlay" onclick="closeMobileNav()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999;"></div>
+
+<div class="topbar">
+  <div style="display:flex; align-items:center; gap:12px;">
+    <button class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu" aria-label="Open navigation">&#9776;</button>
+    <div class="topbar-logo">⬡ AGENT OFFICE</div>
+  </div>
+  <div class="topbar-meta">
+    <span><span class="online-dot"></span><span id="onlineCount">9</span> agents online</span>
+    <span id="clock">--:--:--</span>
+    <button id="feed-toggle-btn" onclick="toggleFeedPanel()" title="Toggle activity panel" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">☰ Agents</button>
+    <button id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode — hide panels" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">⛶ Focus</button>
+  </div>
+</div>
+
+<div class="layout feed-collapsed">
+
+  <!-- LEFT NAV -->
+  <nav class="nav">
+
+    <!-- WORKSPACE -->
+    <div class="nav-section">
+      <div class="nav-heading">Workspace</div>
+      <div class="nav-items-wrap nav-open">
+        <div class="nav-group">
+          <a class="nav-item nav-item-parent" href="/" data-nav-sub="office">Office<span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Office pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">▾</span></a>
+          <div class="nav-sub">
+            <a class="nav-item" href="/memory.html">Memory</a>
+            <a class="nav-item" href="/org-chart.html">Org Chart</a>
+            <a class="nav-item" href="/agent-registry.html">Agent Registry</a>
+            <a class="nav-item" href="/project-rooms.html">Project Rooms</a>
+          </div>
+        </div>
+        <a class="nav-item" href="/mission-board.html">Dropbox</a>
+        <a class="nav-item" href="/mission-board.html?view=ios">Reminders</a>
+        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/ai.html" target="_blank" rel="noopener noreferrer">AI Portal <span class="link-ext">↗</span></a>
+        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/apps.html" target="_blank" rel="noopener noreferrer">My Websites &amp; Projects <span class="link-ext">↗</span></a>
+        <a class="nav-item" href="/calendar-v3.html">Calendar</a>
+        <a class="nav-item active" href="/streaks.html">Streaks</a>
+        <a class="nav-item" href="/resets.html">Resets</a>
+        <a class="nav-item" href="/ai-landscape.html" data-ai-landscape-nav="true">AI Models</a>
+        <div class="nav-item" onclick="window.open('/prompt-builder.html', '_blank')">AI Prompt Engineer</div>
+      </div>
+    </div>
+
+<!-- SYSTEM -->
+    <div class="nav-section">
+      <div class="nav-heading">System</div>
+      <div class="nav-items-wrap nav-open">
+        <a class="nav-item" href="/dev.html">Dev Links</a>
+        <a class="nav-item" href="/settings.html">Settings</a>
+        <a class="nav-link" data-dev-only="true" href="http://localhost:18789" target="_blank">
+          <div class="link-dot" style="background:var(--accent);"></div> Gateway (local) <span class="link-ext">↗</span>
+        </a>
+        <a class="nav-link" data-dev-only="true" href="http://10.0.0.106:18789" target="_blank">
+          <div class="link-dot" style="background:var(--accent);"></div> Gateway (LAN) <span class="link-ext">↗</span>
+        </a>
+      </div>
+    </div>
+
+  </nav>
+
+  <div class="view" id="view-streaks" style="flex-direction:column; background:var(--view-bg); overflow-y:auto;">
+    <section class="streaks-view">
+
+      <div class="streaks-hero">
+        <div class="streaks-kicker">Streak Calendar</div>
+        <h2>Streaks</h2>
+        <div class="streaks-sub">
+          Every day you keep something up, marked on the month. This is not the Calendar —
+          nothing here is scheduled and nothing has a time; a day is either kept or it is not.
+        </div>
+        <div class="streaks-summary" id="streaks-summary"></div>
+      </div>
+
+      <div class="streaks-toolbar">
+        <select class="streaks-select" id="streak-filter-streak" onchange="AOStreaks.setFilter('streak', this.value)" aria-label="Filter by streak"></select>
+        <select class="streaks-select" id="streak-filter-type" onchange="AOStreaks.setFilter('type', this.value)" aria-label="Filter by type"></select>
+        <button class="streaks-btn ghost" id="streak-show-archived" onclick="AOStreaks.toggleShowArchived()">Show archived</button>
+        <div class="spacer"></div>
+        <button class="streaks-btn" onclick="AOStreaks.changeMonth(-1)" aria-label="Previous month">‹</button>
+        <div class="streaks-month-label" id="streak-month-label"></div>
+        <button class="streaks-btn" onclick="AOStreaks.changeMonth(1)" aria-label="Next month">›</button>
+        <button class="streaks-btn" onclick="AOStreaks.goToday()">Today</button>
+      </div>
+
+      <div class="streaks-layout">
+
+        <!-- STREAK LIST + ADD FORM -->
+        <div class="streaks-panel">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px;">
+            <div class="streaks-panel-title" style="margin:0;">My streaks</div>
+            <button class="streaks-btn primary" onclick="AOStreaks.openForm('')">+ New</button>
+          </div>
+
+          <div id="streak-form" style="display:none; border:1px solid var(--border); border-radius:12px; padding:13px; margin-bottom:14px; background:rgba(0,0,0,0.25);">
+            <div class="streaks-panel-title" id="streak-form-title">New streak</div>
+
+            <div class="streak-form-field">
+              <label class="streak-form-label" for="streak-form-name">What are you keeping up?</label>
+              <input type="text" class="streaks-input" id="streak-form-name" placeholder="e.g. Morning run" maxlength="120" />
+            </div>
+
+            <div class="streak-form-field">
+              <label class="streak-form-label">Type</label>
+              <div class="streak-type-picker" id="streak-type-picker"></div>
+            </div>
+
+            <div class="streak-form-field" id="streak-form-custom-field" style="display:none;">
+              <label class="streak-form-label" for="streak-form-custom">Custom type</label>
+              <input type="text" class="streaks-input" id="streak-form-custom" placeholder="e.g. rehab" maxlength="32" />
+            </div>
+
+            <div class="streak-form-field">
+              <label class="streak-form-label" for="streak-form-color">Colour on the calendar</label>
+              <input type="color" id="streak-form-color" value="#6366f1" style="width:56px; height:34px; background:transparent; border:1px solid var(--border); border-radius:8px; padding:2px; cursor:pointer;" />
+            </div>
+
+            <div class="streak-form-field">
+              <label class="streak-form-label" for="streak-form-notes">Note (optional)</label>
+              <input type="text" class="streaks-input" id="streak-form-notes" placeholder="What counts as keeping it" maxlength="200" />
+            </div>
+
+            <div class="streak-modal-actions">
+              <button class="streaks-btn ghost" onclick="AOStreaks.closeForm()">Cancel</button>
+              <button class="streaks-btn primary" id="streak-form-save" onclick="AOStreaks.saveStreak()">Add streak</button>
+            </div>
+          </div>
+
+          <div id="streaks-list"></div>
+        </div>
+
+        <!-- THE PLOT -->
+        <div class="streaks-panel">
+          <div class="streaks-panel-title">Days kept</div>
+          <div class="streak-calendar-grid" id="streak-calendar-grid"></div>
+          <div class="streak-legend" id="streak-legend"></div>
+
+          <div class="streak-year">
+            <div class="streaks-panel-title">The last year</div>
+            <div class="streak-year-scroll">
+              <div class="streak-year-months" id="streak-year-months"></div>
+              <div class="streak-year-grid" id="streak-year-grid"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+
+  <!-- ACTIVITY FEED -->
+  <aside class="feed">
+    <div class="feed-header">
+      Activity <span class="badge" id="feedCount">0</span>
+    </div>
+    <div class="feed-list" id="feedList"></div>
+  </aside>
+
+</div>
+
+<!-- DAY EDITOR -->
+<div id="streak-day-modal" class="streak-modal-backdrop" onclick="if (event.target === this) AOStreaks.closeDay()">
+  <div class="streak-modal">
+    <div class="streak-modal-title" id="streak-day-title"></div>
+    <div class="streak-modal-sub" id="streak-day-sub"></div>
+    <div id="streak-day-rows"></div>
+    <div class="streak-modal-actions">
+      <button class="streaks-btn" onclick="AOStreaks.closeDay()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- PASSPHRASE MODAL -->
+<div id="passphrase-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.75); align-items:center; justify-content:center;">
+  <div style="background:var(--bg); border:1px solid #2a3048; border-radius:12px; padding:28px 24px; width:100%; max-width:360px; margin:0 16px;">
+    <div style="font-size:14px; font-weight:700; color:#e2e8f0; margin-bottom:6px;">🔒 Unlock Streaks</div>
+    <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">Your streaks sit behind the same passphrase as the Dropbox.</div>
+    <input id="passphrase-input" type="password" placeholder="Passphrase..."
+      style="width:100%; background:var(--view-bg); border:1px solid #2a3048; border-radius:8px; padding:12px 14px; font-size:15px; color:#e2e8f0; outline:none; box-sizing:border-box; -webkit-appearance:none;"
+      autocomplete="current-password" autocorrect="off" autocapitalize="none" spellcheck="false" />
+    <div id="passphrase-error" style="display:none; font-size:12px; color:#f87171; margin-top:8px;"></div>
+    <div style="display:flex; gap:10px; margin-top:18px;">
+      <button id="passphrase-cancel" style="flex:1; padding:11px; background:transparent; border:1px solid #2a3048; border-radius:8px; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
+      <button id="passphrase-submit" style="flex:2; padding:11px; background:var(--accent); border:none; border-radius:8px; color:#fff; font-size:13px; font-weight:600; cursor:pointer;">Unlock</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM STATUS BAR -->
+<div class="statusbar" id="statusbar"></div>
+
+<script src="app-shared.js?v=office-submenu-20260727"></script>
+<script src="streaks.js?v=streaks-20260803"></script>
+<script>
+switchView('streaks', document.querySelector('.nav-item.active'));
+</script>
+
+</body>
+</html>
