@@ -304,15 +304,18 @@ option.
 
 ### In the browser
 
-**Dropbox iOS** is its own panel on the Dropbox page: two fields — what to be
-reminded about, and when — and nothing else, because a reminder is not a task
-being worked. Open it from the **Dropbox iOS** item under Dropbox in the side
-menu (which is `/mission-board.html?capture=reminder`), or from the toolbar
-button of the same name. It saves an ordinary drop under the **Reminder**
-subject, so the phone inbox and the Due Now filter pick it up.
+**Dropbox iOS** — the **Dropbox iOS** item under Dropbox in the side menu, or
+`/mission-board.html?view=ios` — is its own screen, meant for the phone: two
+fields (what to be reminded about, and when) and nothing else. No notes, no
+filters, no list; the panel stays open after saving and says when the reminder
+is due, because there is no list to watch it land in. It saves an ordinary drop
+under the **Reminder** subject, so the phone inbox and the Due Now filter pick
+it up. The same panel is available on the Dropbox itself from the toolbar
+button of that name.
 
-Reminders on existing tasks are set from the task's detail panel ("Remind Me"),
-not from the new-task form.
+Opening a note on the Dropbox gives you the note: title, when it was written,
+and the text. **Edit** reveals the status control; archive, done and delete sit
+at the bottom.
 
 Both capture panels open from their toolbar button. On screens narrower than
 768px the new-task form starts closed too, so the Dropbox opens on the list
