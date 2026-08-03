@@ -352,8 +352,8 @@ function validateDropInput(input) {
     value: {
       remind_at: reminder.at ? reminder.at.toISOString() : null,
       title,
-      subject: category || subject || 'General',
-      category: category || subject || 'General',
+      subject: category || subject || (project === 'iOS' ? '' : 'General'),
+      category: category || subject || (project === 'iOS' ? '' : 'General'),
       project,
       agent,
       tags,
@@ -556,7 +556,8 @@ function toIsoOrEmpty(value) {
 
 function toClientDrop(row) {
   const content = row.content || '';
-  const subject = row.subject || row.category || 'General';
+  const project = row.project || '';
+  const subject = row.subject || row.category || (project === 'iOS' ? '' : 'General');
   const tags = Array.isArray(row.tags)
     ? row.tags
     : typeof row.tags === 'string'
@@ -573,7 +574,7 @@ function toClientDrop(row) {
     title: row.title || subject || deriveDropTitle({ content }),
     subject,
     category: row.category || subject,
-    project: row.project || '',
+    project,
     agent: row.agent || '',
     tags,
     status: normalizeStatus(row.status || (row.done ? 'archived' : 'idea'), 'idea'),
@@ -2873,10 +2874,9 @@ function buildShortcutDropPayload(input) {
       // Titles come off the note itself. Left blank, deriveDropTitle would
       // reach for the subject and every phone drop would be called "Inbox".
       title: deriveDropTitle({ title: firstDefined(input, ['title']), content }),
-      // Something sent with a time on it is a reminder; everything else lands
-      // in the inbox lane. Phone Shortcut drops still belong to the iOS
-      // project so they show in mission-board.html?view=ios.
-      subject: explicitSubject || (when ? REMINDER_SUBJECT : 'Inbox'),
+      // Reminders are separated by project, not subject. Keep subject free
+      // unless the caller explicitly uses it for their own grouping.
+      subject: explicitSubject,
       project: explicitProject || 'iOS',
       agent: firstDefined(input, ['agent']) ?? '',
       tags: firstDefined(input, ['tags']) ?? '',

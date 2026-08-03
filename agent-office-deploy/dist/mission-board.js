@@ -169,6 +169,7 @@
     const panel = document.getElementById('drop-detail-panel');
     if (!panel) return;
     const drop = dropboxState.drops.find(d => d.id === dropboxState.selectedId);
+    const iosMode = Boolean(document.getElementById('dropbox-view')?.classList.contains('ios-mode'));
     if (!drop) {
       panel.innerHTML = '<div class="drop-detail-empty">Select a task to view details.</div>';
       return;
@@ -182,7 +183,7 @@
         <h3>${escHTML(drop.title || 'Untitled task')}</h3>
         <div class="detail-badges">
           ${dropBadge(statusLabel(drop.status), 'status')}
-          ${dropBadge(drop.subject, 'subject')}
+          ${iosMode ? '' : dropBadge(drop.subject, 'subject')}
         </div>
         <button type="button" id="mission-detail-edit" class="btn btn-secondary mission-edit-toggle">Edit</button>
         <div id="mission-detail-edit-fields" class="mission-edit-fields is-collapsed">

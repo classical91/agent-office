@@ -2506,6 +2506,7 @@ function renderDropTable() {
   const wrap = document.getElementById('dropbox-table-wrap');
   if (!wrap) return;
   const items = getFilteredDrops();
+  const iosMode = Boolean(document.getElementById('dropbox-view')?.classList.contains('ios-mode'));
 
   if (!dropboxState.drops.length) {
     wrap.innerHTML = '<div class="drop-empty"><div class="drop-empty-title">Dropbox is clear.</div><div class="drop-empty-copy">Save your first drop using the form above.</div></div>';
@@ -2519,16 +2520,14 @@ function renderDropTable() {
   wrap.innerHTML = `
     <table class="dropbox-table">
       <thead><tr>
-        <th>Title</th><th>Subject</th><th>Project</th><th>Tags</th><th>Updated</th>
+        ${iosMode ? '<th>Title</th><th>Reminder</th><th>Updated</th>' : '<th>Title</th><th>Subject</th><th>Project</th><th>Tags</th><th>Updated</th>'}
       </tr></thead>
       <tbody>
         ${items.map(drop => `
           <tr data-drop-id="${escAttr(drop.id)}" class="${drop.id === dropboxState.selectedId ? 'selected' : ''}">
-            <td>${escHTML(drop.title || 'Untitled drop')}</td>
-            <td>${dropBadge(drop.subject, 'subject')}</td>
-            <td>${escHTML(drop.project || '—')}</td>
-            <td>${(drop.tags || []).slice(0, 3).map(t => dropBadge(t, 'tag')).join(' ')}</td>
-            <td>${dropFormatDate(drop.updated_at || drop.date)}</td>
+            ${iosMode
+              ? `<td>${escHTML(drop.title || 'Untitled drop')}</td><td>${dropReminderBadge(drop)}</td><td>${dropFormatDate(drop.updated_at || drop.date)}</td>`
+              : `<td>${escHTML(drop.title || 'Untitled drop')}</td><td>${dropBadge(drop.subject, 'subject')}</td><td>${escHTML(drop.project || '-')}</td><td>${(drop.tags || []).slice(0, 3).map(t => dropBadge(t, 'tag')).join(' ')}</td><td>${dropFormatDate(drop.updated_at || drop.date)}</td>`}
           </tr>`).join('')}
       </tbody>
     </table>`;
@@ -2540,11 +2539,11 @@ function renderDropTable() {
     });
   });
 }
-
 function renderDropCards() {
   const wrap = document.getElementById('dropbox-cards-wrap');
   if (!wrap) return;
   const items = getFilteredDrops();
+  const iosMode = Boolean(document.getElementById('dropbox-view')?.classList.contains('ios-mode'));
 
   if (!items.length) {
     wrap.innerHTML = '<div class="drop-empty"><div class="drop-empty-title">No drops match.</div><div class="drop-empty-copy">Try adjusting the filters.</div></div>';
@@ -2553,7 +2552,7 @@ function renderDropCards() {
 
   wrap.innerHTML = items.map(drop => {
     const preview = (drop.content || '').replace(/\s+/g, ' ').trim();
-    const hasMeta = drop.status || drop.subject || drop.remind_at || (drop.tags || []).length > 0;
+    const hasMeta = drop.status || (!iosMode && drop.subject) || drop.remind_at || (drop.tags || []).length > 0;
     return `
     <article class="drop-card ${drop.id === dropboxState.selectedId ? 'selected' : ''}" data-drop-id="${escAttr(drop.id)}">
       <div class="drop-card-header">
@@ -2564,7 +2563,7 @@ function renderDropCards() {
       ${hasMeta ? `<div class="drop-card-meta">
         ${dropReminderBadge(drop)}
         ${dropBadge(drop.status, 'status')}
-        ${dropBadge(drop.subject, 'subject')}
+        ${iosMode ? '' : dropBadge(drop.subject, 'subject')}
         ${(drop.tags || []).slice(0, 2).map(t => dropBadge(t, 'tag')).join('')}
       </div>` : ''}
     </article>`;
@@ -2582,6 +2581,7 @@ function openNoteView(drop) {
   const view   = document.getElementById('view-dropbox');
   const listEl = document.getElementById('dropbox-view');
   if (!view || !listEl || !drop) return;
+  const iosMode = listEl.classList.contains('ios-mode');
 
   listEl.style.display = 'none';
   document.getElementById('note-view-section')?.remove();
@@ -2593,7 +2593,7 @@ function openNoteView(drop) {
 
   const metaParts = [];
   if (drop.remind_at) metaParts.push(dropReminderBadge(drop));
-  if (drop.subject) metaParts.push(dropBadge(drop.subject, 'subject'));
+  if (!iosMode && drop.subject) metaParts.push(dropBadge(drop.subject, 'subject'));
   if (drop.status)  metaParts.push(dropBadge(drop.status, 'status'));
   if (drop.project) metaParts.push(`<span style="font-size:12px;color:var(--muted);">${escHTML(drop.project)}</span>`);
 
@@ -2755,7 +2755,7 @@ async function saveReminder() {
         // Without a title the server falls back to the subject, and every
         // reminder would be called "Reminder".
         title: (content.split('\n').find(Boolean) || content).slice(0, 120),
-        subject: 'Reminder',
+        subject: '',
         category: 'Reminder',
         project: 'iOS',
         status: 'inbox',

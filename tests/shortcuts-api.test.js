@@ -105,7 +105,7 @@ test('a plain-text body from the share sheet becomes a drop', async t => {
   const created = await response.json();
   assert.equal(created.title, 'Book the dentist');
   assert.equal(created.content, 'Book the dentist');
-  assert.equal(created.subject, 'Inbox');
+  assert.equal(created.subject, '');
   assert.equal(created.project, 'iOS');
   assert.equal(created.remind_at, '');
   assert.match(created.url, /\/mission-board\.html\?view=ios&task=drop-/);
@@ -126,7 +126,7 @@ test('a reminder sent from the phone comes back when it is due', async t => {
   });
   assert.equal(past.status, 201);
   const due = await past.json();
-  assert.equal(due.subject, 'Reminder');
+  assert.equal(due.subject, '');
   assert.equal(due.project, 'iOS');
   assert.equal(due.remind_at, '2026-01-01T09:00:00.000Z');
 
@@ -170,7 +170,7 @@ test('form bodies and query strings are accepted the same way', async t => {
   assert.equal(query.status, 201);
   const created = await query.json();
   assert.deepEqual(created.tags, ['home', 'chores']);
-  assert.equal(created.subject, 'Reminder');
+  assert.equal(created.subject, '');
 
   const empty = await send(server.origin, '/api/shortcuts/drops', { method: 'POST' });
   assert.equal(empty.status, 400);
