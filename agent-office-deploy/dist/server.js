@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const agentMeta = require('./calendar-agent-meta.js');
 const scheduling = require('./calendar-scheduling.js');
 const googleSync = require('./calendar-google-sync.js');
+const reminderTime = require('./reminder-time.js');
 
 process.env.TZ = process.env.APP_TIMEZONE || 'America/Vancouver';
 
@@ -161,6 +162,18 @@ function issueSession(res) {
 }
 
 async function readJsonBody(req) {
+  const body = await readRawBody(req);
+  if (!body) return {};
+  try {
+    return JSON.parse(body);
+  } catch (error) {
+    error.statusCode = 400;
+    error.message = 'Invalid JSON';
+    throw error;
+  }
+}
+
+async function readRawBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
     let size = 0;
@@ -188,19 +201,7 @@ async function readJsonBody(req) {
     req.on('end', () => {
       if (settled) return;
       settled = true;
-
-      if (!body) {
-        resolve({});
-        return;
-      }
-
-      try {
-        resolve(JSON.parse(body));
-      } catch (error) {
-        error.statusCode = 400;
-        error.message = 'Invalid JSON';
-        reject(error);
-      }
+      resolve(body);
     });
 
     req.on('error', error => {
@@ -315,9 +316,17 @@ function validateDropInput(input) {
     return { ok: false, error: 'Status must be one of inbox, idea, researching, coding, reviewing, ready_to_deploy, done, or archived.' };
   }
 
+  // `remind`/`when` are the phone-friendly aliases; the form and the API both
+  // send `remind_at`. All three take "tomorrow 9am" as happily as an ISO time.
+  const reminder = reminderTime.parseReminderTime(
+    input.remind_at !== undefined ? input.remind_at : input.remind !== undefined ? input.remind : input.when
+  );
+  if (!reminder.ok) return { ok: false, error: reminder.error };
+
   return {
     ok: true,
     value: {
+      remind_at: reminder.at ? reminder.at.toISOString() : null,
       title,
       subject: category || subject || 'General',
       category: category || subject || 'General',
@@ -420,6 +429,13 @@ function validatePatchInput(input) {
     patch.done = status === 'done' || status === 'archived';
   }
   if (input.tags !== undefined) patch.tags = normalizeTags(input.tags);
+  if (input.remind_at !== undefined || input.remind !== undefined) {
+    const reminder = reminderTime.parseReminderTime(
+      input.remind_at !== undefined ? input.remind_at : input.remind
+    );
+    if (!reminder.ok) return { ok: false, error: reminder.error };
+    patch.remind_at = reminder.at ? reminder.at.toISOString() : null;
+  }
 
   if (Object.keys(patch).length === 0) {
     return { ok: false, error: 'No supported fields were provided.' };
@@ -506,6 +522,14 @@ function applyCorsHeaders(req, res) {
   res.setHeader('Vary', 'Origin');
 }
 
+// Postgres hands back a Date for TIMESTAMPTZ, the JSON file hands back a
+// string, and a drop written before reminders existed has neither.
+function toIsoOrEmpty(value) {
+  if (!value) return '';
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString();
+}
+
 function toClientDrop(row) {
   const content = row.content || '';
   const subject = row.subject || row.category || 'General';
@@ -533,6 +557,7 @@ function toClientDrop(row) {
     content,
     priority: row.priority,
     done: Boolean(row.done),
+    remind_at: toIsoOrEmpty(row.remind_at),
     date: row.date || row.created_at || new Date().toISOString(),
     updated_at: row.updated_at || row.date || row.created_at || new Date().toISOString(),
   };
@@ -1128,6 +1153,9 @@ async function createPostgresStorage() {
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS tags JSONB NOT NULL DEFAULT '[]'::jsonb`);
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS links JSONB NOT NULL DEFAULT '[]'::jsonb`);
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS remind_at TIMESTAMPTZ`);
+  // Pulling the due reminders is the hot path for the phone Shortcut.
+  await pool.query(`CREATE INDEX IF NOT EXISTS drops_remind_at_idx ON drops (remind_at) WHERE remind_at IS NOT NULL`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS projects (
@@ -1314,7 +1342,7 @@ async function createPostgresStorage() {
     async listDrops() {
       const result = await pool.query(`
         SELECT id, title, subject, category, project, agent, status, tags, links,
-               content, priority, done, created_at AS date, updated_at
+               content, priority, done, remind_at, created_at AS date, updated_at
         FROM drops
         ORDER BY updated_at DESC, created_at DESC
       `);
@@ -1324,15 +1352,15 @@ async function createPostgresStorage() {
       const result = await pool.query(
         `
           INSERT INTO drops (id, title, subject, category, project, agent, status, tags, links,
-                             content, priority, done, created_at, updated_at)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$13)
+                             content, priority, done, remind_at, created_at, updated_at)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14)
           RETURNING id, title, subject, category, project, agent, status, tags, links,
-                    content, priority, done, created_at AS date, updated_at
+                    content, priority, done, remind_at, created_at AS date, updated_at
         `,
         [
           drop.id, drop.title, drop.subject, drop.category, drop.project, drop.agent || '',
           normalizeStatus(drop.status, 'idea'), JSON.stringify(drop.tags || []), JSON.stringify(drop.links || []),
-          drop.content, drop.priority, Boolean(drop.done), drop.date,
+          drop.content, drop.priority, Boolean(drop.done), drop.remind_at || null, drop.date,
         ]
       );
       return toClientDrop(result.rows[0]);
@@ -1349,7 +1377,7 @@ async function createPostgresStorage() {
           SET done = $2, status = $3, updated_at = NOW()
           WHERE id = $1
           RETURNING id, title, subject, category, project, agent, status, tags, links,
-                    content, priority, done, created_at AS date, updated_at
+                    content, priority, done, remind_at, created_at AS date, updated_at
         `,
         [id, done, nextStatus]
       );
@@ -1368,6 +1396,7 @@ async function createPostgresStorage() {
         content: 'content',
         priority: 'priority',
         done: 'done',
+        remind_at: 'remind_at',
       };
       const sets = [];
       const values = [id];
@@ -1383,7 +1412,7 @@ async function createPostgresStorage() {
           SET ${sets.join(', ')}, updated_at = NOW()
           WHERE id = $1
           RETURNING id, title, subject, category, project, agent, status, tags, links,
-                    content, priority, done, created_at AS date, updated_at
+                    content, priority, done, remind_at, created_at AS date, updated_at
         `,
         values
       );
@@ -1431,7 +1460,7 @@ async function createPostgresStorage() {
       const project = projectResult.rows[0];
       if (!project) return null;
       const dropsResult = await pool.query(
-        `SELECT id, title, subject, category, project, agent, status, tags, links, content, priority, done, created_at AS date, updated_at
+        `SELECT id, title, subject, category, project, agent, status, tags, links, content, priority, done, remind_at, created_at AS date, updated_at
          FROM drops WHERE project = $1 OR project = $2 ORDER BY updated_at DESC`,
         [project.name, project.slug]
       );
@@ -2592,6 +2621,376 @@ function sendGcalOAuthResult(res, ok, message) {
 </body></html>`);
 }
 
+// -- PHONE INBOX / iOS SHORTCUTS --------------------------------
+//
+// The Dropbox UI is gated by a passphrase and a session cookie, which a phone
+// Shortcut cannot hold. These endpoints are the same Dropbox behind a static
+// bearer token instead: one to drop something in from the phone, one to pull
+// back whatever has come due, and two to clear or push out a reminder.
+//
+// The token is deliberately separate from the Dropbox passphrase - it lives on
+// the phone in plain text, so losing it should not hand over the web session
+// too. Rotate it by changing SHORTCUTS_TOKEN.
+
+const SHORTCUTS_TOKEN = String(process.env.SHORTCUTS_TOKEN || '').trim();
+const SHORTCUTS_TOKEN_MIN_LENGTH = 16;
+const SHORTCUTS_DEFAULT_LIMIT = 25;
+const SHORTCUTS_MAX_LIMIT = 100;
+const SHORTCUTS_FAILURE_LIMIT = 10;
+const SHORTCUTS_FAILURE_WINDOW_MS = 5 * 60 * 1000;
+const REMINDER_SUBJECT = 'Reminder';
+const shortcutsFailures = new Map();
+
+function shortcutsClientKey(req) {
+  const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return forwarded || req.socket.remoteAddress || 'unknown';
+}
+
+// A bearer token on the open internet invites guessing. Ten wrong tokens from
+// one address buys a five-minute timeout - enough to make an online search
+// pointless, short enough that a typo is not a lockout.
+function shortcutsThrottled(key) {
+  const entry = shortcutsFailures.get(key);
+  if (!entry) return false;
+  if (Date.now() - entry.first > SHORTCUTS_FAILURE_WINDOW_MS) {
+    shortcutsFailures.delete(key);
+    return false;
+  }
+  return entry.count >= SHORTCUTS_FAILURE_LIMIT;
+}
+
+function recordShortcutsFailure(key) {
+  const entry = shortcutsFailures.get(key);
+  if (!entry || Date.now() - entry.first > SHORTCUTS_FAILURE_WINDOW_MS) {
+    shortcutsFailures.set(key, { count: 1, first: Date.now() });
+    return;
+  }
+  entry.count += 1;
+}
+
+function readShortcutsToken(req, url) {
+  const bearer = /^bearer\s+(.+)$/i.exec(String(req.headers.authorization || '').trim());
+  if (bearer) return bearer[1].trim();
+  const header = req.headers['x-shortcuts-token'];
+  if (header) return String(header).trim();
+  return String(url.searchParams.get('token') || '').trim();
+}
+
+function requireShortcutsAuth(req, res, url) {
+  if (!SHORTCUTS_TOKEN) {
+    sendJson(res, 503, {
+      error: 'The phone inbox is not configured. Set SHORTCUTS_TOKEN to a long random string.',
+    });
+    return false;
+  }
+  if (SHORTCUTS_TOKEN.length < SHORTCUTS_TOKEN_MIN_LENGTH) {
+    sendJson(res, 503, {
+      error: `SHORTCUTS_TOKEN must be at least ${SHORTCUTS_TOKEN_MIN_LENGTH} characters.`,
+    });
+    return false;
+  }
+
+  const key = shortcutsClientKey(req);
+  if (shortcutsThrottled(key)) {
+    sendJson(res, 429, { error: 'Too many bad tokens. Try again in a few minutes.' });
+    return false;
+  }
+
+  const supplied = readShortcutsToken(req, url);
+  if (!supplied || !safeCompareHash(supplied, sha256(SHORTCUTS_TOKEN))) {
+    recordShortcutsFailure(key);
+    sendJson(res, 401, { error: 'Invalid or missing token.' });
+    return false;
+  }
+
+  shortcutsFailures.delete(key);
+  return true;
+}
+
+// A Shortcut can send JSON, a form, or nothing at all with everything in the
+// query string. All three end up as one flat object, with the body winning
+// over the query when a field appears twice.
+async function readShortcutsInput(req, url) {
+  const fields = {};
+  for (const [key, value] of url.searchParams.entries()) {
+    if (key !== 'token') fields[key] = value;
+  }
+
+  const raw = req.method === 'GET' ? '' : await readRawBody(req);
+  if (!raw) return fields;
+
+  const contentType = String(req.headers['content-type'] || '').toLowerCase();
+  if (contentType.includes('application/json')) {
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      const error = new Error('Invalid JSON');
+      error.statusCode = 400;
+      throw error;
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      const error = new Error('Body must be a JSON object.');
+      error.statusCode = 400;
+      throw error;
+    }
+    return { ...fields, ...parsed };
+  }
+
+  if (contentType.includes('application/x-www-form-urlencoded')) {
+    for (const [key, value] of new URLSearchParams(raw).entries()) fields[key] = value;
+    return fields;
+  }
+
+  // Plain text: the whole body is the note. This is what the iOS share sheet
+  // sends when a Shortcut passes its input straight through.
+  return { ...fields, text: raw };
+}
+
+function firstDefined(input, keys) {
+  for (const key of keys) {
+    if (input[key] !== undefined && input[key] !== null && String(input[key]).trim() !== '') return input[key];
+  }
+  return undefined;
+}
+
+function isOpenDrop(drop) {
+  return !drop.done && drop.status !== 'done' && drop.status !== 'archived';
+}
+
+function endOfToday(now) {
+  const end = new Date(now.getTime());
+  end.setHours(23, 59, 59, 999);
+  return end;
+}
+
+function shortcutDropUrl(req, id) {
+  return `${getRequestOrigin(req)}/mission-board.html?task=${encodeURIComponent(id)}`;
+}
+
+function toShortcutItem(drop, now, req) {
+  const reminder = reminderTime.describeReminder(drop.remind_at, now);
+  return {
+    id: drop.id,
+    title: drop.title || 'Untitled drop',
+    content: drop.content || '',
+    subject: drop.subject || '',
+    project: drop.project || '',
+    priority: drop.priority || 'normal',
+    status: drop.status || 'inbox',
+    tags: drop.tags || [],
+    created_at: drop.date,
+    remind_at: drop.remind_at || '',
+    due: reminder ? reminder.due : false,
+    due_label: reminder ? reminder.label : '',
+    due_relative: reminder ? reminder.relative : '',
+    url: shortcutDropUrl(req, drop.id),
+  };
+}
+
+// due=now (default) is what a "what did I put down for later?" Shortcut wants:
+// reminders whose time has arrived. The other scopes are there so one Shortcut
+// can show today's list, everything pending, or the whole open Dropbox.
+function selectShortcutDrops(drops, scope, now) {
+  const open = drops.filter(isOpenDrop);
+  const withReminder = open.filter(drop => drop.remind_at);
+  const byDue = (a, b) => new Date(a.remind_at) - new Date(b.remind_at);
+
+  if (scope === 'any') {
+    const rest = open.filter(drop => !drop.remind_at)
+      .sort((a, b) => new Date(b.updated_at || b.date) - new Date(a.updated_at || a.date));
+    return withReminder.sort(byDue).concat(rest);
+  }
+  if (scope === 'all' || scope === 'upcoming') {
+    const pending = scope === 'upcoming'
+      ? withReminder.filter(drop => new Date(drop.remind_at) > now)
+      : withReminder;
+    return pending.sort(byDue);
+  }
+  const cutoff = scope === 'today' ? endOfToday(now) : now;
+  return withReminder.filter(drop => new Date(drop.remind_at) <= cutoff).sort(byDue);
+}
+
+function shortcutsTextReport(items, scope) {
+  if (!items.length) {
+    return scope === 'any' ? 'Dropbox is clear.' : 'Nothing due.';
+  }
+  const heading = `${items.length} ${items.length === 1 ? 'item' : 'items'}`;
+  const lines = items.map(item => {
+    const when = item.due_relative ? ` — ${item.due_relative}` : '';
+    return `• ${item.title}${when}`;
+  });
+  return [heading, ...lines].join('\n');
+}
+
+function sendText(res, statusCode, text) {
+  res.writeHead(statusCode, {
+    'Content-Type': 'text/plain; charset=utf-8',
+    'Cache-Control': 'no-store',
+  });
+  res.end(text);
+}
+
+function buildShortcutDropPayload(input) {
+  const content = String(firstDefined(input, ['content', 'text', 'note', 'body']) ?? '').trim();
+  if (!content) {
+    return { ok: false, error: 'Send some text: use "text" (or a plain-text body) for the note.' };
+  }
+
+  const when = firstDefined(input, ['remind_at', 'remind', 'when', 'due']);
+  const explicitSubject = String(firstDefined(input, ['subject', 'category']) ?? '').trim();
+  const url = String(firstDefined(input, ['url', 'link']) ?? '').trim();
+
+  return {
+    ok: true,
+    value: {
+      content: url && !content.includes(url) ? `${content}\n${url}` : content,
+      // Titles come off the note itself. Left blank, deriveDropTitle would
+      // reach for the subject and every phone drop would be called "Inbox".
+      title: deriveDropTitle({ title: firstDefined(input, ['title']), content }),
+      // Something sent with a time on it is a reminder; everything else lands
+      // in the inbox lane the way a drop typed into the web form does.
+      subject: explicitSubject || (when ? REMINDER_SUBJECT : 'Inbox'),
+      project: firstDefined(input, ['project']) ?? '',
+      agent: firstDefined(input, ['agent']) ?? '',
+      tags: firstDefined(input, ['tags']) ?? '',
+      priority: String(firstDefined(input, ['priority']) ?? 'normal').toLowerCase(),
+      status: String(firstDefined(input, ['status']) ?? 'inbox').toLowerCase(),
+      remind_at: when,
+    },
+  };
+}
+
+async function handleShortcutsRequest(req, res, url, storage) {
+  const pathname = url.pathname;
+  const now = new Date();
+
+  if (req.method === 'GET' && pathname === '/api/shortcuts/status') {
+    const drops = await storage.listDrops();
+    const due = selectShortcutDrops(drops, 'now', now);
+    const upcoming = selectShortcutDrops(drops, 'upcoming', now);
+    sendJson(res, 200, {
+      ok: true,
+      due: due.length,
+      upcoming: upcoming.length,
+      next: upcoming.length ? toShortcutItem(upcoming[0], now, req) : null,
+    });
+    return true;
+  }
+
+  if (req.method === 'POST' && pathname === '/api/shortcuts/drops') {
+    const input = await readShortcutsInput(req, url);
+    const built = buildShortcutDropPayload(input);
+    if (!built.ok) {
+      sendJson(res, 400, { error: built.error });
+      return true;
+    }
+
+    const payload = validateDropInput(built.value);
+    if (!payload.ok) {
+      sendJson(res, 400, { error: payload.error });
+      return true;
+    }
+
+    const drop = await storage.createDrop({
+      id: `drop-${typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now()}`,
+      date: new Date().toISOString(),
+      done: false,
+      ...payload.value,
+    });
+
+    const item = toShortcutItem(drop, now, req);
+    if (String(url.searchParams.get('format') || '') === 'text') {
+      sendText(res, 201, item.due_relative ? `Saved: ${item.title} (${item.due_relative})` : `Saved: ${item.title}`);
+      return true;
+    }
+    sendJson(res, 201, item);
+    return true;
+  }
+
+  if (req.method === 'GET' && pathname === '/api/shortcuts/drops') {
+    const scope = String(url.searchParams.get('due') || 'now').toLowerCase();
+    if (!['now', 'today', 'all', 'upcoming', 'any'].includes(scope)) {
+      sendJson(res, 400, { error: 'due must be one of now, today, upcoming, all, or any.' });
+      return true;
+    }
+
+    const requestedLimit = Number.parseInt(url.searchParams.get('limit') || '', 10);
+    const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
+      ? Math.min(requestedLimit, SHORTCUTS_MAX_LIMIT)
+      : SHORTCUTS_DEFAULT_LIMIT;
+
+    const drops = await storage.listDrops();
+    const selected = selectShortcutDrops(drops, scope, now).slice(0, limit);
+    const items = selected.map(drop => toShortcutItem(drop, now, req));
+
+    if (String(url.searchParams.get('format') || '') === 'text') {
+      sendText(res, 200, shortcutsTextReport(items, scope));
+      return true;
+    }
+
+    sendJson(res, 200, {
+      scope,
+      count: items.length,
+      generated_at: now.toISOString(),
+      items,
+    });
+    return true;
+  }
+
+  const action = /^\/api\/shortcuts\/drops\/(.+)\/(done|snooze)$/.exec(pathname);
+  if (action && req.method === 'POST') {
+    const id = decodeURIComponent(action[1]).trim();
+    if (!id) {
+      sendJson(res, 400, { error: 'Drop id is required.' });
+      return true;
+    }
+
+    if (action[2] === 'done') {
+      const drop = await storage.updateDrop(id, { status: 'done', done: true, remind_at: null });
+      if (!drop) {
+        sendJson(res, 404, { error: 'Drop not found.' });
+        return true;
+      }
+      const item = toShortcutItem(drop, now, req);
+      if (String(url.searchParams.get('format') || '') === 'text') {
+        sendText(res, 200, `Done: ${item.title}`);
+        return true;
+      }
+      sendJson(res, 200, item);
+      return true;
+    }
+
+    const input = await readShortcutsInput(req, url);
+    const until = firstDefined(input, ['until', 'remind_at', 'when']);
+    const relative = firstDefined(input, ['for', 'snooze']);
+    const parsed = reminderTime.parseReminderTime(until ?? relative ?? '1h');
+    if (!parsed.ok) {
+      sendJson(res, 400, { error: parsed.error });
+      return true;
+    }
+    if (!parsed.at) {
+      sendJson(res, 400, { error: 'Snoozing needs a time, e.g. for=1h or until=tomorrow 9am.' });
+      return true;
+    }
+
+    const drop = await storage.updateDrop(id, { remind_at: parsed.at.toISOString() });
+    if (!drop) {
+      sendJson(res, 404, { error: 'Drop not found.' });
+      return true;
+    }
+    const item = toShortcutItem(drop, now, req);
+    if (String(url.searchParams.get('format') || '') === 'text') {
+      sendText(res, 200, `Snoozed: ${item.title} (${item.due_relative})`);
+      return true;
+    }
+    sendJson(res, 200, item);
+    return true;
+  }
+
+  return false;
+}
+
 // ---------------------------------------------------------------
 
 const server = http.createServer(async (req, res) => {
@@ -2613,6 +3012,31 @@ const server = http.createServer(async (req, res) => {
         authenticated: Boolean(getSession(req)),
         configured: Boolean(PASSPHRASE_HASH),
       });
+      return;
+    }
+
+    // The Settings page needs to know whether the phone inbox is usable and
+    // which URLs to paste into Shortcuts. It never returns the token itself.
+    if (req.method === 'GET' && pathname === '/api/shortcuts/setup') {
+      if (!requireDropsAuth(res, req)) return;
+      const origin = getRequestOrigin(req);
+      sendJson(res, 200, {
+        configured: Boolean(SHORTCUTS_TOKEN) && SHORTCUTS_TOKEN.length >= SHORTCUTS_TOKEN_MIN_LENGTH,
+        token_present: Boolean(SHORTCUTS_TOKEN),
+        min_token_length: SHORTCUTS_TOKEN_MIN_LENGTH,
+        send_url: `${origin}/api/shortcuts/drops`,
+        pull_url: `${origin}/api/shortcuts/drops?due=now`,
+        pull_text_url: `${origin}/api/shortcuts/drops?due=now&format=text`,
+        status_url: `${origin}/api/shortcuts/status`,
+        header: 'X-Shortcuts-Token',
+      });
+      return;
+    }
+
+    if (pathname.startsWith('/api/shortcuts/')) {
+      if (!requireShortcutsAuth(req, res, parsedUrl)) return;
+      if (await handleShortcutsRequest(req, res, parsedUrl, storage)) return;
+      sendJson(res, 404, { error: 'Unknown phone inbox endpoint.' });
       return;
     }
 
@@ -3372,5 +3796,12 @@ server.listen(PORT, () => {
     console.log('Dropbox storage: PostgreSQL');
   } else {
     console.log('Dropbox storage: JSON file fallback');
+  }
+  if (!SHORTCUTS_TOKEN) {
+    console.log('Phone inbox: off (set SHORTCUTS_TOKEN to use /api/shortcuts/*)');
+  } else if (SHORTCUTS_TOKEN.length < SHORTCUTS_TOKEN_MIN_LENGTH) {
+    console.warn(`Phone inbox: disabled — SHORTCUTS_TOKEN is shorter than ${SHORTCUTS_TOKEN_MIN_LENGTH} characters.`);
+  } else {
+    console.log('Phone inbox: on at /api/shortcuts/*');
   }
 });

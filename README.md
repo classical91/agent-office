@@ -4,7 +4,8 @@ A multi-page web app that acts as a personal "office" for AI agents — a place 
 
 ## Features
 
-- **Dropbox / Mission Board** — capture notes, ideas, reminders, and tasks with subject, status, priority, and tags. Tap any note to open it in a full-screen reading view.
+- **Dropbox / Mission Board** — capture notes, ideas, reminders, and tasks with subject, status, priority, and tags. Tap any note to open it in a full-screen reading view. Anything given a "remind me" time comes back when it is due.
+- **Phone inbox** — a token-authenticated API for iOS Shortcuts: send a note or reminder to the Dropbox from your phone, and pull back whatever has come due. See [Phone inbox](#phone-inbox--ios-shortcuts).
 - **Memory** — per-agent memory entries that agents can reference across sessions.
 - **Calendar** — a Google Calendar-backed control surface for the office: agent/project metadata on every block, live run status, an Agent Assistant drawer, agent-timeline filters, and a scored scheduling policy instead of first-available-slot.
 - **Org chart** — a visual layout of the agent team.
@@ -52,6 +53,7 @@ agent-office-deploy/
     calendar-agent-meta.js     # Agent Office event metadata + run lifecycle
     calendar-scheduling.js     # Scheduling preferences, slot scoring, NL parsing
     calendar-google-sync.js    # Incremental Google sync (sync tokens, paging, 410 recovery)
+    reminder-time.js           # Parses "tomorrow 9am" / "in 2h" into reminder timestamps
     ai-landscape.{js,css}      # AI Landscape-only logic
     server.js                  # Node HTTP server
     config-files/              # Per-agent config snapshots
@@ -81,8 +83,11 @@ npm test
 `tests/` covers the Google OAuth flow and passphrase gating, the canonical sync
 status and calendar states, event metadata round-trips (including through
 Google's extended properties), the agent run lifecycle, the scheduling policy
-and slot scoring, natural-language plan preview/commit, and the incremental
-Google sync state machine.
+and slot scoring, natural-language plan preview/commit, the incremental
+Google sync state machine, reminder-time parsing, and the phone inbox
+(token auth and throttling, the JSON/form/plain-text/query ways of sending a
+drop, the due scopes, done/snooze, and that a reminder set on the phone shows
+up in the web Dropbox).
 
 `calendar-google-sync.js` takes its HTTP call as an injected function, so
 `tests/calendar-google-sync.test.js` drives the whole state machine against a
@@ -103,6 +108,12 @@ All endpoints return JSON.
 | POST   | `/api/drops`                      | Create a note                    |
 | PATCH  | `/api/drops/:id`                  | Update a note                    |
 | DELETE | `/api/drops/:id`                  | Delete a note                    |
+| GET    | `/api/shortcuts/setup`            | Phone inbox setup state (session-authed) |
+| POST   | `/api/shortcuts/drops`            | Send a note/reminder from the phone |
+| GET    | `/api/shortcuts/drops`            | Pull drops, by default the due reminders |
+| POST   | `/api/shortcuts/drops/:id/done`   | Mark a pulled item done          |
+| POST   | `/api/shortcuts/drops/:id/snooze` | Push a reminder out              |
+| GET    | `/api/shortcuts/status`           | Due/upcoming counts and the next reminder |
 | GET    | `/api/memories`                   | List memory entries              |
 | POST   | `/api/memories`                   | Create a memory entry            |
 | PATCH  | `/api/memories/:id`               | Update a memory entry            |
@@ -172,9 +183,142 @@ highest-priority task", "Protect two hours for Agent Office", "Prepare me for
 my next meeting" and "Show conflicts and overdue work", plus a
 natural-language field that previews a plan before anything is created.
 
+## Phone inbox / iOS Shortcuts
+
+The Dropbox web UI is behind a passphrase and a session cookie, which a phone
+Shortcut cannot hold. `/api/shortcuts/*` is the same Dropbox behind a static
+bearer token instead: one endpoint to drop something in from the phone, one to
+pull back whatever has come due, and two to clear or push out a reminder.
+
+### Setup
+
+1. Generate a token: `openssl rand -base64 24` (16 characters minimum — the
+   server refuses to serve the phone inbox with anything shorter).
+2. Set `SHORTCUTS_TOKEN` to it on Railway and redeploy.
+3. Open **Settings → Phone Inbox** in the app. It shows whether the inbox is on
+   and the exact URLs to paste into Shortcuts. The token itself is never
+   displayed there — it lives only in the environment and on your phone.
+
+The token is deliberately separate from `DROPS_PASSPHRASE`: it sits in plain
+text on the phone, so losing it should not hand over the web session too.
+Rotate it by changing `SHORTCUTS_TOKEN`.
+
+Authenticate with **any** of these — a header is preferred, since a token in a
+URL ends up in proxy and server logs:
+
+```
+Authorization: Bearer <SHORTCUTS_TOKEN>
+X-Shortcuts-Token: <SHORTCUTS_TOKEN>
+?token=<SHORTCUTS_TOKEN>
+```
+
+### Reminder times
+
+`remind` (aliases: `remind_at`, `when`, `due`) accepts what you would actually
+type on a phone. Times are read in the server's timezone (`APP_TIMEZONE`).
+
+| You send                | You get                              |
+| ----------------------- | ------------------------------------ |
+| `in 90m`, `2h`, `3 days`, `1h 30m` | that far from now         |
+| `tomorrow`, `friday`, `next week`  | that day at 9:00am        |
+| `tomorrow 9am`, `friday at 17:30`  | that day at that time     |
+| `tonight`, `noon`, `evening`       | 8:00pm / 12:00pm / 6:00pm |
+| `6pm`, `18:15`                     | the next time it is that  |
+| `2026-09-01T12:00:00Z`, `2026-09-01` | exactly that (a bare date is 9:00am local) |
+| empty, `none`                      | no reminder — a plain drop |
+
+A drop sent with a time is filed under the **Reminder** subject; one sent
+without lands in **Inbox**. Either way it is an ordinary drop, visible and
+editable in the web Dropbox.
+
+### Sending from the phone
+
+`POST /api/shortcuts/drops` takes the note as JSON (`text`), as a form field,
+as a plain-text body, or as query parameters — whichever is least work in the
+Shortcut you are building. Optional fields: `title`, `remind`, `subject`,
+`project`, `agent`, `tags`, `priority`, `status`, `url`.
+
+```bash
+curl -X POST 'https://your-app.up.railway.app/api/shortcuts/drops' \
+  -H 'X-Shortcuts-Token: <token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"Call the bank about the transfer","remind":"tomorrow 9am"}'
+```
+
+**Shortcut: "Drop it"** (add to the share sheet so you can send a link, a
+selection, or a photo caption straight in)
+
+1. Shortcut settings → **Show in Share Sheet**, accepts *Text* and *URLs*.
+2. **Text** → `Shortcut Input` (so anything shared becomes the note).
+3. **Ask for Input** → Text, prompt "Remind me when? (blank = no reminder)".
+4. **Get Contents of URL**
+   - URL: `https://your-app.up.railway.app/api/shortcuts/drops`
+   - Method: `POST`
+   - Headers: `X-Shortcuts-Token` = your token
+   - Request Body: `JSON` → `text` = the Text from step 2, `remind` = the
+     Provided Input from step 3
+5. **Show Notification** → `Title` from the response (optional).
+
+Add it to the Home Screen or say "Hey Siri, Drop it" and the note is in the
+Dropbox before you have put the phone down.
+
+### Pulling it back
+
+`GET /api/shortcuts/drops` returns the due reminders by default. `due=` picks
+the scope:
+
+| `due=`     | Returns                                              |
+| ---------- | ---------------------------------------------------- |
+| `now`      | reminders whose time has arrived (the default)       |
+| `today`    | everything due by the end of today                   |
+| `upcoming` | reminders still ahead                                |
+| `all`      | every open reminder                                  |
+| `any`      | the whole open Dropbox, reminders first              |
+
+`limit=` caps the list (default 25, max 100) and `format=text` returns a plain
+list instead of JSON, which a Shortcut can show or speak without any parsing:
+
+```
+2 items
+• Call the bank about the transfer — 40m overdue
+• Renew the domain — in 3h
+```
+
+**Shortcut: "What did I put down?"**
+
+1. **Get Contents of URL**
+   - URL: `https://your-app.up.railway.app/api/shortcuts/drops?due=now&format=text`
+   - Method: `GET`
+   - Headers: `X-Shortcuts-Token` = your token
+2. **Show Result** (or **Speak Text**, or **Show Notification**).
+
+Run it from a Home Screen widget, or attach it to a **Personal Automation** —
+"Every day at 8:00am" — and the phone reads out whatever came due overnight.
+
+There is also a no-Shortcut version: bookmark
+`/mission-board.html?reminder=due` on the phone's Home Screen and the Dropbox
+opens filtered to what has come due. The same filter is a dropdown on the
+Dropbox page ("Due Now" / "Has Reminder"), and "Reminder Time" is a sort
+option.
+
+For a Shortcut that lets you tick items off, drop `format=text` and work with
+the JSON instead: **Get Dictionary Value** `items` → **Repeat with Each** →
+show `title` → and on confirmation call
+`POST /api/shortcuts/drops/<id>/done` or
+`POST /api/shortcuts/drops/<id>/snooze?for=1h`. Every item also carries a
+`url` that opens that drop in the web Dropbox.
+
 ## Deployment
 
 Railway runs `node agent-office-deploy/dist/server.js` (see `railway.json`). The server serves the static pages and assets in `dist/` and exposes the `/api/*` endpoints above. Push to `master` to deploy.
+
+Dropbox-related variables:
+
+- `DROPS_PASSPHRASE` / `DROPS_PASSPHRASE_HASH` — gates the web Dropbox
+- `SHORTCUTS_TOKEN` — enables the phone inbox; 16 characters minimum, and the
+  server logs `Phone inbox: on` at startup once it is set
+- `APP_TIMEZONE` — the timezone reminder phrases like "tomorrow 9am" are read
+  in (defaults to `America/Vancouver`)
 
 ### Google Calendar OAuth
 
