@@ -81,9 +81,49 @@
     if (main && !document.getElementById('mission-pipeline')) {
       const pipeline = document.createElement('div');
       pipeline.id = 'mission-pipeline';
-      pipeline.className = 'mission-pipeline';
+      pipeline.className = 'mission-pipeline hidden';
       main.insertBefore(pipeline, document.getElementById('dropbox-table-wrap'));
     }
+
+    // The board is a third way to look at the same drops, so it sits behind the
+    // view switch with Table and Cards rather than on top of whichever is on.
+    const cardsBtn = document.getElementById('dropbox-view-detail');
+    if (cardsBtn && !document.getElementById('dropbox-view-board')) {
+      const boardBtn = document.createElement('button');
+      boardBtn.id = 'dropbox-view-board';
+      boardBtn.className = 'btn btn-secondary';
+      boardBtn.textContent = 'Board';
+      cardsBtn.insertAdjacentElement('afterend', boardBtn);
+      boardBtn.addEventListener('click', () => {
+        dropboxState.view = 'board';
+        renderDropbox();
+      });
+      // The built-in buttons set the view and redraw their own pane; this puts
+      // the rest of the switch back in step with them.
+      ['dropbox-view-list', 'dropbox-view-detail'].forEach(id => {
+        document.getElementById(id)?.addEventListener('click', () => renderDropbox());
+      });
+    }
+  }
+
+  function syncViewSwitch() {
+    const view = dropboxState.view;
+    const panes = [
+      ['mission-pipeline', 'board'],
+      ['dropbox-table-wrap', 'table'],
+      ['dropbox-cards-wrap', 'cards'],
+    ];
+    panes.forEach(([id, name]) => {
+      document.getElementById(id)?.classList.toggle('hidden', view !== name);
+    });
+    const buttons = [
+      ['dropbox-view-list', 'table'],
+      ['dropbox-view-detail', 'cards'],
+      ['dropbox-view-board', 'board'],
+    ];
+    buttons.forEach(([id, name]) => {
+      document.getElementById(id)?.classList.toggle('active', view === name);
+    });
   }
 
   function replaceOptions(select, options, selected) {
@@ -140,7 +180,8 @@
     if (!wrap) return;
     const items = filteredDrops().filter(drop => drop.status !== 'archived');
     wrap.innerHTML = STATUSES.filter(item => item[0] !== 'archived').map(([status, label]) => {
-      const columnItems = items.filter(drop => (drop.status || 'idea') === status).slice(0, 5);
+      // Every task in the column, and a count that says how many that is.
+      const columnItems = items.filter(drop => (drop.status || 'idea') === status);
       return `<section class="mission-column">
         <h3>${escHTML(label)} (${columnItems.length})</h3>
         ${columnItems.length ? columnItems.map(drop => `<article class="mission-ticket" data-drop-id="${escAttr(drop.id)}">
@@ -260,9 +301,10 @@
       ensureMissionControls();
       populateSubjectFilter();
       populateProjectFilter();
-      renderPipeline();
-      if (dropboxState.view === 'table') renderDropTable();
-      else renderDropCards();
+      syncViewSwitch();
+      if (dropboxState.view === 'board') renderPipeline();
+      else if (dropboxState.view === 'cards') renderDropCards();
+      else renderDropTable();
       renderMissionNoteView();
     };
     const baseSave = saveDrop;
