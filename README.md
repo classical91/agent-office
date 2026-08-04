@@ -281,6 +281,12 @@ page clears everything immediately.
 Bots are filtered by user agent, though the real filter is that the tracker is
 a script — most crawlers never run it.
 
+**In Settings.** A **Website Visitors** panel on the Settings page carries the
+control side of this: whether anyone is on the sites right now, a seven-day
+snapshot, which sites are reporting in, the tracker snippet with a copy button,
+and the delete-everything button. The Visitors page is for reading; Settings is
+for setting it up and turning it off.
+
 The dashboard sits behind the same `DROPS_PASSPHRASE` as the Dropbox and shares
 its session cookie. Only the tracking endpoint is public.
 

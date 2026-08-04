@@ -161,6 +161,40 @@
       </div>
     </div>
 
+    <!-- Website visitors -->
+    <div id="settings-visitors" style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:20px;">
+      <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px;">Website Visitors</div>
+      <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">Who is on your sites, from the tracker script below. A visitor is a random id their own browser keeps — nothing is looked up against any outside service. Full detail is on the <a href="/visitors.html" style="color:var(--accent); text-decoration:none;">Visitors page</a>.</div>
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <div style="padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+          <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;">Status</div>
+          <div id="settings-visitors-state" style="font-size:13px; color:var(--text);">Checking…</div>
+          <div id="settings-visitors-snapshot" style="font-size:11px; color:var(--muted); margin-top:6px;"></div>
+        </div>
+
+        <div style="padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+          <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;">Tracker Snippet</div>
+          <div id="settings-visitors-snippet" style="font-size:12px; color:var(--text); word-break:break-all; font-family:ui-monospace,monospace;">—</div>
+          <div style="font-size:11px; color:var(--muted); margin-top:8px;">Paste before <code>&lt;/body&gt;</code> on any site you run. It shows up here on its first visitor.</div>
+          <button onclick="SETTINGS.copyTrackerSnippet(this)" style="margin-top:10px; background:transparent; color:var(--text); border:1px solid var(--border); border-radius:6px; padding:7px 14px; font-size:12px; cursor:pointer;">Copy snippet</button>
+        </div>
+
+        <div style="padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+          <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;">Tracked Sites</div>
+          <div id="settings-visitors-sites" style="font-size:12px; color:var(--text);">—</div>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+          <div>
+            <div style="font-size:13px; color:var(--text); margin-bottom:2px;">Recorded Visits</div>
+            <div id="settings-visitors-retention" style="font-size:11px; color:var(--muted);">Page views are deleted automatically after a set number of days.</div>
+          </div>
+          <button onclick="SETTINGS.clearVisits(this)" style="flex:none; background:transparent; color:#ef4444; border:1px solid #ef4444; border-radius:6px; padding:7px 14px; font-size:12px; cursor:pointer;">Delete all</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Data Management -->
     <div style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:20px;">
       <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px;">Local Data</div>
