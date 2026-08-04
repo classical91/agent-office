@@ -1,3 +1,6 @@
 agent-office-deploy/dist/.app-settings.json
+# The file-storage fallback for visits holds visitor IP addresses. Postgres is
+# what production uses; this file is a local artefact and never belongs in git.
+agent-office-deploy/dist/visits.json
 agent-office-deploy/graphify-out/
 agent-office-deploy/.playwright-cli/

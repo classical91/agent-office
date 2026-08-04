@@ -10,6 +10,7 @@ A multi-page web app that acts as a personal "office" for AI agents — a place 
 - **Memory** — per-agent memory entries that agents can reference across sessions.
 - **Calendar** — a Google Calendar-backed control surface for the office: agent/project metadata on every block, live run status, an Agent Assistant drawer, agent-timeline filters, and a scored scheduling policy instead of first-available-slot.
 - **Streaks** — every day you kept a habit up, plotted on a month grid and a year strip. Each streak carries a type (Health, Deep Work, Avoid, …) and a colour, the calendar can be filtered down to one streak or one type, and a day is marked from the day itself or from the streak's **Mark today** button. See [Streaks](#streaks-1).
+- **Visitors** — who is on your websites right now, what they are reading, and whether they have been before. One tracker script goes on any site you run; nothing is looked up against any outside service. See [Visitors](#visitors-1).
 - **Org chart** — a visual layout of the agent team.
 - **Office view** — a "room" view with each agent's avatar and current status.
 - **AI Landscape** — a tracker page for the AI model/tooling landscape.
@@ -41,6 +42,7 @@ agent-office-deploy/
     mission-board.html         # Mission Board (Dropbox) page
     project-rooms.html         # Project Rooms page
     agent-registry.html        # Agent Registry page
+    visitors.html              # Visitors page
     settings.html               # Settings page
     prompt-builder.html        # Prompt Builder (fully standalone, own styles/scripts)
     shared.css                 # Shared chrome/nav/view styles for all pages above
@@ -59,6 +61,8 @@ agent-office-deploy/
     calendar-google-sync.js    # Incremental Google sync (sync tokens, paging, 410 recovery)
     reminder-time.js           # Parses "tomorrow 9am" / "in 2h" into reminder timestamps
     ai-landscape.{js,css}      # AI Landscape-only logic
+    visitors.{js,css}          # Visitors dashboard
+    visit-tracker.js           # The script you paste on a tracked site
     server.js                  # Node HTTP server
     config-files/              # Per-agent config snapshots
 railway.json                  # Railway deployment config
@@ -130,6 +134,9 @@ All endpoints return JSON.
 | DELETE | `/api/streaks/:id`                | Delete a streak and its days     |
 | PUT    | `/api/streaks/:id/days/:day`      | Mark a day as kept               |
 | DELETE | `/api/streaks/:id/days/:day`      | Clear a marked day               |
+| POST   | `/api/visits/track`               | Record a page view or a still-here ping (public) |
+| GET    | `/api/visits/summary`             | Live visitors, totals, top pages and referrers |
+| DELETE | `/api/visits`                     | Delete every recorded page view  |
 | GET    | `/api/calendar/status`            | Check Google Calendar connection |
 | GET    | `/api/calendar/oauth/start`        | Start Google OAuth authorization |
 | GET    | `/api/calendar/oauth/callback`     | Complete Google OAuth             |
@@ -229,6 +236,53 @@ has gone by unmarked.
 
 Streaks sit behind the same `DROPS_PASSPHRASE` as the Dropbox and share its
 session cookie, so unlocking either one unlocks the other.
+
+## Visitors
+
+**Visitors** in the side menu answers the question a shop dashboard's live view
+answers: is anyone on the site right now, what are they reading, and have they
+been before. It works across every site you point at it, not just this one.
+
+**How a visit is counted.** `visit-tracker.js` is a small script you paste on a
+site. On each page load it posts one row — the page, its title, the page that
+linked there, the screen size — to `POST /api/visits/track`, and then pings
+every 30 seconds while the tab is visible so the live list can let someone drop
+off when they leave. The endpoint is open by necessity (the browsers reporting
+in are strangers), returns nothing at all, and is capped per address.
+
+**What identifies a visitor.** A random id the browser generates about itself
+and keeps in that site's own `localStorage`, plus a per-tab session id in
+`sessionStorage`. That is the whole mechanism. The id is meaningless outside
+the `visits` table, is never matched against anything, and is what makes
+*first time* and *been before* possible. A browser with storage switched off,
+or with Do Not Track set, is simply not tracked.
+
+**What it deliberately does not do.** No geolocation, no reverse DNS, no
+IP-to-company lookup, no third-party requests, no fingerprinting. An IP address
+is stored on the row so odd traffic can be told apart from real traffic, and
+nothing consults it. Nothing here can put a name to a visitor, and that is the
+intended ceiling — not a limitation to be lifted later.
+
+**Adding a site.** The *Track another site* panel gives you the exact snippet
+with this deployment's host filled in:
+
+```html
+<script src="https://your-agent-office-host/visit-tracker.js" defer></script>
+```
+
+Paste it before `</body>`. The site appears in the filter on its first visitor;
+no configuration or registration step. Single-page sites are handled — a
+`pushState` that changes the URL counts as the next page view.
+
+**Retention.** Page views are kept for 90 days and then deleted on an hourly
+sweep. Set `VISITS_RETENTION_DAYS` to change that. *Delete all visits* on the
+page clears everything immediately.
+
+Bots are filtered by user agent, though the real filter is that the tracker is
+a script — most crawlers never run it.
+
+The dashboard sits behind the same `DROPS_PASSPHRASE` as the Dropbox and shares
+its session cookie. Only the tracking endpoint is public.
 
 ## Phone inbox / iOS Shortcuts
 

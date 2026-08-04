@@ -22,6 +22,7 @@ const APP_SETTINGS_FILE = path.resolve(__dirname, process.env.APP_SETTINGS_FILE 
 const PROMPTS_FILE = path.resolve(__dirname, process.env.PROMPTS_FILE || 'prompts.json');
 const STREAKS_FILE = path.resolve(__dirname, process.env.STREAKS_FILE || 'streaks.json');
 const STREAK_DAYS_FILE = path.resolve(__dirname, process.env.STREAK_DAYS_FILE || 'streak-days.json');
+const VISITS_FILE = path.resolve(__dirname, process.env.VISITS_FILE || 'visits.json');
 const MAX_BODY_BYTES = 50 * 1024;
 const SESSION_COOKIE = 'agent_office_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
@@ -810,6 +811,24 @@ async function saveStreakDaysToFile(days) {
   await writeQueue;
 }
 
+async function loadVisitsFromFile() {
+  try {
+    const raw = await fs.readFile(VISITS_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
+}
+
+async function saveVisitsToFile(visits) {
+  writeQueue = writeQueue.then(() =>
+    fs.writeFile(VISITS_FILE, JSON.stringify(visits, null, 2), 'utf8')
+  );
+  await writeQueue;
+}
+
 async function loadAgentsFromFile() {
   try {
     const raw = await fs.readFile(AGENTS_FILE, 'utf8');
@@ -1339,6 +1358,49 @@ function createFileStorage() {
       await saveCalendarEventsToFile(events);
       return event;
     },
+    async hasVisitor(visitorId) {
+      const visits = await loadVisitsFromFile();
+      return visits.some(visit => visit.visitor_id === visitorId);
+    },
+    async recordVisit(visit) {
+      const visits = await loadVisitsFromFile();
+      visits.unshift(visit);
+      await saveVisitsToFile(visits);
+      return visit;
+    },
+    async touchVisit(visitorId, sessionId, seenAt) {
+      const visits = await loadVisitsFromFile();
+      // The newest row wins: a ping means "still on the page I last opened".
+      const visit = visits.find(item => item.visitor_id === visitorId && item.session_id === sessionId);
+      if (!visit) return null;
+      visit.last_seen_at = seenAt;
+      await saveVisitsToFile(visits);
+      return visit;
+    },
+    async listVisits({ since, site, limit }) {
+      const visits = await loadVisitsFromFile();
+      return visits
+        .filter(visit => (!since || new Date(visit.last_seen_at || visit.created_at) >= since)
+          && (!site || visit.site === site))
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, limit);
+    },
+    async listVisitSites() {
+      const visits = await loadVisitsFromFile();
+      return [...new Set(visits.map(visit => visit.site).filter(Boolean))].sort();
+    },
+    async pruneVisits(before) {
+      const visits = await loadVisitsFromFile();
+      const next = visits.filter(visit => new Date(visit.created_at) >= before);
+      const removed = visits.length - next.length;
+      if (removed) await saveVisitsToFile(next);
+      return removed;
+    },
+    async clearVisits() {
+      const visits = await loadVisitsFromFile();
+      await saveVisitsToFile([]);
+      return visits.length;
+    },
   };
 }
 
@@ -1493,6 +1555,31 @@ async function createPostgresStorage() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+
+  // One row per page view. `visitor_id` and `session_id` are random ids the
+  // browser made up about itself - they are meaningless outside this table and
+  // are never matched against anything.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS visits (
+      id TEXT PRIMARY KEY,
+      site VARCHAR(120) NOT NULL DEFAULT '',
+      visitor_id VARCHAR(64) NOT NULL,
+      session_id VARCHAR(64) NOT NULL,
+      path TEXT NOT NULL DEFAULT '/',
+      title VARCHAR(200) NOT NULL DEFAULT '',
+      referrer TEXT NOT NULL DEFAULT '',
+      user_agent TEXT NOT NULL DEFAULT '',
+      ip VARCHAR(64) NOT NULL DEFAULT '',
+      screen VARCHAR(32) NOT NULL DEFAULT '',
+      is_returning BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  // The live view reads by recency and the "have I seen you before" check reads
+  // by visitor, and both run on every page view.
+  await pool.query(`CREATE INDEX IF NOT EXISTS visits_last_seen_idx ON visits (last_seen_at DESC)`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS visits_visitor_idx ON visits (visitor_id)`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS calendar_disabled_recurring_series (
@@ -2048,6 +2135,64 @@ async function createPostgresStorage() {
       if (body.start) await pool.query('UPDATE calendar_events SET start_time=$1 WHERE id=$2', [body.start, id]);
       if (body.end) await pool.query('UPDATE calendar_events SET end_time=$1 WHERE id=$2', [body.end, id]);
       if (body.type) await pool.query('UPDATE calendar_events SET type=$1 WHERE id=$2', [body.type, id]);
+    },
+    async hasVisitor(visitorId) {
+      const result = await pool.query('SELECT 1 FROM visits WHERE visitor_id = $1 LIMIT 1', [visitorId]);
+      return result.rowCount > 0;
+    },
+    async recordVisit(visit) {
+      await pool.query(
+        `INSERT INTO visits (id, site, visitor_id, session_id, path, title, referrer, user_agent, ip, screen, is_returning, created_at, last_seen_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $12)`,
+        [visit.id, visit.site, visit.visitor_id, visit.session_id, visit.path, visit.title, visit.referrer,
+          visit.user_agent, visit.ip, visit.screen, visit.is_returning, visit.created_at]
+      );
+      return visit;
+    },
+    async touchVisit(visitorId, sessionId, seenAt) {
+      // The newest row wins: a ping means "still on the page I last opened".
+      const result = await pool.query(
+        `UPDATE visits SET last_seen_at = $3
+         WHERE id = (
+           SELECT id FROM visits WHERE visitor_id = $1 AND session_id = $2
+           ORDER BY created_at DESC LIMIT 1
+         )
+         RETURNING id`,
+        [visitorId, sessionId, seenAt]
+      );
+      return result.rows[0] || null;
+    },
+    async listVisits({ since, site, limit }) {
+      const conditions = [];
+      const params = [];
+      if (since) {
+        params.push(since.toISOString());
+        conditions.push(`last_seen_at >= $${params.length}`);
+      }
+      if (site) {
+        params.push(site);
+        conditions.push(`site = $${params.length}`);
+      }
+      params.push(limit);
+      const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+      const result = await pool.query(
+        `SELECT id, site, visitor_id, session_id, path, title, referrer, user_agent, ip, screen, is_returning, created_at, last_seen_at
+         FROM visits ${where} ORDER BY created_at DESC LIMIT $${params.length}`,
+        params
+      );
+      return result.rows;
+    },
+    async listVisitSites() {
+      const result = await pool.query(`SELECT DISTINCT site FROM visits WHERE site <> '' ORDER BY site`);
+      return result.rows.map(row => row.site);
+    },
+    async pruneVisits(before) {
+      const result = await pool.query('DELETE FROM visits WHERE created_at < $1', [before.toISOString()]);
+      return result.rowCount;
+    },
+    async clearVisits() {
+      const result = await pool.query('DELETE FROM visits');
+      return result.rowCount;
     },
   };
 }
@@ -2985,8 +3130,7 @@ const REMINDER_SUBJECT = 'Reminder';
 const shortcutsFailures = new Map();
 
 function shortcutsClientKey(req) {
-  const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
-  return forwarded || req.socket.remoteAddress || 'unknown';
+  return clientIp(req);
 }
 
 // A bearer token on the open internet invites guessing. Ten wrong tokens from
@@ -3336,12 +3480,288 @@ async function handleShortcutsRequest(req, res, url, storage) {
   return false;
 }
 
+// -- WEBSITE VISITORS -------------------------------------------
+//
+// This is what a shop dashboard's live view actually is, minus the shop: a
+// random id the browser keeps about itself, one row per page view, and a
+// "still here" ping while the tab is open. That is enough to answer "is anyone
+// on the site right now, what are they reading, and have they been before".
+//
+// It deliberately stops there. The id is generated in the browser and means
+// nothing anywhere else, there is no lookup against any outside service, and
+// nothing here tries to put a name to a visitor.
+//
+// The id lives in the visitor's own storage rather than in a cookie set here,
+// because the tracker is meant to be dropped onto any site you run - a cookie
+// from this origin would not survive the trip to a different domain.
+
+const VISIT_LIVE_WINDOW_MS = 5 * 60 * 1000;
+const VISIT_TRACK_LIMIT = 600;
+const VISIT_TRACK_WINDOW_MS = 5 * 60 * 1000;
+const VISIT_MAX_ROWS = 20000;
+const VISIT_DEFAULT_DAYS = 7;
+const VISIT_MAX_DAYS = 365;
+const VISIT_PRUNE_INTERVAL_MS = 60 * 60 * 1000;
+const VISIT_ID_PATTERN = /^[A-Za-z0-9_-]{8,64}$/;
+// Almost nothing here runs JavaScript, so this catches the few that do rather
+// than being the front line. The front line is that the tracker is a script.
+const BOT_USER_AGENT = /bot|crawl|spider|slurp|headlesschrome|phantomjs|puppeteer|playwright|curl|wget|python-requests|axios|monitor|uptime|pingdom|semrush|ahrefs|facebookexternalhit|scrape/i;
+const visitTrackCounts = new Map();
+
+// An IP address is kept per view so a run of odd traffic can be told apart from
+// a run of real traffic. Ninety days is long enough to compare a month against
+// the one before it and short enough that this is not an archive.
+const VISIT_RETENTION_DAYS = (() => {
+  const configured = Number.parseInt(process.env.VISITS_RETENTION_DAYS || '', 10);
+  if (!Number.isFinite(configured) || configured < 1) return 90;
+  return Math.min(configured, 3650);
+})();
+
+function clientIp(req) {
+  const forwarded = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return forwarded || req.socket.remoteAddress || 'unknown';
+}
+
+// A tracker endpoint has to be open to the internet to do its job, so it gets
+// the same treatment as the phone inbox: a ceiling per address, high enough
+// that no real browsing session reaches it.
+function visitTrackThrottled(key) {
+  const now = Date.now();
+  const entry = visitTrackCounts.get(key);
+  if (!entry || now - entry.first > VISIT_TRACK_WINDOW_MS) {
+    visitTrackCounts.set(key, { count: 1, first: now });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > VISIT_TRACK_LIMIT;
+}
+
+function isBotUserAgent(userAgent) {
+  return BOT_USER_AGENT.test(String(userAgent || ''));
+}
+
+function trimTo(value, max) {
+  return String(value == null ? '' : value).trim().slice(0, max);
+}
+
+// The site a view belongs to is the hostname, whether the tracker sent it or
+// the browser did. Everything else is a label on the row.
+function normalizeVisitSite(input, req) {
+  const candidate = trimTo(input.site, 200) || String(req.headers.origin || '') || '';
+  if (!candidate) return '';
+  try {
+    return trimTo(new URL(candidate).hostname, 120);
+  } catch {
+    return trimTo(candidate.replace(/^https?:\/\//, '').split('/')[0], 120);
+  }
+}
+
+function normalizeVisitPath(input) {
+  const raw = trimTo(input.path, 600) || '/';
+  try {
+    const url = new URL(raw);
+    return trimTo(url.pathname + url.search, 500) || '/';
+  } catch {
+    return trimTo(raw.startsWith('/') ? raw : `/${raw}`, 500);
+  }
+}
+
+// Clicking from one page of a site to the next is not a referrer - it is the
+// visitor still being on the site. Only somewhere else counts.
+function normalizeVisitReferrer(input, site) {
+  const raw = trimTo(input.referrer, 600);
+  if (!raw) return '';
+  try {
+    const url = new URL(raw);
+    if (site && url.hostname === site) return '';
+    return trimTo(url.hostname + url.pathname, 300);
+  } catch {
+    return trimTo(raw, 300);
+  }
+}
+
+function normalizeVisitInput(input, req) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return { ok: false, error: 'Body must be a JSON object.' };
+  }
+
+  const visitorId = trimTo(input.visitor_id || input.visitorId, 64);
+  const sessionId = trimTo(input.session_id || input.sessionId, 64);
+  if (!VISIT_ID_PATTERN.test(visitorId)) return { ok: false, error: 'A visitor id is required.' };
+  if (!VISIT_ID_PATTERN.test(sessionId)) return { ok: false, error: 'A session id is required.' };
+
+  const event = trimTo(input.event, 16) || 'view';
+  if (event !== 'view' && event !== 'ping') {
+    return { ok: false, error: 'Event must be view or ping.' };
+  }
+
+  const site = normalizeVisitSite(input, req);
+  const screen = trimTo(input.screen, 32);
+
+  return {
+    ok: true,
+    value: {
+      event,
+      site,
+      visitor_id: visitorId,
+      session_id: sessionId,
+      path: normalizeVisitPath(input),
+      title: trimTo(input.title, 200),
+      referrer: normalizeVisitReferrer(input, site),
+      screen: /^\d{1,5}x\d{1,5}$/.test(screen) ? screen : '',
+      user_agent: trimTo(req.headers['user-agent'], 400),
+      ip: clientIp(req),
+    },
+  };
+}
+
+function visitTimestamp(visit) {
+  const value = visit.last_seen_at || visit.created_at;
+  return value instanceof Date ? value.getTime() : new Date(value).getTime();
+}
+
+function bumpCount(map, key, visitorId) {
+  const entry = map.get(key) || { count: 0, visitors: new Set() };
+  entry.count += 1;
+  entry.visitors.add(visitorId);
+  map.set(key, entry);
+  return entry;
+}
+
+function rankedCounts(map, toRow, limit = 12) {
+  return [...map.entries()]
+    .map(([key, entry]) => toRow(key, entry))
+    .sort((a, b) => b.views - a.views)
+    .slice(0, limit);
+}
+
+/**
+ * Turn the raw rows into the numbers the page shows.
+ *
+ * Both storages hand back rows rather than aggregates so there is one copy of
+ * this arithmetic instead of one per backend. The row cap is what keeps that
+ * honest on a busy month.
+ */
+function summarizeVisits(rows, nowMs) {
+  const liveCutoff = nowMs - VISIT_LIVE_WINDOW_MS;
+  const visitors = new Set();
+  const sessions = new Set();
+  const returningVisitors = new Set();
+  const pages = new Map();
+  const referrers = new Map();
+  const sites = new Map();
+  const liveByVisitor = new Map();
+
+  for (const row of rows) {
+    visitors.add(row.visitor_id);
+    sessions.add(row.session_id);
+    if (row.is_returning) returningVisitors.add(row.visitor_id);
+
+    bumpCount(pages, `${row.site}\u0000${row.path}`, row.visitor_id);
+    bumpCount(sites, row.site, row.visitor_id);
+    if (row.referrer) bumpCount(referrers, row.referrer, row.visitor_id);
+
+    // Rows arrive newest first, so the first row seen for a visitor is the page
+    // they are on now.
+    if (visitTimestamp(row) >= liveCutoff && !liveByVisitor.has(row.visitor_id)) {
+      liveByVisitor.set(row.visitor_id, row);
+    }
+  }
+
+  return {
+    totals: {
+      visitors: visitors.size,
+      sessions: sessions.size,
+      pageviews: rows.length,
+      returning: returningVisitors.size,
+      new: visitors.size - returningVisitors.size,
+      live: liveByVisitor.size,
+    },
+    live: [...liveByVisitor.values()].map(toClientVisit).sort((a, b) => b.last_seen_at.localeCompare(a.last_seen_at)),
+    recent: rows.slice(0, 100).map(toClientVisit),
+    top_pages: rankedCounts(pages, (key, entry) => {
+      const [site, pagePath] = key.split('\u0000');
+      return { site, path: pagePath, views: entry.count, visitors: entry.visitors.size };
+    }),
+    top_referrers: rankedCounts(referrers, (referrer, entry) => (
+      { referrer, views: entry.count, visitors: entry.visitors.size }
+    )),
+    sites: rankedCounts(sites, (site, entry) => (
+      { site, views: entry.count, visitors: entry.visitors.size }
+    ), 50),
+  };
+}
+
+function toClientVisit(row) {
+  return {
+    id: row.id,
+    site: row.site || '',
+    visitor_id: row.visitor_id,
+    session_id: row.session_id,
+    path: row.path || '/',
+    title: row.title || '',
+    referrer: row.referrer || '',
+    ip: row.ip || '',
+    screen: row.screen || '',
+    device: describeDevice(row.user_agent),
+    is_returning: Boolean(row.is_returning),
+    created_at: toIsoOrEmpty(row.created_at),
+    last_seen_at: toIsoOrEmpty(row.last_seen_at || row.created_at),
+  };
+}
+
+// Enough of the user agent to tell a phone from a laptop on the dashboard, and
+// nothing that would go looking for anything else.
+function describeDevice(userAgent) {
+  const ua = String(userAgent || '');
+  if (!ua) return '';
+  const platform = /iPhone|iPod/i.test(ua) ? 'iPhone'
+    : /iPad/i.test(ua) ? 'iPad'
+      : /Android/i.test(ua) ? 'Android'
+        : /Macintosh|Mac OS X/i.test(ua) ? 'Mac'
+          : /Windows/i.test(ua) ? 'Windows'
+            : /Linux/i.test(ua) ? 'Linux'
+              : '';
+  const browser = /Edg\//i.test(ua) ? 'Edge'
+    : /OPR\/|Opera/i.test(ua) ? 'Opera'
+      : /Firefox\//i.test(ua) ? 'Firefox'
+        : /Chrome\//i.test(ua) ? 'Chrome'
+          : /Safari\//i.test(ua) ? 'Safari'
+            : '';
+  return [platform, browser].filter(Boolean).join(' · ');
+}
+
+function parseVisitDays(url) {
+  const raw = Number.parseInt(url.searchParams.get('days') || '', 10);
+  if (!Number.isFinite(raw) || raw < 1) return VISIT_DEFAULT_DAYS;
+  return Math.min(raw, VISIT_MAX_DAYS);
+}
+
+async function pruneOldVisits(storage) {
+  try {
+    const before = new Date(Date.now() - VISIT_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+    const removed = await storage.pruneVisits(before);
+    if (removed) console.log(`Visitors: pruned ${removed} view(s) older than ${VISIT_RETENTION_DAYS} days.`);
+  } catch (error) {
+    console.error('Visitors: prune failed.', error);
+  }
+}
+
 // ---------------------------------------------------------------
 
 const server = http.createServer(async (req, res) => {
   const parsedUrl = new URL(req.url, getRequestOrigin(req));
   const pathname = parsedUrl.pathname;
   applyCorsHeaders(req, res);
+
+  // The tracker script runs on whichever sites you put it on, so its one
+  // endpoint answers any origin. It carries no cookies and returns nothing
+  // about anybody, so there is nothing here for another page to read back.
+  if (pathname === '/api/visits/track') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  }
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
@@ -3357,6 +3777,93 @@ const server = http.createServer(async (req, res) => {
         authenticated: Boolean(getSession(req)),
         configured: Boolean(PASSPHRASE_HASH),
       });
+      return;
+    }
+
+    // -- WEBSITE VISITORS ----------------------------------------
+
+    // Open on purpose: the browsers reporting in are strangers by definition.
+    // It never answers with anything, so it cannot be read as a data source.
+    if (pathname === '/api/visits/track') {
+      if (req.method !== 'POST') {
+        sendJson(res, 405, { error: 'Use POST.' });
+        return;
+      }
+      if (visitTrackThrottled(clientIp(req))) {
+        res.writeHead(429, { 'Cache-Control': 'no-store' });
+        res.end();
+        return;
+      }
+
+      // sendBeacon posts text/plain, which is what keeps this a simple request
+      // with no preflight round trip on someone else's page load.
+      const raw = await readRawBody(req);
+      let parsed = null;
+      try {
+        parsed = raw ? JSON.parse(raw) : null;
+      } catch {
+        parsed = null;
+      }
+
+      const normalized = normalizeVisitInput(parsed, req);
+      if (!normalized.ok || isBotUserAgent(normalized.value.user_agent)) {
+        // A malformed or automated beacon is dropped without comment - there is
+        // nothing on the other end that would do anything with an error.
+        res.writeHead(204, { 'Cache-Control': 'no-store' });
+        res.end();
+        return;
+      }
+
+      const visit = normalized.value;
+      const now = new Date().toISOString();
+      if (visit.event === 'ping') {
+        await storage.touchVisit(visit.visitor_id, visit.session_id, now);
+      } else {
+        const seenBefore = await storage.hasVisitor(visit.visitor_id);
+        await storage.recordVisit({
+          id: `vis_${Date.now().toString(36)}_${crypto.randomBytes(4).toString('hex')}`,
+          site: visit.site,
+          visitor_id: visit.visitor_id,
+          session_id: visit.session_id,
+          path: visit.path,
+          title: visit.title,
+          referrer: visit.referrer,
+          user_agent: visit.user_agent,
+          ip: visit.ip,
+          screen: visit.screen,
+          is_returning: seenBefore,
+          created_at: now,
+          last_seen_at: now,
+        });
+      }
+
+      res.writeHead(204, { 'Cache-Control': 'no-store' });
+      res.end();
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/api/visits/summary') {
+      if (!requireDropsAuth(res, req)) return;
+      const days = parseVisitDays(parsedUrl);
+      const site = String(parsedUrl.searchParams.get('site') || '').trim();
+      const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+      const rows = await storage.listVisits({ since, site, limit: VISIT_MAX_ROWS });
+      sendJson(res, 200, {
+        days,
+        site,
+        retention_days: VISIT_RETENTION_DAYS,
+        live_window_minutes: VISIT_LIVE_WINDOW_MS / 60000,
+        truncated: rows.length >= VISIT_MAX_ROWS,
+        all_sites: await storage.listVisitSites(),
+        ...summarizeVisits(rows, Date.now()),
+      });
+      return;
+    }
+
+    if (req.method === 'DELETE' && pathname === '/api/visits') {
+      if (!requireDropsAuth(res, req)) return;
+      const removed = await storage.clearVisits();
+      sendJson(res, 200, { removed });
       return;
     }
 
@@ -4289,6 +4796,13 @@ server.listen(PORT, () => {
   } else {
     console.log('Dropbox storage: JSON file fallback');
   }
+  console.log(`Visitors: keeping ${VISIT_RETENTION_DAYS} days of page views`);
+  storageReady.then(storage => {
+    pruneOldVisits(storage);
+    // unref'd so an idle prune timer is never the reason the process stays up.
+    setInterval(() => pruneOldVisits(storage), VISIT_PRUNE_INTERVAL_MS).unref();
+  }).catch(error => console.error('Visitors: could not schedule pruning.', error));
+
   if (!SHORTCUTS_TOKEN) {
     console.log('Phone inbox: off (set SHORTCUTS_TOKEN to use /api/shortcuts/*)');
   } else if (SHORTCUTS_TOKEN.length < SHORTCUTS_TOKEN_MIN_LENGTH) {
