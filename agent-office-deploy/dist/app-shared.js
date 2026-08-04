@@ -1293,6 +1293,7 @@ window.SETTINGS = (() => {
     loadGatewayAgents();
     checkGateway();
     loadShortcuts();
+    loadVisitors();
   }
 
   // The phone inbox is configured on the server (SHORTCUTS_TOKEN), so all the
@@ -1332,6 +1333,91 @@ window.SETTINGS = (() => {
     }
   }
 
+  // Website visitors. Settings shows the shape of it - is anyone there, which
+  // sites are reporting in, how to add one, and the button that deletes the
+  // lot. The reading is on /visitors.html; this is the control panel for it.
+  function trackerSnippet() {
+    return `<script src="${location.origin}/visit-tracker.js" defer><\/script>`;
+  }
+
+  async function loadVisitors() {
+    const wrap = document.getElementById('settings-visitors');
+    if (!wrap) return;
+
+    const set = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    };
+
+    set('settings-visitors-snippet', trackerSnippet());
+
+    try {
+      const response = await fetch('/api/visits/summary?days=7', { headers: { Accept: 'application/json' } });
+      if (response.status === 401) {
+        set('settings-visitors-state', 'Unlock the Dropbox first, then reload this page.');
+        set('settings-visitors-snapshot', '');
+        set('settings-visitors-sites', '—');
+        return;
+      }
+
+      const summary = await response.json();
+      if (!response.ok) {
+        set('settings-visitors-state', summary.error || 'Could not read the visitor stats.');
+        return;
+      }
+
+      const totals = summary.totals || {};
+      const sites = summary.all_sites || [];
+
+      set('settings-visitors-state', totals.live
+        ? `${totals.live} ${totals.live === 1 ? 'person is' : 'people are'} on your sites right now.`
+        : sites.length
+          ? 'Nobody on the sites right now.'
+          : 'No visits recorded yet — paste the snippet below on a site to start.');
+
+      set('settings-visitors-snapshot', totals.pageviews
+        ? `Last 7 days: ${totals.visitors} visitors · ${totals.pageviews} page views · ${totals.new} first-time, ${totals.returning} been before.`
+        : '');
+
+      set('settings-visitors-sites', sites.length ? sites.join(', ') : 'None yet.');
+      set('settings-visitors-retention', `Page views are kept for ${summary.retention_days} days and then deleted automatically.`);
+    } catch {
+      set('settings-visitors-state', 'Could not reach the server.');
+    }
+  }
+
+  async function copyTrackerSnippet(btn) {
+    try {
+      await navigator.clipboard.writeText(trackerSnippet());
+      if (btn) {
+        btn.textContent = 'Copied';
+        setTimeout(() => { btn.textContent = 'Copy snippet'; }, 2000);
+      }
+    } catch {
+      // Clipboard access is refused often enough that this is a real fallback.
+      prompt('Copy the tracker snippet:', trackerSnippet());
+    }
+  }
+
+  async function clearVisits(btn) {
+    if (!confirm('Delete every recorded page view from every site? This cannot be undone.')) return;
+    try {
+      const response = await fetch('/api/visits', { method: 'DELETE' });
+      if (response.status === 401) {
+        alert('Unlock the Dropbox first, then try again.');
+        return;
+      }
+      if (!response.ok) throw new Error('request failed');
+      if (btn) {
+        btn.textContent = 'Deleted';
+        setTimeout(() => { btn.textContent = 'Delete all'; }, 2000);
+      }
+      loadVisitors();
+    } catch {
+      alert('Could not delete the recorded visits.');
+    }
+  }
+
   async function saveGateway() {
     const local = (document.getElementById('settings-gateway-local').value || '').trim();
     const lan   = (document.getElementById('settings-gateway-lan').value   || '').trim();
@@ -1361,7 +1447,10 @@ window.SETTINGS = (() => {
     location.reload();
   }
 
-  return { load, saveGateway, clearKey, clearAll, applyTheme, loadShortcuts, applyGatewayLinks, checkGateway };
+  return {
+    load, saveGateway, clearKey, clearAll, applyTheme, loadShortcuts, applyGatewayLinks, checkGateway,
+    loadVisitors, copyTrackerSnippet, clearVisits,
+  };
 })();
 
 // Apply saved theme immediately so there's no flash on load
