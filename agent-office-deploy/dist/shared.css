@@ -2016,16 +2016,24 @@
   display: none;
 }
 
+/* Three feed menus to a row, each one a closed dropdown until it is asked for,
+   so the whole set of sources fits on screen instead of running down it. */
 .dev-update-groups {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+  align-items: start;
 }
 
 .dev-update-group {
+  position: relative;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: color-mix(in srgb, var(--panel) 92%, transparent);
+}
+
+.dev-update-group[open] {
+  border-color: var(--accent);
 }
 
 .dev-update-group summary {
@@ -2044,22 +2052,20 @@
 
 .dev-update-group summary::-webkit-details-marker { display: none; }
 
-.dev-update-group summary::before {
-  content: '+';
-  width: 20px;
-  height: 20px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border);
-  border-radius: 5px;
+/* A chevron rather than the sections' +/-: this one opens a menu, it does not
+   expand the page. It trails the label the way a select does. */
+.dev-update-group summary::after {
+  content: '▾';
+  margin-left: auto;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 11px;
   line-height: 1;
+  transition: transform .15s ease;
 }
 
-.dev-update-group[open] summary::before {
-  content: '-';
+.dev-update-group[open] summary::after {
+  transform: rotate(180deg);
+  color: var(--accent);
 }
 
 .dev-update-group summary:focus-visible {
@@ -2068,8 +2074,33 @@
   border-radius: 6px;
 }
 
+/* The links hang below their menu rather than pushing the row down. */
 .dev-update-group .dev-link-grid {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  grid-template-columns: minmax(0, 1fr);
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+}
+
+/* Searching opens every match at once, so those panels sit in the flow where
+   they cannot cover each other. */
+.dev-update-groups.is-searching .dev-update-group .dev-link-grid {
+  position: static;
+  max-height: none;
   padding: 0 14px 14px;
+  border: none;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
 }
 
 .dev-link-grid {
@@ -2115,6 +2146,10 @@
   .dev-link-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .dev-update-groups {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
@@ -2137,6 +2172,10 @@
   }
 
   .dev-link-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dev-update-groups {
     grid-template-columns: 1fr;
   }
 }
