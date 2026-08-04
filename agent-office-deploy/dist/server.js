@@ -32,6 +32,7 @@ const LEGACY_STATUS_MAP = new Map([
   ['building', 'coding'],
 ]);
 const ALLOWED_AGENT_STATUSES = new Set(['idle', 'running', 'blocked', 'failed', 'needs_input', 'offline']);
+const ALLOWED_APP_SETTING_KEYS = new Set(['ao-gateway-local', 'ao-gateway-lan']);
 const DEFAULT_AGENTS = [
   { id: 'codex', name: 'Codex', role: 'Coding Agent', model: 'GPT-5', status: 'idle', source: 'Codex', notes: 'Repo work, reviews, implementation, and local verification.' },
   { id: 'claude-code', name: 'Claude Code', role: 'Coding Agent', model: 'Claude Sonnet', status: 'idle', source: 'CLI', notes: 'Parallel coding and refactor support.' },
@@ -39,6 +40,7 @@ const DEFAULT_AGENTS = [
   { id: 'reaper', name: 'Reaper', role: 'Farm Bot', model: 'GPT-4o-mini', status: 'idle', source: 'OpenClaw', notes: 'CommentFarm discover, posting, and engagement cycles.' },
   { id: 'traderclaw', name: 'TraderClaw', role: 'Trading Bot', model: 'Claude Sonnet', status: 'running', source: 'Railway', notes: 'BTC, market dashboard, and trading analysis.' },
   { id: 'webclaw', name: 'WebClaw', role: 'Web Developer', model: 'GPT-5.4', status: 'idle', source: 'Railway', notes: 'Demo sites, client landing pages, and pitch assets.' },
+  { id: 'studioclaw', name: 'StudioClaw', role: 'Studio Director', model: 'GPT-5.4', status: 'idle', source: 'OpenClaw', notes: 'Nightwave studio routing, creative briefs, asset organization, launch prep, and approval review.' },
   { id: 'researcher', name: 'Researcher', role: 'Research Agent', model: 'GPT-5', status: 'idle', source: 'Manual', notes: 'Briefs, scans, and source gathering.' },
   { id: 'guardian', name: 'Guardian', role: 'Security Agent', model: 'Claude Sonnet', status: 'idle', source: 'Manual', notes: 'Security checklist, deployment risk, and auth review.' },
   { id: 'farmbot', name: 'FarmBot', role: 'Outreach Agent', model: 'Qwen', status: 'idle', source: 'OpenClaw', notes: 'Scheduled farm sessions and engagement automation.' },
@@ -3846,6 +3848,40 @@ const server = http.createServer(async (req, res) => {
 
       sendJson(res, 200, { ok: true });
       return;
+    }
+
+    // -- APP SETTINGS API ----------------------------------------
+    if (pathname.startsWith('/api/settings/')) {
+      const key = decodeURIComponent(pathname.slice('/api/settings/'.length).trim());
+      if (!ALLOWED_APP_SETTING_KEYS.has(key)) {
+        sendJson(res, 404, { error: 'Setting not found.' });
+        return;
+      }
+
+      if (req.method === 'GET') {
+        sendJson(res, 200, { key, value: await storage.getAppSetting(key) });
+        return;
+      }
+
+      if (!requireDropsAuth(res, req)) return;
+
+      if (req.method === 'PUT') {
+        const body = await readJsonBody(req);
+        const value = typeof body.value === 'string' ? body.value.trim() : '';
+        if (value.length > 200) {
+          sendJson(res, 400, { error: 'Setting value is too long.' });
+          return;
+        }
+        await storage.setAppSetting(key, value);
+        sendJson(res, 200, { key, value });
+        return;
+      }
+
+      if (req.method === 'DELETE') {
+        await storage.deleteAppSetting(key);
+        sendJson(res, 200, { key, value: null });
+        return;
+      }
     }
 
     // -- GOOGLE CALENDAR API -------------------------------------

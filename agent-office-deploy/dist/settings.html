@@ -103,7 +103,7 @@
     <!-- Gateway URLs -->
     <div style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:20px;">
       <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px;">Gateway URLs</div>
-      <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">Set custom gateway endpoints. Saved to this browser's localStorage.</div>
+      <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">Set custom gateway endpoints. Saved to Agent Office settings when available, with browser storage as fallback.</div>
       <div style="margin-bottom:14px;">
         <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">Local Gateway</label>
         <input id="settings-gateway-local" type="url" placeholder="http://localhost:18789" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:13px; color:var(--text); outline:none; box-sizing:border-box;" />
@@ -114,6 +114,13 @@
       </div>
       <button onclick="SETTINGS.saveGateway()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:10px 20px; font-size:13px; font-weight:600; cursor:pointer;">Save Gateway URLs</button>
       <span id="settings-gateway-msg" style="font-size:12px; color:#22c55e; margin-left:14px; display:none;">Saved.</span>
+    </div>
+
+    <!-- Gateway Agents -->
+    <div style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:20px;">
+      <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px;">Gateway Agents</div>
+      <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">OpenClaw agents visible to this office surface.</div>
+      <div id="settings-gateway-agents" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:10px;"></div>
     </div>
 
     <!-- Phone inbox / Shortcuts -->

@@ -5,6 +5,7 @@
     {name:'WebClaw', role:'Web Agency Specialist', color:'#3b82f6'},
     {name:'NutriMind', role:'Nutrition App Specialist', color:'#22c55e'},
     {name:'PC', role:'Windows Workstation Specialist', color:'#10b981'},
+    {name:'StudioClaw', role:'Studio Director', color:'#ec4899'},
   ];
   const el = document.getElementById('svg-roster');
   if (el) {
@@ -131,6 +132,34 @@ const AGENTS = [
       'Security and cleanup checklist ready',
       'Windows troubleshooting profile active',
     ]
+  },
+  {
+    id: 'studioclaw',
+    name: 'StudioClaw',
+    emoji: 'NW',
+    color: '#ec4899',
+    role: 'Studio Director',
+    model: 'GPT-5.4',
+    authority: 'specialist',
+    memory: true,
+    workspace: 'workspace-studios',
+    repo: 'studio routing',
+    desc: 'Nightwave, Jason studio director. Routes creative production, prepares briefs, organizes assets, reviews launch outputs, and reports to Penny before public posting or external commitments.',
+    tasks: [
+      'Routing studio work',
+      'Preparing creative briefs',
+      'Organizing media assets',
+      'Reviewing launch outputs',
+      'Tracking approvals',
+      'Coordinating Nightwave Audio',
+    ],
+    feed: [
+      'Studio routing map verified',
+      'Creative handoff template ready',
+      'Nightwave reports to Penny',
+      'Approval gates confirmed for public posts',
+      'Studio workspace active',
+    ]
   }
 ];
 
@@ -175,6 +204,7 @@ let AGENT_STATIONS = {
   webclaw:    { gx:  1, gy: 4, facing: 'W' },
   nutrimind:  { gx:  8, gy: 5, facing: 'N' },
   pc:         { gx: 10, gy: 5, facing: 'N' },
+  studioclaw: { gx:  7, gy: 5, facing: 'N' },
 };
 // <<<END GENERATED ROOM GEOMETRY>>>
 
@@ -582,6 +612,7 @@ function applyRoomGeometry(geometry, stations) {
   AGENT_STATIONS.webclaw = { gx: 1, gy: 4, facing: 'W' };
   AGENT_STATIONS.nutrimind = { gx: 8, gy: 5, facing: 'N' };
   AGENT_STATIONS.pc = { gx: 10, gy: 5, facing: 'N' };
+  AGENT_STATIONS.studioclaw = { gx: 7, gy: 5, facing: 'N' };
   agentState.forEach((agent, index) => {
     agent.station = stationFor(agent.id, index);
     agent.pos = { gx: agent.station.gx, gy: agent.station.gy };
@@ -942,6 +973,7 @@ window.SETTINGS = (() => {
   const GW_LOCAL_KEY = 'ao-gateway-local';
   const GW_LAN_KEY   = 'ao-gateway-lan';
   const THEME_KEY    = 'ao-theme';
+  const SETTING_API  = '/api/settings/';
 
   // A theme is just an accent. shared.css derives every surface from it.
   const THEMES = {
@@ -985,6 +1017,86 @@ window.SETTINGS = (() => {
     }).join('');
   }
 
+  async function getSetting(key) {
+    try {
+      const response = await fetch(SETTING_API + encodeURIComponent(key), { credentials: 'same-origin' });
+      if (!response.ok) throw new Error('settings unavailable');
+      const data = await response.json();
+      return typeof data.value === 'string' ? data.value : '';
+    } catch (_) {
+      return localStorage.getItem(key) || '';
+    }
+  }
+
+  async function setSetting(key, value) {
+    if (value) localStorage.setItem(key, value); else localStorage.removeItem(key);
+    try {
+      const method = value ? 'PUT' : 'DELETE';
+      const options = {
+        method,
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+      };
+      if (value) options.body = JSON.stringify({ value });
+      const response = await fetch(SETTING_API + encodeURIComponent(key), options);
+      return response.ok;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function escapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, ch => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    }[ch]));
+  }
+
+  function gatewayAgentFallback() {
+    return ['oss', 'studioclaw', 'webclaw', 'nutrimind', 'pc'].map(id => ({
+      id,
+      name: AGENT_DESCRIPTIONS[id]?.name || id,
+      role: AGENT_DESCRIPTIONS[id]?.role || 'OpenClaw Agent',
+      model: AGENT_DESCRIPTIONS[id]?.model || '',
+      status: id === 'oss' ? 'running' : 'idle',
+      source: 'OpenClaw',
+    }));
+  }
+
+  function renderGatewayAgents(agents) {
+    const el = document.getElementById('settings-gateway-agents');
+    if (!el) return;
+    const visible = new Set(['oss', 'studioclaw', 'webclaw', 'nutrimind', 'pc', 'traderclaw', 'guardian', 'openclaw']);
+    const rows = (agents && agents.length ? agents : gatewayAgentFallback())
+      .filter(agent => visible.has(agent.id));
+    el.innerHTML = rows.map(agent => {
+      const status = agent.status || 'idle';
+      const color = status === 'running' || status === 'active' ? '#22c55e' : status === 'failed' ? '#ef4444' : '#64748b';
+      const sourceLine = `${agent.source || 'Gateway'}${agent.model ? ' / ' + agent.model : ''}`;
+      return `<div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px 14px; min-height:82px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:7px;">
+          <div style="font-size:13px; color:var(--text); font-weight:600;">${escapeHtml(agent.name || agent.id)}</div>
+          <div title="${escapeHtml(status)}" style="width:9px; height:9px; border-radius:50%; background:${color}; flex:0 0 auto;"></div>
+        </div>
+        <div style="font-size:11px; color:var(--muted); line-height:1.5;">${escapeHtml(agent.role || 'OpenClaw Agent')}</div>
+        <div style="font-size:10px; color:color-mix(in srgb, var(--muted) 75%, var(--bg)); margin-top:7px;">${escapeHtml(sourceLine)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  async function loadGatewayAgents() {
+    try {
+      const response = await fetch('/api/agents', { credentials: 'same-origin' });
+      if (!response.ok) throw new Error('agents unavailable');
+      renderGatewayAgents(await response.json());
+    } catch (_) {
+      renderGatewayAgents(gatewayAgentFallback());
+    }
+  }
+
   // Gateway links across the app carry data-gateway="local"|"lan". The href in the
   // markup is the default; a URL saved in Settings overrides it. That is the only
   // way to reach a gateway whose LAN address is not the hardcoded one.
@@ -1008,9 +1120,13 @@ window.SETTINGS = (() => {
     });
   }
 
-  function load() {
-    const local = localStorage.getItem(GW_LOCAL_KEY);
-    const lan   = localStorage.getItem(GW_LAN_KEY);
+  async function load() {
+    const [local, lan] = await Promise.all([
+      getSetting(GW_LOCAL_KEY),
+      getSetting(GW_LAN_KEY),
+    ]);
+    if (local) localStorage.setItem(GW_LOCAL_KEY, local); else localStorage.removeItem(GW_LOCAL_KEY);
+    if (lan) localStorage.setItem(GW_LAN_KEY, lan); else localStorage.removeItem(GW_LAN_KEY);
     const inpLocal = document.getElementById('settings-gateway-local');
     const inpLan   = document.getElementById('settings-gateway-lan');
     if (inpLocal) inpLocal.value = local || '';
@@ -1018,6 +1134,7 @@ window.SETTINGS = (() => {
     applyGatewayLinks();
     const grid = document.getElementById('settings-theme-grid');
     if (grid) renderThemePicker(grid);
+    loadGatewayAgents();
     loadShortcuts();
   }
 
@@ -1058,14 +1175,20 @@ window.SETTINGS = (() => {
     }
   }
 
-  function saveGateway() {
+  async function saveGateway() {
     const local = (document.getElementById('settings-gateway-local').value || '').trim();
     const lan   = (document.getElementById('settings-gateway-lan').value   || '').trim();
-    if (local) localStorage.setItem(GW_LOCAL_KEY, local); else localStorage.removeItem(GW_LOCAL_KEY);
-    if (lan)   localStorage.setItem(GW_LAN_KEY,   lan);   else localStorage.removeItem(GW_LAN_KEY);
+    const [savedLocal, savedLan] = await Promise.all([
+      setSetting(GW_LOCAL_KEY, local),
+      setSetting(GW_LAN_KEY, lan),
+    ]);
     applyGatewayLinks();
     const msg = document.getElementById('settings-gateway-msg');
-    if (msg) { msg.style.display = 'inline'; setTimeout(() => { msg.style.display = 'none'; }, 2000); }
+    if (msg) {
+      msg.textContent = savedLocal && savedLan ? 'Saved.' : 'Saved locally.';
+      msg.style.display = 'inline';
+      setTimeout(() => { msg.style.display = 'none'; }, 2000);
+    }
   }
 
   function clearKey(key, btn) {
