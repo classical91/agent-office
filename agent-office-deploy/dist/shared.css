@@ -107,10 +107,20 @@
     transition: width 0.25s ease;
     padding: 8px 0;
     overflow-y: auto;
+    /* A column so the System section can be pinned to the bottom. */
+    display: flex;
+    flex-direction: column;
   }
 
   .nav-section {
     margin-bottom: 4px;
+    flex-shrink: 0;
+  }
+
+  /* Sits at the foot of the sidebar, and falls back to normal flow once the
+     items above it fill the height. */
+  .nav-section-bottom {
+    margin-top: auto;
   }
 
   .nav-label {

@@ -985,6 +985,29 @@ window.SETTINGS = (() => {
     }).join('');
   }
 
+  // Gateway links across the app carry data-gateway="local"|"lan". The href in the
+  // markup is the default; a URL saved in Settings overrides it. That is the only
+  // way to reach a gateway whose LAN address is not the hardcoded one.
+  function gatewayUrl(kind) {
+    let raw;
+    try {
+      raw = localStorage.getItem(kind === 'lan' ? GW_LAN_KEY : GW_LOCAL_KEY);
+    } catch { return ''; }
+    raw = (raw || '').trim();
+    if (!raw) return '';
+    return /^https?:\/\//i.test(raw) ? raw : 'http://' + raw;
+  }
+
+  function applyGatewayLinks(root) {
+    (root || document).querySelectorAll('[data-gateway]').forEach(el => {
+      // Remember the markup's href once, so clearing the setting restores it.
+      if (el.dataset.gatewayDefault === undefined) {
+        el.dataset.gatewayDefault = el.getAttribute('href') || '';
+      }
+      el.setAttribute('href', gatewayUrl(el.getAttribute('data-gateway')) || el.dataset.gatewayDefault);
+    });
+  }
+
   function load() {
     const local = localStorage.getItem(GW_LOCAL_KEY);
     const lan   = localStorage.getItem(GW_LAN_KEY);
@@ -992,6 +1015,7 @@ window.SETTINGS = (() => {
     const inpLan   = document.getElementById('settings-gateway-lan');
     if (inpLocal) inpLocal.value = local || '';
     if (inpLan)   inpLan.value   = lan   || '';
+    applyGatewayLinks();
     const grid = document.getElementById('settings-theme-grid');
     if (grid) renderThemePicker(grid);
     loadShortcuts();
@@ -1039,6 +1063,7 @@ window.SETTINGS = (() => {
     const lan   = (document.getElementById('settings-gateway-lan').value   || '').trim();
     if (local) localStorage.setItem(GW_LOCAL_KEY, local); else localStorage.removeItem(GW_LOCAL_KEY);
     if (lan)   localStorage.setItem(GW_LAN_KEY,   lan);   else localStorage.removeItem(GW_LAN_KEY);
+    applyGatewayLinks();
     const msg = document.getElementById('settings-gateway-msg');
     if (msg) { msg.style.display = 'inline'; setTimeout(() => { msg.style.display = 'none'; }, 2000); }
   }
@@ -1055,7 +1080,7 @@ window.SETTINGS = (() => {
     location.reload();
   }
 
-  return { load, saveGateway, clearKey, clearAll, applyTheme, loadShortcuts };
+  return { load, saveGateway, clearKey, clearAll, applyTheme, loadShortcuts, applyGatewayLinks };
 })();
 
 // Apply saved theme immediately so there's no flash on load
@@ -2071,6 +2096,7 @@ document.addEventListener('DOMContentLoaded', () => {
       labelEl.classList.remove('collapsed');
     }
   });
+  if (window.SETTINGS) window.SETTINGS.applyGatewayLinks();
   const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
   if (!isLocalHost) {
     document.querySelectorAll('[data-dev-only="true"]').forEach(el => el.remove());

@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="shared.css?v=side-menu-20260802"/>
+<link rel="stylesheet" href="shared.css?v=nav-bottom-20260804"/>
 <!-- Apply saved theme before first paint to avoid a flash of the default theme. Mirrors THEMES in app-shared.js. -->
 <script>
 (function(){
@@ -61,6 +61,7 @@
         </div>
         <a class="nav-item" href="/mission-board.html">Dropbox</a>
         <a class="nav-item" href="/mission-board.html?view=ios">Reminders</a>
+        <a class="nav-item active" href="/dev.html">Dev Links</a>
         <a class="nav-item" href="https://main-page-production-9927.up.railway.app/ai.html" target="_blank" rel="noopener noreferrer">AI Portal <span class="link-ext">↗</span></a>
         <a class="nav-item" href="https://main-page-production-9927.up.railway.app/apps.html" target="_blank" rel="noopener noreferrer">My Websites &amp; Projects <span class="link-ext">↗</span></a>
         <a class="nav-item" href="/calendar-v3.html">Calendar</a>
@@ -72,15 +73,14 @@
     </div>
 
 <!-- SYSTEM -->
-    <div class="nav-section">
+    <div class="nav-section nav-section-bottom">
       <div class="nav-heading">System</div>
       <div class="nav-items-wrap nav-open">
-        <a class="nav-item active" href="/dev.html">Dev Links</a>
         <a class="nav-item" href="/settings.html">Settings</a>
-        <a class="nav-link" data-dev-only="true" href="http://localhost:18789" target="_blank">
+        <a class="nav-link" data-dev-only="true" data-gateway="local" href="http://localhost:18789" target="_blank">
           <div class="link-dot" style="background:var(--accent);"></div> Gateway (local) <span class="link-ext">↗</span>
         </a>
-        <a class="nav-link" data-dev-only="true" href="http://10.0.0.106:18789" target="_blank">
+        <a class="nav-link" data-dev-only="true" data-gateway="lan" href="http://10.0.0.106:18789" target="_blank">
           <div class="link-dot" style="background:var(--accent);"></div> Gateway (LAN) <span class="link-ext">↗</span>
         </a>
       </div>
@@ -281,7 +281,7 @@
             <strong>Claude Console</strong>
             <span>Anthropic API keys, usage, model access, and workbench.</span>
           </a>
-          <a class="dev-link-card" href="http://localhost:18789/" target="_blank" rel="noopener noreferrer">
+          <a class="dev-link-card" data-gateway="local" href="http://localhost:18789/" target="_blank" rel="noopener noreferrer">
             <strong>OpenClaw Gateway</strong>
             <span>Local Agent Office gateway for OpenClaw routing and local control.</span>
           </a>
@@ -352,7 +352,7 @@
             <strong>Local n8n :5678</strong>
             <span>Local workflow editor when n8n is running.</span>
           </a>
-          <a class="dev-link-card" href="http://localhost:18789/" target="_blank" rel="noopener noreferrer">
+          <a class="dev-link-card" data-gateway="local" href="http://localhost:18789/" target="_blank" rel="noopener noreferrer">
             <strong>Gateway :18789</strong>
             <span>Agent Office gateway endpoint from Settings.</span>
           </a>
@@ -378,7 +378,7 @@
 <!-- BOTTOM STATUS BAR -->
 <div class="statusbar" id="statusbar"></div>
 
-<script src="app-shared.js?v=office-submenu-20260727"></script>
+<script src="app-shared.js?v=gateway-links-20260804"></script>
 <script>
 switchView('dev', document.querySelector('.nav-item.active'));
 
