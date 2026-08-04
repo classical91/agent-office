@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="robots" content="noindex,nofollow"/>
+  <title>Agent Office — Five-character design demo</title>
+  <link rel="stylesheet" href="shared.css?v=character-demo-20260804"/>
+  <link rel="stylesheet" href="character-demo.css?v=character-demo-20260804"/>
+</head>
+<body class="character-demo-page">
+  <header class="demo-intro">
+    <div class="demo-intro-copy">
+      <p class="demo-kicker">Character design demo <span>Not connected to the live roster</span></p>
+      <h1>Five agents.<br/>One office language.</h1>
+      <p class="demo-summary">Outfit-led redesigns for the five approved OpenClaw agents, kept inside the current 64 × 110 sprite envelope and the office’s existing isometric projection.</p>
+    </div>
+    <dl class="demo-constraints" aria-label="Demo constraints">
+      <div><dt>Roster</dt><dd>5 existing IDs</dd></div>
+      <div><dt>Sprite source</dt><dd>64 × 110 px</dd></div>
+      <div><dt>Office draw size</dt><dd>52 × 72 px</dd></div>
+      <div><dt>Live changes</dt><dd>None</dd></div>
+    </dl>
+  </header>
+
+  <main>
+    <section class="demo-section size-section" aria-labelledby="size-heading">
+      <div class="section-heading">
+        <div>
+          <p class="section-index">01 / Actual scale</p>
+          <h2 id="size-heading">Current and proposed</h2>
+        </div>
+        <p>Both columns use the live avatar box and canvas dimensions. No showcase enlargement.</p>
+      </div>
+      <div id="comparison-strip" class="comparison-strip" aria-live="polite"></div>
+    </section>
+
+    <section class="demo-section office-section" aria-labelledby="office-heading">
+      <div class="section-heading office-heading">
+        <div>
+          <p class="section-index">02 / In context</p>
+          <h2 id="office-heading">Inside the existing office</h2>
+        </div>
+        <div class="office-controls">
+          <div class="view-toggle" role="group" aria-label="Character design shown in the office">
+            <button type="button" data-mode="proposed" class="active" aria-pressed="true">Proposed</button>
+            <button type="button" data-mode="current" aria-pressed="false">Current</button>
+          </div>
+          <span id="scale-readout" class="scale-readout">Room scale —</span>
+        </div>
+      </div>
+
+      <div class="office-shell">
+        <div class="office-meta"><span>HQ · Floor 1 copy</span><span>Only the five approved agents</span></div>
+        <div id="demo-office" class="demo-office" aria-label="Copied Agent Office room with five proposed characters">
+          <p class="office-loading">Loading the existing office…</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="demo-footer">
+    <p>Approval surface only. Agent IDs, names, data, workstations, and live sprite mappings remain unchanged.</p>
+  </footer>
+
+  <script src="character-demo.js?v=character-demo-20260804"></script>
+</body>
+</html>
