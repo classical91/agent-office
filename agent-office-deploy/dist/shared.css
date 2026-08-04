@@ -1524,13 +1524,13 @@
     color: var(--text);
     cursor: pointer;
   }
-  .dropbox-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; }
+  /* One column: a note is never a side pane, it opens as its own page. */
+  .dropbox-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .dropbox-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
   .dropbox-quick-capture,
   .dropbox-reminder-capture,
   .dropbox-table-wrap,
-  .dropbox-cards-wrap,
-  .drop-detail-panel {
+  .dropbox-cards-wrap {
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 14px;
@@ -1549,9 +1549,9 @@
     font-weight: 700;
     color: var(--accent);
   }
-  /* Both capture panels open from their toolbar button. The task form is only
-     hidden on mobile, where it otherwise fills the screen before you have
-     asked for it; the reminder panel starts closed everywhere. */
+  /* Both capture panels open from their toolbar button and start closed, so
+     neither fills the screen before you have asked for it. */
+  .dropbox-quick-capture.is-collapsed,
   .dropbox-reminder-capture.is-collapsed { display: none; }
   .reminder-saved-note { font-size: 12px; color: var(--green); }
   .reminder-saved-note.is-collapsed { display: none; }
@@ -1561,9 +1561,7 @@
   .dropbox-view.ios-capture-mode .dropbox-quick-capture,
   .dropbox-view.ios-capture-mode .mission-pipeline,
   .dropbox-view.ios-capture-mode .dropbox-table-wrap,
-  .dropbox-view.ios-capture-mode .dropbox-cards-wrap,
-  .dropbox-view.ios-capture-mode .drop-detail-panel { display: none !important; }
-  .dropbox-view.ios-mode .dropbox-layout { grid-template-columns: minmax(0, 1fr); }
+  .dropbox-view.ios-capture-mode .dropbox-cards-wrap { display: none !important; }
   .dropbox-view.ios-capture-mode .dropbox-reminder-capture { max-width: 560px; }
   .dropbox-quick-capture input,
   .dropbox-quick-capture select,
@@ -1604,30 +1602,7 @@
   .drop-card-meta { display: flex; flex-wrap: wrap; gap: 4px; }
   .detail-badges,
   .detail-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
-  .drop-detail-empty { color: var(--muted); font-size: 13px; padding: 40px 20px; text-align: center; }
   .drop-detail { display: flex; flex-direction: column; }
-  /* Note popup overlay */
-  #drop-detail-panel.detail-open {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    z-index: 9999 !important;
-    border-radius: 0 !important;
-    overflow-y: auto !important;
-    padding: 0 !important;
-    background: var(--bg, #0f1117) !important;
-    border: none !important;
-    box-sizing: border-box !important;
-  }
-  #drop-detail-panel.detail-open .drop-detail {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 24px 20px 48px;
-  }
   .drop-detail-header { padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 12px; }
   .drop-detail-title { margin: 0 0 6px; font-size: 18px; font-weight: 700; color: var(--text); line-height: 1.3; }
   .drop-detail-meta-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
@@ -1656,22 +1631,6 @@
   }
   .mission-edit-toggle { align-self: flex-start; margin: 4px 0 2px; }
   .mission-edit-fields.is-collapsed { display: none; }
-  /* Only shown once the list is out of the way, which is the one place you
-     need a way back to it. */
-  .mission-detail-back {
-    display: none;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 12px;
-    padding: 0;
-    background: none;
-    border: none;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--accent);
-    cursor: pointer;
-  }
   .dbadge { display: inline-flex; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; white-space: nowrap; }
   .dbadge-subject  { background: rgba(124,92,255,0.18); color: #a78bfa; }
   .dbadge-priority { background: rgba(255,140,0,0.18);  color: #fbbf24; }
@@ -1696,23 +1655,7 @@
   .btn-danger:hover { background: rgba(248,113,113,0.1); }
   .hidden { display: none !important; }
   .drop-detail-back { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; font-size: 14px; color: var(--accent); cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; font-weight: 500; }
-  /* One column: reading a note and browsing the list are separate screens
-     rather than two panes. Nothing selected means no empty "Select a task"
-     placeholder taking the top of the page; something selected means the
-     filters and the list step aside so the note has the screen to itself. */
-  @media (max-width: 1100px) {
-    .dropbox-layout { grid-template-columns: 1fr; }
-    .drop-detail-panel { order: -1; }
-    .drop-detail-back { display: flex; }
-    .dropbox-view:not(.has-selection) .drop-detail-panel { display: none; }
-    .dropbox-view.has-selection .dropbox-filters,
-    .dropbox-view.has-selection .dropbox-main { display: none; }
-    .dropbox-view.has-selection .drop-detail-panel { order: 0; }
-    .mission-detail-back { display: inline-flex; }
-  }
   @media (max-width: 768px) {
-    .dropbox-quick-capture.is-collapsed-mobile { display: none; }
-
     .dropbox-filters-toggle { display: inline-flex; }
     .dropbox-filters-more { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
     .dropbox-filters-more.is-collapsed-mobile { display: none; }

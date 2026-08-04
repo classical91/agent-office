@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>Dropbox - Agent Office</title>
-<link rel="stylesheet" href="shared.css?v=dev-grid-3col-20260804"/>
+<link rel="stylesheet" href="shared.css?v=note-page-20260804"/>
 <!-- Apply saved theme before first paint to avoid a flash of the default theme. Mirrors THEMES in app-shared.js. -->
 <script>
 (function(){
@@ -147,7 +147,9 @@
             <div id="reminder-saved-note" class="reminder-saved-note is-collapsed"></div>
           </div>
 
-          <div id="dropbox-quick-capture" class="dropbox-quick-capture is-collapsed-mobile">
+          <!-- Closed until New Note asks for it, so the page opens on the notes
+               themselves rather than on an empty form. -->
+          <div id="dropbox-quick-capture" class="dropbox-quick-capture is-collapsed">
             <input id="drop-title" type="text" placeholder="Title" />
             <input id="drop-subject" type="text" placeholder="Subject / Category" />
             <input id="drop-project" type="text" placeholder="Project" />
@@ -175,10 +177,6 @@
           <div id="dropbox-table-wrap" class="dropbox-table-wrap"></div>
           <div id="dropbox-cards-wrap" class="dropbox-cards-wrap hidden"></div>
         </div>
-
-        <aside id="drop-detail-panel" class="drop-detail-panel">
-          <div class="drop-detail-empty">Select a drop to view details.</div>
-        </aside>
       </div>
     </section>
   </div>
@@ -213,8 +211,8 @@
     </div>
   </div>
 
-<script src="app-shared.js?v=gateway-links-20260804"></script>
-<script src="mission-board.js?v=reminders-no-subject-20260803"></script>
+<script src="app-shared.js?v=note-page-20260804"></script>
+<script src="mission-board.js?v=note-page-20260804"></script>
 <script>
 switchView('dropbox', document.querySelector('.nav-item.active'));
 </script>

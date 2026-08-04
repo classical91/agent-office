@@ -165,46 +165,63 @@
     return `<select id="${escAttr(id)}" class="mission-inline-select">${options.map(item => `<option value="${escAttr(item[0])}" ${item[0] === value ? 'selected' : ''}>${escHTML(item[1])}</option>`).join('')}</select>`;
   }
 
-  function renderMissionDetailPanel() {
-    const panel = document.getElementById('drop-detail-panel');
-    if (!panel) return;
+  // Opening a task gives it the page, the way opening a note does: the list and
+  // its toolbar step aside and the task is what is on screen, with a way back.
+  function renderMissionNoteView() {
+    const view   = document.getElementById('view-dropbox');
+    const listEl = document.getElementById('dropbox-view');
+    if (!view || !listEl) return;
+
+    document.getElementById('note-view-section')?.remove();
     const drop = dropboxState.drops.find(d => d.id === dropboxState.selectedId);
-    const iosMode = Boolean(document.getElementById('dropbox-view')?.classList.contains('ios-mode'));
     if (!drop) {
-      panel.innerHTML = '<div class="drop-detail-empty">Select a task to view details.</div>';
+      listEl.style.display = '';
       return;
     }
+    const iosMode = listEl.classList.contains('ios-mode');
+    listEl.style.display = 'none';
+
     // Reading a note is the common case, so the note reads as a note: title,
     // when it was written, and the text. Moving it between statuses is a rarer,
     // deliberate act and waits behind Edit.
-    panel.innerHTML = `
+    const section = document.createElement('section');
+    section.id = 'note-view-section';
+    section.style.cssText = 'width:100%;max-width:720px;margin:0 auto;padding:24px 20px 60px;box-sizing:border-box;';
+    section.innerHTML = `
       <div class="drop-detail">
-        <button type="button" id="mission-detail-back" class="mission-detail-back">← All tasks</button>
-        <h3>${escHTML(drop.title || 'Untitled task')}</h3>
-        <div class="detail-badges">
-          ${dropBadge(statusLabel(drop.status), 'status')}
-          ${iosMode ? '' : dropBadge(drop.subject, 'subject')}
+        <button type="button" id="mission-detail-back" class="drop-detail-back">← All tasks</button>
+        <div class="drop-detail-header">
+          <h2 class="drop-detail-title">${escHTML(drop.title || 'Untitled task')}</h2>
+          <div class="drop-detail-meta-row">
+            <span>${dropFormatDate(drop.updated_at || drop.date)}</span>
+            <span class="sep">·</span>
+            ${dropBadge(statusLabel(drop.status), 'status')}
+            ${iosMode || !drop.subject ? '' : dropBadge(drop.subject, 'subject')}
+            <span>${escHTML(drop.project || 'No project')} / ${escHTML(agentLabel(drop.agent))}</span>
+          </div>
         </div>
         <button type="button" id="mission-detail-edit" class="btn btn-secondary mission-edit-toggle">Edit</button>
         <div id="mission-detail-edit-fields" class="mission-edit-fields is-collapsed">
           <h4>Move Task</h4>
           ${selectHtml('mission-detail-status', drop.status || 'idea', STATUSES)}
         </div>
+        <div class="drop-detail-content">${escHTML(drop.content || '')}</div>
+        ${(drop.tags || []).length ? `<div class="drop-detail-section-label">Tags</div><div class="detail-tags">${drop.tags.map(t => dropBadge(t, 'tag')).join(' ')}</div>` : ''}
         <p><strong>Created:</strong> ${dropFormatDate(drop.date)}</p>
-        <p><strong>Updated:</strong> ${dropFormatDate(drop.updated_at || drop.date)}</p>
-        <div class="detail-tags">${(drop.tags || []).map(t => dropBadge(t, 'tag')).join(' ')}</div>
-        <h4>Content</h4>
-        <pre class="drop-content-view">${escHTML(drop.content || '')}</pre>
         <div class="detail-actions">
           <button id="mission-done-btn" class="btn btn-primary">Mark Done</button>
           <button id="mission-archive-btn" class="btn btn-secondary">Archive</button>
           <button id="delete-drop-btn" class="btn btn-danger">Delete</button>
         </div>
       </div>`;
+
+    view.appendChild(section);
+    view.scrollTop = 0;
+
     document.getElementById('mission-detail-back').addEventListener('click', () => {
       dropboxState.selectedId = null;
       renderDropbox();
-      document.getElementById('dropbox-view')?.scrollIntoView({ block: 'start' });
+      view.scrollTop = 0;
     });
 
     const editToggle = document.getElementById('mission-detail-edit');
@@ -240,14 +257,13 @@
     window.getFilteredDrops = getFilteredDrops = filteredDrops;
     const baseRender = renderDropbox;
     window.renderDropbox = renderDropbox = function () {
-      syncDropSelectionClass();
       ensureMissionControls();
       populateSubjectFilter();
       populateProjectFilter();
       renderPipeline();
       if (dropboxState.view === 'table') renderDropTable();
       else renderDropCards();
-      renderMissionDetailPanel();
+      renderMissionNoteView();
     };
     const baseSave = saveDrop;
     window.saveDrop = saveDrop = async function () {
