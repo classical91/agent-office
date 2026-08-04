@@ -290,6 +290,52 @@ for setting it up and turning it off.
 The dashboard sits behind the same `DROPS_PASSPHRASE` as the Dropbox and shares
 its session cookie. Only the tracking endpoint is public.
 
+## OpenClaw gateway status
+
+"Is the gateway on my machine running?" has two answers depending on where this
+server is, and Settings uses whichever one applies.
+
+**Same machine.** The server asks the gateway directly. It has no CORS rules and
+no mixed-content rules, and — the part that matters — it can *read* the reply,
+so it can tell OpenClaw apart from anything else on that port. This needs no
+setup: point **Local Gateway** at the gateway (default `http://localhost:18789`)
+and press **Check Local Gateway**.
+
+**Deployed.** A server in a container cannot reach your desk; `localhost` there
+is the container. So the machine reports in instead. Run the heartbeat on the
+machine OpenClaw runs on:
+
+```bash
+OFFICE_URL=https://your-office.up.railway.app \
+GATEWAY_TOKEN=the-same-string-the-server-has \
+node scripts/openclaw-heartbeat.js
+```
+
+Set `GATEWAY_TOKEN` on the server to the same random string (16+ characters).
+The script asks the local gateway what is running, posts it every 30 seconds,
+and stays quiet when the gateway is down — a beat older than 90 seconds reads as
+offline, so the light goes red on its own. `HEARTBEAT_ONCE=1` sends one and
+exits, which is the quickest way to prove the token works.
+
+**Why the browser cannot do this.** It used to try, and that was the bug. A
+cross-origin `no-cors` probe returns an *opaque* response: it resolves for a
+404, for a 500, and for any unrelated server on that port. It could only ever
+report "something answered" — so pointing it at Agent Office's own port showed
+a confident green. Over HTTPS it is worse than useless, because a page served
+from Railway cannot reach a plain-`http` localhost address at all.
+
+**What you get.** A green light means reached-and-identified, amber means
+something answered but never claimed to be a gateway, red means nothing is
+there. Underneath, an endpoint report lists every path tried with its status
+code and body shape, and which one returned the agents — so an unknown gateway
+API becomes a configured one by reading it. Agents shown are only ever the ones
+the gateway actually reported; an empty list says so rather than inventing rows.
+
+| Method | Path                     | Purpose                                    |
+| ------ | ------------------------ | ------------------------------------------ |
+| GET    | `/api/gateway/status`    | Probe result, heartbeat state, agents      |
+| POST   | `/api/gateway/heartbeat` | The gateway machine reporting in (token)   |
+
 ## Phone inbox / iOS Shortcuts
 
 The Dropbox web UI is behind a passphrase and a session cookie, which a phone

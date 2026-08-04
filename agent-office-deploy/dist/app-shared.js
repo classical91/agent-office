@@ -1134,28 +1134,21 @@ window.SETTINGS = (() => {
     }[ch]));
   }
 
-  function gatewayAgentFallback() {
-    const reachable = localGatewayState.reachable === true;
-    return ['oss', 'studioclaw', 'webclaw', 'nutrimind', 'pc'].map(id => ({
-      id,
-      name: AGENT_DESCRIPTIONS[id]?.name || id,
-      role: AGENT_DESCRIPTIONS[id]?.role || 'OpenClaw Agent',
-      model: AGENT_DESCRIPTIONS[id]?.model || '',
-      status: reachable ? 'reachable' : 'offline',
-      source: reachable ? 'OpenClaw local gateway' : 'OpenClaw local gateway not reached',
-    }));
-  }
-
-  function renderGatewayAgents(agents) {
+  // Only ever what the gateway actually said. An empty list is a real answer -
+  // it means the gateway did not tell us about any agents - and saying so is
+  // more use than five invented rows that go green together.
+  function renderGatewayAgents(agents, note) {
     const el = document.getElementById('settings-gateway-agents');
     if (!el) return;
-    const visible = new Set(['oss', 'studioclaw', 'webclaw', 'nutrimind', 'pc', 'traderclaw', 'guardian', 'openclaw']);
-    const rows = (agents && agents.length ? agents : gatewayAgentFallback())
-      .filter(agent => visible.has(agent.id));
+    const rows = Array.isArray(agents) ? agents : [];
+    if (!rows.length) {
+      el.innerHTML = `<div style="grid-column:1/-1; font-size:12px; color:var(--muted); padding:14px 2px;">${escapeHtml(note || 'No agents reported. Check the gateway below.')}</div>`;
+      return;
+    }
     el.innerHTML = rows.map(agent => {
-      const status = agent.status || 'idle';
+      const status = agent.status || 'unknown';
       const color = status === 'running' || status === 'active' || status === 'reachable' ? '#22c55e' : status === 'failed' || status === 'offline' ? '#ef4444' : '#64748b';
-      const sourceLine = `${agent.source || 'Gateway'}${agent.model ? ' / ' + agent.model : ''}`;
+      const sourceLine = `${agent.source || 'OpenClaw gateway'}${agent.model ? ' / ' + agent.model : ''}`;
       return `<div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px 14px; min-height:82px;">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:7px;">
           <div style="font-size:13px; color:var(--text); font-weight:600;">${escapeHtml(agent.name || agent.id)}</div>
@@ -1167,14 +1160,10 @@ window.SETTINGS = (() => {
     }).join('');
   }
 
+  // The Gateway Agents panel is about OpenClaw's agents, so it is filled from
+  // the gateway check rather than from this app's own agent registry.
   async function loadGatewayAgents() {
-    try {
-      const response = await fetch('/api/agents', { credentials: 'same-origin' });
-      if (!response.ok) throw new Error('agents unavailable');
-      renderGatewayAgents(await response.json());
-    } catch (_) {
-      renderGatewayAgents(gatewayAgentFallback());
-    }
+    await checkGateway();
   }
 
   function gatewayBaseUrl(kind) {
@@ -1185,13 +1174,18 @@ window.SETTINGS = (() => {
   }
 
   function setGatewayStatus(state, message, url) {
+    // 'partial' stays unknown rather than true: something answered, but the
+    // rest of the app should not start calling agents live on that basis.
     openClawGatewayReachable = state === 'online' ? true : state === 'offline' ? false : null;
     renderStatusBar();
     if (document.getElementById('officesvg')) renderAgents();
     const dot = document.getElementById('settings-gateway-dot');
     const label = document.getElementById('settings-gateway-state');
     const endpoint = document.getElementById('settings-gateway-endpoint');
-    const color = state === 'online' ? '#22c55e' : state === 'offline' ? '#ef4444' : '#64748b';
+    const color = state === 'online' ? '#22c55e'
+      : state === 'offline' ? '#ef4444'
+        : state === 'partial' ? '#f59e0b'
+          : '#64748b';
     if (dot) {
       dot.style.background = color;
       dot.title = message;
@@ -1200,53 +1194,102 @@ window.SETTINGS = (() => {
     if (endpoint) endpoint.textContent = url || DEFAULT_LOCAL_GATEWAY;
   }
 
-  function gatewayProbeUrls(baseUrl) {
-    const clean = String(baseUrl || DEFAULT_LOCAL_GATEWAY).replace(/\/+$/, '');
-    return [`${clean}/health`, `${clean}/api/health`, clean];
-  }
+  // What the server found, endpoint by endpoint. This is the part that turns
+  // "it doesn't work" into something you can act on: which paths answered,
+  // with what, and which one had the agents.
+  function renderGatewayProbe(status) {
+    const el = document.getElementById('settings-gateway-probe');
+    if (!el) return;
 
-  async function probeGatewayUrl(url) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 2200);
-    try {
-      await fetch(url, {
-        method: 'GET',
-        mode: 'no-cors',
-        cache: 'no-store',
-        signal: controller.signal,
-      });
-      return true;
-    } finally {
-      clearTimeout(timer);
+    const lines = [];
+    const heartbeat = status.heartbeat || {};
+    if (heartbeat.received) {
+      lines.push(heartbeat.fresh
+        ? `Heartbeat: ${heartbeat.host || 'a machine'} reported in ${heartbeat.age_seconds}s ago.`
+        : `Heartbeat: last beat was ${heartbeat.age_seconds}s ago — older than ${status.heartbeat_stale_seconds}s, so it counts as gone.`);
+    } else if (heartbeat.configured) {
+      lines.push('Heartbeat: GATEWAY_TOKEN is set, but nothing has reported in yet.');
+    } else {
+      lines.push('Heartbeat: not set up. Only needed when Agent Office cannot reach the gateway itself.');
     }
+
+    const probe = status.probe || {};
+    const rows = (probe.endpoints || []).map(endpoint => {
+      const answer = endpoint.status
+        ? `${endpoint.status} · ${endpoint.shape}${endpoint.agents ? ` · ${endpoint.agents} agents` : ''}`
+        : endpoint.shape;
+      const colour = endpoint.status >= 200 && endpoint.status < 300 ? '#22c55e' : endpoint.status ? '#f59e0b' : '#ef4444';
+      return `<div style="display:flex; justify-content:space-between; gap:12px; padding:3px 0;">
+        <code style="font-size:11px; color:var(--text);">${escapeHtml(endpoint.path)}</code>
+        <span style="font-size:11px; color:${colour};">${escapeHtml(answer)}</span>
+      </div>`;
+    }).join('');
+
+    el.innerHTML = `<div style="font-size:11px; color:var(--muted); margin-bottom:8px;">${escapeHtml(lines.join(' '))}</div>`
+      + (probe.attempted
+        ? `<div style="font-size:11px; color:var(--muted); margin-bottom:4px;">Probed from the server at <code>${escapeHtml(probe.url)}</code>:</div>${rows}`
+        : '');
   }
 
+  function gatewayStatusMessage(status) {
+    const probe = status.probe || {};
+    const heartbeat = status.heartbeat || {};
+
+    if (status.source === 'probe') {
+      return status.agents.length
+        ? `Up. The server reached it and it reported ${status.agents.length} agent(s).`
+        : 'Something is answering at that address, but it did not return an agent list. Check the endpoint report below.';
+    }
+    if (status.source === 'heartbeat') {
+      return `Up. ${heartbeat.host || 'The gateway machine'} reported in ${heartbeat.age_seconds}s ago.`;
+    }
+    return probe.error
+      ? `Not running, or not reachable from the server. ${probe.error}`
+      : 'Not running, or not reachable from the server.';
+  }
+
+  function applyGatewayStatus(status) {
+    const probe = status.probe || {};
+    localGatewayState = { reachable: status.alive, url: probe.url || '', checkedAt: Date.now() };
+
+    // Reached but unidentifiable is its own answer: something is on that port,
+    // but nothing has shown it is OpenClaw. Amber, not a green light.
+    const state = !status.alive ? 'offline'
+      : status.source === 'probe' && !status.agents.length ? 'partial'
+        : 'online';
+
+    setGatewayStatus(state, gatewayStatusMessage(status), probe.url || gatewayBaseUrl('local'));
+    renderGatewayAgents(status.agents, status.alive
+      ? 'The gateway is up but did not report any agents. The endpoint report below shows what it did return.'
+      : 'The gateway is not reachable, so there are no agents to show.');
+    renderGatewayProbe(status);
+    return status.alive;
+  }
+
+  // The check runs on the server, not here. A browser cannot do this job: a
+  // cross-origin probe comes back opaque, so it resolves for a 404 and for any
+  // unrelated server on that port, and over HTTPS it cannot reach a plain-http
+  // localhost address at all.
   async function checkGateway() {
     const input = document.getElementById('settings-gateway-local');
     const typed = input ? input.value.trim() : '';
-    const url = typed ? (/^https?:\/\//i.test(typed) ? typed : 'http://' + typed) : gatewayBaseUrl('local');
-    if (!url) {
-      localGatewayState = { reachable: false, url: '', checkedAt: Date.now() };
-      setGatewayStatus('offline', 'Disconnected. Add a Local Gateway URL to check OpenClaw from this browser.', 'Disconnected');
-      renderGatewayAgents(gatewayAgentFallback());
+    setGatewayStatus('checking', 'Checking the OpenClaw gateway…', typed || gatewayBaseUrl('local'));
+
+    try {
+      const query = typed ? `?url=${encodeURIComponent(typed)}` : '';
+      const response = await fetch(`/api/gateway/status${query}`, { credentials: 'same-origin' });
+      if (response.status === 401) {
+        setGatewayStatus('checking', 'Unlock the Dropbox to check the gateway.', typed || gatewayBaseUrl('local'));
+        renderGatewayAgents([], 'Unlock the Dropbox to see the gateway agents.');
+        return false;
+      }
+      if (!response.ok) throw new Error(`status ${response.status}`);
+      return applyGatewayStatus(await response.json());
+    } catch (error) {
+      setGatewayStatus('offline', `Could not ask the server to check the gateway: ${error.message}`, typed || gatewayBaseUrl('local'));
+      renderGatewayAgents([], 'The gateway could not be checked.');
       return false;
     }
-    localGatewayState = { reachable: null, url, checkedAt: Date.now() };
-    setGatewayStatus('checking', 'Checking local OpenClaw gateway...', url);
-    for (const probeUrl of gatewayProbeUrls(url)) {
-      try {
-        if (await probeGatewayUrl(probeUrl)) {
-          localGatewayState = { reachable: true, url, checkedAt: Date.now() };
-          setGatewayStatus('online', 'Reachable from this browser. OpenClaw gateway appears active.', url);
-          renderGatewayAgents(gatewayAgentFallback());
-          return true;
-        }
-      } catch (_) {}
-    }
-    localGatewayState = { reachable: false, url, checkedAt: Date.now() };
-    setGatewayStatus('offline', 'Not reachable from this browser. Start OpenClaw/PowerShell or check the URL.', url);
-    renderGatewayAgents(gatewayAgentFallback());
-    return false;
   }
 
   // Gateway links across the app carry data-gateway="local"|"lan". The href in the
