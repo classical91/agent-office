@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="shared.css?v=note-page-20260804"/>
+<link rel="stylesheet" href="shared.css?v=feed-menus-20260804"/>
 <!-- Apply saved theme before first paint to avoid a flash of the default theme. Mirrors THEMES in app-shared.js. -->
 <script>
 (function(){
@@ -110,7 +110,7 @@
           <small>YouTube, X, Brave, and iOS release tracking</small>
         </div>
         <div class="dev-update-groups">
-          <details class="dev-update-group" open>
+          <details class="dev-update-group">
             <summary>OpenAI &amp; ChatGPT</summary>
             <div class="dev-link-grid">
               <a class="dev-link-card" href="https://help.openai.com/en/articles/6825453-chatgpt-release-notes" target="_blank" rel="noopener noreferrer">
@@ -124,7 +124,7 @@
             </div>
           </details>
 
-          <details class="dev-update-group" open>
+          <details class="dev-update-group">
             <summary>GitHub &amp; Copilot</summary>
             <div class="dev-link-grid">
               <a class="dev-link-card" href="https://github.blog/changelog/label/copilot/" target="_blank" rel="noopener noreferrer">
@@ -138,7 +138,7 @@
             </div>
           </details>
 
-          <details class="dev-update-group" open>
+          <details class="dev-update-group">
             <summary>Google</summary>
             <div class="dev-link-grid">
               <a class="dev-link-card" href="https://developers.googleblog.com/" target="_blank" rel="noopener noreferrer">
@@ -156,7 +156,7 @@
             </div>
           </details>
 
-          <details class="dev-update-group" open>
+          <details class="dev-update-group">
             <summary>YouTube</summary>
             <div class="dev-link-grid">
               <a class="dev-link-card" href="https://blog.youtube/" target="_blank" rel="noopener noreferrer">
@@ -170,7 +170,7 @@
             </div>
           </details>
 
-          <details class="dev-update-group" open>
+          <details class="dev-update-group">
             <summary>X</summary>
             <div class="dev-link-grid">
               <a class="dev-link-card" href="https://blog.x.com/" target="_blank" rel="noopener noreferrer">
@@ -184,7 +184,7 @@
             </div>
           </details>
 
-          <details class="dev-update-group" open>
+          <details class="dev-update-group">
             <summary>Telegram</summary>
             <div class="dev-link-grid">
               <a class="dev-link-card" href="https://telegram.org/" target="_blank" rel="noopener noreferrer">
@@ -194,7 +194,7 @@
             </div>
           </details>
 
-          <details class="dev-update-group" open>
+          <details class="dev-update-group">
             <summary>Brave</summary>
             <div class="dev-link-grid">
               <a class="dev-link-card" href="https://brave.com/latest/" target="_blank" rel="noopener noreferrer">
@@ -212,7 +212,7 @@
             </div>
           </details>
 
-          <details class="dev-update-group" open>
+          <details class="dev-update-group">
             <summary>Apple &amp; iOS</summary>
             <div class="dev-link-grid">
               <a class="dev-link-card" href="https://developer.apple.com/news/releases/" target="_blank" rel="noopener noreferrer">
@@ -230,7 +230,7 @@
             </div>
           </details>
 
-          <details class="dev-update-group" open>
+          <details class="dev-update-group">
             <summary>Railway</summary>
             <div class="dev-link-grid">
               <a class="dev-link-card" href="https://railway.com/changelog" target="_blank" rel="noopener noreferrer">
@@ -394,8 +394,9 @@ switchView('dev', document.querySelector('.nav-item.active'));
   var sections = Array.prototype.slice.call(document.querySelectorAll('.dev-link-section'));
   var cards = [];
   var groups = [];
+  var groupsWrap = document.querySelector('.dev-update-groups');
+  var searching = false;
   var storagePrefix = 'ao-dev-section-collapsed:';
-  var groupStoragePrefix = 'ao-dev-group-open:';
 
   function slugify(text){
     return String(text).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -432,28 +433,12 @@ switchView('dev', document.querySelector('.nav-item.active'));
     if (persist) writeSavedCollapsed(section, collapsed);
   }
 
-  function readSavedGroupOpen(key){
-    try {
-      var saved = localStorage.getItem(key);
-      return saved === null ? null : saved === '1';
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function writeSavedGroupOpen(key, open){
-    try {
-      localStorage.setItem(key, open ? '1' : '0');
-    } catch (e) {}
-  }
-
-  // Programmatic opens (restoring state, forcing groups open while searching) must
-  // not be written back as if the user had clicked. <details> fires `toggle` async,
-  // so flag the element instead of using a short-lived "am I filtering" boolean.
-  function setGroupOpen(group, open){
-    if (group.el.open === open) return;
-    group.suppressSave = true;
-    group.el.open = open;
+  // Menu behaviour: at most one feed dropdown is open, and every page load
+  // starts with all of them closed.
+  function closeGroups(except){
+    groups.forEach(function(group){
+      if (group !== except) group.open = false;
+    });
   }
 
   sections.forEach(function(section){
@@ -480,26 +465,10 @@ switchView('dev', document.querySelector('.nav-item.active'));
       });
       setSectionCollapsed(section, readSavedCollapsed(section), false);
     }
-    Array.prototype.forEach.call(section.querySelectorAll('.dev-update-group'), function(el, i){
-      var summaryEl = el.querySelector('summary');
-      var group = {
-        el: el,
-        key: groupStoragePrefix + (section.getAttribute('data-dev-section-id') || 'section')
-          + ':' + (slugify(summaryEl ? summaryEl.textContent : '') || ('group-' + i)),
-        defaultOpen: el.open,
-        suppressSave: false
-      };
-      groups.push(group);
-
-      var saved = readSavedGroupOpen(group.key);
-      if (saved !== null) setGroupOpen(group, saved);
-
+    Array.prototype.forEach.call(section.querySelectorAll('.dev-update-group'), function(el){
+      groups.push(el);
       el.addEventListener('toggle', function(){
-        if (group.suppressSave) {
-          group.suppressSave = false;
-          return;
-        }
-        writeSavedGroupOpen(group.key, el.open);
+        if (el.open && !searching) closeGroups(el);
       });
     });
     Array.prototype.forEach.call(section.querySelectorAll('.dev-link-card'), function(el){
@@ -527,17 +496,14 @@ switchView('dev', document.querySelector('.nav-item.active'));
       if (match) shown += 1;
     });
 
+    // Searching shows the matches in place, inside every menu that has one;
+    // clearing the box closes them all again.
+    searching = terms.length > 0;
+    if (groupsWrap) groupsWrap.classList.toggle('is-searching', searching);
     groups.forEach(function(group){
-      var groupHasMatch = !!group.el.querySelector('.dev-link-card:not([hidden])');
-      group.el.hidden = terms.length && !groupHasMatch;
-      // Searching peeks inside collapsed groups; clearing the box hands them back
-      // to whatever the user last chose.
-      if (terms.length) {
-        if (groupHasMatch) setGroupOpen(group, true);
-      } else {
-        var saved = readSavedGroupOpen(group.key);
-        setGroupOpen(group, saved === null ? group.defaultOpen : saved);
-      }
+      var groupHasMatch = !!group.querySelector('.dev-link-card:not([hidden])');
+      group.hidden = searching && !groupHasMatch;
+      group.open = searching && groupHasMatch;
     });
 
     sections.forEach(function(section){
@@ -562,6 +528,17 @@ switchView('dev', document.querySelector('.nav-item.active'));
       input.value = '';
       applyFilter();
     }
+  });
+
+  // A click anywhere else puts the open menu away, as a menu should.
+  document.addEventListener('click', function(e){
+    if (searching) return;
+    if (e.target.closest && e.target.closest('.dev-update-group')) return;
+    closeGroups(null);
+  });
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && !searching) closeGroups(null);
   });
 
   // "/" focuses the box unless something else is already taking typing.
