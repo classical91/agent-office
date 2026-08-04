@@ -974,6 +974,8 @@ window.SETTINGS = (() => {
   const GW_LAN_KEY   = 'ao-gateway-lan';
   const THEME_KEY    = 'ao-theme';
   const SETTING_API  = '/api/settings/';
+  const DEFAULT_LOCAL_GATEWAY = 'http://localhost:18789';
+  let localGatewayState = { reachable: null, url: DEFAULT_LOCAL_GATEWAY, checkedAt: null };
 
   // A theme is just an accent. shared.css derives every surface from it.
   const THEMES = {
@@ -1056,13 +1058,14 @@ window.SETTINGS = (() => {
   }
 
   function gatewayAgentFallback() {
+    const reachable = localGatewayState.reachable === true;
     return ['oss', 'studioclaw', 'webclaw', 'nutrimind', 'pc'].map(id => ({
       id,
       name: AGENT_DESCRIPTIONS[id]?.name || id,
       role: AGENT_DESCRIPTIONS[id]?.role || 'OpenClaw Agent',
       model: AGENT_DESCRIPTIONS[id]?.model || '',
-      status: id === 'oss' ? 'running' : 'idle',
-      source: 'OpenClaw',
+      status: reachable ? 'reachable' : 'offline',
+      source: reachable ? 'OpenClaw local gateway' : 'OpenClaw local gateway not reached',
     }));
   }
 
@@ -1074,7 +1077,7 @@ window.SETTINGS = (() => {
       .filter(agent => visible.has(agent.id));
     el.innerHTML = rows.map(agent => {
       const status = agent.status || 'idle';
-      const color = status === 'running' || status === 'active' ? '#22c55e' : status === 'failed' ? '#ef4444' : '#64748b';
+      const color = status === 'running' || status === 'active' || status === 'reachable' ? '#22c55e' : status === 'failed' || status === 'offline' ? '#ef4444' : '#64748b';
       const sourceLine = `${agent.source || 'Gateway'}${agent.model ? ' / ' + agent.model : ''}`;
       return `<div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px 14px; min-height:82px;">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:7px;">
@@ -1095,6 +1098,67 @@ window.SETTINGS = (() => {
     } catch (_) {
       renderGatewayAgents(gatewayAgentFallback());
     }
+  }
+
+  function gatewayBaseUrl(kind) {
+    const saved = gatewayUrl(kind);
+    return saved || (kind === 'local' ? DEFAULT_LOCAL_GATEWAY : '');
+  }
+
+  function setGatewayStatus(state, message, url) {
+    const dot = document.getElementById('settings-gateway-dot');
+    const label = document.getElementById('settings-gateway-state');
+    const endpoint = document.getElementById('settings-gateway-endpoint');
+    const color = state === 'online' ? '#22c55e' : state === 'offline' ? '#ef4444' : '#64748b';
+    if (dot) {
+      dot.style.background = color;
+      dot.title = message;
+    }
+    if (label) label.textContent = message;
+    if (endpoint) endpoint.textContent = url || DEFAULT_LOCAL_GATEWAY;
+  }
+
+  function gatewayProbeUrls(baseUrl) {
+    const clean = String(baseUrl || DEFAULT_LOCAL_GATEWAY).replace(/\/+$/, '');
+    return [`${clean}/health`, `${clean}/api/health`, clean];
+  }
+
+  async function probeGatewayUrl(url) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 2200);
+    try {
+      await fetch(url, {
+        method: 'GET',
+        mode: 'no-cors',
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      return true;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function checkGateway() {
+    const input = document.getElementById('settings-gateway-local');
+    const typed = input ? input.value.trim() : '';
+    const url = typed ? (/^https?:\/\//i.test(typed) ? typed : 'http://' + typed) : gatewayBaseUrl('local');
+    localGatewayState = { reachable: null, url, checkedAt: Date.now() };
+    setGatewayStatus('checking', 'Checking local OpenClaw gateway...', url);
+    for (const probeUrl of gatewayProbeUrls(url)) {
+      try {
+        if (await probeGatewayUrl(probeUrl)) {
+          localGatewayState = { reachable: true, url, checkedAt: Date.now() };
+          setGatewayStatus('online', 'Reachable from this browser. OpenClaw gateway appears active.', url);
+          renderGatewayAgents(gatewayAgentFallback());
+          return true;
+        }
+      } catch (_) {}
+    }
+    localGatewayState = { reachable: false, url, checkedAt: Date.now() };
+    setGatewayStatus('offline', 'Not reachable from this browser. Start OpenClaw/PowerShell or check the URL.', url);
+    renderGatewayAgents(gatewayAgentFallback());
+    return false;
   }
 
   // Gateway links across the app carry data-gateway="local"|"lan". The href in the
@@ -1135,6 +1199,7 @@ window.SETTINGS = (() => {
     const grid = document.getElementById('settings-theme-grid');
     if (grid) renderThemePicker(grid);
     loadGatewayAgents();
+    checkGateway();
     loadShortcuts();
   }
 
@@ -1183,6 +1248,7 @@ window.SETTINGS = (() => {
       setSetting(GW_LAN_KEY, lan),
     ]);
     applyGatewayLinks();
+    checkGateway();
     const msg = document.getElementById('settings-gateway-msg');
     if (msg) {
       msg.textContent = savedLocal && savedLan ? 'Saved.' : 'Saved locally.';
@@ -1203,7 +1269,7 @@ window.SETTINGS = (() => {
     location.reload();
   }
 
-  return { load, saveGateway, clearKey, clearAll, applyTheme, loadShortcuts, applyGatewayLinks };
+  return { load, saveGateway, clearKey, clearAll, applyTheme, loadShortcuts, applyGatewayLinks, checkGateway };
 })();
 
 // Apply saved theme immediately so there's no flash on load
