@@ -2470,22 +2470,10 @@ function getFilteredDrops() {
 }
 
 function renderDropbox() {
-  syncDropSelectionClass();
   populateSubjectFilter();
   if (dropboxState.view === 'table') renderDropTable();
   else renderDropCards();
   renderDetailPanel();
-}
-
-// Drives the one-column layout: with a note open, the filters and the list are
-// hidden and the note gets the screen. Wide screens ignore the class entirely
-// and keep showing both panes.
-function syncDropSelectionClass() {
-  const view = document.getElementById('dropbox-view');
-  if (!view) return;
-  const selected = Boolean(dropboxState.selectedId)
-    && dropboxState.drops.some(drop => drop.id === dropboxState.selectedId);
-  view.classList.toggle('has-selection', selected);
 }
 
 function populateSubjectFilter() {
@@ -2697,11 +2685,14 @@ function openNoteView(drop) {
   });
 }
 
+// A note is a page of its own, never a side panel: with one selected the list
+// steps aside and the note takes the screen.
 function renderDetailPanel() {
-  const panel = document.getElementById('drop-detail-panel');
-  if (panel) panel.innerHTML = '<div class="drop-detail-empty">Select a drop to view details.</div>';
   const drop = dropboxState.drops.find(d => d.id === dropboxState.selectedId);
-  if (drop) openNoteView(drop);
+  if (drop) { openNoteView(drop); return; }
+  document.getElementById('note-view-section')?.remove();
+  const listEl = document.getElementById('dropbox-view');
+  if (listEl) listEl.style.display = '';
 }
 
 async function saveDrop() {
@@ -2728,7 +2719,7 @@ async function saveDrop() {
       body: JSON.stringify(payload),
     });
     clearDropForm();
-    collapseCapture('dropbox-quick-capture', 'is-collapsed-mobile');
+    collapseCapture('dropbox-quick-capture', 'is-collapsed');
     const drops = await loadDrops();
     if (drops !== null) { dropboxState.drops = drops; }
     renderDropbox();
@@ -2843,16 +2834,11 @@ if (document.getElementById('save-drop-btn')) {
 
   document.getElementById('clear-drop-btn').addEventListener('click', clearDropForm);
 
-  // On mobile the form is hidden until this is tapped, so the list is the
-  // first thing on screen. On desktop it is always open and this just moves
-  // the cursor into it, as it always did.
+  // The form stays out of the way until this is pressed, on every screen size,
+  // so the page opens on the notes rather than on a column of empty fields.
   document.getElementById('new-drop-btn').addEventListener('click', async () => {
     if (!await ensureDropsSession(true)) return;
-    if (window.matchMedia('(max-width: 768px)').matches) {
-      toggleCapture('dropbox-quick-capture', 'is-collapsed-mobile', 'drop-title');
-      return;
-    }
-    document.getElementById('drop-title')?.focus();
+    toggleCapture('dropbox-quick-capture', 'is-collapsed', 'drop-title');
   });
 
   document.getElementById('save-reminder-btn')?.addEventListener('click', () => {
