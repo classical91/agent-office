@@ -246,6 +246,7 @@ let agentState = AGENTS.map((agent, index) => {
   };
 });
 
+let openClawGatewayReachable = null;
 let feedItems = [];
 let feedCount = 0;
 
@@ -461,16 +462,23 @@ function drawPixelAgent(canvasEl, look, agent) {
 // ─── HABBO ROOM STATUS BAR ────────────────────────────────────
 function updateRoomStatusBar() {
   if (typeof agentState === 'undefined') return;
-  const online = agentState.filter(a => a.status !== 'offline').length;
-  ['room-online-count', 'office-online-top', 'onlineCount'].forEach(id => {
+  const online = openClawGatewayReachable === false
+    ? 0
+    : agentState.filter(a => a.status !== 'offline').length;
+  ['room-online-count', 'office-online-top'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = online;
   });
+  renderTopAgentState();
 }
 let _roomTickerIdx = -1;
 function cycleRoomTicker() {
   const el = document.getElementById('room-task-ticker');
   if (!el || typeof agentState === 'undefined') return;
+  if (openClawGatewayReachable === false) {
+    el.textContent = 'OpenClaw gateway disconnected';
+    return;
+  }
   const active = agentState.filter(a => a.currentTask && a.status !== 'offline');
   if (!active.length) { el.textContent = '—'; return; }
   _roomTickerIdx = (_roomTickerIdx + 1) % active.length;
@@ -809,8 +817,51 @@ function centerOfficeView(force = false) {
 }
 
 // ─── STATUS BAR ───────────────────────────────────────────────
+function renderTopAgentState() {
+  const count = document.getElementById('onlineCount');
+  if (!count) return;
+  const wrap = count.parentElement;
+  const dot = wrap ? wrap.querySelector('.online-dot') : null;
+  const suffix = count.nextSibling;
+
+  if (openClawGatewayReachable === false) {
+    count.textContent = 'Gateway disconnected';
+    if (suffix && suffix.nodeType === Node.TEXT_NODE) suffix.textContent = '';
+    if (wrap) {
+      wrap.title = 'The OpenClaw local gateway is not reachable from this browser.';
+      wrap.style.color = 'var(--muted)';
+    }
+    if (dot) dot.style.background = 'var(--red, #ef4444)';
+    return;
+  }
+
+  const activeCount = agentState.filter(a => a.status !== 'offline').length;
+  count.textContent = activeCount;
+  if (suffix && suffix.nodeType === Node.TEXT_NODE) {
+    suffix.textContent = openClawGatewayReachable === true ? ' gateway agents' : ' agents configured';
+  }
+  if (wrap) {
+    wrap.title = openClawGatewayReachable === true
+      ? 'OpenClaw local gateway is reachable from this browser.'
+      : 'Configured agents. Gateway has not been checked yet.';
+    wrap.style.color = '';
+  }
+  if (dot) dot.style.background = openClawGatewayReachable === true
+    ? 'var(--green, #22c55e)'
+    : 'var(--muted, #64748b)';
+}
+
+function agentDisplayStatus(agent) {
+  return openClawGatewayReachable === false ? 'offline' : agent.status;
+}
+
+function agentDisplayTask(agent) {
+  return openClawGatewayReachable === false ? 'Gateway disconnected' : agent.currentTask;
+}
+
 function renderStatusBar() {
   const bar = document.getElementById('statusbar');
+  if (!bar) return;
   bar.innerHTML = agentState.map(agent => `
     <div class="status-card">
       <div class="status-card-avatar" style="background: ${agent.color}33; border: 1px solid ${agent.color}55;">
@@ -818,11 +869,12 @@ function renderStatusBar() {
       </div>
       <div class="status-card-info">
         <div class="status-card-name">${agent.name}</div>
-        <div class="status-card-task">${agent.currentTask}</div>
+        <div class="status-card-task">${agentDisplayTask(agent)}</div>
       </div>
-      <div class="status-dot ${agent.status === 'active' ? 'dot-active' : agent.status === 'idle' ? 'dot-idle' : 'dot-offline'}"></div>
+      <div class="status-dot ${agentDisplayStatus(agent) === 'active' ? 'dot-active' : agentDisplayStatus(agent) === 'idle' ? 'dot-idle' : 'dot-offline'}"></div>
     </div>
   `).join('');
+  renderTopAgentState();
 }
 
 // ─── ACTIVITY FEED ────────────────────────────────────────────
@@ -889,9 +941,10 @@ function syncAgentElement(agent) {
 
   const dot = el.querySelector('.agent-status-dot');
   if (dot) {
-    dot.style.background = agent.status === 'active'
+    const status = agentDisplayStatus(agent);
+    dot.style.background = status === 'active'
       ? 'var(--green)'
-      : agent.status === 'idle'
+      : status === 'idle'
         ? 'var(--yellow)'
         : 'var(--muted)';
   }
@@ -924,6 +977,11 @@ function updateAgentTask(agent) {
 }
 
 function tick() {
+  if (openClawGatewayReachable === false) {
+    renderStatusBar();
+    renderAgents();
+    return;
+  }
   const available = agentState.filter(agent => !agent.availableAt || Date.now() >= agent.availableAt);
   if (!available.length) return;
 
@@ -942,8 +1000,7 @@ function tick() {
 
   renderStatusBar();
 
-  const activeCount = agentState.filter(a => a.status === 'active').length;
-  document.getElementById('onlineCount').textContent = activeCount;
+  renderTopAgentState();
 }
 
 // ─── CLOCK ────────────────────────────────────────────────────
@@ -1128,6 +1185,9 @@ window.SETTINGS = (() => {
   }
 
   function setGatewayStatus(state, message, url) {
+    openClawGatewayReachable = state === 'online' ? true : state === 'offline' ? false : null;
+    renderStatusBar();
+    if (document.getElementById('officesvg')) renderAgents();
     const dot = document.getElementById('settings-gateway-dot');
     const label = document.getElementById('settings-gateway-state');
     const endpoint = document.getElementById('settings-gateway-endpoint');
