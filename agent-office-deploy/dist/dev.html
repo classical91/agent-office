@@ -393,7 +393,13 @@ switchView('dev', document.querySelector('.nav-item.active'));
   var emptyTermEl = document.getElementById('dev-search-empty-term');
   var sections = Array.prototype.slice.call(document.querySelectorAll('.dev-link-section'));
   var cards = [];
+  var groups = [];
   var storagePrefix = 'ao-dev-section-collapsed:';
+  var groupStoragePrefix = 'ao-dev-group-open:';
+
+  function slugify(text){
+    return String(text).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  }
 
   function sectionStorageKey(section){
     return storagePrefix + (section.getAttribute('data-dev-section-id') || 'section');
@@ -426,13 +432,37 @@ switchView('dev', document.querySelector('.nav-item.active'));
     if (persist) writeSavedCollapsed(section, collapsed);
   }
 
+  function readSavedGroupOpen(key){
+    try {
+      var saved = localStorage.getItem(key);
+      return saved === null ? null : saved === '1';
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function writeSavedGroupOpen(key, open){
+    try {
+      localStorage.setItem(key, open ? '1' : '0');
+    } catch (e) {}
+  }
+
+  // Programmatic opens (restoring state, forcing groups open while searching) must
+  // not be written back as if the user had clicked. <details> fires `toggle` async,
+  // so flag the element instead of using a short-lived "am I filtering" boolean.
+  function setGroupOpen(group, open){
+    if (group.el.open === open) return;
+    group.suppressSave = true;
+    group.el.open = open;
+  }
+
   sections.forEach(function(section){
     var heading = section.querySelector('.dev-section-heading');
     var headingText = heading ? heading.textContent : '';
     if (heading) {
       var titleEl = heading.querySelector('span');
       var titleText = titleEl ? titleEl.textContent : headingText;
-      section.setAttribute('data-dev-section-id', titleText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'section');
+      section.setAttribute('data-dev-section-id', slugify(titleText) || 'section');
       var toggle = document.createElement('span');
       toggle.className = 'dev-section-toggle';
       toggle.setAttribute('aria-hidden', 'true');
@@ -450,6 +480,28 @@ switchView('dev', document.querySelector('.nav-item.active'));
       });
       setSectionCollapsed(section, readSavedCollapsed(section), false);
     }
+    Array.prototype.forEach.call(section.querySelectorAll('.dev-update-group'), function(el, i){
+      var summaryEl = el.querySelector('summary');
+      var group = {
+        el: el,
+        key: groupStoragePrefix + (section.getAttribute('data-dev-section-id') || 'section')
+          + ':' + (slugify(summaryEl ? summaryEl.textContent : '') || ('group-' + i)),
+        defaultOpen: el.open,
+        suppressSave: false
+      };
+      groups.push(group);
+
+      var saved = readSavedGroupOpen(group.key);
+      if (saved !== null) setGroupOpen(group, saved);
+
+      el.addEventListener('toggle', function(){
+        if (group.suppressSave) {
+          group.suppressSave = false;
+          return;
+        }
+        writeSavedGroupOpen(group.key, el.open);
+      });
+    });
     Array.prototype.forEach.call(section.querySelectorAll('.dev-link-card'), function(el){
       var group = el.closest ? el.closest('.dev-update-group') : null;
       var groupSummary = group ? group.querySelector('summary') : null;
@@ -475,12 +527,20 @@ switchView('dev', document.querySelector('.nav-item.active'));
       if (match) shown += 1;
     });
 
+    groups.forEach(function(group){
+      var groupHasMatch = !!group.el.querySelector('.dev-link-card:not([hidden])');
+      group.el.hidden = terms.length && !groupHasMatch;
+      // Searching peeks inside collapsed groups; clearing the box hands them back
+      // to whatever the user last chose.
+      if (terms.length) {
+        if (groupHasMatch) setGroupOpen(group, true);
+      } else {
+        var saved = readSavedGroupOpen(group.key);
+        setGroupOpen(group, saved === null ? group.defaultOpen : saved);
+      }
+    });
+
     sections.forEach(function(section){
-      Array.prototype.forEach.call(section.querySelectorAll('.dev-update-group'), function(group){
-        var groupHasMatch = !!group.querySelector('.dev-link-card:not([hidden])');
-        group.hidden = terms.length && !groupHasMatch;
-        if (terms.length && groupHasMatch) group.open = true;
-      });
       var hasMatch = !!section.querySelector('.dev-link-card:not([hidden])');
       section.hidden = !hasMatch;
       if (terms.length && hasMatch) setSectionCollapsed(section, false);
