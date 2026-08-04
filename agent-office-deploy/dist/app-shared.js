@@ -975,6 +975,7 @@ window.SETTINGS = (() => {
   const THEME_KEY    = 'ao-theme';
   const SETTING_API  = '/api/settings/';
   const DEFAULT_LOCAL_GATEWAY = 'http://localhost:18789';
+  const CLEARED_SUFFIX = '-cleared';
   let localGatewayState = { reachable: null, url: DEFAULT_LOCAL_GATEWAY, checkedAt: null };
 
   // A theme is just an accent. shared.css derives every surface from it.
@@ -1019,7 +1020,20 @@ window.SETTINGS = (() => {
     }).join('');
   }
 
+  function settingClearedKey(key) {
+    return key + CLEARED_SUFFIX;
+  }
+
+  function isSettingCleared(key) {
+    try {
+      return localStorage.getItem(settingClearedKey(key)) === '1';
+    } catch (_) {
+      return false;
+    }
+  }
+
   async function getSetting(key) {
+    if (isSettingCleared(key)) return '';
     try {
       const response = await fetch(SETTING_API + encodeURIComponent(key), { credentials: 'same-origin' });
       if (!response.ok) throw new Error('settings unavailable');
@@ -1031,7 +1045,13 @@ window.SETTINGS = (() => {
   }
 
   async function setSetting(key, value) {
-    if (value) localStorage.setItem(key, value); else localStorage.removeItem(key);
+    if (value) {
+      localStorage.setItem(key, value);
+      localStorage.removeItem(settingClearedKey(key));
+    } else {
+      localStorage.removeItem(key);
+      localStorage.setItem(settingClearedKey(key), '1');
+    }
     try {
       const method = value ? 'PUT' : 'DELETE';
       const options = {
@@ -1101,6 +1121,8 @@ window.SETTINGS = (() => {
   }
 
   function gatewayBaseUrl(kind) {
+    if (kind === 'local' && isSettingCleared(GW_LOCAL_KEY)) return '';
+    if (kind === 'lan' && isSettingCleared(GW_LAN_KEY)) return '';
     const saved = gatewayUrl(kind);
     return saved || (kind === 'local' ? DEFAULT_LOCAL_GATEWAY : '');
   }
@@ -1143,6 +1165,12 @@ window.SETTINGS = (() => {
     const input = document.getElementById('settings-gateway-local');
     const typed = input ? input.value.trim() : '';
     const url = typed ? (/^https?:\/\//i.test(typed) ? typed : 'http://' + typed) : gatewayBaseUrl('local');
+    if (!url) {
+      localGatewayState = { reachable: false, url: '', checkedAt: Date.now() };
+      setGatewayStatus('offline', 'Disconnected. Add a Local Gateway URL to check OpenClaw from this browser.', 'Disconnected');
+      renderGatewayAgents(gatewayAgentFallback());
+      return false;
+    }
     localGatewayState = { reachable: null, url, checkedAt: Date.now() };
     setGatewayStatus('checking', 'Checking local OpenClaw gateway...', url);
     for (const probeUrl of gatewayProbeUrls(url)) {
@@ -1180,7 +1208,11 @@ window.SETTINGS = (() => {
       if (el.dataset.gatewayDefault === undefined) {
         el.dataset.gatewayDefault = el.getAttribute('href') || '';
       }
-      el.setAttribute('href', gatewayUrl(el.getAttribute('data-gateway')) || el.dataset.gatewayDefault);
+      const kind = el.getAttribute('data-gateway');
+      const saved = gatewayUrl(kind);
+      const cleared = kind === 'local' ? isSettingCleared(GW_LOCAL_KEY) : isSettingCleared(GW_LAN_KEY);
+      el.setAttribute('href', saved || (cleared ? '#' : el.dataset.gatewayDefault));
+      if (cleared && !saved) el.setAttribute('title', 'Gateway disconnected in Settings');
     });
   }
 
@@ -1251,7 +1283,7 @@ window.SETTINGS = (() => {
     checkGateway();
     const msg = document.getElementById('settings-gateway-msg');
     if (msg) {
-      msg.textContent = savedLocal && savedLan ? 'Saved.' : 'Saved locally.';
+      msg.textContent = savedLocal && savedLan ? 'Saved.' : (!local && !lan ? 'Cleared for this browser.' : 'Saved locally.');
       msg.style.display = 'inline';
       setTimeout(() => { msg.style.display = 'none'; }, 2000);
     }
