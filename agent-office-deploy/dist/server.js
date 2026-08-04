@@ -3747,6 +3747,250 @@ async function pruneOldVisits(storage) {
   }
 }
 
+// -- OPENCLAW GATEWAY -------------------------------------------
+//
+// "Is the gateway on my machine running?" has two answers depending on where
+// this server is, and the page needs both because the honest answer differs.
+//
+//   Same machine  - this server can just ask. It has no CORS rules and no
+//                   mixed-content rules, and it can read the reply, so it can
+//                   tell OpenClaw apart from anything else on that port.
+//   Deployed      - it cannot. `localhost` from a container is the container.
+//                   Nothing reachable from here is the machine in question, so
+//                   the machine has to report in instead.
+//
+// The browser cannot do either job. A cross-origin `no-cors` probe returns an
+// opaque response: it resolves for a 404, for a 500, and for any unrelated
+// server on that port, so it can only ever say "something answered". That is
+// what the old check did, and why pointing it at this app's own port showed
+// green.
+
+const GATEWAY_PROBE_PATHS = ['/health', '/api/health', '/status', '/api/status', '/agents', '/api/agents', '/'];
+const GATEWAY_PROBE_TIMEOUT_MS = 2500;
+const GATEWAY_HEARTBEAT_STALE_MS = 90 * 1000;
+const GATEWAY_MAX_PROBE_BYTES = 64 * 1024;
+const GATEWAY_TOKEN = String(process.env.GATEWAY_TOKEN || '').trim();
+const GATEWAY_TOKEN_MIN_LENGTH = 16;
+const GATEWAY_LOCAL_SETTING_KEY = 'ao-gateway-local';
+const DEFAULT_GATEWAY_URL = 'http://localhost:18789';
+
+// Deliberately in memory. A beat every 30 seconds is not worth a database
+// write, and a restart is corrected by the next one.
+let lastGatewayHeartbeat = null;
+
+// "localhost:18789" is a host and a port; "file:///etc/passwd" is a scheme.
+// Both have a colon, so the two have to be told apart before anything is
+// prepended - otherwise a rejected scheme becomes a fetchable http address.
+function normalizeGatewayUrl(raw) {
+  const value = String(raw || '').trim();
+  if (!value) return '';
+
+  let withScheme;
+  const declared = value.match(/^([a-z][a-z0-9+.-]*):\/\//i);
+  if (declared) {
+    if (!/^https?$/i.test(declared[1])) return '';
+    withScheme = value;
+  } else if (/^[a-z][a-z0-9+.-]*:(?!\d)/i.test(value)) {
+    // A scheme with no slashes - mailto:, javascript:, file: - is not an
+    // address this is willing to fetch either.
+    return '';
+  } else {
+    withScheme = `http://${value}`;
+  }
+
+  try {
+    const url = new URL(withScheme);
+    // Only ever speak HTTP. This server fetches whatever address the owner put
+    // in Settings, so the scheme is pinned and the reply is read but never
+    // forwarded anywhere.
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return '';
+    return url.origin + url.pathname.replace(/\/+$/, '');
+  } catch {
+    return '';
+  }
+}
+
+// What came back, in the loosest terms that are still useful: is it JSON, and
+// does it look like a list of agents.
+function describeGatewayBody(text) {
+  const body = String(text || '').trim();
+  if (!body) return { shape: 'empty', agents: [] };
+
+  let parsed;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    return { shape: body.startsWith('<') ? 'html' : 'text', agents: [] };
+  }
+
+  const list = Array.isArray(parsed) ? parsed
+    : Array.isArray(parsed && parsed.agents) ? parsed.agents
+      : null;
+
+  if (list && list.every(item => item && typeof item === 'object')) {
+    return { shape: Array.isArray(parsed) ? 'json array' : 'json object with agents[]', agents: list };
+  }
+  return { shape: Array.isArray(parsed) ? 'json array' : 'json object', agents: [] };
+}
+
+// An OpenClaw agent, whatever shape it arrived in. Unknown fields are dropped
+// rather than guessed at, so a missing status reads as unknown, not as idle.
+function toGatewayAgent(raw, index) {
+  const pick = (...keys) => {
+    for (const key of keys) {
+      const value = raw[key];
+      if (typeof value === 'string' && value.trim()) return value.trim().slice(0, 120);
+    }
+    return '';
+  };
+  const id = pick('id', 'agent_id', 'agentId', 'slug', 'name') || `agent_${index + 1}`;
+  return {
+    id,
+    name: pick('name', 'label', 'title') || id,
+    role: pick('role', 'description', 'kind', 'type'),
+    model: pick('model', 'engine'),
+    status: pick('status', 'state') || 'unknown',
+  };
+}
+
+// Node's fetch reports every connection-level failure as "fetch failed" and
+// puts the reason - ECONNREFUSED, ENOTFOUND - on error.cause. Reading only the
+// message loses exactly the detail that says "nothing is listening".
+function probeFailureReason(error) {
+  if (!error) return 'failed';
+  if (error.name === 'TimeoutError' || error.name === 'AbortError') return 'timed out';
+  const code = (error.cause && error.cause.code) || error.code || '';
+  return String(code || error.message || 'failed');
+}
+
+async function probeGatewayEndpoint(url) {
+  const response = await fetch(url, {
+    method: 'GET',
+    redirect: 'manual',
+    headers: { Accept: 'application/json, text/plain;q=0.9, */*;q=0.8' },
+    signal: AbortSignal.timeout(GATEWAY_PROBE_TIMEOUT_MS),
+  });
+
+  const raw = await response.text();
+  const text = raw.length > GATEWAY_MAX_PROBE_BYTES ? raw.slice(0, GATEWAY_MAX_PROBE_BYTES) : raw;
+  const described = describeGatewayBody(text);
+  return { status: response.status, ok: response.ok, ...described };
+}
+
+/**
+ * Ask the gateway directly, and report what actually answered.
+ *
+ * The endpoint list is walked in full rather than stopped at the first hit,
+ * because the point is as much "which paths does this gateway have" as
+ * "is it up" - that is what turns an unknown API into a configured one.
+ */
+async function probeGateway(baseUrl) {
+  const url = normalizeGatewayUrl(baseUrl);
+  if (!url) {
+    return { attempted: false, url: '', reachable: false, error: 'No gateway URL is set.', endpoints: [], agents: [], agents_endpoint: '' };
+  }
+
+  const endpoints = [];
+  let reachable = false;
+  let error = '';
+  let agents = [];
+  let agentsEndpoint = '';
+
+  for (const path of GATEWAY_PROBE_PATHS) {
+    const target = path === '/' ? url : url + path;
+    try {
+      const result = await probeGatewayEndpoint(target);
+      reachable = true;
+      endpoints.push({ path, status: result.status, shape: result.shape, agents: result.agents.length });
+
+      if (!agents.length && result.ok && result.agents.length) {
+        agents = result.agents.map(toGatewayAgent);
+        agentsEndpoint = path;
+      }
+    } catch (probeError) {
+      const reason = probeFailureReason(probeError);
+      endpoints.push({ path, status: 0, shape: reason, agents: 0 });
+      // Nothing listening on the port fails the same way for every path, so
+      // there is no point walking the rest of the list.
+      if (!reachable && /ECONNREFUSED|ENOTFOUND|EAI_AGAIN|ECONNRESET|EHOSTUNREACH/i.test(reason)) {
+        error = `Nothing is listening at ${url} (${reason}).`;
+        break;
+      }
+      if (!error) error = reason;
+    }
+  }
+
+  return {
+    attempted: true,
+    url,
+    reachable,
+    error: reachable ? '' : (error || 'Not reachable.'),
+    endpoints,
+    agents,
+    agents_endpoint: agentsEndpoint,
+  };
+}
+
+function describeGatewayHeartbeat() {
+  const configured = Boolean(GATEWAY_TOKEN) && GATEWAY_TOKEN.length >= GATEWAY_TOKEN_MIN_LENGTH;
+  if (!lastGatewayHeartbeat) {
+    return { configured, received: false, fresh: false, age_seconds: null, host: '', agents: [] };
+  }
+  const ageMs = Date.now() - lastGatewayHeartbeat.at;
+  return {
+    configured,
+    received: true,
+    fresh: ageMs <= GATEWAY_HEARTBEAT_STALE_MS,
+    age_seconds: Math.round(ageMs / 1000),
+    received_at: new Date(lastGatewayHeartbeat.at).toISOString(),
+    host: lastGatewayHeartbeat.host,
+    version: lastGatewayHeartbeat.version,
+    agents: lastGatewayHeartbeat.agents,
+  };
+}
+
+async function buildGatewayStatus(storage, requestedUrl) {
+  const requested = String(requestedUrl || '').trim();
+  const saved = await storage.getAppSetting(GATEWAY_LOCAL_SETTING_KEY);
+
+  // An address that was asked for and cannot be used is reported as such.
+  // Quietly falling back to the default would answer a question about a
+  // different machine than the one that was typed in.
+  const rejected = requested && !normalizeGatewayUrl(requested);
+  const target = normalizeGatewayUrl(requested) || normalizeGatewayUrl(saved) || DEFAULT_GATEWAY_URL;
+
+  const probe = rejected
+    ? {
+      attempted: false,
+      url: '',
+      reachable: false,
+      error: 'That is not an http:// or https:// address.',
+      endpoints: [],
+      agents: [],
+      agents_endpoint: '',
+    }
+    : await probeGateway(target);
+  const heartbeat = describeGatewayHeartbeat();
+
+  // A live probe is the stronger answer - it was true a second ago, from here.
+  // A fresh heartbeat is the only answer available when the gateway is on a
+  // machine this server cannot reach at all.
+  const source = probe.reachable ? 'probe' : heartbeat.fresh ? 'heartbeat' : 'none';
+  const agents = probe.agents.length ? probe.agents
+    : heartbeat.fresh && heartbeat.agents.length ? heartbeat.agents
+      : [];
+
+  return {
+    alive: source !== 'none',
+    source,
+    agents,
+    agents_source: probe.agents.length ? 'probe' : agents.length ? 'heartbeat' : '',
+    heartbeat_stale_seconds: GATEWAY_HEARTBEAT_STALE_MS / 1000,
+    probe,
+    heartbeat,
+  };
+}
+
 // ---------------------------------------------------------------
 
 const server = http.createServer(async (req, res) => {
@@ -3864,6 +4108,44 @@ const server = http.createServer(async (req, res) => {
       if (!requireDropsAuth(res, req)) return;
       const removed = await storage.clearVisits();
       sendJson(res, 200, { removed });
+      return;
+    }
+
+    // -- OPENCLAW GATEWAY ----------------------------------------
+
+    if (req.method === 'GET' && pathname === '/api/gateway/status') {
+      if (!requireDropsAuth(res, req)) return;
+      sendJson(res, 200, await buildGatewayStatus(storage, parsedUrl.searchParams.get('url')));
+      return;
+    }
+
+    // The machine running OpenClaw reports in here when this server cannot
+    // reach it. Token-authenticated rather than session-authenticated: it is a
+    // script on a desktop, and it holds no cookie.
+    if (req.method === 'POST' && pathname === '/api/gateway/heartbeat') {
+      if (!GATEWAY_TOKEN || GATEWAY_TOKEN.length < GATEWAY_TOKEN_MIN_LENGTH) {
+        sendJson(res, 503, {
+          error: `Set GATEWAY_TOKEN on the server to a random string of at least ${GATEWAY_TOKEN_MIN_LENGTH} characters.`,
+        });
+        return;
+      }
+
+      const supplied = String(req.headers['x-gateway-token'] || '').trim();
+      if (!supplied || !safeCompareHash(supplied, sha256(GATEWAY_TOKEN))) {
+        sendJson(res, 401, { error: 'Invalid or missing gateway token.' });
+        return;
+      }
+
+      const body = await readJsonBody(req);
+      const rawAgents = Array.isArray(body.agents) ? body.agents.slice(0, 100) : [];
+      lastGatewayHeartbeat = {
+        at: Date.now(),
+        host: String(body.host || '').trim().slice(0, 120),
+        version: String(body.version || '').trim().slice(0, 60),
+        agents: rawAgents.filter(agent => agent && typeof agent === 'object').map(toGatewayAgent),
+      };
+
+      sendJson(res, 200, { ok: true, agents: lastGatewayHeartbeat.agents.length });
       return;
     }
 
