@@ -113,8 +113,19 @@
         <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">LAN Gateway</label>
         <input id="settings-gateway-lan" type="url" placeholder="http://10.0.0.106:18789" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:13px; color:var(--text); outline:none; box-sizing:border-box;" />
       </div>
-      <button onclick="SETTINGS.saveGateway()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:10px 20px; font-size:13px; font-weight:600; cursor:pointer;">Save Gateway URLs</button>
+      <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:16px;">
+        <button onclick="SETTINGS.saveGateway()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:10px 20px; font-size:13px; font-weight:600; cursor:pointer;">Save Gateway URLs</button>
+        <button onclick="SETTINGS.checkGateway()" style="background:transparent; color:var(--text); border:1px solid var(--border); border-radius:8px; padding:10px 16px; font-size:13px; font-weight:600; cursor:pointer;">Check Local Gateway</button>
+      </div>
       <span id="settings-gateway-msg" style="font-size:12px; color:#22c55e; margin-left:14px; display:none;">Saved.</span>
+      <div style="padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border); margin-top:14px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:6px;">
+          <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em;">Local OpenClaw Status</div>
+          <div id="settings-gateway-dot" title="Not checked" style="width:9px; height:9px; border-radius:50%; background:#64748b; flex:0 0 auto;"></div>
+        </div>
+        <div id="settings-gateway-state" style="font-size:13px; color:var(--text);">Not checked yet.</div>
+        <div id="settings-gateway-endpoint" style="font-size:11px; color:var(--muted); margin-top:6px; word-break:break-all;">http://localhost:18789</div>
+      </div>
     </div>
 
     <!-- Gateway Agents -->
