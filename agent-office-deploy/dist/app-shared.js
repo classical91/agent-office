@@ -5,7 +5,11 @@
     {name:'WebClaw', role:'Web Agency Specialist', color:'#3b82f6'},
     {name:'NutriMind', role:'Nutrition App Specialist', color:'#22c55e'},
     {name:'PC', role:'Windows Workstation Specialist', color:'#10b981'},
-    {name:'StudioClaw', role:'Studio Director', color:'#ec4899'},
+    {name:'Studio Director', role:'Studio Routing Lead', color:'#8b5cf6'},
+    {name:'Nightwave Audio', role:'Audio Specialist', color:'#06b6d4'},
+    {name:'YouTube Claw', role:'YouTube Packaging', color:'#ef4444'},
+    {name:'CommentFarm', role:'Engagement Specialist', color:'#84cc16'},
+    {name:'News Reporter', role:'News and Trends', color:'#f97316'},
   ];
   const el = document.getElementById('svg-roster');
   if (el) {
@@ -135,30 +139,142 @@ const AGENTS = [
   },
   {
     id: 'studioclaw',
-    name: 'StudioClaw',
-    emoji: 'NW',
-    color: '#ec4899',
-    role: 'Studio Director',
-    model: 'GPT-5.4',
+    name: 'Studio Director',
+    emoji: 'SD',
+    color: '#8b5cf6',
+    role: 'Studio Routing Lead',
+    model: 'GPT-5.5',
     authority: 'specialist',
     memory: true,
     workspace: 'workspace-studios',
-    repo: 'studio routing',
-    desc: 'Nightwave, Jason studio director. Routes creative production, prepares briefs, organizes assets, reviews launch outputs, and reports to Penny before public posting or external commitments.',
+    repo: 'OpenClaw studio direction',
+    desc: 'Studio department lead under Penny. Intakes studio requests, chooses the right specialist, reviews handoffs, tracks status, and keeps public output approval-gated.',
     tasks: [
-      'Routing studio work',
-      'Preparing creative briefs',
-      'Organizing media assets',
-      'Reviewing launch outputs',
-      'Tracking approvals',
-      'Coordinating Nightwave Audio',
+      'Triaging studio requests',
+      'Routing to production specialists',
+      'Building handoff packets',
+      'Reviewing specialist output',
+      'Tracking studio status labels',
+      'Reporting clean results to Penny',
     ],
     feed: [
-      'Studio routing map verified',
-      'Creative handoff template ready',
-      'Nightwave reports to Penny',
-      'Approval gates confirmed for public posts',
-      'Studio workspace active',
+      'Studio Director routing playbook shipped',
+      'Penny remains command center',
+      'YouTube, CommentFarm, Nightwave Audio, News Reporter, and WebClaw smoke checks passed',
+      'Public output approval gates confirmed',
+      'Internal ID remains studioclaw',
+    ]
+  },
+  {
+    id: 'nightwaveaudio',
+    name: 'Nightwave Audio',
+    emoji: 'NA',
+    color: '#06b6d4',
+    role: 'Audio Specialist',
+    model: 'GPT-5.5',
+    authority: 'specialist',
+    memory: true,
+    workspace: 'music-maker',
+    repo: 'Nightwave music-maker',
+    desc: 'Nightwave music/audio production and app specialist for prompts, sound-bed concepts, sonic direction, track workflows, and music-maker maintenance.',
+    tasks: [
+      'Drafting music prompts',
+      'Shaping track concepts',
+      'Planning sound beds',
+      'Reviewing sonic direction',
+      'Maintaining music-maker workflows',
+      'Reporting audio job status',
+    ],
+    feed: [
+      'Nightwave Audio route verified',
+      'Telegram account wired as nightwaveaudio',
+      'Smoke ping passed',
+      'Music-maker workspace assigned',
+      'Reports through Studio Director and Penny',
+    ]
+  },
+  {
+    id: 'youtubeclaw',
+    name: 'YouTube Claw',
+    emoji: 'YT',
+    color: '#ef4444',
+    role: 'YouTube Packaging Specialist',
+    model: 'GPT-5.5',
+    authority: 'specialist',
+    memory: true,
+    workspace: 'youtube-claw',
+    repo: 'YouTube Claw',
+    desc: 'Turns video ideas and assets into ready-to-review YouTube packages with titles, thumbnail direction, descriptions, tags, chapters, scripts, and publishing prep.',
+    tasks: [
+      'Writing title sets',
+      'Drafting thumbnail briefs',
+      'Preparing descriptions',
+      'Building tag lists',
+      'Outlining chapters',
+      'Packaging Shorts and longform videos',
+    ],
+    feed: [
+      'YouTube Claw smoke check passed',
+      'Packaging workflow assigned',
+      'Publishing prep remains approval-gated',
+      'Studio Director handoff ready',
+      'Workspace linked',
+    ]
+  },
+  {
+    id: 'commentfarm',
+    name: 'CommentFarm',
+    emoji: 'CF',
+    color: '#84cc16',
+    role: 'Engagement Specialist',
+    model: 'GPT-5.5',
+    authority: 'specialist',
+    memory: true,
+    workspace: 'commentfarm',
+    repo: 'CommentFarm',
+    desc: 'Drafts concise, platform-aware engagement comments, replies, hooks, and review queues for Jason studio workflows.',
+    tasks: [
+      'Drafting comments',
+      'Preparing reply options',
+      'Building engagement hooks',
+      'Reviewing comment queues',
+      'Matching platform tone',
+      'Keeping public activity approval-gated',
+    ],
+    feed: [
+      'CommentFarm smoke check passed',
+      'Engagement drafting scope assigned',
+      'Studio routing handoff ready',
+      'Review queues documented',
+      'Workspace linked',
+    ]
+  },
+  {
+    id: 'newsreporter',
+    name: 'News Reporter',
+    emoji: 'NR',
+    color: '#f97316',
+    role: 'News and Trend Specialist',
+    model: 'GPT-5.5',
+    authority: 'specialist',
+    memory: true,
+    workspace: 'market-dashboard',
+    repo: 'Market dashboard reporter',
+    desc: 'Turns market and news topics into sourced, claim-safe briefs, trend picks, content angles, and reporter-page workflow improvements without publishing or making market calls.',
+    tasks: [
+      'Capturing source links',
+      'Writing claim-safe briefs',
+      'Finding trend angles',
+      'Preparing reporter-page updates',
+      'Checking market context',
+      'Avoiding market calls',
+    ],
+    feed: [
+      'News Reporter smoke check passed',
+      'Claim-safe brief scope assigned',
+      'Market-dashboard workspace linked',
+      'Publishing remains approval-gated',
+      'Studio Director handoff ready',
     ]
   }
 ];
@@ -204,7 +320,7 @@ let AGENT_STATIONS = {
   webclaw:    { gx:  1, gy: 4, facing: 'W' },
   nutrimind:  { gx:  8, gy: 5, facing: 'N' },
   pc:         { gx: 10, gy: 5, facing: 'N' },
-  studioclaw: { gx:  7, gy: 5, facing: 'N' },
+  studioclaw: { gx:  7, gy: 1, facing: 'N' },
 };
 // <<<END GENERATED ROOM GEOMETRY>>>
 
@@ -1034,6 +1150,7 @@ window.SETTINGS = (() => {
   const DEFAULT_LOCAL_GATEWAY = 'http://localhost:18789';
   const CLEARED_SUFFIX = '-cleared';
   let localGatewayState = { reachable: null, url: DEFAULT_LOCAL_GATEWAY, checkedAt: null };
+  let gatewayCheckInFlight = null;
 
   // A theme is just an accent. shared.css derives every surface from it.
   const THEMES = {
@@ -1270,25 +1387,34 @@ window.SETTINGS = (() => {
   // cross-origin probe comes back opaque, so it resolves for a 404 and for any
   // unrelated server on that port, and over HTTPS it cannot reach a plain-http
   // localhost address at all.
-  async function checkGateway() {
+  async function checkGateway(options = {}) {
+    if (gatewayCheckInFlight) return gatewayCheckInFlight;
+    const silent = Boolean(options.silent);
     const input = document.getElementById('settings-gateway-local');
     const typed = input ? input.value.trim() : '';
-    setGatewayStatus('checking', 'Checking the OpenClaw gateway…', typed || gatewayBaseUrl('local'));
+    gatewayCheckInFlight = (async () => {
+      if (!silent) setGatewayStatus('checking', 'Checking the OpenClaw gateway...', typed || gatewayBaseUrl('local'));
 
-    try {
-      const query = typed ? `?url=${encodeURIComponent(typed)}` : '';
-      const response = await fetch(`/api/gateway/status${query}`, { credentials: 'same-origin' });
-      if (response.status === 401) {
-        setGatewayStatus('checking', 'Unlock the Dropbox to check the gateway.', typed || gatewayBaseUrl('local'));
-        renderGatewayAgents([], 'Unlock the Dropbox to see the gateway agents.');
-        return false;
+      try {
+        const query = typed ? `?url=${encodeURIComponent(typed)}` : '';
+        const response = await fetch(`/api/gateway/status${query}`, { credentials: 'same-origin' });
+        if (response.status === 401) {
+          setGatewayStatus('checking', 'Unlock the Dropbox to check the gateway.', typed || gatewayBaseUrl('local'));
+          renderGatewayAgents([], 'Unlock the Dropbox to see the gateway agents.');
+          return false;
+        }
+        if (!response.ok) throw new Error(`status ${response.status}`);
+        return applyGatewayStatus(await response.json());
+      } catch (error) {
+        setGatewayStatus('offline', `Could not ask the server to check the gateway: ${error.message}`, typed || gatewayBaseUrl('local'));
+        renderGatewayAgents([], 'The gateway could not be checked.');
       }
-      if (!response.ok) throw new Error(`status ${response.status}`);
-      return applyGatewayStatus(await response.json());
-    } catch (error) {
-      setGatewayStatus('offline', `Could not ask the server to check the gateway: ${error.message}`, typed || gatewayBaseUrl('local'));
-      renderGatewayAgents([], 'The gateway could not be checked.');
       return false;
+    })();
+    try {
+      return await gatewayCheckInFlight;
+    } finally {
+      gatewayCheckInFlight = null;
     }
   }
 
@@ -1498,6 +1624,15 @@ window.SETTINGS = (() => {
 
 // Apply saved theme immediately so there's no flash on load
 (function() { const t = localStorage.getItem('ao-theme'); if (t && window.SETTINGS) window.SETTINGS.applyTheme(t); })();
+
+// Keep the office signal tied to the local OpenClaw gateway, even when the
+// Settings page is not open.
+(function startGatewayHeartbeat() {
+  if (!window.SETTINGS || typeof window.SETTINGS.checkGateway !== 'function') return;
+  const run = () => window.SETTINGS.checkGateway({ silent: true }).catch(() => {});
+  window.addEventListener('load', run, { once: true });
+  setInterval(run, 15000);
+})();
 
 let currentView = 'office';
 

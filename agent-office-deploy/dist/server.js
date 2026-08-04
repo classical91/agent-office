@@ -38,10 +38,14 @@ const DEFAULT_AGENTS = [
   { id: 'codex', name: 'Codex', role: 'Coding Agent', model: 'GPT-5', status: 'idle', source: 'Codex', notes: 'Repo work, reviews, implementation, and local verification.' },
   { id: 'claude-code', name: 'Claude Code', role: 'Coding Agent', model: 'Claude Sonnet', status: 'idle', source: 'CLI', notes: 'Parallel coding and refactor support.' },
   { id: 'openclaw', name: 'OpenClaw', role: 'Agent Harness', model: 'Mixed', status: 'idle', source: 'OpenClaw', notes: 'Routes low-cost and specialized agent runs.' },
-  { id: 'reaper', name: 'Reaper', role: 'Farm Bot', model: 'GPT-4o-mini', status: 'idle', source: 'OpenClaw', notes: 'CommentFarm discover, posting, and engagement cycles.' },
+  { id: 'reaper', name: 'Reaper', role: 'Farm Bot', model: 'GPT-4o-mini', status: 'idle', source: 'OpenClaw', notes: 'Legacy CommentFarm discover, posting, and engagement cycles.' },
   { id: 'traderclaw', name: 'TraderClaw', role: 'Trading Bot', model: 'Claude Sonnet', status: 'running', source: 'Railway', notes: 'BTC, market dashboard, and trading analysis.' },
   { id: 'webclaw', name: 'WebClaw', role: 'Web Developer', model: 'GPT-5.4', status: 'idle', source: 'Railway', notes: 'Demo sites, client landing pages, and pitch assets.' },
-  { id: 'studioclaw', name: 'StudioClaw', role: 'Studio Director', model: 'GPT-5.4', status: 'idle', source: 'OpenClaw', notes: 'Nightwave studio routing, creative briefs, asset organization, launch prep, and approval review.' },
+  { id: 'studioclaw', name: 'Studio Director', role: 'Studio Routing Lead', model: 'GPT-5.5', status: 'idle', source: 'OpenClaw', notes: 'Routes and reviews studio work under Penny, using YouTube Claw, CommentFarm, Nightwave Audio, News Reporter, and WebClaw; public output stays approval-gated.' },
+  { id: 'nightwaveaudio', name: 'Nightwave Audio', role: 'Audio Specialist', model: 'GPT-5.5', status: 'idle', source: 'OpenClaw', notes: 'Nightwave music-maker app, prompts, track concepts, sound-bed workflow, sonic direction, and audio job reporting.' },
+  { id: 'youtubeclaw', name: 'YouTube Claw', role: 'YouTube Packaging Specialist', model: 'GPT-5.5', status: 'idle', source: 'OpenClaw', notes: 'Turns video ideas and assets into titles, thumbnail direction, descriptions, tags, chapters, scripts, and publishing prep.' },
+  { id: 'commentfarm', name: 'CommentFarm', role: 'Engagement Specialist', model: 'GPT-5.5', status: 'idle', source: 'OpenClaw', notes: 'Drafts concise, platform-aware comments, replies, hooks, and review queues for studio workflows.' },
+  { id: 'newsreporter', name: 'News Reporter', role: 'News and Trend Specialist', model: 'GPT-5.5', status: 'idle', source: 'OpenClaw', notes: 'Turns market and news topics into sourced, claim-safe briefs, trend picks, content angles, and reporter-page workflow improvements.' },
   { id: 'researcher', name: 'Researcher', role: 'Research Agent', model: 'GPT-5', status: 'idle', source: 'Manual', notes: 'Briefs, scans, and source gathering.' },
   { id: 'guardian', name: 'Guardian', role: 'Security Agent', model: 'Claude Sonnet', status: 'idle', source: 'Manual', notes: 'Security checklist, deployment risk, and auth review.' },
   { id: 'farmbot', name: 'FarmBot', role: 'Outreach Agent', model: 'Qwen', status: 'idle', source: 'OpenClaw', notes: 'Scheduled farm sessions and engagement automation.' },
@@ -3814,13 +3818,13 @@ function normalizeGatewayUrl(raw) {
 // does it look like a list of agents.
 function describeGatewayBody(text) {
   const body = String(text || '').trim();
-  if (!body) return { shape: 'empty', agents: [] };
+  if (!body) return { shape: 'empty', agents: [], openclaw: false };
 
   let parsed;
   try {
     parsed = JSON.parse(body);
   } catch {
-    return { shape: body.startsWith('<') ? 'html' : 'text', agents: [] };
+    return { shape: body.startsWith('<') ? 'html' : 'text', agents: [], openclaw: false };
   }
 
   const list = Array.isArray(parsed) ? parsed
@@ -3828,9 +3832,10 @@ function describeGatewayBody(text) {
       : null;
 
   if (list && list.every(item => item && typeof item === 'object')) {
-    return { shape: Array.isArray(parsed) ? 'json array' : 'json object with agents[]', agents: list };
+    return { shape: Array.isArray(parsed) ? 'json array' : 'json object with agents[]', agents: list, openclaw: true };
   }
-  return { shape: Array.isArray(parsed) ? 'json array' : 'json object', agents: [] };
+  const openclaw = Boolean(parsed && parsed.ok === true && String(parsed.status || '').toLowerCase() === 'live');
+  return { shape: Array.isArray(parsed) ? 'json array' : 'json object', agents: [], openclaw };
 }
 
 // An OpenClaw agent, whatever shape it arrived in. Unknown fields are dropped
@@ -3895,13 +3900,15 @@ async function probeGateway(baseUrl) {
   let error = '';
   let agents = [];
   let agentsEndpoint = '';
+  let openclaw = false;
 
   for (const path of GATEWAY_PROBE_PATHS) {
     const target = path === '/' ? url : url + path;
     try {
       const result = await probeGatewayEndpoint(target);
       reachable = true;
-      endpoints.push({ path, status: result.status, shape: result.shape, agents: result.agents.length });
+      if (result.openclaw) openclaw = true;
+      endpoints.push({ path, status: result.status, shape: result.shape, agents: result.agents.length, openclaw: Boolean(result.openclaw) });
 
       if (!agents.length && result.ok && result.agents.length) {
         agents = result.agents.map(toGatewayAgent);
@@ -3924,6 +3931,7 @@ async function probeGateway(baseUrl) {
     attempted: true,
     url,
     reachable,
+    openclaw,
     error: reachable ? '' : (error || 'Not reachable.'),
     endpoints,
     agents,
@@ -3949,6 +3957,75 @@ function describeGatewayHeartbeat() {
   };
 }
 
+async function readJsonFileSafe(filePath, fallback = null) {
+  try {
+    return JSON.parse(await fs.readFile(filePath, 'utf8'));
+  } catch {
+    return fallback;
+  }
+}
+
+function homePath(...parts) {
+  const home = process.env.USERPROFILE || process.env.HOME || '';
+  return home ? path.join(home, ...parts) : '';
+}
+
+function sessionStatusFromRecords(records, now = Date.now()) {
+  const sessions = Object.values(records || {}).filter(item => item && typeof item === 'object');
+  if (!sessions.length) return { status: 'idle', updatedAt: 0 };
+
+  let newest = 0;
+  let running = false;
+  for (const session of sessions) {
+    const updatedAt = Number(session.updatedAt || session.lastInteractionAt || session.sessionStartedAt || 0);
+    if (updatedAt > newest) newest = updatedAt;
+    if (String(session.status || '').toLowerCase() === 'running') running = true;
+  }
+
+  const ageMs = newest ? now - newest : Infinity;
+  if (running && ageMs <= 15 * 60 * 1000) return { status: 'running', updatedAt: newest };
+  if (ageMs <= 2 * 60 * 60 * 1000) return { status: 'active', updatedAt: newest };
+  return { status: 'idle', updatedAt: newest };
+}
+
+async function readLocalOpenClawAgents() {
+  const configPath = process.env.OPENCLAW_CONFIG_PATH || homePath('.openclaw', 'openclaw.json');
+  const config = await readJsonFileSafe(configPath, {});
+  const configured = Array.isArray(config && config.agents && config.agents.list) ? config.agents.list : [];
+  const now = Date.now();
+
+  const agents = [];
+  for (const agent of configured) {
+    if (!agent || typeof agent !== 'object') continue;
+    const id = String(agent.id || agent.name || '').trim();
+    if (!id) continue;
+
+    const sessionPaths = [];
+    if (agent.agentDir) sessionPaths.push(path.join(path.dirname(agent.agentDir), 'sessions', 'sessions.json'));
+    sessionPaths.push(homePath('.openclaw', 'agents', id, 'sessions', 'sessions.json'));
+
+    let sessionState = { status: 'idle', updatedAt: 0 };
+    for (const sessionPath of sessionPaths.filter(Boolean)) {
+      const records = await readJsonFileSafe(sessionPath, null);
+      if (records) {
+        sessionState = sessionStatusFromRecords(records, now);
+        break;
+      }
+    }
+
+    agents.push({
+      id,
+      name: String(agent.name || (agent.identity && agent.identity.name) || id).trim(),
+      role: String(agent.description || '').trim().slice(0, 180),
+      model: String((agent.model && agent.model.primary) || '').trim(),
+      status: sessionState.status,
+      source: 'OpenClaw local config',
+    });
+  }
+
+  return agents;
+}
+
 async function buildGatewayStatus(storage, requestedUrl) {
   const requested = String(requestedUrl || '').trim();
   const saved = await storage.getAppSetting(GATEWAY_LOCAL_SETTING_KEY);
@@ -3971,20 +4048,24 @@ async function buildGatewayStatus(storage, requestedUrl) {
     }
     : await probeGateway(target);
   const heartbeat = describeGatewayHeartbeat();
+  const localAgents = probe.reachable && probe.openclaw && !probe.agents.length
+    ? await readLocalOpenClawAgents()
+    : [];
 
   // A live probe is the stronger answer - it was true a second ago, from here.
   // A fresh heartbeat is the only answer available when the gateway is on a
   // machine this server cannot reach at all.
   const source = probe.reachable ? 'probe' : heartbeat.fresh ? 'heartbeat' : 'none';
   const agents = probe.agents.length ? probe.agents
-    : heartbeat.fresh && heartbeat.agents.length ? heartbeat.agents
+    : localAgents.length ? localAgents
+      : heartbeat.fresh && heartbeat.agents.length ? heartbeat.agents
       : [];
 
   return {
     alive: source !== 'none',
     source,
     agents,
-    agents_source: probe.agents.length ? 'probe' : agents.length ? 'heartbeat' : '',
+    agents_source: probe.agents.length ? 'probe' : localAgents.length ? 'local-openclaw' : agents.length ? 'heartbeat' : '',
     heartbeat_stale_seconds: GATEWAY_HEARTBEAT_STALE_MS / 1000,
     probe,
     heartbeat,
