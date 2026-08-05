@@ -404,6 +404,7 @@
     transform: translate(-50%, -100%);
     transform-style: preserve-3d;
     pointer-events: none;
+    outline: none;
     transition:
       left var(--travel-ms, 240ms) cubic-bezier(0.22, 0.9, 0.24, 1),
       top var(--travel-ms, 240ms) cubic-bezier(0.22, 0.9, 0.24, 1),
@@ -477,6 +478,16 @@
     height: 102px;
     transform-origin: 50% 100%;
     transform: scale(var(--agent-scale, 1));
+    transition: filter 160ms ease;
+  }
+
+  .agent-char.avatar-hover .agent-avatar,
+  .agent-char:focus-visible .agent-avatar {
+    filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 76%, white));
+  }
+
+  .agent-char:focus-visible .agent-label {
+    border-color: color-mix(in srgb, var(--accent) 76%, white);
   }
 
 
@@ -1896,6 +1907,220 @@
   background: color-mix(in srgb, var(--panel) 82%, transparent);
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
+}
+
+/* In-office character editor ------------------------------------------------ */
+.avatar-customizer-open { overflow: hidden; }
+
+.office-avatar-editor {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.office-avatar-editor[hidden] { display: none; }
+
+.avatar-editor-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: rgba(3, 5, 12, 0.78);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.avatar-editor-sheet {
+  position: relative;
+  width: min(720px, 100%);
+  max-height: min(720px, calc(100svh - 36px));
+  overflow: auto;
+  color: var(--text);
+  background: color-mix(in srgb, var(--panel) 94%, #070913);
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border));
+  border-radius: 18px;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.56);
+  opacity: 0;
+  transform: translateY(14px) scale(0.985);
+  transition: opacity 160ms ease, transform 180ms cubic-bezier(.2,.8,.2,1);
+}
+
+.office-avatar-editor.open .avatar-editor-backdrop { opacity: 1; }
+.office-avatar-editor.open .avatar-editor-sheet { opacity: 1; transform: none; }
+
+.avatar-editor-header,
+.avatar-editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 20px;
+}
+
+.avatar-editor-header { border-bottom: 1px solid var(--border); }
+.avatar-editor-header p {
+  margin: 0 0 3px;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.avatar-editor-header h2 { margin: 0; color: #f8fafc; font-size: 21px; line-height: 1.15; }
+.avatar-editor-header span { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; }
+
+.avatar-editor-close {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.avatar-editor-body { display: grid; grid-template-columns: 220px 1fr; min-height: 340px; }
+
+.avatar-editor-preview {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 340px;
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 76%, var(--accent));
+}
+
+.avatar-preview-grid {
+  position: absolute;
+  inset: 0;
+  opacity: .16;
+  background-image:
+    linear-gradient(30deg, transparent 24%, var(--accent) 25%, var(--accent) 26%, transparent 27%, transparent 74%, var(--accent) 75%, var(--accent) 76%, transparent 77%),
+    linear-gradient(150deg, transparent 24%, var(--accent) 25%, var(--accent) 26%, transparent 27%, transparent 74%, var(--accent) 75%, var(--accent) 76%, transparent 77%);
+  background-size: 34px 20px;
+}
+
+.avatar-editor-preview canvas {
+  position: relative;
+  z-index: 2;
+  width: 128px;
+  height: 220px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 16px 10px rgba(0,0,0,.36));
+}
+
+.avatar-preview-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 48px;
+  width: 112px;
+  height: 26px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: rgba(0,0,0,.48);
+  filter: blur(8px);
+}
+
+.avatar-editor-preview small {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  z-index: 3;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.avatar-editor-controls { min-width: 0; padding: 18px; }
+.avatar-editor-tabs { display: flex; gap: 4px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.avatar-editor-tabs button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 9px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.avatar-editor-tabs button.active { color: #fff; background: color-mix(in srgb, var(--accent) 22%, transparent); }
+
+.avatar-editor-options { padding-top: 16px; }
+.avatar-control-group + .avatar-control-group { margin-top: 20px; }
+.avatar-control-label { margin-bottom: 9px; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.avatar-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.avatar-choice {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  background: color-mix(in srgb, var(--panel) 84%, #fff 2%);
+  cursor: pointer;
+}
+.avatar-choice > span { width: 24px; color: var(--accent); font-size: 17px; text-align: center; }
+.avatar-choice strong { font-size: 11px; }
+.avatar-choice.selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--panel)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent); }
+
+.avatar-swatch-row { display: flex; flex-wrap: wrap; gap: 9px; }
+.avatar-swatch {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: var(--swatch);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.18);
+  cursor: pointer;
+}
+.avatar-swatch.selected { border-color: #fff; box-shadow: 0 0 0 3px var(--accent); }
+
+.avatar-editor-footer { border-top: 1px solid var(--border); }
+.avatar-editor-footer p { margin: 0; color: var(--muted); font-size: 11px; }
+.avatar-editor-footer p.saved { color: #86efac; }
+.avatar-editor-footer > div { display: flex; gap: 8px; flex-shrink: 0; }
+.avatar-editor-footer button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.avatar-editor-footer .avatar-editor-save { border-color: var(--accent); color: #fff; background: var(--accent); }
+
+@media (max-width: 640px) {
+  .office-avatar-editor { align-items: end; padding: 0; }
+  .avatar-editor-sheet { width: 100%; max-height: 90svh; border-radius: 18px 18px 0 0; transform: translateY(28px); }
+  .avatar-editor-header { padding: 14px 16px; }
+  .avatar-editor-body { grid-template-columns: 112px minmax(0, 1fr); min-height: 310px; }
+  .avatar-editor-preview { min-height: 310px; border-right: 1px solid var(--border); }
+  .avatar-editor-preview canvas { width: 80px; height: 138px; }
+  .avatar-preview-shadow { bottom: 72px; width: 76px; height: 18px; }
+  .avatar-editor-preview small { right: auto; left: 50%; bottom: 13px; width: 100%; transform: translateX(-50%); text-align: center; }
+  .avatar-editor-controls { padding: 12px; }
+  .avatar-editor-tabs { gap: 2px; overflow-x: auto; }
+  .avatar-editor-tabs button { min-width: max-content; min-height: 42px; padding: 0 10px; }
+  .avatar-choice-grid { grid-template-columns: 1fr; }
+  .avatar-choice { min-height: 44px; }
+  .avatar-swatch { width: 36px; height: 36px; }
+  .avatar-editor-footer { align-items: stretch; flex-direction: column; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
+  .avatar-editor-footer > div { width: 100%; }
+  .avatar-editor-footer button { flex: 1; min-height: 44px; padding: 0 8px; }
 }
 
 .dev-search-field {

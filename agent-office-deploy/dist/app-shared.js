@@ -581,15 +581,16 @@ function ensureStudioAvatars() {
 function drawPixelAgent(canvasEl, look, agent) {
   if (!canvasEl) return;
   const agentId = agent ? agent.id : null;
+  const customAvatar = agent && agent.lookState && agent.lookState.avatar;
 
   // Preferred path once approved: the studio's compositor, which covers every
   // agent — including the four who have no sprite of their own and otherwise
   // come out of the fallback below as a stack of coloured boxes.
   const avatars = window.AgentAvatars;
-  if (avatars && agentId && avatars.DEFAULT_LOOKS[agentId] && studioAvatarsEnabled()) {
+  if (avatars && agentId && avatars.DEFAULT_LOOKS[agentId] && (studioAvatarsEnabled() || customAvatar)) {
     ensureStudioAvatars();
     if (avatars.assetsReady) {
-      avatars.drawAvatar(canvasEl, { ...avatars.DEFAULT_LOOKS[agentId], ...(agent.lookState && agent.lookState.avatar) });
+      avatars.drawAvatar(canvasEl, { ...avatars.DEFAULT_LOOKS[agentId], ...customAvatar });
       return;
     }
   }
@@ -962,6 +963,10 @@ function renderAgents() {
     const el = document.createElement('div');
     el.className = 'agent-char';
     el.id = 'agent-' + agent.id;
+    el.dataset.agentId = agent.id;
+    el.setAttribute('role', 'button');
+    el.setAttribute('tabindex', '0');
+    el.setAttribute('aria-label', `Customize ${agent.name}`);
 
     // Name chip only: thirteen agents at adjacent desks means thirteen
     // overlapping labels, and the task text is already on every agent's card in
@@ -1150,6 +1155,7 @@ function updateAgentTask(agent) {
     pose: 'stand',
     facing: agent.station.facing,
     motion: isIdleTask ? 'reading' : (Math.random() > 0.3 ? 'typing' : 'monitoring'),
+    ...(agent.lookState && agent.lookState.avatar ? { avatar: agent.lookState.avatar } : {}),
   };
   agent.availableAt = now + 2600 + Math.round(Math.random() * 2600);
 
