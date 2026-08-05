@@ -4,65 +4,80 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <meta name="robots" content="noindex,nofollow"/>
-  <title>Agent Office — Five-character design demo</title>
-  <link rel="stylesheet" href="shared.css?v=character-demo-20260804"/>
-  <link rel="stylesheet" href="character-demo.css?v=character-demo-20260804"/>
+  <title>Agent Office — Avatar Studio</title>
+  <link rel="stylesheet" href="shared.css?v=avatar-studio-20260804"/>
+  <link rel="stylesheet" href="character-demo.css?v=avatar-studio-20260804"/>
 </head>
-<body class="character-demo-page">
-  <header class="demo-intro">
-    <div class="demo-intro-copy">
-      <p class="demo-kicker">Character design demo <span>Not connected to the live roster</span></p>
-      <h1>Five agents.<br/>One office language.</h1>
-      <p class="demo-summary">Outfit-led redesigns for the five approved OpenClaw agents, kept inside the current 64 × 110 sprite envelope and the office’s existing isometric projection.</p>
-    </div>
-    <dl class="demo-constraints" aria-label="Demo constraints">
-      <div><dt>Roster</dt><dd>5 existing IDs</dd></div>
-      <div><dt>Sprite source</dt><dd>64 × 110 px</dd></div>
-      <div><dt>Office draw size</dt><dd>52 × 72 px</dd></div>
-      <div><dt>Live changes</dt><dd>None</dd></div>
-    </dl>
+<body class="avatar-studio-page">
+  <header class="studio-bar">
+    <a class="studio-brand" href="/" aria-label="Back to Agent Office">
+      <span class="brand-mark" aria-hidden="true">◈</span>
+      <span><strong>AGENT OFFICE</strong><small>Avatar Studio</small></span>
+    </a>
+    <div class="studio-status"><span></span> Demo mode · live roster unchanged</div>
   </header>
 
-  <main>
-    <section class="demo-section size-section" aria-labelledby="size-heading">
-      <div class="section-heading">
+  <main class="studio-layout">
+    <section class="office-workspace" aria-labelledby="office-title">
+      <div class="workspace-heading">
         <div>
-          <p class="section-index">01 / Actual scale</p>
-          <h2 id="size-heading">Current and proposed</h2>
+          <p class="eyebrow">HQ · Floor 1</p>
+          <h1 id="office-title">Choose an agent</h1>
         </div>
-        <p>Both columns use the live avatar box and canvas dimensions. No showcase enlargement.</p>
+        <p>Tap anyone in the room, then build their look.</p>
       </div>
-      <div id="comparison-strip" class="comparison-strip" aria-live="polite"></div>
-    </section>
 
-    <section class="demo-section office-section" aria-labelledby="office-heading">
-      <div class="section-heading office-heading">
-        <div>
-          <p class="section-index">02 / In context</p>
-          <h2 id="office-heading">Inside the existing office</h2>
+      <div class="office-frame">
+        <div class="office-frame-bar">
+          <span>Avatar preview room</span>
+          <span id="room-scale">Loading office…</span>
         </div>
-        <div class="office-controls">
-          <div class="view-toggle" role="group" aria-label="Character design shown in the office">
-            <button type="button" data-mode="proposed" class="active" aria-pressed="true">Proposed</button>
-            <button type="button" data-mode="current" aria-pressed="false">Current</button>
-          </div>
-          <span id="scale-readout" class="scale-readout">Room scale —</span>
+        <div id="customizer-office" class="customizer-office" aria-label="Office preview with five selectable agents">
+          <p class="office-loading">Loading the office…</p>
         </div>
       </div>
 
-      <div class="office-shell">
-        <div class="office-meta"><span>HQ · Floor 1 copy</span><span>Only the five approved agents</span></div>
-        <div id="demo-office" class="demo-office" aria-label="Copied Agent Office room with five proposed characters">
-          <p class="office-loading">Loading the existing office…</p>
+      <div id="agent-roster" class="agent-roster" role="list" aria-label="Choose an agent"></div>
+    </section>
+
+    <aside class="avatar-editor" aria-labelledby="editor-title">
+      <div class="editor-heading">
+        <div>
+          <p class="eyebrow">Character editor</p>
+          <h2 id="editor-title">Penny</h2>
+          <p id="editor-role">Orchestrator / team lead</p>
+        </div>
+        <span class="draft-badge">Draft only</span>
+      </div>
+
+      <div class="avatar-stage" aria-label="Selected character preview">
+        <div class="avatar-stage-grid"></div>
+        <div class="avatar-turntable">
+          <div class="avatar-shadow"></div>
+          <canvas id="avatar-preview" width="64" height="110" aria-label="Customized agent"></canvas>
+        </div>
+        <div class="actual-size">
+          <span>In-office size</span>
+          <canvas id="actual-preview" width="64" height="110" aria-hidden="true"></canvas>
         </div>
       </div>
-    </section>
+
+      <nav id="category-tabs" class="category-tabs" aria-label="Appearance category"></nav>
+      <div id="option-panel" class="option-panel" aria-live="polite"></div>
+
+      <div class="editor-actions">
+        <button id="randomize-look" class="secondary-action" type="button">Surprise me</button>
+        <button id="reset-look" class="secondary-action" type="button">Reset</button>
+        <button id="save-look" class="primary-action" type="button">Save draft look</button>
+      </div>
+      <p id="save-status" class="save-status">Choices preview instantly. Saving keeps them in this browser only.</p>
+    </aside>
   </main>
 
-  <footer class="demo-footer">
-    <p>Approval surface only. Agent IDs, names, data, workstations, and live sprite mappings remain unchanged.</p>
+  <footer class="studio-footer">
+    <p>This is the approval surface. Agent IDs, names, tasks, workstations, and live sprites are untouched.</p>
   </footer>
 
-  <script src="character-demo.js?v=character-demo-20260804"></script>
+  <script src="character-demo.js?v=avatar-studio-20260804"></script>
 </body>
 </html>
