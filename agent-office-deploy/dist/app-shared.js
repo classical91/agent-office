@@ -547,14 +547,12 @@ const SPRITE_NATIVE_W = 64;
 const SPRITE_NATIVE_H = 110;
 const SPRITE_BUFFER_W = 78;
 const SPRITE_BUFFER_H = 108;
-const AVATAR_DRAFTS_KEY = 'agent-office-avatar-drafts-v2';
 
 // The avatar studio's composited characters are off by default: the room keeps
-// the borrowed Habbo PNGs until the new cast is signed off. Flip it per-browser
-// to preview the real room with the studio art —
-//   localStorage.setItem('office-studio-avatars', '1')
-// or load the office with ?avatars=studio — and set STUDIO_AVATARS to true here
-// when the designs are approved, which is the whole go-live change.
+// the original sprites unless an explicit preview URL requests the studio art.
+// Do not honor the former browser-local opt-in here: PR #134 saved that flag
+// automatically, so keeping it would leave those browsers on the rejected look
+// even after the UI change was reverted.
 const STUDIO_AVATARS = false;
 
 function studioAvatarsEnabled() {
@@ -562,21 +560,8 @@ function studioAvatarsEnabled() {
     const override = new URLSearchParams(location.search).get('avatars');
     if (override === 'studio') return true;
     if (override === 'sprites') return false;
-    const stored = localStorage.getItem('office-studio-avatars');
-    if (stored === '1') return true;
-    if (stored === '0') return false;
   } catch (e) { /* no URL or storage access — fall through to the default */ }
   return STUDIO_AVATARS;
-}
-
-function savedAvatarDraft(agentId) {
-  try {
-    const drafts = JSON.parse(localStorage.getItem(AVATAR_DRAFTS_KEY) || '{}');
-    const draft = drafts && typeof drafts === 'object' ? drafts[agentId] : null;
-    return draft && typeof draft === 'object' ? draft : {};
-  } catch (e) {
-    return {};
-  }
 }
 
 // Loading the sprite sheets is async, so the first paint has nothing to draw.
@@ -599,11 +584,7 @@ function drawPixelAgent(canvasEl, look, agent) {
   if (avatars && agentId && avatars.DEFAULT_LOOKS[agentId] && studioAvatarsEnabled()) {
     ensureStudioAvatars();
     if (avatars.assetsReady) {
-      avatars.drawAvatar(canvasEl, {
-        ...avatars.DEFAULT_LOOKS[agentId],
-        ...(agent.lookState && agent.lookState.avatar),
-        ...savedAvatarDraft(agentId),
-      });
+      avatars.drawAvatar(canvasEl, { ...avatars.DEFAULT_LOOKS[agentId], ...(agent.lookState && agent.lookState.avatar) });
       return;
     }
   }
@@ -987,11 +968,11 @@ function renderAgents() {
           <strong>${agent.name}</strong>
         </div>
       </div>
-      <a class="agent-avatar agent-avatar-customizable" href="/character-demo.html?agent=${encodeURIComponent(agent.id)}" aria-label="Customize ${agent.name}'s appearance" title="Customize ${agent.name}'s appearance">
+      <div class="agent-avatar">
         <div class="agent-shadow"></div>
         <div class="agent-chair"></div>
         <canvas class="agent-pixel" width="${SPRITE_BUFFER_W}" height="${SPRITE_BUFFER_H}"></canvas>
-      </a>
+      </div>
     `;
 
     officeArea.appendChild(el);
@@ -1119,7 +1100,7 @@ function syncAgentElement(agent) {
 
   const avatar = el.querySelector('.agent-avatar');
   if (avatar) {
-    const classes = ['agent-avatar', 'agent-avatar-customizable'];
+    const classes = ['agent-avatar'];
     if (look.pose === 'seated') classes.push('seated');
     if (look.motion) classes.push(`motion-${look.motion}`);
     avatar.className = classes.join(' ');
