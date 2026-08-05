@@ -33,3 +33,14 @@ test('avatar drafts stay browser-local and do not alter the live roster', () => 
   assert.match(html, /live sprites are untouched/i);
   assert.doesNotMatch(script, /fetch\([^)]*\/api\/agents[^)]*,\s*\{[^}]*method:\s*['"](?:POST|PUT|PATCH)/is);
 });
+
+test('avatar studio composites the approved detailed sprite assets', () => {
+  assert.match(script, /const ASSET_ROOT = 'assets\/character-demo\/'/);
+  for (const sprite of ['penny.png', 'webclaw.png', 'nutrimind.png', 'pc.png', 'studioclaw.png']) {
+    assert.match(script, new RegExp(sprite.replace('.', '\\.')));
+  }
+  assert.match(script, /OUTFIT_SPRITES/);
+  assert.match(script, /HAIR_SPRITES/);
+  assert.match(script, /drawImage\(spriteImages/);
+  assert.doesNotMatch(script, /canvas\.width\s*\/\s*32/);
+});
