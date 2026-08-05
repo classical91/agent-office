@@ -2,6 +2,7 @@
   'use strict';
 
   const STORAGE_KEY = 'agent-office-avatar-drafts-v2';
+  const STUDIO_ENABLED_KEY = 'office-studio-avatars';
   const ROOM = { x: 206, y: 186, w: 786, h: 497, ox: 550, oy: 295, hw: 36, hh: 18, gridW: 12, gridH: 9 };
   const FOOT_OFFSET = 8;
 
@@ -11,7 +12,8 @@
   const { SKINS, HAIR_COLORS, OUTFIT_COLORS, CHOICES, ROSTER, drawAvatar } = window.AgentAvatars;
   const agents = ROSTER;
 
-  let selectedId = agents[0].id;
+  const requestedAgent = new URLSearchParams(window.location.search).get('agent');
+  let selectedId = agents.some((agent) => agent.id === requestedAgent) ? requestedAgent : agents[0].id;
   let selectedCategory = 'face';
   let officeReady = false;
   let assetsReady = false;
@@ -195,9 +197,10 @@
   function saveCurrent() {
     savedDrafts[selectedId] = { ...looks[selectedId] };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(savedDrafts));
+    localStorage.setItem(STUDIO_ENABLED_KEY, '1');
     const status = document.getElementById('save-status');
     status.className = 'save-status saved';
-    status.textContent = `${currentAgent().name}'s draft look is saved in this browser. The live office is unchanged.`;
+    status.innerHTML = `${currentAgent().name}'s look is saved and active in this browser. <a href="/">Return to the office</a> to see it.`;
   }
 
   async function loadOfficeCopy() {
