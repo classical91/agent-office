@@ -1,0 +1,526 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-08-05T00:00:00.000Z",
+  "playbook": {
+    "path": "YOUTUBE_PACKAGING.md",
+    "sha256": "a171f980ebde",
+    "checklistItems": 30
+  },
+  "request": {
+    "handoffId": "sd-2026-08-05-001",
+    "from": "studio-director",
+    "idea": "A 9-minute video about building OpenClaw specialist agents that turn vague ideas into finished workflows",
+    "format": "both",
+    "audience": "solo founders and automation builders",
+    "tone": "practical, slightly cinematic, no hype",
+    "durationMinutes": 9,
+    "keywords": [
+      "openclaw",
+      "ai agents",
+      "workflow automation"
+    ],
+    "constraints": [
+      "no hype",
+      "no invented metrics or testimonials",
+      "no credentials or tokens in the package"
+    ],
+    "sourceNotes": "A specialist agent is just a scoped role plus a playbook the agent has to read every run. The failure mode is starting from a blank prompt each time, which produces a different shape of output every run. The fix is a checked-in playbook file that the agent parses at runtime, so the standard and the output cannot drift apart. Once the playbook exists, the agent's job shrinks to judgment: the structure is guaranteed by the file, so the model spends its attention on the parts that actually need taste."
+  },
+  "package": {
+    "titles": {
+      "options": [
+        {
+          "angle": "outcome",
+          "text": "Turn Vague Ideas Into Finished Workflows",
+          "chars": 40,
+          "flags": []
+        },
+        {
+          "angle": "outcome",
+          "text": "From Vague Ideas to Finished Workflows",
+          "chars": 38,
+          "flags": []
+        },
+        {
+          "angle": "outcome",
+          "text": "Build OpenClaw Specialist Agents, Start to Finish",
+          "chars": 49,
+          "flags": []
+        },
+        {
+          "angle": "system",
+          "text": "How to Build OpenClaw Specialist Agents",
+          "chars": 39,
+          "flags": []
+        },
+        {
+          "angle": "system",
+          "text": "A Repeatable Way to Build OpenClaw Specialist Agents",
+          "chars": 52,
+          "flags": []
+        },
+        {
+          "angle": "curiosity",
+          "text": "What It Actually Takes to Build OpenClaw Specialist Agents",
+          "chars": 58,
+          "flags": []
+        },
+        {
+          "angle": "contrarian",
+          "text": "You Don't Need More Tools to Build OpenClaw Specialist Agents",
+          "chars": 61,
+          "flags": [
+            "over-60-chars",
+            "needs-source-check"
+          ]
+        },
+        {
+          "angle": "story",
+          "text": "What I Learned Trying to Build OpenClaw Specialist Agents",
+          "chars": 57,
+          "flags": [
+            "needs-source-check"
+          ]
+        },
+        {
+          "angle": "outcome",
+          "text": "The OpenClaw Specialist Agents Setup, End to End",
+          "chars": 48,
+          "flags": []
+        },
+        {
+          "angle": "system",
+          "text": "The OpenClaw Agents Workflow, Step by Step",
+          "chars": 42,
+          "flags": []
+        },
+        {
+          "angle": "curiosity",
+          "text": "The OpenClaw Agents Part Nobody Explains",
+          "chars": 40,
+          "flags": []
+        },
+        {
+          "angle": "contrarian",
+          "text": "OpenClaw Specialist Agents Without the Hype",
+          "chars": 43,
+          "flags": [
+            "needs-source-check"
+          ]
+        }
+      ],
+      "byAngle": {
+        "outcome": [
+          "Turn Vague Ideas Into Finished Workflows",
+          "From Vague Ideas to Finished Workflows",
+          "Build OpenClaw Specialist Agents, Start to Finish",
+          "The OpenClaw Specialist Agents Setup, End to End"
+        ],
+        "system": [
+          "How to Build OpenClaw Specialist Agents",
+          "A Repeatable Way to Build OpenClaw Specialist Agents",
+          "The OpenClaw Agents Workflow, Step by Step"
+        ],
+        "curiosity": [
+          "What It Actually Takes to Build OpenClaw Specialist Agents",
+          "The OpenClaw Agents Part Nobody Explains"
+        ],
+        "contrarian": [
+          "You Don't Need More Tools to Build OpenClaw Specialist Agents",
+          "OpenClaw Specialist Agents Without the Hype"
+        ],
+        "story": [
+          "What I Learned Trying to Build OpenClaw Specialist Agents"
+        ]
+      },
+      "recommended": {
+        "text": "Turn Vague Ideas Into Finished Workflows",
+        "angle": "outcome",
+        "chars": 40,
+        "flags": [],
+        "rationale": "Angle: outcome. Front-loads \"Turn Vague Ideas\", which is the specific thing solo founders and automation builders are searching for. 40 characters, so it survives mobile truncation. Keeps the requested no-hype register: no caps, no exclamation, no promise beyond the video."
+      }
+    },
+    "thumbnails": [
+      {
+        "id": "face-led",
+        "name": "Face-led: the person mid-decision",
+        "layout": "Subject on the right third, shot from chest up, looking slightly off-camera toward the text. Text block stacked left, upper two-thirds, nothing in the bottom-right (timestamp overlay lands there).",
+        "subject": "A single person at a desk mid-work on OpenClaw agents, screen glow on one side of the face, hands visible.",
+        "text": "Vague Ideas → Finished Workflows",
+        "emotion": "Focused and slightly amused — a person who just figured something out, not a person shouting.",
+        "contrast": "Warm key light on the subject against a desaturated cool background; text in near-white with a 2px dark outline so it holds over both.",
+        "mobileReadability": "Two text words only; at 168x94 px the face reads as a face and the arrow reads as direction. Squint test: subject silhouette and arrow survive, background detail does not — which is fine.",
+        "textWords": 4
+      },
+      {
+        "id": "artifact-led",
+        "name": "Artifact-led: show the thing itself",
+        "layout": "The artifact fills the left 60% at a slight angle, text right-aligned in the remaining third, baseline centred vertically.",
+        "subject": "The actual output of OpenClaw agents — the screen, doc, or board — cropped tight enough that one element is unambiguously readable.",
+        "text": "OpenClaw Agents",
+        "emotion": "Curiosity through specificity: it looks like a real screenshot, not a stock render.",
+        "contrast": "Single bright accent (one highlighted row/box) against an otherwise muted frame; the accent is the only saturated colour in the image.",
+        "mobileReadability": "One readable element plus two words. At thumbnail size the accent block is the anchor; everything else can blur without losing the message.",
+        "textWords": 2
+      },
+      {
+        "id": "before-after",
+        "name": "Before/after: the split frame",
+        "layout": "Hard vertical split. Left panel = before state, right panel = after state, thin bright divider. Two-word label bottom-centre spanning the seam.",
+        "subject": "Left: vague ideas. Right: finished workflows. Same framing on both sides so only the content changes.",
+        "text": "Ideas vs Workflows",
+        "emotion": "Relief — the right panel is visibly calmer than the left.",
+        "contrast": "Left panel cool and cluttered, right panel warm and clean; the divider is the brightest pixel in the frame.",
+        "mobileReadability": "Composition reads before the text does, so it works even when the label is illegible. Keep each panel to one dominant shape.",
+        "textWords": 3
+      }
+    ],
+    "description": {
+      "hook": "Vague ideas in, finished workflows out — here is the whole path, start to finish.",
+      "summary": [
+        "This video walks through building OpenClaw specialist agents for solo founders and automation builders. No theory detour: the setup, the decisions, and what breaks.",
+        "Covered in this video: A specialist agent is just a scoped role plus a playbook the agent has to read every run; The failure mode is starting from a blank prompt each time, which produces a different shape of output every run; The fix is a checked-in playbook file that the agent parses at runtime, so the standard and the output cannot drift apart.",
+        "Made for solo founders and automation builders who want the working version, not the pitch. Tone: practical, slightly cinematic, no hype."
+      ],
+      "chapters": [
+        "0:00 Cold open: the result",
+        "0:43 Why this is hard",
+        "2:22 Build it: first pass",
+        "4:02 Where it breaks",
+        "5:41 What I would change",
+        "7:21 Recap and next step"
+      ],
+      "cta": "If you build one of these, reply to the pinned comment with what you shipped — that is the only ask.",
+      "links": [
+        "<LINK: full written walkthrough>",
+        "<LINK: template or starter repo>",
+        "<LINK: related video>"
+      ],
+      "hashtags": [
+        "#openclaw",
+        "#aiagents",
+        "#workflowautomation",
+        "#specialist",
+        "#agents"
+      ],
+      "fullText": "Vague ideas in, finished workflows out — here is the whole path, start to finish.\n\nThis video walks through building OpenClaw specialist agents for solo founders and automation builders. No theory detour: the setup, the decisions, and what breaks.\n\nCovered in this video: A specialist agent is just a scoped role plus a playbook the agent has to read every run; The failure mode is starting from a blank prompt each time, which produces a different shape of output every run; The fix is a checked-in playbook file that the agent parses at runtime, so the standard and the output cannot drift apart.\n\nMade for solo founders and automation builders who want the working version, not the pitch. Tone: practical, slightly cinematic, no hype.\n\nCHAPTERS\n0:00 Cold open: the result\n0:43 Why this is hard\n2:22 Build it: first pass\n4:02 Where it breaks\n5:41 What I would change\n7:21 Recap and next step\n\nIf you build one of these, reply to the pinned comment with what you shipped — that is the only ask.\n\nLINKS\n<LINK: full written walkthrough>\n<LINK: template or starter repo>\n<LINK: related video>\n\n#openclaw #aiagents #workflowautomation #specialist #agents"
+    },
+    "pinnedComment": "Question for the solo founders and automation builders watching: what is the one step in OpenClaw agents you still do by hand? Tell me which step and I will cover it in the follow-up. Written version: <LINK: full written walkthrough>",
+    "shorts": {
+      "applicable": true,
+      "cutdowns": [
+        {
+          "id": "short-1",
+          "name": "The transformation",
+          "sourceBeat": "A specialist agent is just a scoped role plus a playbook the agent has to read every run.",
+          "hook": "Vague ideas to finished workflows — in one pass.",
+          "beats": [
+            {
+              "range": "0:00-0:02",
+              "onScreen": "Vague Ideas",
+              "action": "Hard cut straight to the messy starting state. No intro, no name."
+            },
+            {
+              "range": "0:02-0:12",
+              "onScreen": "Here is the input",
+              "action": "Show the raw input exactly as it arrives — unedited, unflattering."
+            },
+            {
+              "range": "0:12-0:28",
+              "onScreen": "One pass",
+              "action": "Compress the middle of the longform to the three decisions that matter."
+            },
+            {
+              "range": "0:28-0:38",
+              "onScreen": "Finished Workflows",
+              "action": "Reveal the finished output side by side with the opening frame."
+            },
+            {
+              "range": "0:38-0:42",
+              "onScreen": "Full build linked",
+              "action": "Loop back to the opening frame so the replay is seamless."
+            }
+          ],
+          "ending": "loop",
+          "framing": "Subject and all on-screen text inside the middle third; keep the bottom 20% clear of the caption bar.",
+          "totalSeconds": 42,
+          "standalone": true
+        },
+        {
+          "id": "short-2",
+          "name": "The one mistake",
+          "sourceBeat": "The failure mode is starting from a blank prompt each time, which produces a different shape of output every run.",
+          "hook": "Most solo founders and automation builders get OpenClaw specialist agents wrong at exactly one step.",
+          "beats": [
+            {
+              "range": "0:00-0:02",
+              "onScreen": "One step ruins it",
+              "action": "Open on the failure state, mid-frame, already happening."
+            },
+            {
+              "range": "0:02-0:14",
+              "onScreen": "The wrong way",
+              "action": "Show the common approach at speed, without mocking it."
+            },
+            {
+              "range": "0:14-0:30",
+              "onScreen": "The fix",
+              "action": "Show the corrected step in real time so the difference is visible, not asserted."
+            },
+            {
+              "range": "0:30-0:40",
+              "onScreen": "Why it works",
+              "action": "One sentence of reasoning — the mechanism, not the slogan."
+            }
+          ],
+          "ending": "cta",
+          "framing": "Screen recordings zoomed to 150% so text is legible vertically; subject reaction inset top-right.",
+          "totalSeconds": 40,
+          "standalone": true
+        },
+        {
+          "id": "short-3",
+          "name": "The checklist",
+          "sourceBeat": "The fix is a checked-in playbook file that the agent parses at runtime, so the standard and the output cannot drift apart.",
+          "hook": "Four checks before you call OpenClaw specialist agents done.",
+          "beats": [
+            {
+              "range": "0:00-0:02",
+              "onScreen": "Four checks",
+              "action": "Number on screen immediately; promise the count and keep it."
+            },
+            {
+              "range": "0:02-0:12",
+              "onScreen": "Check one",
+              "action": "State it, show it, move on. No elaboration."
+            },
+            {
+              "range": "0:12-0:22",
+              "onScreen": "Check two",
+              "action": "Same rhythm. The cadence is the retention device."
+            },
+            {
+              "range": "0:22-0:32",
+              "onScreen": "Check three",
+              "action": "Same rhythm, slightly faster cut."
+            },
+            {
+              "range": "0:32-0:44",
+              "onScreen": "Check four",
+              "action": "Land the last one and stop — no outro."
+            }
+          ],
+          "ending": "cta",
+          "framing": "Static vertical frame, subject centred, text stacked at eye level so the count is always visible.",
+          "totalSeconds": 44,
+          "standalone": true
+        }
+      ]
+    },
+    "longform": {
+      "applicable": true,
+      "targetMinutes": 9,
+      "chapters": [
+        {
+          "timestamp": "0:00",
+          "title": "Cold open: the result",
+          "promise": "Show the finished outcome in the first 30 seconds so the viewer knows what they are staying for.",
+          "overLimit": false
+        },
+        {
+          "timestamp": "0:43",
+          "title": "Why this is hard",
+          "promise": "Name the real obstacle honestly, including the part most videos skip.",
+          "overLimit": false
+        },
+        {
+          "timestamp": "2:22",
+          "title": "Build it: first pass",
+          "promise": "Walk the happy path end to end without cutting away from the mistakes.",
+          "overLimit": false
+        },
+        {
+          "timestamp": "4:02",
+          "title": "Where it breaks",
+          "promise": "Show the failure the viewer will actually hit, and the fix.",
+          "overLimit": false
+        },
+        {
+          "timestamp": "5:41",
+          "title": "What I would change",
+          "promise": "Give the honest limitations before the viewer finds them.",
+          "overLimit": false
+        },
+        {
+          "timestamp": "7:21",
+          "title": "Recap and next step",
+          "promise": "Restate the through-line in three sentences and make the single ask.",
+          "overLimit": false
+        }
+      ]
+    },
+    "reviewChecklist": {
+      "source": "YOUTUBE_PACKAGING.md",
+      "sourceSha256": "a171f980ebde",
+      "groups": [
+        {
+          "name": "Titles",
+          "items": [
+            {
+              "text": "8–12 options present, spread across 4+ distinct angles",
+              "checked": false
+            },
+            {
+              "text": "Recommended title is ≤ 60 characters",
+              "checked": false
+            },
+            {
+              "text": "Recommended title front-loads the specific noun, not a filler phrase",
+              "checked": false
+            },
+            {
+              "text": "No promise in the title that the source notes cannot support",
+              "checked": false
+            },
+            {
+              "text": "Rationale names the angle and what it avoids",
+              "checked": false
+            }
+          ]
+        },
+        {
+          "name": "Thumbnail",
+          "items": [
+            {
+              "text": "Exactly 3 concepts, each a genuinely different bet",
+              "checked": false
+            },
+            {
+              "text": "Every concept has layout, subject, text, emotion, contrast, mobile note",
+              "checked": false
+            },
+            {
+              "text": "Thumbnail text is ≤ 4 words and does not repeat the title",
+              "checked": false
+            },
+            {
+              "text": "Squint test passes at 168x94 px",
+              "checked": false
+            },
+            {
+              "text": "Title and thumbnail together say more than either one alone",
+              "checked": false
+            }
+          ]
+        },
+        {
+          "name": "Description",
+          "items": [
+            {
+              "text": "First 150 characters stand alone as a search snippet",
+              "checked": false
+            },
+            {
+              "text": "Hook does not restate the title verbatim",
+              "checked": false
+            },
+            {
+              "text": "Exactly one CTA",
+              "checked": false
+            },
+            {
+              "text": "Links are placeholders only — no invented URLs",
+              "checked": false
+            },
+            {
+              "text": "3–5 lowercase hashtags",
+              "checked": false
+            }
+          ]
+        },
+        {
+          "name": "Pinned comment",
+          "items": [
+            {
+              "text": "Asks one answerable question",
+              "checked": false
+            },
+            {
+              "text": "Carries at most one link placeholder",
+              "checked": false
+            }
+          ]
+        },
+        {
+          "name": "Shorts",
+          "items": [
+            {
+              "text": "3 cutdowns, each ≤ 45 seconds",
+              "checked": false
+            },
+            {
+              "text": "Hook lands inside the first 2 seconds",
+              "checked": false
+            },
+            {
+              "text": "Each cutdown works without the longform",
+              "checked": false
+            },
+            {
+              "text": "On-screen text lines are ≤ 6 words",
+              "checked": false
+            },
+            {
+              "text": "Vertical safe-area framing noted",
+              "checked": false
+            }
+          ]
+        },
+        {
+          "name": "Longform",
+          "items": [
+            {
+              "text": "Chapters cover the full target runtime",
+              "checked": false
+            },
+            {
+              "text": "First chapter is 0:00 and is a cold open",
+              "checked": false
+            },
+            {
+              "text": "Chapter titles are ≤ 40 characters",
+              "checked": false
+            },
+            {
+              "text": "Final chapter recaps and carries the CTA",
+              "checked": false
+            }
+          ]
+        },
+        {
+          "name": "Handoff",
+          "items": [
+            {
+              "text": "Format, audience, and tone match the request",
+              "checked": false
+            },
+            {
+              "text": "`handoffId` echoed when one was supplied",
+              "checked": false
+            },
+            {
+              "text": "No credentials, tokens, upload actions, or schedule changes in the package",
+              "checked": false
+            },
+            {
+              "text": "Package is complete: all 8 sections present, N/A sections marked explicitly",
+              "checked": false
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "warnings": []
+}
