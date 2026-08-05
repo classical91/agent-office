@@ -13,6 +13,7 @@ const index = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8');
 // The cast and the compositor moved here so the live office can draw the same
 // characters the studio approves.
 const avatars = fs.readFileSync(path.join(DIST, 'agent-avatars.js'), 'utf8');
+const officeCustomizer = fs.readFileSync(path.join(DIST, 'office-avatar-customizer.js'), 'utf8');
 
 // The ids the live office actually renders, read off AGENTS rather than
 // hand-copied, so this fails if the roster and the character art diverge.
@@ -68,7 +69,7 @@ test('every live agent resolves to a detailed Habbo-style sprite instead of the 
     resolvedSprites.push(resolved);
   }
   assert.equal(new Set(resolvedSprites).size, resolvedSprites.length, 'live agents should not share the same sprite');
-  assert.match(index, /app-shared\.js\?v=habbo-roster-20260805/);
+  assert.match(index, /app-shared\.js\?v=avatar-editor-20260805/);
 });
 
 test('the redesign invents no agents and drops none', () => {
@@ -126,4 +127,37 @@ test('avatar drafts stay browser-local and do not alter the live roster', () => 
   assert.match(html, /live roster unchanged/i);
   assert.match(html, /live sprites are untouched/i);
   assert.doesNotMatch(script, /fetch\([^)]*\/api\/agents[^)]*,\s*\{[^}]*method:\s*['"](?:POST|PUT|PATCH)/is);
+});
+
+test('clicking an in-office character opens the appearance editor', () => {
+  assert.match(index, /office-avatar-customizer\.js\?v=avatar-editor-20260805/);
+  assert.match(shared, /dataset\.agentId = agent\.id/);
+  assert.match(shared, /setAttribute\('aria-label', `Customize \$\{agent\.name\}`\)/);
+  assert.match(officeCustomizer, /function characterAtPoint\(clientX, clientY\)/);
+  assert.match(officeCustomizer, /getImageData\(/);
+  assert.match(officeCustomizer, /Math\.max\(alpha, sample\[index\]\)/);
+  assert.match(officeCustomizer, /openEditor\(character\.dataset\.agentId\)/);
+});
+
+test('the in-office editor changes face, hair, clothes and extras', () => {
+  for (const label of ['Face', 'Hair', 'Clothes', 'Extras']) {
+    assert.match(officeCustomizer, new RegExp(`['"]${label}['"]`));
+  }
+  for (const trait of ['face', 'skin', 'hair', 'hairColor', 'outfit', 'outfitColor', 'accessory']) {
+    assert.match(officeCustomizer, new RegExp(`['"]${trait}['"]`));
+  }
+  assert.match(officeCustomizer, /avatars\.drawAvatar\(canvas, draftLook\)/);
+});
+
+test('saved character looks are browser-local and survive task updates', () => {
+  assert.match(officeCustomizer, /agent-office-avatar-looks-v1/);
+  assert.match(officeCustomizer, /localStorage\.setItem\(STORAGE_KEY/);
+  assert.doesNotMatch(officeCustomizer, /fetch\(/);
+  assert.match(shared, /agent\.lookState && agent\.lookState\.avatar \? \{ avatar: agent\.lookState\.avatar \}/);
+});
+
+test('original sprites remain exact until a custom look is saved', () => {
+  assert.match(shared, /studioAvatarsEnabled\(\) \|\| customAvatar/);
+  assert.match(officeCustomizer, /delete selectedAgent\.lookState\.avatar/);
+  assert.match(officeCustomizer, /back to the original sprite/);
 });
