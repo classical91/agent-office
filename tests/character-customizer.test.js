@@ -9,6 +9,7 @@ const DIST = path.join(__dirname, '..', 'agent-office-deploy', 'dist');
 const html = fs.readFileSync(path.join(DIST, 'character-demo.html'), 'utf8');
 const script = fs.readFileSync(path.join(DIST, 'character-demo.js'), 'utf8');
 const shared = fs.readFileSync(path.join(DIST, 'app-shared.js'), 'utf8');
+const index = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8');
 // The cast and the compositor moved here so the live office can draw the same
 // characters the studio approves.
 const avatars = fs.readFileSync(path.join(DIST, 'agent-avatars.js'), 'utf8');
@@ -23,6 +24,14 @@ function liveAgentIds() {
 function rosterIds() {
   const block = avatars.slice(avatars.indexOf('const ROSTER = ['), avatars.indexOf('\n  ];'));
   return [...block.matchAll(/id: '([a-z0-9]+)'/g)].map((match) => match[1]);
+}
+
+function liveSpriteResolution() {
+  const spriteBlock = shared.slice(shared.indexOf('const HABBO_SPRITES = {'), shared.indexOf('\n};', shared.indexOf('const HABBO_SPRITES = {')));
+  const spriteKeys = new Set([...spriteBlock.matchAll(/^\s+'([a-z0-9]+)':/gm)].map((match) => match[1]));
+  const aliasBlock = shared.slice(shared.indexOf('const SPRITE_ALIASES = {'), shared.indexOf('\n};', shared.indexOf('const SPRITE_ALIASES = {')));
+  const aliases = Object.fromEntries([...aliasBlock.matchAll(/^\s+([a-z0-9]+): '([a-z0-9]+)',/gm)].map((match) => [match[1], match[2]]));
+  return { spriteKeys, aliases };
 }
 
 function rosterDefaults() {
@@ -48,6 +57,18 @@ test('avatar studio composites the approved detailed sprite assets', () => {
 
 test('every agent the office renders has a character of their own', () => {
   assert.deepStrictEqual(rosterIds(), liveAgentIds());
+});
+
+test('every live agent resolves to a detailed Habbo-style sprite instead of the block fallback', () => {
+  const { spriteKeys, aliases } = liveSpriteResolution();
+  const resolvedSprites = [];
+  for (const id of liveAgentIds()) {
+    const resolved = spriteKeys.has(id) ? id : aliases[id];
+    assert.ok(resolved && spriteKeys.has(resolved), `${id} does not resolve to a detailed sprite`);
+    resolvedSprites.push(resolved);
+  }
+  assert.equal(new Set(resolvedSprites).size, resolvedSprites.length, 'live agents should not share the same sprite');
+  assert.match(index, /app-shared\.js\?v=habbo-roster-20260805/);
 });
 
 test('the redesign invents no agents and drops none', () => {
