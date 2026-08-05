@@ -1,13 +1,39 @@
 (function () {
   'use strict';
 
-  const STORAGE_KEY = 'agent-office-avatar-drafts-v1';
+  const STORAGE_KEY = 'agent-office-avatar-drafts-v2';
+  const ASSET_ROOT = 'assets/character-demo/';
   const ROOM = { x: 206, y: 186, w: 786, h: 497, ox: 550, oy: 295, hw: 36, hh: 18, gridW: 12, gridH: 9 };
   const FOOT_OFFSET = 8;
+  const SPRITE_W = 64;
+  const SPRITE_H = 110;
 
-  const SKINS = ['#f6d0b1', '#dfad83', '#bd7e56', '#8a5238', '#563323'];
-  const HAIR_COLORS = ['#17191f', '#3a241b', '#714229', '#b96d33', '#d7b066', '#7857a8'];
-  const OUTFIT_COLORS = ['#172554', '#2563eb', '#0f766e', '#16803a', '#7c3aed', '#be185d', '#343948', '#e7e7e2'];
+  const SKINS = ['#f2c49b', '#dca276', '#ba7651', '#8b5036', '#573222'];
+  const HAIR_COLORS = ['#151518', '#36231c', '#704127', '#b96c32', '#d6ab5e', '#72519b'];
+  const OUTFIT_COLORS = ['#172554', '#2563eb', '#0f766e', '#16803a', '#7c3aed', '#be185d', '#343948', '#d9d8d2'];
+
+  const SPRITE_SOURCES = {
+    penny: `${ASSET_ROOT}penny.png`,
+    webclaw: `${ASSET_ROOT}webclaw.png`,
+    nutrimind: `${ASSET_ROOT}nutrimind.png`,
+    pc: `${ASSET_ROOT}pc.png`,
+    studioclaw: `${ASSET_ROOT}studioclaw.png`,
+  };
+
+  const OUTFIT_SPRITES = {
+    lead: 'penny',
+    hoodie: 'webclaw',
+    overshirt: 'nutrimind',
+    utility: 'pc',
+    director: 'studioclaw',
+  };
+
+  const HAIR_SPRITES = {
+    bald: null,
+    spiked: 'webclaw',
+    tousled: 'nutrimind',
+    swept: 'pc',
+  };
 
   const CHOICES = {
     face: [
@@ -17,12 +43,10 @@
       { value: 'stoic', label: 'Stoic', icon: '—' },
     ],
     hair: [
-      { value: 'crop', label: 'Crop', icon: '▰' },
-      { value: 'swept', label: 'Swept', icon: '◢' },
-      { value: 'curls', label: 'Curls', icon: '●' },
-      { value: 'bob', label: 'Bob', icon: '◒' },
-      { value: 'buzz', label: 'Buzz', icon: '▱' },
       { value: 'bald', label: 'Bald', icon: '○' },
+      { value: 'spiked', label: 'Spiked', icon: '✦' },
+      { value: 'tousled', label: 'Tousled', icon: '●' },
+      { value: 'swept', label: 'Swept', icon: '◢' },
     ],
     outfit: [
       { value: 'lead', label: 'Lead jacket', icon: '◆' },
@@ -36,8 +60,7 @@
       { value: 'glasses', label: 'Glasses', icon: '▭' },
       { value: 'headset', label: 'Headset', icon: '◖' },
       { value: 'earpiece', label: 'Earpiece', icon: '·)' },
-      { value: 'cap', label: 'Cap', icon: '⌒' },
-      { value: 'pin', label: 'Role pin', icon: '✦' },
+      { value: 'chain', label: 'Chain', icon: '⌄' },
     ],
   };
 
@@ -45,35 +68,42 @@
     {
       id: 'oss', name: 'Penny', shortRole: 'Team lead', role: 'Orchestrator / team lead', color: '#f59e0b',
       station: { gx: 5, gy: 1 },
-      defaults: { face: 'friendly', skin: '#dfad83', hair: 'crop', hairColor: '#3a241b', outfit: 'lead', outfitColor: '#172554', accessory: 'earpiece' },
+      defaults: { face: 'friendly', skin: '#dca276', hair: 'bald', hairColor: '#36231c', outfit: 'lead', outfitColor: '#172554', accessory: 'earpiece' },
     },
     {
       id: 'webclaw', name: 'WebClaw', shortRole: 'Web agency', role: 'Web agency specialist', color: '#3b82f6',
       station: { gx: 1, gy: 4 },
-      defaults: { face: 'focused', skin: '#f6d0b1', hair: 'swept', hairColor: '#17191f', outfit: 'hoodie', outfitColor: '#2563eb', accessory: 'glasses' },
+      defaults: { face: 'focused', skin: '#f2c49b', hair: 'spiked', hairColor: '#151518', outfit: 'hoodie', outfitColor: '#2563eb', accessory: 'glasses' },
     },
     {
       id: 'nutrimind', name: 'NutriMind', shortRole: 'Nutrition app', role: 'Nutrition app specialist', color: '#22c55e',
       station: { gx: 8, gy: 5 },
-      defaults: { face: 'bright', skin: '#8a5238', hair: 'curls', hairColor: '#3a241b', outfit: 'overshirt', outfitColor: '#16803a', accessory: 'pin' },
+      defaults: { face: 'bright', skin: '#ba7651', hair: 'tousled', hairColor: '#36231c', outfit: 'overshirt', outfitColor: '#16803a', accessory: 'none' },
     },
     {
       id: 'pc', name: 'PC', shortRole: 'Windows', role: 'Windows workstation specialist', color: '#10b981',
       station: { gx: 10, gy: 5 },
-      defaults: { face: 'stoic', skin: '#bd7e56', hair: 'buzz', hairColor: '#17191f', outfit: 'utility', outfitColor: '#0f766e', accessory: 'headset' },
+      defaults: { face: 'stoic', skin: '#dca276', hair: 'swept', hairColor: '#151518', outfit: 'utility', outfitColor: '#0f766e', accessory: 'headset' },
     },
     {
       id: 'studioclaw', name: 'StudioClaw', shortRole: 'Studio director', role: 'Studio director', color: '#8b5cf6',
       station: { gx: 7, gy: 1 },
-      defaults: { face: 'friendly', skin: '#f6d0b1', hair: 'bob', hairColor: '#17191f', outfit: 'director', outfitColor: '#7c3aed', accessory: 'glasses' },
+      defaults: { face: 'friendly', skin: '#f2c49b', hair: 'swept', hairColor: '#151518', outfit: 'director', outfitColor: '#7c3aed', accessory: 'chain' },
     },
   ];
 
   let selectedId = agents[0].id;
   let selectedCategory = 'face';
   let officeReady = false;
+  let assetsReady = false;
   let savedDrafts = readSavedDrafts();
   const looks = Object.fromEntries(agents.map((agent) => [agent.id, { ...agent.defaults, ...(savedDrafts[agent.id] || {}) }]));
+  const spriteImages = {};
+  const hairMasks = {};
+  const workCanvas = document.createElement('canvas');
+  workCanvas.width = SPRITE_W;
+  workCanvas.height = SPRITE_H;
+  const workContext = workCanvas.getContext('2d', { willReadFrequently: true });
 
   function readSavedDrafts() {
     try {
@@ -84,142 +114,243 @@
     }
   }
 
-  function shade(hex, amount) {
+  function parseHex(hex) {
     const raw = String(hex).replace('#', '');
-    const value = parseInt(raw.length === 3 ? raw.split('').map((c) => c + c).join('') : raw, 16);
-    const channel = (shift) => Math.max(0, Math.min(255, ((value >> shift) & 255) + Math.round(255 * amount)));
-    return `rgb(${channel(16)}, ${channel(8)}, ${channel(0)})`;
+    const value = parseInt(raw.length === 3 ? raw.split('').map((char) => char + char).join('') : raw, 16);
+    return { r: (value >> 16) & 255, g: (value >> 8) & 255, b: value & 255 };
+  }
+
+  function isSkinPixel(r, g, b, x, y) {
+    const skinLike = r > 80 && r > g * 1.04 && g > b * 1.04 && r - b > 22;
+    const bodySkinZone = y < 53 || (y > 48 && y < 90 && (x < 22 || x > 42));
+    return skinLike && bodySkinZone;
+  }
+
+  function tintChannel(base, lightness) {
+    const factor = 0.35 + (lightness / 255) * 1.05;
+    return Math.max(0, Math.min(255, Math.round(base * factor)));
+  }
+
+  function recolorOutfit(context, color) {
+    const target = parseHex(color);
+    const image = context.getImageData(0, 0, SPRITE_W, SPRITE_H);
+    const data = image.data;
+    for (let y = 42; y < 104; y += 1) {
+      for (let x = 0; x < SPRITE_W; x += 1) {
+        const index = (y * SPRITE_W + x) * 4;
+        if (data[index + 3] < 20) continue;
+        const r = data[index]; const g = data[index + 1]; const b = data[index + 2];
+        const high = Math.max(r, g, b); const low = Math.min(r, g, b);
+        if (high < 28 || (high > 218 && low > 180) || isSkinPixel(r, g, b, x, y)) continue;
+        const lightness = Math.round((high + low) / 2);
+        data[index] = tintChannel(target.r, lightness);
+        data[index + 1] = tintChannel(target.g, lightness);
+        data[index + 2] = tintChannel(target.b, lightness);
+      }
+    }
+    context.putImageData(image, 0, 0);
+  }
+
+  function recolorSkin(context, color) {
+    const target = parseHex(color);
+    const image = context.getImageData(0, 0, SPRITE_W, SPRITE_H);
+    const data = image.data;
+    for (let y = 0; y < SPRITE_H; y += 1) {
+      for (let x = 0; x < SPRITE_W; x += 1) {
+        const index = (y * SPRITE_W + x) * 4;
+        if (data[index + 3] < 20) continue;
+        const r = data[index]; const g = data[index + 1]; const b = data[index + 2];
+        if (!isSkinPixel(r, g, b, x, y)) continue;
+        const high = Math.max(r, g, b); const low = Math.min(r, g, b);
+        const lightness = Math.round((high + low) / 2);
+        data[index] = tintChannel(target.r, lightness);
+        data[index + 1] = tintChannel(target.g, lightness);
+        data[index + 2] = tintChannel(target.b, lightness);
+      }
+    }
+    context.putImageData(image, 0, 0);
+  }
+
+  function buildHairMask(image) {
+    const canvas = document.createElement('canvas');
+    canvas.width = SPRITE_W;
+    canvas.height = SPRITE_H;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    context.drawImage(image, 0, 0);
+    const pixels = context.getImageData(0, 0, SPRITE_W, SPRITE_H).data;
+    const candidate = new Uint8Array(SPRITE_W * 50);
+    for (let y = 0; y < 50; y += 1) {
+      for (let x = 0; x < SPRITE_W; x += 1) {
+        const index = (y * SPRITE_W + x) * 4;
+        const alpha = pixels[index + 3];
+        const brightness = Math.max(pixels[index], pixels[index + 1], pixels[index + 2]);
+        if (alpha > 30 && brightness < 125) candidate[y * SPRITE_W + x] = 1;
+      }
+    }
+
+    const visited = new Uint8Array(candidate.length);
+    const queue = [];
+    for (let y = 0; y < 13; y += 1) {
+      for (let x = 0; x < SPRITE_W; x += 1) {
+        const position = y * SPRITE_W + x;
+        if (candidate[position]) { visited[position] = 1; queue.push(position); }
+      }
+    }
+    for (let cursor = 0; cursor < queue.length; cursor += 1) {
+      const position = queue[cursor];
+      const x = position % SPRITE_W; const y = Math.floor(position / SPRITE_W);
+      const neighbors = [position - 1, position + 1, position - SPRITE_W, position + SPRITE_W];
+      neighbors.forEach((next) => {
+        const nx = next % SPRITE_W; const ny = Math.floor(next / SPRITE_W);
+        if (next < 0 || next >= candidate.length || Math.abs(nx - x) > 1 || Math.abs(ny - y) > 1) return;
+        if (candidate[next] && !visited[next]) { visited[next] = 1; queue.push(next); }
+      });
+    }
+
+    return queue.filter((position) => {
+      const x = position % SPRITE_W;
+      const y = Math.floor(position / SPRITE_W);
+      // The source sprite's eyes, glasses and jaw use the same near-black ink
+      // as its hair. Keep only the scalp and outside silhouette; controlled
+      // fringe pixels are added separately so facial details never leak in.
+      return y < 21 || (y < 45 && (x < 19 || x > 45));
+    }).map((position) => {
+      const index = position * 4;
+      return {
+        x: position % SPRITE_W,
+        y: Math.floor(position / SPRITE_W),
+        r: pixels[index], g: pixels[index + 1], b: pixels[index + 2], a: pixels[index + 3],
+      };
+    });
+  }
+
+  function drawHair(context, style, color) {
+    if (style === 'bald' || !hairMasks[style]) return;
+    const target = parseHex(color);
+    const image = context.getImageData(0, 0, SPRITE_W, SPRITE_H);
+    const data = image.data;
+    hairMasks[style].forEach((pixel) => {
+      const index = (pixel.y * SPRITE_W + pixel.x) * 4;
+      const brightness = Math.max(pixel.r, pixel.g, pixel.b);
+      if (brightness < 30) {
+        data[index] = 13; data[index + 1] = 14; data[index + 2] = 18;
+      } else {
+        data[index] = tintChannel(target.r, brightness);
+        data[index + 1] = tintChannel(target.g, brightness);
+        data[index + 2] = tintChannel(target.b, brightness);
+      }
+      data[index + 3] = pixel.a;
+    });
+    context.putImageData(image, 0, 0);
+
+    const ink = '#111318';
+    const shade = parseHex(color);
+    const mid = `rgb(${tintChannel(shade.r, 112)}, ${tintChannel(shade.g, 112)}, ${tintChannel(shade.b, 112)})`;
+    context.fillStyle = ink;
+    if (style === 'spiked') {
+      context.fillRect(18, 18, 7, 4); context.fillRect(27, 18, 6, 3); context.fillRect(36, 17, 7, 3);
+      context.fillStyle = mid;
+      context.fillRect(19, 18, 5, 2); context.fillRect(28, 18, 4, 1); context.fillRect(37, 17, 5, 1);
+    } else if (style === 'tousled') {
+      context.fillRect(18, 17, 8, 5); context.fillRect(25, 18, 8, 4); context.fillRect(34, 17, 9, 4);
+      context.fillStyle = mid;
+      context.fillRect(19, 18, 5, 2); context.fillRect(27, 18, 4, 2); context.fillRect(36, 17, 5, 2);
+    } else if (style === 'swept') {
+      context.fillRect(20, 17, 8, 3); context.fillRect(27, 18, 9, 4); context.fillRect(35, 18, 10, 5);
+      context.fillStyle = mid;
+      context.fillRect(21, 17, 6, 1); context.fillRect(29, 18, 6, 2); context.fillRect(37, 18, 6, 2);
+    }
+  }
+
+  function drawFace(context, expression, skin) {
+    if (expression === 'friendly') return;
+    const darkSkin = parseHex(skin);
+    const erase = `rgb(${Math.round(darkSkin.r * 0.92)}, ${Math.round(darkSkin.g * 0.92)}, ${Math.round(darkSkin.b * 0.92)})`;
+    context.imageSmoothingEnabled = false;
+    if (expression === 'focused') {
+      context.fillStyle = '#231a18';
+      context.fillRect(21, 20, 7, 1); context.fillRect(37, 19, 7, 1);
+      context.fillStyle = erase;
+      context.fillRect(30, 34, 8, 2);
+      context.fillStyle = '#6b3027';
+      context.fillRect(31, 35, 7, 1);
+    } else if (expression === 'bright') {
+      context.fillStyle = '#f7fbff';
+      context.fillRect(22, 23, 5, 4); context.fillRect(38, 21, 5, 4);
+      context.fillStyle = '#17181c';
+      context.fillRect(24, 24, 2, 2); context.fillRect(39, 22, 2, 2);
+      context.fillStyle = '#743029';
+      context.fillRect(30, 34, 2, 1); context.fillRect(32, 35, 6, 1); context.fillRect(38, 34, 2, 1);
+    } else if (expression === 'stoic') {
+      context.fillStyle = erase;
+      context.fillRect(29, 33, 11, 4);
+      context.fillStyle = '#64302a';
+      context.fillRect(31, 35, 8, 1);
+    }
+  }
+
+  function drawAccessory(context, accessory, accent) {
+    const ink = '#111318';
+    if (accessory === 'glasses') {
+      context.fillStyle = ink;
+      context.fillRect(18, 20, 11, 2); context.fillRect(17, 22, 2, 7); context.fillRect(28, 22, 2, 7); context.fillRect(19, 28, 9, 2);
+      context.fillRect(35, 18, 10, 2); context.fillRect(34, 20, 2, 7); context.fillRect(44, 20, 2, 7); context.fillRect(36, 26, 8, 2);
+      context.fillRect(29, 22, 6, 1);
+    } else if (accessory === 'headset') {
+      context.fillStyle = ink;
+      context.fillRect(15, 3, 30, 3); context.fillRect(11, 6, 5, 18); context.fillRect(44, 6, 5, 18);
+      context.fillStyle = accent;
+      context.fillRect(10, 17, 6, 11); context.fillRect(45, 17, 6, 11);
+      context.fillStyle = ink;
+      context.fillRect(47, 27, 8, 2); context.fillRect(53, 28, 3, 3);
+    } else if (accessory === 'earpiece') {
+      context.fillStyle = '#28344a';
+      context.fillRect(47, 22, 3, 7); context.fillRect(49, 28, 6, 2);
+      context.fillStyle = '#7dd3fc';
+      context.fillRect(48, 23, 2, 3);
+    } else if (accessory === 'chain') {
+      context.fillStyle = '#d5a733';
+      context.fillRect(25, 49, 2, 2); context.fillRect(27, 51, 2, 2); context.fillRect(29, 53, 6, 2); context.fillRect(35, 51, 2, 2); context.fillRect(37, 49, 2, 2);
+    }
   }
 
   function drawAvatar(canvas, look) {
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.imageSmoothingEnabled = false;
-    ctx.scale(canvas.width / 32, canvas.height / 55);
+    const target = canvas.getContext('2d', { willReadFrequently: true });
+    target.setTransform(1, 0, 0, 1, 0, 0);
+    target.clearRect(0, 0, canvas.width, canvas.height);
+    target.imageSmoothingEnabled = false;
+    if (!assetsReady) return;
 
-    const ink = '#12141b';
-    const skin = look.skin;
-    const skinDark = shade(skin, -0.13);
-    const hair = look.hairColor;
-    const hairLight = shade(hair, 0.12);
-    const cloth = look.outfitColor;
-    const clothDark = shade(cloth, -0.18);
-    const clothLight = shade(cloth, 0.12);
-    const pants = look.outfit === 'director' ? '#171923' : '#252b3a';
-    const shoe = look.outfit === 'overshirt' ? '#e9ede7' : '#12151e';
-    const box = (x, y, w, h, color) => { ctx.fillStyle = color; ctx.fillRect(x, y, w, h); };
-    const pixel = (x, y, color) => box(x, y, 1, 1, color);
+    workContext.setTransform(1, 0, 0, 1, 0, 0);
+    workContext.clearRect(0, 0, SPRITE_W, SPRITE_H);
+    workContext.imageSmoothingEnabled = false;
+    workContext.drawImage(spriteImages[OUTFIT_SPRITES[look.outfit]], 0, 0);
+    recolorOutfit(workContext, look.outfitColor);
 
-    // Legs and shoes.
-    box(9, 38, 7, 13, ink); box(17, 38, 7, 13, ink);
-    box(10, 39, 5, 10, pants); box(18, 39, 5, 10, pants);
-    box(10, 39, 5, 2, shade(pants, 0.08)); box(18, 39, 5, 2, shade(pants, 0.08));
-    box(8, 48, 8, 5, ink); box(17, 48, 8, 5, ink);
-    box(9, 49, 7, 3, shoe); box(18, 49, 6, 3, shoe);
-    box(10, 49, 5, 1, shade(shoe, 0.15)); box(19, 49, 4, 1, shade(shoe, 0.15));
+    // Every combination starts from the approved Penny head silhouette. The
+    // interchangeable hair, expression, skin and accessory layers sit on top.
+    workContext.clearRect(0, 0, SPRITE_W, 49);
+    workContext.drawImage(spriteImages.penny, 0, 0, SPRITE_W, 49, 0, 0, SPRITE_W, 49);
+    recolorSkin(workContext, look.skin);
+    drawHair(workContext, look.hair, look.hairColor);
+    drawFace(workContext, look.face, look.skin);
+    drawAccessory(workContext, look.accessory, look.outfitColor);
 
-    // Arms, hands, and body silhouette.
-    box(5, 25, 5, 15, ink); box(23, 25, 5, 15, ink);
-    box(6, 27, 3, 11, clothDark); box(24, 27, 3, 11, clothDark);
-    box(6, 37, 4, 5, ink); box(23, 37, 4, 5, ink);
-    box(7, 38, 3, 3, skin); box(23, 38, 3, 3, skin);
-    box(8, 22, 17, 19, ink);
-    box(9, 23, 15, 17, cloth);
+    target.drawImage(workCanvas, 0, 0, canvas.width, canvas.height);
+  }
 
-    if (look.outfit === 'lead') {
-      box(9, 23, 15, 3, clothLight);
-      box(15, 23, 2, 17, '#d29b2e');
-      box(11, 26, 4, 1, shade(cloth, 0.2));
-      pixel(20, 27, '#e2b54f'); pixel(21, 27, '#e2b54f');
-    } else if (look.outfit === 'hoodie') {
-      box(10, 22, 13, 4, clothDark);
-      box(13, 25, 7, 3, shade(cloth, -0.05));
-      box(15, 28, 1, 7, '#e8edf8'); box(18, 28, 1, 7, '#e8edf8');
-      box(12, 35, 10, 3, clothDark);
-    } else if (look.outfit === 'overshirt') {
-      box(9, 23, 15, 4, clothLight);
-      box(15, 23, 3, 17, '#f0eee8');
-      box(10, 30, 4, 3, clothDark); box(19, 30, 4, 3, clothDark);
-      pixel(16, 28, '#7ebd56'); pixel(16, 31, '#7ebd56');
-    } else if (look.outfit === 'utility') {
-      box(9, 23, 15, 4, clothLight);
-      box(15, 23, 2, 17, '#303746');
-      box(10, 29, 5, 5, clothDark); box(18, 29, 5, 5, clothDark);
-      box(11, 30, 3, 1, '#8ca1aa'); box(19, 30, 3, 1, '#8ca1aa');
-    } else if (look.outfit === 'director') {
-      box(9, 23, 15, 17, '#1b1c24');
-      box(9, 23, 4, 17, cloth); box(21, 23, 3, 17, cloth);
-      box(15, 23, 2, 17, clothLight);
-      box(12, 26, 3, 1, '#ded8ef');
-    }
-
-    // Neck and ears.
-    box(13, 19, 8, 7, ink); box(14, 19, 6, 6, skinDark);
-    box(7, 10, 3, 8, ink); box(8, 11, 2, 6, skinDark);
-    box(22, 10, 3, 8, ink); box(22, 11, 2, 6, skinDark);
-
-    // Head with a stepped, Habbo-like silhouette.
-    box(9, 5, 14, 16, ink); box(8, 8, 16, 10, ink); box(10, 4, 12, 18, ink);
-    box(10, 6, 12, 14, skin); box(9, 9, 14, 8, skin); box(11, 5, 10, 16, skin);
-    box(10, 17, 2, 2, skinDark); box(20, 17, 2, 2, skinDark);
-
-    // Facial features.
-    if (look.face === 'bright') {
-      box(11, 11, 4, 3, '#f7fbff'); box(18, 11, 4, 3, '#f7fbff');
-      pixel(13, 12, '#1a2430'); pixel(19, 12, '#1a2430');
-      box(14, 17, 5, 1, '#7a3028'); pixel(13, 16, skinDark); pixel(19, 16, skinDark);
-    } else if (look.face === 'focused') {
-      box(11, 10, 4, 1, hair); box(18, 10, 4, 1, hair);
-      box(12, 12, 2, 1, '#151820'); box(19, 12, 2, 1, '#151820');
-      box(15, 17, 4, 1, '#71352e'); pixel(16, 14, skinDark);
-    } else if (look.face === 'stoic') {
-      box(11, 11, 4, 1, hair); box(18, 11, 4, 1, hair);
-      pixel(13, 13, '#151820'); pixel(20, 13, '#151820');
-      box(15, 17, 4, 1, '#5f302b'); pixel(16, 14, skinDark);
-    } else {
-      box(12, 12, 2, 2, '#f7fbff'); box(19, 12, 2, 2, '#f7fbff');
-      pixel(13, 13, '#151820'); pixel(19, 13, '#151820');
-      pixel(15, 17, '#7a3028'); box(16, 18, 3, 1, '#7a3028'); pixel(19, 17, '#7a3028');
-    }
-
-    // Hair sits above the face and changes the head silhouette.
-    if (look.hair === 'crop') {
-      box(9, 4, 14, 4, ink); box(10, 4, 12, 3, hair); box(9, 7, 4, 2, hair); box(20, 7, 3, 2, hair);
-      box(12, 4, 6, 1, hairLight);
-    } else if (look.hair === 'swept') {
-      box(8, 4, 15, 5, ink); box(10, 3, 13, 4, ink);
-      box(9, 5, 13, 3, hair); box(12, 4, 10, 2, hair); box(18, 3, 5, 2, hair);
-      box(21, 7, 3, 5, hair); box(14, 4, 5, 1, hairLight);
-    } else if (look.hair === 'curls') {
-      [[9,5],[12,3],[16,3],[20,5],[8,8],[22,8]].forEach(([x,y], i) => {
-        box(x - 1, y - 1, 5, 5, ink); box(x, y, 3, 3, i % 2 ? hairLight : hair);
+  function loadAssets() {
+    return Promise.all(Object.entries(SPRITE_SOURCES).map(([key, source]) => new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => { spriteImages[key] = image; resolve(); };
+      image.onerror = () => reject(new Error(`Could not load ${source}`));
+      image.src = source;
+    }))).then(() => {
+      Object.entries(HAIR_SPRITES).forEach(([style, source]) => {
+        if (source) hairMasks[style] = buildHairMask(spriteImages[source]);
       });
-    } else if (look.hair === 'bob') {
-      box(8, 4, 16, 6, ink); box(7, 8, 5, 14, ink); box(21, 8, 5, 14, ink);
-      box(9, 5, 14, 4, hair); box(8, 9, 3, 12, hair); box(22, 9, 3, 12, hair);
-      box(11, 5, 7, 1, hairLight);
-    } else if (look.hair === 'buzz') {
-      box(9, 4, 14, 5, ink); box(10, 5, 12, 3, hair); box(11, 5, 7, 1, hairLight);
-    } else {
-      box(13, 5, 5, 1, shade(skin, 0.08));
-    }
-
-    // Accessories are a final independent layer.
-    if (look.accessory === 'glasses') {
-      box(10, 11, 6, 1, '#141823'); box(18, 11, 5, 1, '#141823'); box(15, 12, 4, 1, '#141823');
-      box(10, 12, 1, 3, '#141823'); box(15, 12, 1, 3, '#141823'); box(18, 12, 1, 3, '#141823'); box(22, 12, 1, 3, '#141823');
-    } else if (look.accessory === 'headset') {
-      box(7, 8, 2, 10, '#171b28'); box(23, 8, 2, 10, '#171b28'); box(9, 4, 14, 2, '#252b3a');
-      box(6, 12, 3, 6, clothLight); box(23, 12, 3, 6, clothLight);
-      box(23, 18, 5, 1, '#252b3a'); pixel(27, 19, clothLight);
-    } else if (look.accessory === 'earpiece') {
-      box(23, 12, 2, 4, '#2a3344'); pixel(24, 13, '#7dd3fc'); box(24, 16, 3, 1, '#2a3344');
-    } else if (look.accessory === 'cap') {
-      box(8, 3, 16, 5, ink); box(9, 4, 14, 3, cloth); box(20, 7, 7, 2, ink); box(21, 7, 6, 1, clothLight);
-    } else if (look.accessory === 'pin') {
-      pixel(21, 27, '#d9f99d'); pixel(20, 28, '#86efac'); pixel(21, 28, '#4ade80');
-    }
+      assetsReady = true;
+    });
   }
 
   function currentAgent() { return agents.find((agent) => agent.id === selectedId); }
@@ -244,7 +375,7 @@
   }
 
   function renderOfficeAgents() {
-    if (!officeReady) return;
+    if (!officeReady || !assetsReady) return;
     const office = document.getElementById('customizer-office');
     office.querySelectorAll('.agent-char').forEach((element) => element.remove());
     const width = office.getBoundingClientRect().width;
@@ -319,7 +450,7 @@
     const panel = document.getElementById('option-panel');
     const sections = {
       face: `
-        <div class="control-group"><div class="control-label">Face <span>${CHOICES.face.find((item) => item.value === look.face).label}</span></div>${choiceButtons('face', CHOICES.face)}</div>
+        <div class="control-group"><div class="control-label">Expression <span>${CHOICES.face.find((item) => item.value === look.face).label}</span></div>${choiceButtons('face', CHOICES.face)}</div>
         <div class="control-group"><div class="control-label">Skin tone</div>${swatches('skin', SKINS)}</div>`,
       hair: `
         <div class="control-group"><div class="control-label">Hair style <span>${CHOICES.hair.find((item) => item.value === look.hair).label}</span></div>${choiceButtons('hair', CHOICES.hair)}</div>
@@ -422,10 +553,18 @@
     new ResizeObserver(() => renderOfficeAgents()).observe(document.getElementById('customizer-office'));
   }
 
-  renderCategoryTabs();
-  renderOptions();
-  renderPreview();
-  renderRoster();
-  wireActions();
-  loadOfficeCopy();
+  async function init() {
+    renderCategoryTabs();
+    renderOptions();
+    renderRoster();
+    wireActions();
+    try {
+      await Promise.all([loadAssets(), loadOfficeCopy()]);
+      renderAllAvatars();
+    } catch (error) {
+      document.getElementById('save-status').textContent = `Sprite assets could not load: ${error.message}`;
+    }
+  }
+
+  init();
 })();
