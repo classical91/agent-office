@@ -335,8 +335,7 @@ const SPARE_STATIONS = [
   { gx: 7, gy: 5, facing: 'N' },
 ];
 
-function stationFor(agentId, index) {
-  const station = AGENT_STATIONS[agentId] || SPARE_STATIONS[index % SPARE_STATIONS.length];
+function clampStation(station) {
   return {
     // A tile only exists for 0..gridW-1 / 0..gridH-1; clamping here is what
     // keeps a mistyped station on the floor instead of out past the wall.
@@ -346,8 +345,30 @@ function stationFor(agentId, index) {
   };
 }
 
+const tileKey = (station) => `${station.gx},${station.gy}`;
+
+// Hot-desks were handed out by `index % SPARE_STATIONS.length`, which takes no
+// account of who is already standing there — StudioClaw owns tile (7,1) and
+// YouTube Claw was being assigned the very same tile, so the two rendered
+// straight through each other. Claiming desks in one pass, skipping tiles that
+// are already spoken for, gives every agent a tile of their own.
+function assignStations(agents) {
+  const taken = new Set(
+    agents.map(agent => AGENT_STATIONS[agent.id]).filter(Boolean).map(tileKey)
+  );
+  return agents.map(agent => {
+    const own = AGENT_STATIONS[agent.id];
+    if (own) return clampStation(own);
+    const free = SPARE_STATIONS.find(station => !taken.has(tileKey(station))) || SPARE_STATIONS[0];
+    taken.add(tileKey(free));
+    return clampStation(free);
+  });
+}
+
+const INITIAL_STATIONS = assignStations(AGENTS);
+
 let agentState = AGENTS.map((agent, index) => {
-  const station = stationFor(agent.id, index);
+  const station = INITIAL_STATIONS[index];
   return {
     ...agent,
     station,
@@ -527,9 +548,51 @@ const SPRITE_NATIVE_H = 110;
 const SPRITE_BUFFER_W = 78;
 const SPRITE_BUFFER_H = 108;
 
+// The avatar studio's composited characters are off by default: the room keeps
+// the borrowed Habbo PNGs until the new cast is signed off. Flip it per-browser
+// to preview the real room with the studio art —
+//   localStorage.setItem('office-studio-avatars', '1')
+// or load the office with ?avatars=studio — and set STUDIO_AVATARS to true here
+// when the designs are approved, which is the whole go-live change.
+const STUDIO_AVATARS = false;
+
+function studioAvatarsEnabled() {
+  try {
+    const override = new URLSearchParams(location.search).get('avatars');
+    if (override === 'studio') return true;
+    if (override === 'sprites') return false;
+    const stored = localStorage.getItem('office-studio-avatars');
+    if (stored === '1') return true;
+    if (stored === '0') return false;
+  } catch (e) { /* no URL or storage access — fall through to the default */ }
+  return STUDIO_AVATARS;
+}
+
+// Loading the sprite sheets is async, so the first paint has nothing to draw.
+// Kick the load off once and repaint when it lands.
+let studioAvatarsRequested = false;
+function ensureStudioAvatars() {
+  if (studioAvatarsRequested || !window.AgentAvatars) return;
+  studioAvatarsRequested = true;
+  window.AgentAvatars.ready().then(() => renderAgents()).catch(() => { /* fall back to sprites */ });
+}
+
 function drawPixelAgent(canvasEl, look, agent) {
   if (!canvasEl) return;
   const agentId = agent ? agent.id : null;
+
+  // Preferred path once approved: the studio's compositor, which covers every
+  // agent — including the four who have no sprite of their own and otherwise
+  // come out of the fallback below as a stack of coloured boxes.
+  const avatars = window.AgentAvatars;
+  if (avatars && agentId && avatars.DEFAULT_LOOKS[agentId] && studioAvatarsEnabled()) {
+    ensureStudioAvatars();
+    if (avatars.assetsReady) {
+      avatars.drawAvatar(canvasEl, { ...avatars.DEFAULT_LOOKS[agentId], ...(agent.lookState && agent.lookState.avatar) });
+      return;
+    }
+  }
+
   const aliased = agentId && SPRITE_ALIASES[agentId];
   const spriteKey = [agentId, aliased].find(key => key && HABBO_SPRITES[key]) || null;
 
@@ -737,8 +800,9 @@ function applyRoomGeometry(geometry, stations) {
   AGENT_STATIONS.nutrimind = { gx: 8, gy: 5, facing: 'N' };
   AGENT_STATIONS.pc = { gx: 10, gy: 5, facing: 'N' };
   AGENT_STATIONS.studioclaw = { gx: 7, gy: 5, facing: 'N' };
+  const restationed = assignStations(agentState);
   agentState.forEach((agent, index) => {
-    agent.station = stationFor(agent.id, index);
+    agent.station = restationed[index];
     agent.pos = { gx: agent.station.gx, gy: agent.station.gy };
   });
 }

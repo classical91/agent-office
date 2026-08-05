@@ -12,9 +12,16 @@
   --studio-text: #f6f7fb;
   --studio-muted: #929bb2;
   --studio-accent: #a78bfa;
+  /* shared.css pins <body> to a 100vh, overflow:hidden flex column for the
+     office shell. The studio is a normal scrolling document, and inheriting
+     that shell clipped the page at the viewport — which is what buried the
+     second roster row once the cast no longer fit on one line. */
   margin: 0;
+  display: block;
+  height: auto;
   min-height: 100vh;
   overflow-x: hidden;
+  overflow-y: visible;
   background: var(--studio-bg);
   color: var(--studio-text);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -246,10 +253,16 @@ button, a { -webkit-tap-highlight-color: transparent; }
   to { opacity: 1; filter: none; }
 }
 
+/* Nine agents do not divide into a tidy row, so the strip wraps. Borders come
+   from a background grid rather than nth-child rules, which would otherwise
+   need rewriting every time the cast changes size. */
 .agent-roster {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
   margin-top: 20px;
+  padding: 1px 0;
+  background: var(--studio-line);
   border-top: 1px solid var(--studio-line);
   border-bottom: 1px solid var(--studio-line);
 }
@@ -263,16 +276,16 @@ button, a { -webkit-tap-highlight-color: transparent; }
   gap: 9px;
   padding: 0 10px;
   border: 0;
-  border-right: 1px solid var(--studio-line);
-  background: transparent;
+  background: var(--studio-bg);
   color: var(--studio-text);
   text-align: left;
   cursor: pointer;
   transition: background 150ms ease;
 }
-.roster-agent:last-child { border-right: 0; }
-.roster-agent:hover { background: rgba(255, 255, 255, 0.025); }
-.roster-agent.selected { background: color-mix(in srgb, var(--agent-color) 9%, transparent); }
+/* Opaque, because the strip's 1px grid lines are the container background
+   showing through the gaps — a translucent tile would let them bleed inward. */
+.roster-agent:hover { background: color-mix(in srgb, #ffffff 3%, var(--studio-bg)); }
+.roster-agent.selected { background: color-mix(in srgb, var(--agent-color) 9%, var(--studio-bg)); }
 .roster-agent.selected::after {
   content: '';
   position: absolute;
@@ -521,9 +534,6 @@ button, a { -webkit-tap-highlight-color: transparent; }
 @media (max-width: 1080px) {
   .studio-layout { grid-template-columns: minmax(0, 1fr) 380px; }
   .office-workspace { padding-inline: 28px; }
-  .agent-roster { grid-template-columns: repeat(3, 1fr); }
-  .roster-agent:nth-child(3) { border-right: 0; }
-  .roster-agent:nth-child(-n+3) { border-bottom: 1px solid var(--studio-line); }
 }
 
 @media (max-width: 820px) {
@@ -534,8 +544,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .avatar-editor { position: relative; top: auto; min-height: 0; padding: 30px 18px; border-top: 1px solid var(--studio-line); }
   .workspace-heading { align-items: start; }
   .workspace-heading > p { font-size: 10px; }
-  .agent-roster { grid-template-columns: repeat(5, minmax(90px, 1fr)); overflow-x: auto; }
-  .roster-agent, .roster-agent:nth-child(3), .roster-agent:nth-child(-n+3) { border-right: 1px solid var(--studio-line); border-bottom: 0; }
+  .agent-roster { grid-template-columns: repeat(auto-fit, minmax(126px, 1fr)); }
   .avatar-stage { height: 286px; }
 }
 
