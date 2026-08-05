@@ -535,6 +535,11 @@ const SPRITE_ALIASES = {
   oss: 'penny',
   nutrimind: 'nova',
   pc: 'rig',
+  studioclaw: 'lyra',
+  nightwaveaudio: 'xhunter',
+  youtubeclaw: 'devin',
+  commentfarm: 'swarm',
+  newsreporter: 'traderclaw',
   forge: 'rig',
   command: 'jason',
 };
