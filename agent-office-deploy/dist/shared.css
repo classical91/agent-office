@@ -479,6 +479,29 @@
     transform: scale(var(--agent-scale, 1));
   }
 
+  .agent-avatar-customizable {
+    pointer-events: auto;
+    cursor: pointer;
+    border-radius: 12px;
+    text-decoration: none;
+  }
+
+  .agent-avatar-customizable::before {
+    content: '';
+    position: absolute;
+    inset: -6px;
+  }
+
+  .agent-avatar-customizable:hover .agent-pixel,
+  .agent-avatar-customizable:focus-visible .agent-pixel {
+    filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 78%, transparent));
+  }
+
+  .agent-avatar-customizable:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
 
   .agent-avatar.motion-typing {
     animation: typingBob 0.96s ease-in-out infinite;

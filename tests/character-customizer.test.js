@@ -9,6 +9,7 @@ const DIST = path.join(__dirname, '..', 'agent-office-deploy', 'dist');
 const html = fs.readFileSync(path.join(DIST, 'character-demo.html'), 'utf8');
 const script = fs.readFileSync(path.join(DIST, 'character-demo.js'), 'utf8');
 const shared = fs.readFileSync(path.join(DIST, 'app-shared.js'), 'utf8');
+const index = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8');
 // The cast and the compositor moved here so the live office can draw the same
 // characters the studio approves.
 const avatars = fs.readFileSync(path.join(DIST, 'agent-avatars.js'), 'utf8');
@@ -91,7 +92,7 @@ test('avatar studio exposes mix-and-match appearance controls', () => {
   }
   assert.match(html, /Choose an agent/);
   assert.match(html, /Character editor/);
-  assert.match(html, /Save draft look/);
+  assert.match(html, /Save &amp; apply to office/);
 });
 
 test('the live office keeps its current sprites until the redesign is approved', () => {
@@ -99,9 +100,18 @@ test('the live office keeps its current sprites until the redesign is approved',
   assert.match(shared, /HABBO_SPRITES\[spriteKey\]/);
 });
 
-test('avatar drafts stay browser-local and do not alter the live roster', () => {
+test('avatar drafts stay browser-local and apply to the live office renderer', () => {
   assert.match(script, /localStorage\.setItem\(STORAGE_KEY/);
-  assert.match(html, /live roster unchanged/i);
-  assert.match(html, /live sprites are untouched/i);
+  assert.match(script, /localStorage\.setItem\(STUDIO_ENABLED_KEY, '1'\)/);
+  assert.match(shared, /agent-office-avatar-drafts-v2/);
+  assert.match(shared, /savedAvatarDraft\(agentId\)/);
+  assert.match(html, /Saved appearances apply to this browser's office/i);
   assert.doesNotMatch(script, /fetch\([^)]*\/api\/agents[^)]*,\s*\{[^}]*method:\s*['"](?:POST|PUT|PATCH)/is);
+});
+
+test('the office exposes and deep-links the avatar studio', () => {
+  assert.match(index, /href="\/character-demo\.html"[^>]*>Avatar Studio</);
+  assert.match(index, />🎨 Appearance<\/a>/);
+  assert.match(shared, /\/character-demo\.html\?agent=/);
+  assert.match(script, /URLSearchParams\(window\.location\.search\)\.get\('agent'\)/);
 });
