@@ -1,0 +1,16 @@
+{
+  "handoffId": "sd-2026-08-05-001",
+  "from": "studio-director",
+  "idea": "A 9-minute video about building OpenClaw specialist agents that turn vague ideas into finished workflows",
+  "format": "both",
+  "audience": "solo founders and automation builders",
+  "tone": "practical, slightly cinematic, no hype",
+  "durationMinutes": 9,
+  "keywords": ["openclaw", "ai agents", "workflow automation"],
+  "constraints": [
+    "no hype",
+    "no invented metrics or testimonials",
+    "no credentials or tokens in the package"
+  ],
+  "sourceNotes": "A specialist agent is just a scoped role plus a playbook the agent has to read every run. The failure mode is starting from a blank prompt each time, which produces a different shape of output every run. The fix is a checked-in playbook file that the agent parses at runtime, so the standard and the output cannot drift apart. Once the playbook exists, the agent's job shrinks to judgment: the structure is guaranteed by the file, so the model spends its attention on the parts that actually need taste."
+}

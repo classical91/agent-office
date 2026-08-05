@@ -19,6 +19,7 @@ A multi-page web app that acts as a personal "office" for AI agents — a place 
 - **Resets** — countdown cards for tracked reset times.
 - **Settings** — app-level configuration.
 - **Prompt Builder** — a standalone page (`/prompt-builder.html`) for assembling structured, reusable prompts with a live preview, saved-prompt library, search, and JSON import/export.
+- **YouTube packaging** — one command that turns a video idea, or a Studio Director handoff packet, into a complete YouTube package: titles, thumbnail concepts, description, pinned comment, Shorts cutdowns, longform chapters, and a review checklist. Deterministic and offline. This is the workflow the YouTube Claw agent runs. See [YouTube packaging](#youtube-packaging-youtube-claw).
 
 ## Tech stack
 
@@ -65,6 +66,13 @@ agent-office-deploy/
     visit-tracker.js           # The script you paste on a tracked site
     server.js                  # Node HTTP server
     config-files/              # Per-agent config snapshots
+YOUTUBE_PACKAGING.md          # The YouTube packaging playbook (read at runtime)
+SMOKE_TEST.md                 # How to smoke-test packaging
+scripts/
+  package-youtube.mjs         # The packaging command (plain ESM, no dependencies)
+  lib/                        # packaging.mjs, playbook.mjs, render.mjs, text.mjs
+fixtures/
+  youtube-packaging/          # Sample input + committed output (markdown and JSON)
 railway.json                  # Railway deployment config
 package.json                  # Node dependencies + start script
 ```
@@ -98,6 +106,12 @@ rejected dates, and deleting a streak with its days), and the phone inbox
 (token auth and throttling, the JSON/form/plain-text/query ways of sending a
 drop, the due scopes, done/snooze, and that a reminder set on the phone shows
 up in the web Dropbox).
+
+`tests/youtube-packaging.test.js` covers the packaging command: that the
+committed fixtures still match freshly generated output, that `--check` reports
+drift instead of quietly rewriting the fixture, and that the playbook really is
+a runtime dependency — a missing `YOUTUBE_PACKAGING.md`, or one with no review
+checklist in it, fails the run instead of emitting an unreviewed package.
 
 `calendar-google-sync.js` takes its HTTP call as an injected function, so
 `tests/calendar-google-sync.test.js` drives the whole state machine against a
@@ -479,6 +493,58 @@ show `title` → and on confirmation call
 `POST /api/shortcuts/drops/<id>/done` or
 `POST /api/shortcuts/drops/<id>/snooze?for=1h`. Every item also carries a
 `url` that opens that drop in the web Dropbox.
+
+## YouTube packaging (YouTube Claw)
+
+Turns a raw idea — or a Studio Director handoff packet — into a complete YouTube package:
+title options, recommended title, thumbnail concepts, description, pinned comment, Shorts
+cutdowns, longform chapters, and the review checklist. Deterministic and offline: no API
+keys, no network calls, no publishing.
+
+This is YouTube Claw's workflow, and YouTube Claw is an agent in this office, so it lives
+here alongside the agent's config in `agent-office-deploy/dist/config-files/youtubeclaw/`.
+The separate **youtube-claw** repo is the Next.js Shorts workflow studio — a different
+codebase, and not where packaging runs.
+
+```bash
+npm run package:youtube -- \
+  --idea "A 9-minute video about building OpenClaw specialist agents that turn vague ideas into finished workflows" \
+  --format both \
+  --audience "solo founders and automation builders" \
+  --tone "practical, slightly cinematic, no hype"
+```
+
+| Flag | Meaning |
+| --- | --- |
+| `--idea` | Raw idea or video premise (required, unless supplied via `--input`/`--handoff`). |
+| `--format` | `short`, `longform`, or `both` (required). |
+| `--audience` | Who the video is for (required). |
+| `--tone` | Defaults to `practical, direct, no hype`. |
+| `--duration` | Longform target runtime in minutes; drives the chapter grid. |
+| `--notes` / `--notes-file` | Source notes or transcript. |
+| `--keywords` | Comma-separated search terms. |
+| `--input` / `--handoff` / `--stdin` | Request JSON or a Studio Director handoff packet. |
+| `--out` / `--out-json` / `--json` | Write markdown / write JSON / print JSON. |
+| `--now` / `--check` / `--quiet` | Pin the timestamp / compare against fixtures / silence stdout. |
+
+Full list: `npm run package:youtube -- --help`.
+
+The standard lives in [`YOUTUBE_PACKAGING.md`](./YOUTUBE_PACKAGING.md) — the command reads
+the review checklist out of that file at runtime and stamps each package with the playbook's
+content hash, so a package can never claim a standard it wasn't built against. If the
+playbook is missing, packaging fails instead of emitting an unreviewed package.
+
+The command is plain ESM with no dependencies, so it runs with bare `node` and is
+independent of the office server.
+
+Smoke test (one command, no tokens spent):
+
+```bash
+npm run package:youtube:smoke
+```
+
+The same check runs inside `npm test`. See [`SMOKE_TEST.md`](./SMOKE_TEST.md) for the
+fixtures, the Studio Director handoff flow, and current validation status.
 
 ## Deployment
 
