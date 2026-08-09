@@ -121,7 +121,7 @@ window.AOCountdowns = (() => {
 
   async function load() {
     try {
-      const payload = await requestJson('/api/countdowns');
+      const payload = await requestJson('/api/countdowns?sharebot=1');
       state.payload = payload;
       state.categories = Array.isArray(payload.categories) ? payload.categories : [];
       state.repeats = Array.isArray(payload.repeats) ? payload.repeats : [];
