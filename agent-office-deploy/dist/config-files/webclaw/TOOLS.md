@@ -1,57 +1,32 @@
-# TOOLS.md - Local Notes
+# TOOLS.md
 
-Skills define _how_ tools work. This file is for _your_ specifics â€” the stuff that's unique to your setup.
+## WebClaw Service Hub
 
-## What Goes Here
+- Repository: `classical91/webclaw-service-hub`
+- Local service directory: `C:\Users\JAson\.openclaw\workspace-webclaw`
+- Runtime: Node.js, Express, EJS, SQLite, Stripe
+- Local command: `npm run dev`
+- Test command: `npm test`
+- Backup command: `npm run backup`
+- Production host: Railway
 
-Things like:
+## Service Surfaces
 
-- Camera names and locations
-- SSH hosts and aliases
-- Preferred voices for TTS
-- Speaker/room names
-- Device nicknames
-- Anything environment-specific
+- `/admin` — CRM and lead pipeline
+- `/admin/call-queue` — ordered daily outreach queue
+- `/draft-lab` — website demo drafts
+- `/admin/export/*.csv` — authenticated CRM exports
+- `/webhooks/stripe` — verified Stripe event receiver
 
-## Examples
+## Stripe Safety
 
-```markdown
-### Cameras
+- Read server credentials only from `STRIPE_SECRET_KEY`.
+- Read webhook verification credentials only from `STRIPE_WEBHOOK_SECRET`.
+- Never place credentials, tokens, passwords, or full environment contents in chat, memory, source files, logs, commits, or generated demos.
+- Use the service's authenticated payment-link routes instead of calling Stripe directly when operating through the CRM.
+- Treat payment creation as an explicit external action: summarize the customer, amount, and billing type before executing it.
 
-- living-room â†’ Main area, 180Â° wide angle
-- front-door â†’ Entrance, motion-triggered
+## Operating Rule
 
-### SSH
-
-- home-server â†’ 192.168.1.100, user: admin
-
-### TTS
-
-- Preferred voice: "Nova" (warm, slightly British)
-- Default speaker: Kitchen HomePod
-```
-
-## Why Separate?
-
-Skills are shared. Your setup is yours. Keeping them apart means you can update skills without losing your notes, and share skills without leaking your infrastructure.
-
----
-
-Add whatever helps you do your job. This is your cheat sheet.
-
-## Stripe
-
-- **Restricted key (server-side):** [REDACTED]
-- **Publishable key:** [REDACTED]
-- **Use cases:**
-  1. Create Payment Links for setup fee (\-500 one-time)
-  2. Create Subscription billing links (\-100/month maintenance)
-- **API base:** https://api.stripe.com/v1
-- **Payment Links endpoint:** POST /v1/payment_links
-- **Prices endpoint:** POST /v1/prices (for subscriptions)
-- **Products endpoint:** POST /v1/products
-
-### Workflow
-1. When Jason pitches a client, create a Stripe Payment Link for the setup fee
-2. Return the URL to Jason to share with the client
-3. For ongoing maintenance, create a recurring subscription price + link
+Use the Service Hub as the source of truth for prospects, outreach, follow-ups,
+drafts, and payments. Do not maintain a second lead database in agent memory.

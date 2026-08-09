@@ -1,4 +1,4 @@
-<!-- Heartbeat template; comments-only content prevents scheduled heartbeat API calls. -->
+# HEARTBEAT.md
 
 # Keep this file empty (or with only comments) to skip heartbeat API calls.
 

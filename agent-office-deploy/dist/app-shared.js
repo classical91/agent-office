@@ -9,7 +9,7 @@
     {name:'Nightwave Audio', role:'Audio Specialist', color:'#06b6d4'},
     {name:'YouTube Claw', role:'YouTube Packaging', color:'#ef4444'},
     {name:'CommentFarm', role:'Engagement Specialist', color:'#84cc16'},
-    {name:'News Reporter', role:'News and Trends', color:'#f97316'},
+    {name:'ShareBot67', role:'News and Geopolitics', color:'#f97316'},
   ];
   const el = document.getElementById('svg-roster');
   if (el) {
@@ -160,7 +160,7 @@ const AGENTS = [
     feed: [
       'Studio Director routing playbook shipped',
       'Penny remains command center',
-      'YouTube, CommentFarm, Nightwave Audio, News Reporter, and WebClaw smoke checks passed',
+      'YouTube, CommentFarm, Nightwave Audio, ShareBot67, and WebClaw smoke checks passed',
       'Public output approval gates confirmed',
       'Internal ID remains studioclaw',
     ]
@@ -251,26 +251,26 @@ const AGENTS = [
   },
   {
     id: 'newsreporter',
-    name: 'News Reporter',
+    name: 'ShareBot67',
     emoji: 'NR',
     color: '#f97316',
-    role: 'News and Trend Specialist',
+    role: 'News and Geopolitics Specialist',
     model: 'GPT-5.5',
     authority: 'specialist',
     memory: true,
     workspace: 'market-dashboard',
     repo: 'Market dashboard reporter',
-    desc: 'Turns market and news topics into sourced, claim-safe briefs, trend picks, content angles, and reporter-page workflow improvements without publishing or making market calls.',
+    desc: 'Turns news and geopolitics topics into sourced, claim-safe briefs, trend picks, content angles, and reporter-page workflow improvements. Market Dashboard trading-signal notifications belong to TraderClaw.',
     tasks: [
       'Capturing source links',
       'Writing claim-safe briefs',
       'Finding trend angles',
       'Preparing reporter-page updates',
-      'Checking market context',
-      'Avoiding market calls',
+      'Checking news context',
+      'Leaving market-dashboard signals to TraderClaw',
     ],
     feed: [
-      'News Reporter smoke check passed',
+      'ShareBot67 smoke check passed',
       'Claim-safe brief scope assigned',
       'Market-dashboard workspace linked',
       'Publishing remains approval-gated',
@@ -1769,6 +1769,24 @@ window.AOResets = (() => {
     return d.toISOString();
   }
 
+  function nextShareBotCycle() {
+    const now = new Date();
+    const d = new Date();
+    d.setHours(8, 0, 0, 0);
+    const base = new Date(2026, 7, 9, 8, 0, 0, 0);
+    while (d < now || ((d - base) / 86400000) % 2 !== 0) {
+      d.setDate(d.getDate() + 1);
+      d.setHours(8, 0, 0, 0);
+    }
+    return d;
+  }
+
+  function offsetIso(date, minutes) {
+    const d = new Date(date);
+    d.setMinutes(d.getMinutes() + minutes);
+    return d.toISOString();
+  }
+
   function randomId() {
     if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
     return 'reset-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
@@ -1779,10 +1797,10 @@ window.AOResets = (() => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) return ensureShareBotCards(parsed);
       } catch (err) {}
     }
-    return [
+    return ensureShareBotCards([
       {
         id: randomId(),
         title: 'Claude Code Usage Reset',
@@ -1799,7 +1817,50 @@ window.AOResets = (() => {
         fired: false,
         message: 'Example: resets tomorrow.'
       }
+    ]);
+  }
+
+  function ensureShareBotCards(inputCards) {
+    const nextCycle = nextShareBotCycle();
+    const shareBotCards = [
+      {
+        id: 'sharebot-report-crypto-economics',
+        title: 'ShareBot Report 1 - Crypto, Stocks, Economics',
+        resetAt: nextCycle.toISOString(),
+        webhookUrl: '',
+        fired: false,
+        message: 'Starts at the next 8:00 AM PDT ShareBot cycle.'
+      },
+      {
+        id: 'sharebot-report-geopolitics',
+        title: 'ShareBot Report 2 - Geopolitics',
+        resetAt: offsetIso(nextCycle, 20),
+        webhookUrl: '',
+        fired: false,
+        message: 'Estimated start after Report 1 posts.'
+      },
+      {
+        id: 'sharebot-report-cycle-complete',
+        title: 'ShareBot Full Cycle - Estimated Complete',
+        resetAt: offsetIso(nextCycle, 40),
+        webhookUrl: '',
+        fired: false,
+        message: 'Estimated completion window for both reports.'
+      }
     ];
+    const cardsById = new Map((inputCards || []).map(card => [card.id, card]));
+    shareBotCards.slice().reverse().forEach(card => {
+      const existing = cardsById.get(card.id);
+      if (existing) {
+        existing.title = card.title;
+        existing.resetAt = card.resetAt;
+        existing.message = card.message;
+        existing.fired = false;
+      } else {
+        inputCards.unshift(card);
+      }
+    });
+    return inputCards;
   }
 
   function saveCards() {

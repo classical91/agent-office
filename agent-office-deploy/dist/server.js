@@ -35,22 +35,20 @@ const LEGACY_STATUS_MAP = new Map([
 const ALLOWED_AGENT_STATUSES = new Set(['idle', 'running', 'blocked', 'failed', 'needs_input', 'offline']);
 const ALLOWED_APP_SETTING_KEYS = new Set(['ao-gateway-local', 'ao-gateway-lan']);
 const DEFAULT_AGENTS = [
-  { id: 'codex', name: 'Codex', role: 'Coding Agent', model: 'GPT-5', status: 'idle', source: 'Codex', notes: 'Repo work, reviews, implementation, and local verification.' },
-  { id: 'claude-code', name: 'Claude Code', role: 'Coding Agent', model: 'Claude Sonnet', status: 'idle', source: 'CLI', notes: 'Parallel coding and refactor support.' },
-  { id: 'openclaw', name: 'OpenClaw', role: 'Agent Harness', model: 'Mixed', status: 'idle', source: 'OpenClaw', notes: 'Routes low-cost and specialized agent runs.' },
-  { id: 'reaper', name: 'Reaper', role: 'Farm Bot', model: 'GPT-4o-mini', status: 'idle', source: 'OpenClaw', notes: 'Legacy CommentFarm discover, posting, and engagement cycles.' },
-  { id: 'traderclaw', name: 'TraderClaw', role: 'Trading Bot', model: 'Claude Sonnet', status: 'running', source: 'Railway', notes: 'BTC, market dashboard, and trading analysis.' },
-  { id: 'webclaw', name: 'WebClaw', role: 'Web Developer', model: 'GPT-5.4', status: 'idle', source: 'Railway', notes: 'Demo sites, client landing pages, and pitch assets.' },
-  { id: 'studioclaw', name: 'Studio Director', role: 'Studio Routing Lead', model: 'GPT-5.5', status: 'idle', source: 'OpenClaw', notes: 'Routes and reviews studio work under Penny, using YouTube Claw, CommentFarm, Nightwave Audio, News Reporter, and WebClaw; public output stays approval-gated.' },
-  { id: 'nightwaveaudio', name: 'Nightwave Audio', role: 'Audio Specialist', model: 'GPT-5.5', status: 'idle', source: 'OpenClaw', notes: 'Nightwave music-maker app, prompts, track concepts, sound-bed workflow, sonic direction, and audio job reporting.' },
-  { id: 'youtubeclaw', name: 'YouTube Claw', role: 'YouTube Packaging Specialist', model: 'GPT-5.5', status: 'idle', source: 'OpenClaw', notes: 'Turns video ideas and assets into titles, thumbnail direction, descriptions, tags, chapters, scripts, and publishing prep.' },
-  { id: 'commentfarm', name: 'CommentFarm', role: 'Engagement Specialist', model: 'GPT-5.5', status: 'idle', source: 'OpenClaw', notes: 'Drafts concise, platform-aware comments, replies, hooks, and review queues for studio workflows.' },
-  { id: 'newsreporter', name: 'News Reporter', role: 'News and Trend Specialist', model: 'GPT-5.5', status: 'idle', source: 'OpenClaw', notes: 'Turns market and news topics into sourced, claim-safe briefs, trend picks, content angles, and reporter-page workflow improvements.' },
-  { id: 'researcher', name: 'Researcher', role: 'Research Agent', model: 'GPT-5', status: 'idle', source: 'Manual', notes: 'Briefs, scans, and source gathering.' },
-  { id: 'guardian', name: 'Guardian', role: 'Security Agent', model: 'Claude Sonnet', status: 'idle', source: 'Manual', notes: 'Security checklist, deployment risk, and auth review.' },
-  { id: 'farmbot', name: 'FarmBot', role: 'Outreach Agent', model: 'Qwen', status: 'idle', source: 'OpenClaw', notes: 'Scheduled farm sessions and engagement automation.' },
-  { id: 'rankforge', name: 'RankForge', role: 'SEO Agent', model: 'Claude Sonnet', status: 'idle', source: 'Railway', notes: 'SEO scans, local search, and content positioning.' },
-  { id: 'world-monitor', name: 'World Monitor', role: 'Monitoring Agent', model: 'GPT-5', status: 'idle', source: 'Railway', notes: 'World events and geopolitical watch loops.' },
+  { id: "codex", name: "Codex", role: "Coding Agent", model: "GPT-5", status: "idle", source: "Codex", notes: "Repo work, reviews, implementation, and local verification." },
+  { id: "claude-code", name: "Claude Code", role: "Coding Agent", model: "Claude Sonnet", status: "idle", source: "CLI", notes: "Parallel coding and refactor support." },
+  { id: "openclaw", name: "OpenClaw", role: "Agent Harness", model: "Mixed", status: "idle", source: "OpenClaw", notes: "Routes low-cost and specialized agent runs." },
+  { id: "guardian", name: "Guardian", role: "Security Agent", model: "Claude Sonnet", status: "idle", source: "Manual", notes: "Security checklist, deployment risk, and auth review." },
+  { id: "oss", name: "Penny", role: "Sole Orchestrator", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "Sole command/orchestration agent for Jason. Owns delegation, cron governance, routing, delivery, failure handling, and operator communication." },
+  { id: "webclaw", name: "WebClaw", role: "Web Agency Specialist", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "Local web-agency prospects, demos, follow-ups, and WebClaw service-hub work." },
+  { id: "nutrimind", name: "NutriMind", role: "Nutrition App Specialist", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "NutriMind diet-plan repo implementation, content, search, planner tests, and repo maintenance." },
+  { id: "pc", name: "PC", role: "Windows Workstation Specialist", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "Local Windows cleanup audits, security checks, optimization, troubleshooting, and file/app search." },
+  { id: "traderclaw", name: "TraderClaw", role: "Market Signals and Risk Specialist", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "Owns Market Dashboard trading-signal notifications, market monitoring, TradingView/Hyperliquid paper-trading pipeline work, signal review, trade logs, and risk checks. Paper mode only; no real trades without approval." },
+  { id: "studioclaw", name: "Studio Director", role: "Studio Routing Lead", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "Routes and reviews studio work under Penny using YouTube Claw, CommentFarm, Nightwave Audio, ShareBot67, and WebClaw; public output stays approval-gated." },
+  { id: "commentfarm", name: "CommentFarm", role: "Engagement Specialist", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "Engagement drafts, comment workflows, community activity, queue review, and CommentFarm repo maintenance." },
+  { id: "youtubeclaw", name: "YouTube Claw", role: "YouTube Packaging Specialist", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "YouTube workflow, video packaging, titles, descriptions, publishing prep, generated assets, and repo maintenance." },
+  { id: "nightwaveaudio", name: "Nightwave Audio", role: "Audio Specialist", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "Nightwave music-maker app, AI music prompts, sound beds, sonic identity, track concepts, and music lab workflows." },
+  { id: "newsreporter", name: "ShareBot67", role: "News and Geopolitics Specialist", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "News discovery, source capture, geopolitics/news briefs, reporter-page workflows, and claim-safe drafts. Market Dashboard trading-signal notifications belong to TraderClaw." },
 ];
 const ALLOWED_ORIGIN = process.env.APP_ORIGIN || process.env.PUBLIC_APP_URL || '';
 const PASSPHRASE_HASH = resolvePassphraseHash();
