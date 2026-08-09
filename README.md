@@ -24,6 +24,7 @@ A multi-page web app that acts as the command center for OpenClaw agents, tasks,
 ## Tech stack
 
 - Multi-page HTML/JS/CSS frontend: every nav item is its own static HTML page sharing one CSS file and one JS bundle (no framework, no build step)
+- A design system in `shared.css`: colour, spacing, radius, type and state tokens, plus `.ao-*` component classes (page, card, button, chip, badge, dot, field, well, modal) that the pages compose instead of writing inline styles
 - Plain Node.js HTTP server (no Express)
 - Postgres for persistence (via `pg`)
 - Deployed on Railway
@@ -46,7 +47,7 @@ agent-office-deploy/
     visitors.html              # Visitors page
     settings.html               # Settings page
     prompt-builder.html        # Prompt Builder (fully standalone, own styles/scripts)
-    shared.css                 # Shared chrome/nav/view styles for all pages above
+    shared.css                 # Design system + shared chrome/nav/view styles for all pages above
     app-shared.js              # Shared JS: agent/office data, office canvas+SVG rendering,
                                 #   view-switching, nav helpers, Dropbox/Memory/Settings/Resets logic
     workspace-systems.css      # Extra styles for Mission Board / Project Rooms / Agent Registry
@@ -79,6 +80,20 @@ package.json                  # Node dependencies + start script
 
 Each page pulls in `shared.css` + `app-shared.js` plus only the extra CSS/JS it needs. Navigating between pages is a real browser navigation (plain `<a href>` links), not client-side view-switching — `switchView()` in `app-shared.js` still does the in-page activation/render work for whichever single view that page contains.
 
+The topbar and sidebar are the same on every page, so they are generated into
+each one from `scripts/shell/` rather than maintained by hand:
+
+```bash
+npm run sync:shell         # write the shell into every page
+npm run sync:shell:check   # fail if any page has drifted
+```
+
+Edit `scripts/shell/shell.html` (topbar + sidebar), `scripts/shell/boot.html`
+(the pre-paint theme and sidebar-state restore) or
+`scripts/shell/stylesheet.html` (the `shared.css` build every page loads), then
+re-run it — never the copies inside the pages. Which sidebar row is highlighted
+is worked out from the URL by `markActiveNav()`, so no page marks its own.
+
 > **Note:** the repo also has two pre-existing single-page copies of the old monolithic UI — root `agent-office.html` and `agent-office-deploy/agent-office.html`. Neither is referenced by `server.js` or any build/deploy step, and they were already out of sync with `dist/index.html` before this multi-page split. They're left as-is; treat `agent-office-deploy/dist/` as the only frontend that's actually served.
 
 ## Running locally
@@ -106,6 +121,13 @@ rejected dates, and deleting a streak with its days), and the phone inbox
 (token auth and throttling, the JSON/form/plain-text/query ways of sending a
 drop, the due scopes, done/snooze, and that a reminder set on the phone shows
 up in the web Dropbox).
+
+`tests/shell-consistency.test.js` covers the shared app shell: that every page
+carries the topbar and sidebar exactly as `scripts/shell/` defines them, that
+they all load the same build of `shared.css`, that no page hardcodes its own
+active nav row (`markActiveNav()` in `app-shared.js` works that out from the
+URL), and that every sidebar row has the `data-icon` the compact rail needs.
+Run `npm run sync:shell` when it fails.
 
 `tests/youtube-packaging.test.js` covers the packaging command: that the
 committed fixtures still match freshly generated output, that `--check` reports

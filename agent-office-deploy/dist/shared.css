@@ -24,6 +24,545 @@
     --orange: #f97316;
     --pink: #ec4899;
     --cyan: #06b6d4;
+
+    /* ── Template V2 tokens ──────────────────────────────────────────────
+       Everything below is derived, never hand-picked per page. The colour
+       block above still owns theming: a theme sets --accent and these follow.
+       Older rules keep using --panel/--bg/--muted, so both names are live and
+       point at the same colours. */
+
+    /* Surfaces. Three depths is all this product needs: the page, a panel on
+       it, and something raised inside that panel. */
+    --surface-page: var(--bg);
+    --surface: var(--panel);
+    --surface-raised: color-mix(in srgb, var(--accent) 6%, #1b1f24);
+    --surface-sunken: color-mix(in srgb, #000 22%, var(--panel));
+    --surface-hover: rgba(255, 255, 255, 0.045);
+    --surface-active: color-mix(in srgb, var(--accent) 12%, transparent);
+
+    --border-strong: color-mix(in srgb, var(--accent) 16%, #333a43);
+    --border-subtle: rgba(255, 255, 255, 0.055);
+
+    /* Text. Three weights of emphasis, so "quiet" is a token and not a
+       one-off color-mix at every call site. */
+    --text-strong: #f4f6f8;
+    --text-quiet: color-mix(in srgb, var(--muted) 55%, var(--text));
+    --text-dim: var(--muted);
+    --text-on-accent: #fff;
+
+    /* Spacing: a 4px scale. Padding and gaps come from here. */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-pill: 999px;
+
+    /* Type. --font-pixel is deliberately scarce: it marks the Agent Office
+       identity (topbar mark, office chrome) and does not run the whole UI. */
+    --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-pixel: 'Press Start 2P', monospace;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --fs-2xs: 10px;
+    --fs-xs: 11px;
+    --fs-sm: 12px;
+    --fs-md: 13px;
+    --fs-base: 14px;
+    --fs-lg: 16px;
+    --fs-xl: 20px;
+    --fs-2xl: 26px;
+
+    --lh-tight: 1.25;
+    --lh-normal: 1.5;
+    --tracking-caps: 0.12em;
+
+    /* Elevation stays restrained — borders do most of the separating. */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.32);
+    --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.34);
+    --shadow-lg: 0 18px 48px rgba(0, 0, 0, 0.48);
+
+    --control-h-sm: 28px;
+    --control-h: 34px;
+    --control-h-lg: 42px;
+    /* Anything a finger has to hit is at least this tall on touch screens. */
+    --tap-target: 44px;
+
+    --duration-fast: 0.15s;
+    --duration: 0.25s;
+
+    /* Agent/task state. One vocabulary for dots, pills and metrics so the
+       same state is the same colour on every screen. */
+    --state-active: var(--green);
+    --state-idle: var(--yellow);
+    --state-blocked: var(--red);
+    --state-offline: var(--muted);
+    --state-queued: var(--blue);
+
+    --topbar-h: 48px;
+    --nav-w: 200px;
+    --nav-w-compact: 56px;
+    --feed-w: 260px;
+  }
+
+  /* ── PRIMITIVES ──────────────────────────────────────────────────────────
+     Page-level classes shared by Office, Org Chart, Memory, Registry, Project
+     Rooms, Mission Board, Streaks, Visitors, AI Models and Settings. A page
+     should be able to lay itself out with these and no inline styles. */
+
+  /* Focus is visible and identical everywhere. Pointer users never see it. */
+  :where(a, button, input, textarea, select, [tabindex]):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  .ao-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+  .ao-scroll::-webkit-scrollbar-track { background: transparent; }
+  .ao-scroll::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: var(--radius-pill);
+  }
+
+  /* The standard page body: one column, centred, with the same rhythm on
+     every screen. --ao-page-max lets a page opt into a narrower measure. */
+  .ao-page {
+    width: 100%;
+    max-width: var(--ao-page-max, 1180px);
+    margin: 0 auto;
+    padding: var(--space-8) var(--space-6) var(--space-10);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+  .ao-page--narrow { --ao-page-max: 900px; }
+  .ao-page--wide { --ao-page-max: 1400px; }
+
+  .ao-page-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+  }
+  .ao-page-heading { min-width: 0; }
+
+  /* The pixel kicker. Small, one per page, and only where the Agent Office
+     identity belongs. */
+  .ao-eyebrow {
+    font-family: var(--font-pixel);
+    font-size: var(--fs-xs);
+    line-height: var(--lh-tight);
+    color: var(--accent);
+    margin-bottom: var(--space-2);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .ao-page-title {
+    font-size: var(--fs-xl);
+    font-weight: 600;
+    color: var(--text-strong);
+    line-height: var(--lh-tight);
+    letter-spacing: -0.01em;
+  }
+  .ao-page-sub {
+    font-size: var(--fs-md);
+    color: var(--text-dim);
+    line-height: var(--lh-normal);
+    margin-top: var(--space-2);
+  }
+  .ao-page-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+
+  .ao-section-label {
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
+    font-weight: 600;
+    color: var(--text-dim);
+  }
+
+  /* Cards and panels. One border, one radius, one background. */
+  .ao-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+  .ao-card--flush { padding: 0; overflow: hidden; }
+  .ao-card--interactive {
+    cursor: pointer;
+    transition: border-color var(--duration-fast), background var(--duration-fast), transform var(--duration-fast);
+  }
+  .ao-card--interactive:hover {
+    border-color: var(--border-strong);
+    background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+  }
+  .ao-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+  .ao-card-title {
+    font-size: var(--fs-base);
+    font-weight: 600;
+    color: var(--text-strong);
+    line-height: var(--lh-tight);
+  }
+  .ao-card-sub {
+    font-size: var(--fs-sm);
+    color: var(--text-dim);
+    line-height: var(--lh-normal);
+  }
+
+  .ao-card-desc {
+    font-size: var(--fs-sm);
+    color: var(--text-dim);
+    line-height: var(--lh-normal);
+    margin-bottom: var(--space-2);
+  }
+
+  /* An inset box inside a card: status readouts, endpoints, a row of facts.
+     One step down from the card it sits in, never a card of its own. */
+  .ao-well {
+    padding: var(--space-3);
+    background: var(--surface-sunken);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+  .ao-well--row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+  }
+  .ao-well-label {
+    font-size: var(--fs-xs);
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
+    margin-bottom: var(--space-2);
+  }
+  .ao-well-value { font-size: var(--fs-md); color: var(--text); }
+  .ao-well-note { font-size: var(--fs-xs); color: var(--text-dim); margin-top: var(--space-2); word-break: break-all; }
+  .ao-code {
+    font-size: var(--fs-sm);
+    color: var(--text);
+    font-family: var(--font-mono);
+    word-break: break-all;
+  }
+  .ao-stack { display: flex; flex-direction: column; gap: var(--space-3); }
+
+  .ao-grid {
+    display: grid;
+    gap: var(--space-3);
+    grid-template-columns: repeat(auto-fill, minmax(var(--ao-grid-min, 240px), 1fr));
+  }
+
+  .ao-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+
+  /* Buttons. --primary is the one accent-filled action per view; everything
+     else is a bordered ghost so screens do not turn into a wall of accent. */
+  .ao-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    height: var(--control-h);
+    padding: 0 var(--space-4);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-quiet);
+    font-family: inherit;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: color var(--duration-fast), border-color var(--duration-fast), background var(--duration-fast);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ao-btn:hover { color: var(--text-strong); border-color: var(--border-strong); background: var(--surface-hover); }
+  .ao-btn:disabled, .ao-btn[aria-disabled="true"] { opacity: 0.45; cursor: default; }
+  .ao-btn:disabled:hover, .ao-btn[aria-disabled="true"]:hover { background: transparent; border-color: var(--border); }
+
+  .ao-btn--primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--text-on-accent);
+    font-weight: 600;
+  }
+  .ao-btn--primary:hover {
+    background: color-mix(in srgb, #fff 10%, var(--accent));
+    border-color: color-mix(in srgb, #fff 10%, var(--accent));
+    color: var(--text-on-accent);
+  }
+  .ao-btn--danger { color: var(--red); border-color: color-mix(in srgb, var(--red) 35%, var(--border)); }
+  .ao-btn--danger:hover { color: var(--red); background: color-mix(in srgb, var(--red) 12%, transparent); }
+  .ao-btn--sm { height: var(--control-h-sm); padding: 0 var(--space-3); font-size: var(--fs-xs); }
+  .ao-btn--lg { height: var(--control-h-lg); padding: 0 var(--space-5); font-size: var(--fs-base); }
+  .ao-btn--icon { width: var(--control-h); padding: 0; }
+  .ao-btn--icon.ao-btn--sm { width: var(--control-h-sm); }
+  /* Toggle buttons (Focus, Agents panel, sidebar) mark their on state here
+     rather than having JavaScript paint inline colours. */
+  .ao-btn.is-on {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+  }
+
+  /* Badges and state. */
+  .ao-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-pill);
+    background: var(--surface-hover);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: var(--fs-2xs);
+    font-weight: 600;
+    line-height: 1.6;
+    white-space: nowrap;
+  }
+  .ao-badge--accent {
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+    color: color-mix(in srgb, #fff 40%, var(--accent));
+  }
+  .ao-badge--success {
+    background: color-mix(in srgb, var(--green) 14%, transparent);
+    border-color: color-mix(in srgb, var(--green) 38%, transparent);
+    color: color-mix(in srgb, #fff 30%, var(--green));
+  }
+  .ao-badge--warn {
+    background: color-mix(in srgb, var(--yellow) 14%, transparent);
+    border-color: color-mix(in srgb, var(--yellow) 38%, transparent);
+    color: color-mix(in srgb, #fff 30%, var(--yellow));
+  }
+  .ao-badge--danger {
+    background: color-mix(in srgb, var(--red) 14%, transparent);
+    border-color: color-mix(in srgb, var(--red) 38%, transparent);
+    color: color-mix(in srgb, #fff 30%, var(--red));
+  }
+
+  /* One dot vocabulary. Only "working" animates — a room where everything
+     pulses tells you nothing. */
+  .ao-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--state-offline);
+  }
+  .ao-dot--active { background: var(--state-active); box-shadow: 0 0 6px color-mix(in srgb, var(--state-active) 70%, transparent); animation: pulse 2s infinite; }
+  .ao-dot--idle { background: var(--state-idle); }
+  .ao-dot--blocked { background: var(--state-blocked); box-shadow: 0 0 6px color-mix(in srgb, var(--state-blocked) 60%, transparent); }
+  .ao-dot--queued { background: var(--state-queued); }
+  .ao-dot--offline { background: var(--state-offline); }
+
+  /* Dot + word. The word is the point: a colour alone is not a status, and
+     it is not readable to anyone who cannot separate red from green. */
+  .ao-status {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--text-quiet);
+    white-space: nowrap;
+  }
+  .ao-status--active { color: color-mix(in srgb, #fff 35%, var(--state-active)); }
+  .ao-status--idle { color: color-mix(in srgb, #fff 35%, var(--state-idle)); }
+  .ao-status--blocked { color: color-mix(in srgb, #fff 30%, var(--state-blocked)); }
+  .ao-status--offline { color: var(--text-dim); }
+
+  /* Forms. 16px on inputs, always: anything smaller makes iOS Safari zoom
+     the page on focus. */
+  .ao-field { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+  .ao-label {
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
+    color: var(--text-dim);
+  }
+  .ao-input, .ao-textarea, .ao-select {
+    width: 100%;
+    background: var(--surface-sunken);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0 var(--space-3);
+    height: var(--control-h-lg);
+    font-family: inherit;
+    font-size: 16px;
+    color: var(--text);
+    outline: none;
+    transition: border-color var(--duration-fast);
+  }
+  .ao-textarea {
+    height: auto;
+    min-height: 96px;
+    padding: var(--space-3);
+    line-height: var(--lh-normal);
+    resize: vertical;
+  }
+  .ao-input:focus, .ao-textarea:focus, .ao-select:focus { border-color: var(--accent); }
+  .ao-input::placeholder, .ao-textarea::placeholder { color: var(--text-dim); }
+
+  /* Chips: the filter/selector pills used by Memory, the Registry and the
+     Mission Board. An agent's colour arrives as --chip-color rather than three
+     inline declarations per chip, so the tint is one variable at the call
+     site and the shape is defined once here. */
+  .ao-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color var(--duration-fast), border-color var(--duration-fast), background var(--duration-fast);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ao-chip:hover { color: var(--text-strong); border-color: var(--border-strong); }
+  .ao-chip.is-active {
+    color: var(--chip-color, var(--accent));
+    border-color: var(--chip-color, var(--accent));
+    background: color-mix(in srgb, var(--chip-color, var(--accent)) 15%, transparent);
+    font-weight: 600;
+  }
+  .ao-chips { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+  /* An entity card carries a colour of its own — an agent, a project, a room.
+     The stripe is the only place that colour is allowed to land. */
+  .ao-entity-card { border-left: 3px solid var(--entity-color, var(--accent)); }
+  .ao-entity-name { font-size: var(--fs-md); font-weight: 700; color: var(--entity-color, var(--text-strong)); }
+  .ao-entity-emoji { font-size: var(--fs-lg); line-height: 1; }
+  .ao-entity-meta {
+    font-size: var(--fs-xs);
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* [hidden] loses to any class that sets display, and most of the component
+     layer does. Give it back its say. */
+  .ao-card[hidden], .ao-grid[hidden], .ao-toolbar[hidden], .ao-chips[hidden],
+  .ao-btn[hidden], .ao-page-head[hidden], .ao-field[hidden], .ops-summary[hidden] { display: none; }
+
+  /* Modal. The passphrase gate on the Registry, Project Rooms, the Mission
+     Board, Streaks and Visitors was five copies of the same markup, each with
+     its own hardcoded #2a3048 border and #e2e8f0 text that no theme reached. */
+  .ao-modal {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.75);
+    padding: var(--space-4);
+  }
+  .ao-modal[hidden] { display: none; }
+  .ao-modal-sheet {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-6);
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  .ao-modal-title {
+    font-size: var(--fs-lg);
+    font-weight: 700;
+    color: var(--text-strong);
+    line-height: var(--lh-tight);
+  }
+  .ao-modal-desc {
+    font-size: var(--fs-sm);
+    color: var(--text-dim);
+    line-height: var(--lh-normal);
+    margin-bottom: var(--space-3);
+  }
+  .ao-modal-error {
+    font-size: var(--fs-sm);
+    color: var(--red);
+    margin-top: var(--space-2);
+  }
+  .ao-modal-error[hidden] { display: none; }
+  .ao-modal-actions {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
+  }
+  /* Confirm is the wider of the two, so the primary action is the easy one to
+     hit on a phone. */
+  .ao-modal-actions .ao-btn { flex: 1; height: var(--control-h-lg); }
+  .ao-modal-actions .ao-btn--primary { flex: 2; }
+
+  .ao-empty {
+    padding: var(--space-8) var(--space-5);
+    text-align: center;
+    color: var(--text-dim);
+    font-size: var(--fs-md);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-lg);
+  }
+
+  @media (max-width: 768px) {
+    .ao-page { padding: var(--space-5) var(--space-4) var(--space-10); gap: var(--space-5); }
+    .ao-page-head { flex-direction: column; align-items: stretch; }
+    .ao-page-actions .ao-btn { flex: 1; min-height: var(--tap-target); }
+    .ao-btn { min-height: var(--tap-target); }
+    .ao-btn--sm { min-height: 36px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
   }
 
   body {
@@ -41,29 +580,52 @@
 
   /* TOP BAR */
   .topbar {
-    background: var(--panel);
+    background: var(--surface);
     border-bottom: 1px solid var(--border);
-    padding: 0 20px;
-    height: 48px;
+    padding: 0 var(--space-4);
+    height: var(--topbar-h);
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: var(--space-4);
     flex-shrink: 0;
+    position: relative;
+    z-index: 20;
+  }
+
+  .topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
   }
 
   .topbar-logo {
-    font-family: 'Press Start 2P', monospace;
-    font-size: 11px;
+    font-family: var(--font-pixel);
+    font-size: var(--fs-xs);
     color: var(--accent);
     letter-spacing: 0.05em;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .topbar-meta {
     display: flex;
-    gap: 20px;
+    gap: var(--space-3);
     align-items: center;
-    font-size: 12px;
-    color: var(--muted);
+    font-size: var(--fs-sm);
+    color: var(--text-dim);
+  }
+
+  /* The live agent count sits with the clock as read-only chrome, so it gets
+     the quiet treatment rather than looking like another button. */
+  .topbar-stat {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    white-space: nowrap;
   }
 
   /* Keep the clock on one line — it wrapped mid-value on narrow screens. */
@@ -87,29 +649,34 @@
     50% { opacity: 0.4; }
   }
 
-  /* MAIN LAYOUT */
+  /* MAIN LAYOUT
+     One rule drives the three columns: each is a variable, and the collapsed
+     and compact states only change a variable. Adding a fourth state no
+     longer means writing another 2^n grid-template-columns line. */
   .layout {
+    --layout-nav: var(--nav-w);
+    --layout-feed: var(--feed-w);
     display: grid;
-    grid-template-columns: 180px 1fr 260px;
+    grid-template-columns: var(--layout-nav) minmax(0, 1fr) var(--layout-feed);
     flex: 1;
     overflow: hidden;
-    transition: grid-template-columns 0.25s ease;
+    transition: grid-template-columns var(--duration) ease;
   }
-  .layout.nav-collapsed { grid-template-columns: 0px 1fr 260px; }
-  .layout.feed-collapsed { grid-template-columns: 180px 1fr 0px; }
-  .layout.nav-collapsed.feed-collapsed { grid-template-columns: 0px 1fr 0px; }
+  html.nav-compact .layout { --layout-nav: var(--nav-w-compact); }
+  .layout.nav-collapsed { --layout-nav: 0px; }
+  .layout.feed-collapsed { --layout-feed: 0px; }
 
   /* LEFT NAV */
   .nav {
-    background: var(--panel);
+    background: var(--surface);
     border-right: 1px solid var(--border);
-    overflow: hidden;
-    transition: width 0.25s ease;
-    padding: 8px 0;
+    padding: var(--space-2) 0;
+    overflow-x: hidden;
     overflow-y: auto;
     /* A column so the System section can be pinned to the bottom. */
     display: flex;
     flex-direction: column;
+    gap: var(--space-1);
   }
 
   .nav-section {
@@ -158,36 +725,72 @@
   .nav-label.nav-label-dd .nav-chevron { width: 24px; height: 24px; font-size: 13px; color: var(--text); }
   /* Plain, non-collapsible section headings (everything except My Websites & Projects) */
   .nav-heading {
-    font-size: 9px; text-transform: uppercase; letter-spacing: 0.15em;
-    color: var(--muted); padding: 8px 16px 4px; font-weight: 700;
+    font-size: var(--fs-2xs);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
+    color: var(--text-dim);
+    padding: var(--space-3) var(--space-4) var(--space-2);
+    font-weight: 700;
   }
   /* Always-expanded section bodies (only My Websites & Projects collapses) */
   .nav-items-wrap.nav-open { max-height: none; }
 
   .nav-items-wrap {
     overflow: hidden;
-    transition: max-height 0.25s ease;
+    transition: max-height var(--duration) ease;
     max-height: 0px;
   }
 
   .nav-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 16px;
-    font-size: 12px;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-4);
+    margin: 0 var(--space-2);
+    border-radius: var(--radius-md);
+    font-size: var(--fs-sm);
     font-weight: 500;
-    color: var(--text);
-    opacity: 0.78;
+    color: var(--text-quiet);
     cursor: pointer;
-    transition: all 0.15s;
-    border-left: 2px solid transparent;
+    transition: color var(--duration-fast), background var(--duration-fast);
     text-decoration: none;
+    position: relative;
   }
 
-  .nav-item:hover { opacity: 1; color: var(--text); background: rgba(255,255,255,0.04); }
-  .nav-item.active { opacity: 1; color: var(--accent); border-left-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
-  .nav-item .icon { font-size: 14px; }
+  /* The icon column is a fixed width so labels line up whether or not a row
+     has one, and so the compact rail can keep only this column. */
+  .nav-item::before {
+    content: attr(data-icon);
+    width: 18px;
+    flex-shrink: 0;
+    text-align: center;
+    font-size: var(--fs-md);
+    line-height: 1;
+    opacity: 0.85;
+  }
+  .nav-item:not([data-icon])::before { content: none; }
+
+  .nav-item:hover { color: var(--text-strong); background: var(--surface-hover); }
+  /* Active is a filled row with an accent marker at the leading edge — a bare
+     colour change was too weak to find at a glance in a list this long. */
+  .nav-item.active {
+    color: var(--accent);
+    background: var(--surface-active);
+    font-weight: 600;
+  }
+  .nav-item.active::after {
+    content: '';
+    position: absolute;
+    left: calc(var(--space-2) * -1);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 18px;
+    border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+    background: var(--accent);
+  }
+  .nav-item .icon { font-size: var(--fs-base); }
+  .nav-item-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* OFFICE SUB-MENU — workspace pages nested under Office */
   /* The parent row stays a link; only the chevron toggles the sub-menu. */
@@ -198,55 +801,145 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 12px;
+    border-radius: var(--radius-sm);
+    font-size: var(--fs-sm);
     line-height: 1;
-    color: var(--muted);
+    color: var(--text-dim);
     padding: 0;
-    transition: transform 0.2s, color 0.15s;
+    flex-shrink: 0;
+    transition: transform 0.2s, color var(--duration-fast), background var(--duration-fast);
   }
+  .nav-sub-chevron:hover { background: var(--surface-hover); color: var(--text-strong); }
   .nav-item-parent:hover .nav-sub-chevron { color: var(--text); }
   .nav-item-parent.collapsed .nav-sub-chevron { transform: rotate(-90deg); }
 
+  /* Children hang off a hairline rather than off indentation alone, so the
+     nesting survives the icon column. */
   .nav-sub {
     overflow: hidden;
-    transition: max-height 0.25s ease;
+    transition: max-height var(--duration) ease;
+    margin-left: calc(var(--space-4) + var(--space-4));
+    border-left: 1px solid var(--border);
   }
-  .nav-sub .nav-item { padding-left: 34px; font-size: 11px; opacity: 0.68; }
-  .nav-sub .nav-item .icon { font-size: 12px; }
-  .nav-sub .nav-item:hover, .nav-sub .nav-item.active { opacity: 1; }
+  .nav-sub .nav-item {
+    padding-left: var(--space-3);
+    margin-left: 0;
+    font-size: var(--fs-xs);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  }
+  .nav-sub .nav-item::before { width: 15px; font-size: var(--fs-sm); }
+  .nav-sub .nav-item.active::after { left: -1px; }
+  .nav-sub .nav-item .icon { font-size: var(--fs-sm); }
 
   .nav-link {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 7px 16px 7px 28px;
-    font-size: 11px;
-    color: var(--text);
-    opacity: 0.72;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    margin: 0 var(--space-2);
+    border-radius: var(--radius-md);
+    font-size: var(--fs-xs);
+    color: var(--text-dim);
     cursor: pointer;
-    transition: all 0.15s;
-    border-left: 2px solid transparent;
+    transition: color var(--duration-fast), background var(--duration-fast);
     text-decoration: none;
   }
-  .nav-link:hover { opacity: 1; color: var(--text); background: rgba(255,255,255,0.04); }
-  .nav-link .link-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
-  .nav-link .link-ext { font-size: 9px; margin-left: auto; color: #2d3748; }
+  .nav-link:hover { color: var(--text-strong); background: var(--surface-hover); }
+  .nav-link .link-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; background: var(--accent); }
+  .nav-link .link-ext { font-size: var(--fs-2xs); margin-left: auto; color: var(--text-dim); opacity: 0.7; }
+  .nav-item .link-ext { font-size: var(--fs-2xs); margin-left: auto; color: var(--text-dim); opacity: 0.7; flex-shrink: 0; }
+
+  /* Sidebar footer: the compact/expand control lives with the nav it acts on,
+     not in the topbar where it would read as a page-level action. */
+  .nav-footer {
+    margin-top: var(--space-2);
+    padding: var(--space-2) var(--space-2) 0;
+    border-top: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+  }
+  .nav-collapse-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    border: none;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: var(--fs-xs);
+    cursor: pointer;
+    transition: color var(--duration-fast), background var(--duration-fast);
+  }
+  .nav-collapse-btn:hover { color: var(--text-strong); background: var(--surface-hover); }
+  .nav-collapse-btn .nav-collapse-icon {
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+    transition: transform var(--duration) ease;
+  }
+
+  /* COMPACT RAIL
+     Icons only. Labels, chevrons and sub-menus are hidden rather than
+     unmounted, so expanding restores the exact tree the user left. */
+  html.nav-compact .nav { align-items: stretch; }
+  html.nav-compact .nav-heading,
+  html.nav-compact .nav-item-label,
+  html.nav-compact .nav-sub-chevron,
+  html.nav-compact .nav-item .link-ext,
+  html.nav-compact .nav-link .link-ext,
+  html.nav-compact .nav-collapse-label { display: none; }
+  html.nav-compact .nav-sub { display: none; }
+  html.nav-compact .nav-item,
+  html.nav-compact .nav-link,
+  html.nav-compact .nav-collapse-btn {
+    justify-content: center;
+    padding: var(--space-2) 0;
+    margin: 0 var(--space-2);
+    gap: 0;
+  }
+  html.nav-compact .nav-item::before { width: auto; font-size: var(--fs-lg); }
+  html.nav-compact .nav-item.active::after { left: calc(var(--space-2) * -1); }
+  /* Rows with no icon would collapse to an empty strip, so they keep a
+     monogram taken from their label. */
+  html.nav-compact .nav-item:not([data-icon]) .nav-item-label {
+    display: block;
+    font-size: var(--fs-sm);
+    font-weight: 700;
+  }
+  html.nav-compact .nav-collapse-btn .nav-collapse-icon { transform: rotate(180deg); }
 
 
-  /* VIEW SWITCHER */
-  .view { display: none; flex: 1; overflow: hidden; }
+  /* VIEW SWITCHER
+     Every view in the app is a column on the themed ground; that was written
+     inline on all thirteen of them. Only whether it scrolls differs, so that
+     is the one thing a page still says. */
+  .view {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--view-bg);
+  }
   .view.active { display: flex; }
+  .view--scroll { overflow-y: auto; }
+  /* These five lines were written inline on index.html; the office is a view
+     like any other and its layout belongs with the rest of them. */
   #view-office {
     overflow: auto;
     display: none;
     flex: 1;
-    align-items: flex-start;
+    flex-direction: column;
+    align-items: center;
     justify-content: flex-start;
+    padding: var(--space-5);
     background: var(--view-bg);
   }
   #view-office.active { display: flex; }
+  @media (max-width: 768px) {
+    #view-office { padding: var(--space-3); }
+  }
 
   /* ORG CHART VIEW */
   #orgView {
@@ -262,9 +955,11 @@
   .org-page { max-width: 960px; width: 100%; display: flex; flex-direction: column; align-items: center; }
 
   .org-section-label {
-    display: flex; align-items: center; gap: 12px;
-    width: 100%; margin: 24px 0 18px;
+    display: flex; align-items: center; gap: var(--space-3);
+    width: 100%; margin: var(--space-6) 0 18px;
   }
+  /* Sections that open a new band of the chart get more air above them. */
+  .org-section-label--spaced { margin-top: var(--space-8); }
   .org-section-label .line { flex: 1; height: 1px; background: linear-gradient(to right, transparent, rgba(255,255,255,0.08), transparent); }
   .org-section-label .text { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; color: var(--muted); white-space: nowrap; display: flex; align-items: center; gap: 6px; }
 
@@ -294,17 +989,20 @@
   .org-flow-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.15em; color: color-mix(in srgb, var(--muted) 75%, var(--bg)); display: flex; align-items: center; gap: 6px; }
 
   .org-card {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.07);
+    background: var(--surface-hover);
+    /* A card tinted with --entity-color borrows it; the rest keep the neutral
+       edge. Each tinted card used to write its own rgba() border inline. */
+    border: 1px solid color-mix(in srgb, var(--entity-color, #fff) 12%, var(--border));
     border-radius: 18px;
-    padding: 20px 22px;
+    padding: var(--space-5);
     position: relative;
     overflow: hidden;
-    backdrop-filter: blur(8px);
     transition: border-color 0.2s, transform 0.2s;
     cursor: default;
   }
-  .org-card:hover { border-color: rgba(255,255,255,0.14); transform: translateY(-2px); }
+  /* The clickable cards said so with an inline cursor, one per card. */
+  .org-card[onclick], .org-card-inner[onclick] { cursor: pointer; }
+  .org-card:hover { border-color: color-mix(in srgb, var(--entity-color, #fff) 26%, var(--border-strong)); transform: translateY(-2px); }
   .org-card.glow-indigo { box-shadow: 0 0 60px color-mix(in srgb, var(--accent) 8%, transparent); }
   .org-card.glow-green  { box-shadow: 0 0 60px rgba(34,197,94,0.08); }
   .org-card.glow-blue   { box-shadow: 0 0 60px rgba(59,130,246,0.08); }
@@ -314,9 +1012,30 @@
   .org-card.glow-pink   { box-shadow: 0 0 60px rgba(236,72,153,0.08); }
 
   .org-card-inner { display: flex; align-items: flex-start; gap: 14px; }
-  .org-avatar { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.1); }
+  /* An avatar's tint comes from one --entity-color; the two rgba() literals
+     each of them used to carry inline are derived here instead. Without one
+     it falls back to the theme accent. */
+  .org-avatar {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    background: color-mix(in srgb, var(--entity-color, var(--accent)) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--entity-color, var(--accent)) 25%, transparent);
+  }
+  .org-avatar--plain {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    font-size: 18px;
+  }
   .org-body { flex: 1; min-width: 0; }
-  .org-name { font-size: 16px; font-weight: 700; color: #f9fafb; margin-bottom: 2px; }
+  .org-name { font-size: var(--fs-lg); font-weight: 700; color: var(--text-strong); margin-bottom: 2px; }
+  /* The infrastructure cards at the foot of the chart are smaller than the
+     agent cards above them. */
+  .org-name--sm { font-size: var(--fs-md); }
+  .org-title--sm { font-size: var(--fs-xs); }
+  .org-row-2--narrow { max-width: 680px; margin: 0 auto; }
   .org-title { font-size: 13px; color: color-mix(in srgb, var(--muted) 60%, var(--text)); margin-bottom: 8px; }
   .org-desc { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 12px; }
   .org-tags { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -327,6 +1046,7 @@
   .org-tag-green  { background: rgba(74,222,128,0.12);  color: #4ade80; }
   .org-tag-purple { background: rgba(192,132,252,0.12); color: #c084fc; }
   .org-tag-pink   { background: rgba(244,114,182,0.12); color: #f472b6; }
+  .org-tag-red    { background: rgba(239,68,68,0.12);   color: #fca5a5; }
   .org-tag-blue   { background: rgba(96,165,250,0.12);  color: #60a5fa; }
   .org-cta { position: absolute; bottom: 14px; right: 18px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--border); transition: color 0.2s; }
   .org-card:hover .org-cta { color: #a5b4fc; }
@@ -342,6 +1062,304 @@
   @media (max-width: 1200px) { .org-coders-row { grid-template-columns: repeat(3, 1fr); } }
   @media (max-width: 900px) { .org-row-4 { grid-template-columns: repeat(2, 1fr); } .org-coders-row { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 600px) { .org-row-2, .org-row-4, .org-row-3, .org-coders-row { grid-template-columns: 1fr; } .org-card-wide { max-width: 100%; } }
+
+  /* ── OFFICE SHELL & OPERATIONS SUMMARY ───────────────────────────────────
+     The chrome around the isometric room. It used to be written inline on
+     index.html; it lives here so the Office reads like the rest of the app
+     and so a theme change reaches it. */
+  .office-shell {
+    width: 100%;
+    max-width: 1400px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .office-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: 0 var(--space-1);
+    flex-wrap: wrap;
+  }
+  .office-crumbs {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    font-size: var(--fs-md);
+  }
+  .office-mark {
+    width: 22px;
+    height: 22px;
+    border-radius: var(--radius-sm);
+    background: var(--accent);
+    color: var(--text-on-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .office-crumb-name { font-size: var(--fs-base); font-weight: 600; color: var(--text-strong); }
+  .office-crumb-sep { color: var(--text-dim); }
+  .office-crumb-loc { color: var(--text-quiet); }
+  .office-bar-meta { display: flex; align-items: center; gap: var(--space-2); }
+
+  /* The room panel. */
+  .office-stage {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    position: relative;
+  }
+  /* Corner labels sit over the floor, so they stay quiet and never take
+     pointer events away from the agents underneath. */
+  .office-stage-tag {
+    position: absolute;
+    top: var(--space-2);
+    font-size: var(--fs-2xs);
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .office-stage-tag--left { left: var(--space-3); }
+  .office-stage-tag--right { right: var(--space-3); font-family: var(--font-mono); }
+
+  /* OPERATIONS SUMMARY
+     A row of counts above the room: how many agents are working, how many are
+     stuck, what is queued, and the one thing to do next. Tiles are links or
+     buttons where a count has somewhere to lead. */
+  .ops-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(220px, 1.6fr);
+    gap: var(--space-2);
+    align-items: stretch;
+  }
+
+  .ops-metric {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    text-decoration: none;
+    color: inherit;
+    text-align: left;
+    font-family: inherit;
+    min-width: 0;
+    transition: border-color var(--duration-fast), background var(--duration-fast);
+  }
+  a.ops-metric, button.ops-metric { cursor: pointer; }
+  a.ops-metric:hover, button.ops-metric:hover {
+    border-color: var(--border-strong);
+    background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+  }
+
+  .ops-metric-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--fs-2xs);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
+    font-weight: 600;
+    color: var(--text-dim);
+  }
+  .ops-metric-value {
+    font-size: var(--fs-2xl);
+    font-weight: 600;
+    color: var(--text-strong);
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .ops-metric-note {
+    font-size: var(--fs-xs);
+    color: var(--text-dim);
+    line-height: var(--lh-tight);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* A count only turns red when it is genuinely a problem — a zero blocked
+     count stays as quiet as every other tile. */
+  .ops-metric.is-alert { border-color: color-mix(in srgb, var(--red) 42%, var(--border)); }
+  .ops-metric.is-alert .ops-metric-value { color: color-mix(in srgb, #fff 26%, var(--red)); }
+  .ops-metric.is-warn { border-color: color-mix(in srgb, var(--yellow) 38%, var(--border)); }
+  .ops-metric.is-warn .ops-metric-value { color: color-mix(in srgb, #fff 26%, var(--yellow)); }
+
+  /* Next action is prose, not a number, so it gets the wide cell. */
+  .ops-next { justify-content: flex-start; gap: var(--space-2); }
+  .ops-next-value {
+    font-size: var(--fs-md);
+    font-weight: 600;
+    color: var(--text-strong);
+    line-height: var(--lh-tight);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .ops-next-meta { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+
+  @media (max-width: 1100px) {
+    .ops-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ops-next { grid-column: 1 / -1; }
+  }
+  @media (max-width: 480px) {
+    .ops-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+    .ops-metric { padding: var(--space-3); }
+    .ops-metric-value { font-size: var(--fs-xl); }
+  }
+
+  /* SETTINGS PAGE
+     The page is a stack of cards, each with a title, a line of explanation and
+     a body. .ao-page already spaces the stack, so these only cover what is
+     genuinely particular to Settings. */
+  .settings-page { --ao-page-max: 720px; }
+  .settings-card { gap: var(--space-2); }
+  .settings-card > .ao-stack,
+  .settings-card > .ao-grid,
+  .settings-card > .ao-chips,
+  .settings-card > .ao-field { margin-top: var(--space-2); }
+  .settings-field { margin-top: var(--space-2); }
+  .settings-label { display: block; }
+  .settings-well-spaced { margin-top: var(--space-3); }
+  .settings-well-head { margin-bottom: var(--space-2); }
+  .settings-well-label-flush { margin-bottom: 0; }
+  .settings-btn-spaced { margin-top: var(--space-2); }
+  .settings-actions { margin-top: var(--space-2); }
+  .settings-row-name { font-size: var(--fs-md); color: var(--text); margin-bottom: 2px; }
+  .settings-row-note { font-size: var(--fs-xs); color: var(--text-dim); }
+  .settings-saved-msg { font-size: var(--fs-sm); color: var(--green); margin-left: var(--space-3); }
+  .settings-saved-msg[hidden] { display: none; }
+  .settings-probe { margin-top: var(--space-3); padding-top: var(--space-2); border-top: 1px solid var(--border); }
+  .settings-about { line-height: 1.7; margin-bottom: 0; }
+  .settings-about-note { margin-top: var(--space-1); color: color-mix(in srgb, var(--text-dim) 75%, var(--bg)); }
+  /* Destroying data is the one action that fills itself red rather than just
+     outlining. */
+  .settings-btn-destructive {
+    background: var(--red);
+    border-color: var(--red);
+    color: #fff;
+    font-weight: 600;
+  }
+  .settings-btn-destructive:hover {
+    background: color-mix(in srgb, #fff 12%, var(--red));
+    border-color: color-mix(in srgb, #fff 12%, var(--red));
+    color: #fff;
+  }
+
+  /* Theme picker. Each swatch previews the surfaces its accent derives, so
+     the three dots carry real colours; the frame around them does not. */
+  .theme-swatch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 76px;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-lg);
+    border: 2px solid var(--swatch-border, var(--border));
+    background: var(--swatch-panel, var(--surface));
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color var(--duration-fast);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .theme-swatch:hover { border-color: var(--swatch-accent); }
+  .theme-swatch.is-active { border-color: var(--swatch-accent); }
+  .theme-swatch-dots { display: flex; gap: var(--space-1); }
+  .theme-swatch-dot {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    border: 1px solid var(--swatch-border, var(--border));
+  }
+  .theme-swatch-name { font-size: var(--fs-xs); color: var(--text-strong); font-weight: 400; }
+  .theme-swatch.is-active .theme-swatch-name { font-weight: 600; }
+  /* Reserves its line whether or not it says anything, so choosing a theme
+     does not make the row jump. */
+  .theme-swatch-state {
+    font-size: 9px;
+    color: var(--swatch-accent);
+    min-height: 11px;
+    line-height: 11px;
+  }
+
+  /* DEV LINKS — the one page that wants a display-sized title. */
+  .dev-page { gap: var(--space-4); }
+  .dev-page-title { font-size: var(--fs-2xl); line-height: 1.1; }
+  .dev-page-sub { max-width: 720px; }
+
+  /* MEMORY PAGE */
+  .mem-entries { display: flex; flex-direction: column; gap: var(--space-3); }
+  .mem-entry-agent { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+  .mem-entry-body {
+    font-size: var(--fs-md);
+    color: var(--text);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .mem-roster-model { color: var(--text); }
+
+  /* ROOM TOOLBAR — the strip under the floor. */
+  .room-toolbar { gap: 0; }
+  .room-toolbar-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    padding: var(--space-2) var(--space-3);
+  }
+  .room-toolbar-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--fs-md);
+    font-weight: 600;
+    color: var(--text-strong);
+  }
+  .room-toolbar-icon { font-size: var(--fs-lg); }
+  .room-toolbar-sub { font-size: var(--fs-xs); font-weight: 500; color: var(--text-dim); }
+  .room-toolbar-stat {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--fs-sm);
+    color: var(--text-quiet);
+  }
+  /* The ticker takes the slack so the buttons stay put as the task text
+     changes length. */
+  .room-toolbar-ticker {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--fs-sm);
+    color: var(--text-quiet);
+    flex: 1 1 200px;
+    min-width: 160px;
+    overflow: hidden;
+  }
+  .room-toolbar-ticker-label { color: var(--text-dim); flex-shrink: 0; }
+  .room-toolbar-ticker #room-task-ticker {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .room-toolbar-actions { flex-shrink: 0; }
+  .room-build-panel {
+    padding: var(--space-3);
+    border-top: 1px solid var(--border);
+    background: var(--surface-sunken);
+  }
 
   /* OFFICE CANVAS AREA */
   .office {
@@ -927,53 +1945,62 @@
 
   /* BOTTOM STATUS BAR */
   .statusbar {
-    background: var(--panel);
+    background: var(--surface);
     border-top: 1px solid var(--border);
-    padding: 10px 16px;
+    padding: var(--space-3) var(--space-4);
     display: flex;
-    gap: 10px;
+    gap: var(--space-2);
     overflow-x: auto;
     flex-shrink: 0;
     height: 80px;
     align-items: center;
+    scroll-snap-type: x proximity;
   }
 
   .statusbar::-webkit-scrollbar { height: 3px; }
   .statusbar::-webkit-scrollbar-track { background: transparent; }
   .statusbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
+  /* An agent card reads left to right: who, what they are on, and the state
+     spelled out. The state used to be a bare coloured dot, which asked you to
+     remember what yellow meant. */
   .status-card {
-    background: rgba(255,255,255,0.04);
+    background: var(--surface-hover);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 8px 14px;
+    border-radius: var(--radius-lg);
+    padding: var(--space-2) var(--space-3);
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--space-3);
     flex-shrink: 0;
-    min-width: 180px;
+    min-width: 210px;
     cursor: pointer;
-    transition: all 0.15s;
+    scroll-snap-align: start;
+    transition: background var(--duration-fast), border-color var(--duration-fast);
   }
 
   .status-card:hover {
-    background: rgba(255,255,255,0.07);
-    border-color: rgba(255,255,255,0.15);
+    background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+    border-color: var(--border-strong);
   }
+  /* Blocked agents are the ones you need to find in a scrolling row. */
+  .status-card.is-blocked { border-color: color-mix(in srgb, var(--red) 40%, var(--border)); }
 
   .status-card-avatar {
     width: 28px; height: 28px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 14px;
+    font-size: var(--fs-base);
+    font-weight: 600;
     flex-shrink: 0;
   }
 
-  .status-card-info { overflow: hidden; flex: 1; }
+  .status-card-info { overflow: hidden; flex: 1; min-width: 0; }
 
   .status-card-name {
-    font-size: 11px;
+    font-size: var(--fs-xs);
     font-weight: 600;
+    color: var(--text-strong);
     margin-bottom: 2px;
     white-space: nowrap;
     overflow: hidden;
@@ -981,21 +2008,40 @@
   }
 
   .status-card-task {
-    font-size: 10px;
-    color: var(--muted);
+    font-size: var(--fs-2xs);
+    color: var(--text-dim);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
+  .status-card-state {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-1);
+    flex-shrink: 0;
+  }
+  .status-card-state-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    color: var(--text-dim);
+  }
+  .status-card.is-active .status-card-state-label { color: color-mix(in srgb, #fff 32%, var(--state-active)); }
+  .status-card.is-idle .status-card-state-label { color: color-mix(in srgb, #fff 32%, var(--state-idle)); }
+  .status-card.is-blocked .status-card-state-label { color: color-mix(in srgb, #fff 26%, var(--state-blocked)); }
 
   .status-dot {
     width: 7px; height: 7px;
     border-radius: 50%;
     flex-shrink: 0;
   }
-  .dot-active { background: var(--green); box-shadow: 0 0 5px var(--green); animation: pulse 2s infinite; }
-  .dot-idle { background: var(--yellow); }
-  .dot-offline { background: var(--muted); }
+  .dot-active { background: var(--state-active); box-shadow: 0 0 5px var(--state-active); animation: pulse 2s infinite; }
+  .dot-idle { background: var(--state-idle); }
+  .dot-offline { background: var(--state-offline); }
+  .dot-blocked { background: var(--state-blocked); box-shadow: 0 0 5px color-mix(in srgb, var(--state-blocked) 60%, transparent); }
 
 
 
@@ -1011,10 +2057,33 @@
     .layout { grid-template-columns: 1fr !important; overflow: visible; }
     .nav { display: none !important; }
     .feed { display: none !important; }
-    .topbar { padding: 0 12px; }
-    .topbar-meta { gap: 10px; font-size: 11px; }
-    /* Focus Mode is a no-op on mobile - nav and feed are already hidden. */
-    #focus-btn { display: none !important; }
+    .topbar { padding: 0 var(--space-3); }
+    .topbar-meta { gap: var(--space-2); font-size: var(--fs-xs); }
+    /* Focus Mode, the Agents panel and the compact rail are all no-ops on
+       mobile: the nav is a drawer here and the feed does not render at all,
+       so their buttons would toggle nothing. */
+    #focus-btn, #feed-toggle-btn, .nav-footer { display: none !important; }
+    /* The topbar is 48px; its controls keep the desktop height rather than
+       growing into it. */
+    .topbar .ao-btn { min-height: 0; }
+    /* The drawer is always full-width, whatever the desktop rail state is. */
+    html.nav-compact .nav-heading,
+    html.nav-compact .nav-item-label,
+    html.nav-compact .nav-sub-chevron,
+    html.nav-compact .nav-item .link-ext,
+    html.nav-compact .nav-link .link-ext { display: revert; }
+    html.nav-compact .nav-sub { display: block; }
+    html.nav-compact .nav-item,
+    html.nav-compact .nav-link {
+      justify-content: flex-start;
+      padding: var(--space-2) var(--space-4);
+      gap: var(--space-3);
+    }
+    html.nav-compact .nav-item::before { width: 18px; font-size: var(--fs-md); }
+    .office-shell { gap: var(--space-2); }
+    .office-bar { gap: var(--space-2); }
+    /* A row of tap targets, not a row of text links. */
+    .nav .nav-item, .nav .nav-link { min-height: var(--tap-target); }
     .mobile-nav-toggle {
       display: flex !important;
       align-items: center; justify-content: center;
@@ -1038,6 +2107,18 @@
 
   /* Hide hamburger on desktop */
   .mobile-nav-toggle { display: none; }
+
+  /* The scrim behind the mobile drawer. It used to be shown and hidden by
+     writing element.style.display from JavaScript, which meant its whole
+     appearance lived in an inline attribute on thirteen pages. */
+  .mobile-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 999;
+  }
+  .mobile-overlay.is-open { display: block; }
 
 
   /* DROPBOX */

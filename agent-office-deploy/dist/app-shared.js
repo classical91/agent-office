@@ -646,11 +646,13 @@ function updateRoomStatusBar() {
   const online = openClawGatewayReachable === false
     ? 0
     : agentState.filter(a => a.status !== 'offline').length;
-  ['room-online-count', 'office-online-top'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = online;
-  });
+  // #office-online-top used to be here too. It was a hardcoded "13" in the
+  // office header that nothing kept current; the Online tile in the operations
+  // summary replaced it.
+  const el = document.getElementById('room-online-count');
+  if (el) el.textContent = online;
   renderTopAgentState();
+  renderOpsSummary();
 }
 let _roomTickerIdx = -1;
 function cycleRoomTicker() {
@@ -1003,42 +1005,76 @@ function centerOfficeView(force = false) {
 }
 
 // ─── STATUS BAR ───────────────────────────────────────────────
+// The topbar's live count. The label used to be a bare text node edited in
+// place, which meant the markup and the code had to agree on where the words
+// ended; it has its own element now, and the dot's colour is a class.
 function renderTopAgentState() {
   const count = document.getElementById('onlineCount');
   if (!count) return;
-  const wrap = count.parentElement;
-  const dot = wrap ? wrap.querySelector('.online-dot') : null;
+  const chip = document.getElementById('agent-state-chip') || count.parentElement;
+  const dot = chip ? chip.querySelector('.ao-dot, .online-dot') : null;
+  const label = document.getElementById('onlineLabel');
   const suffix = count.nextSibling;
 
+  const setLabel = (text) => {
+    if (label) label.textContent = text;
+    else if (suffix && suffix.nodeType === Node.TEXT_NODE) suffix.textContent = ' ' + text;
+  };
+  const setDot = (modifier) => {
+    if (!dot) return;
+    dot.className = dot.classList.contains('online-dot') ? 'online-dot' : `ao-dot ao-dot--${modifier}`;
+    dot.style.background = dot.classList.contains('online-dot') ? `var(--state-${modifier})` : '';
+  };
+
   if (openClawGatewayReachable === false) {
-    count.textContent = 'Gateway disconnected';
-    if (suffix && suffix.nodeType === Node.TEXT_NODE) suffix.textContent = '';
-    if (wrap) {
-      wrap.title = 'The OpenClaw local gateway is not reachable from this browser.';
-      wrap.style.color = 'var(--muted)';
-    }
-    if (dot) dot.style.background = 'var(--red, #ef4444)';
+    count.textContent = '';
+    setLabel('Gateway disconnected');
+    if (chip) chip.title = 'The OpenClaw local gateway is not reachable from this browser.';
+    setDot('blocked');
     return;
   }
 
   const activeCount = agentState.filter(a => a.status !== 'offline').length;
   count.textContent = activeCount;
-  if (suffix && suffix.nodeType === Node.TEXT_NODE) {
-    suffix.textContent = openClawGatewayReachable === true ? ' gateway agents' : ' agents configured';
-  }
-  if (wrap) {
-    wrap.title = openClawGatewayReachable === true
+  setLabel(openClawGatewayReachable === true ? 'gateway agents' : 'agents configured');
+  if (chip) {
+    chip.title = openClawGatewayReachable === true
       ? 'OpenClaw local gateway is reachable from this browser.'
       : 'Configured agents. Gateway has not been checked yet.';
-    wrap.style.color = '';
   }
-  if (dot) dot.style.background = openClawGatewayReachable === true
-    ? 'var(--green, #22c55e)'
-    : 'var(--muted, #64748b)';
+  setDot(openClawGatewayReachable === true ? 'active' : 'offline');
 }
 
 function agentDisplayStatus(agent) {
   return openClawGatewayReachable === false ? 'offline' : agent.status;
+}
+
+// ─── AGENT STATE VOCABULARY ───────────────────────────────────
+// One set of names for what an agent is doing, used by the status cards, the
+// dots in the room and the operations summary, so the same agent is never
+// described two different ways on the same screen.
+//   working  — has a task in hand
+//   idle     — online, nothing assigned
+//   blocked  — wants to work and cannot; today that means the gateway is down
+//   offline  — not running
+const AGENT_STATE = {
+  working: { label: 'Working', dot: 'dot-active', css: 'is-active', color: 'var(--state-active)' },
+  idle:    { label: 'Idle',    dot: 'dot-idle',   css: 'is-idle',   color: 'var(--state-idle)' },
+  blocked: { label: 'Blocked', dot: 'dot-blocked', css: 'is-blocked', color: 'var(--state-blocked)' },
+  offline: { label: 'Offline', dot: 'dot-offline', css: 'is-offline', color: 'var(--state-offline)' },
+};
+
+function agentOperationalState(agent) {
+  // A dead gateway blocks the whole floor: the agents are configured and
+  // willing, nothing can reach them.
+  if (openClawGatewayReachable === false) return 'blocked';
+  if (agent.status === 'active') return 'working';
+  if (agent.status === 'offline') return 'offline';
+  return 'idle';
+}
+
+function agentStateMeta(agent) {
+  return AGENT_STATE[agentOperationalState(agent)] || AGENT_STATE.offline;
 }
 
 function agentDisplayTask(agent) {
@@ -1048,8 +1084,10 @@ function agentDisplayTask(agent) {
 function renderStatusBar() {
   const bar = document.getElementById('statusbar');
   if (!bar) return;
-  bar.innerHTML = agentState.map(agent => `
-    <div class="status-card">
+  bar.innerHTML = agentState.map(agent => {
+    const state = agentStateMeta(agent);
+    return `
+    <div class="status-card ${state.css}" title="${escAttr(agent.name)} — ${state.label}">
       <div class="status-card-avatar" style="background: ${agent.color}33; border: 1px solid ${agent.color}55;">
         ${agent.emoji}
       </div>
@@ -1057,10 +1095,117 @@ function renderStatusBar() {
         <div class="status-card-name">${agent.name}</div>
         <div class="status-card-task">${agentDisplayTask(agent)}</div>
       </div>
-      <div class="status-dot ${agentDisplayStatus(agent) === 'active' ? 'dot-active' : agentDisplayStatus(agent) === 'idle' ? 'dot-idle' : 'dot-offline'}"></div>
+      <div class="status-card-state">
+        <div class="status-dot ${state.dot}"></div>
+        <div class="status-card-state-label">${state.label}</div>
+      </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
   renderTopAgentState();
+  renderOpsSummary();
+}
+
+// ─── OPERATIONS SUMMARY ───────────────────────────────────────
+// The strip above the room. Counts come from the same agentState the office
+// draws; the queue and the next action come from the Dropbox API, which needs
+// an unlocked session — when it is locked the two tiles say so instead of
+// showing a made-up zero.
+let opsQueue = { loaded: false, available: false, open: 0, next: null };
+
+function opsAgentCounts() {
+  const counts = { working: 0, idle: 0, blocked: 0, offline: 0 };
+  agentState.forEach(agent => { counts[agentOperationalState(agent)] += 1; });
+  counts.online = counts.working + counts.idle;
+  return counts;
+}
+
+// "Open" is everything still on the board: archived work is done with, and a
+// reminder that has not come due yet is not asking for anything today.
+function opsIsOpenDrop(drop) {
+  return (drop.status || 'inbox') !== 'archived';
+}
+
+async function refreshOpsQueue() {
+  if (!document.getElementById('ops-summary')) return;
+  try {
+    const drops = await loadDrops();
+    if (drops === null) {
+      opsQueue = { loaded: true, available: false, open: 0, next: null };
+    } else {
+      const open = drops.filter(opsIsOpenDrop);
+      const next = open
+        .map(drop => ({ drop, reminder: dropReminderInfo(drop) }))
+        .filter(entry => entry.reminder)
+        .sort((a, b) => a.reminder.at - b.reminder.at)[0] || null;
+      opsQueue = { loaded: true, available: true, open: open.length, next };
+    }
+  } catch {
+    // A failed fetch is not an empty queue — say nothing rather than zero.
+    opsQueue = { loaded: true, available: false, open: 0, next: null };
+  }
+  renderOpsSummary();
+}
+
+function opsNextAction() {
+  if (openClawGatewayReachable === false) {
+    return { text: 'Reconnect the OpenClaw gateway', meta: 'Every agent is blocked until it answers', tone: 'alert' };
+  }
+  if (!opsQueue.loaded) return { text: 'Checking the board…', meta: '', tone: '' };
+  if (!opsQueue.available) return { text: 'Unlock the Dropbox to see what is next', meta: 'Session locked', tone: '' };
+  if (opsQueue.next) {
+    const { drop, reminder } = opsQueue.next;
+    return {
+      text: drop.title || drop.content || 'Untitled',
+      meta: reminder.relative,
+      tone: reminder.due ? 'alert' : '',
+    };
+  }
+  if (opsQueue.open) return { text: 'Nothing scheduled', meta: `${opsQueue.open} open on the board`, tone: '' };
+  return { text: 'Board is clear', meta: 'No open items', tone: '' };
+}
+
+function renderOpsSummary() {
+  const el = document.getElementById('ops-summary');
+  if (!el) return;
+
+  const counts = opsAgentCounts();
+  const next = opsNextAction();
+  const queueValue = opsQueue.loaded && !opsQueue.available ? '—' : opsQueue.open;
+  const queueNote = opsQueue.loaded
+    ? (opsQueue.available ? 'On the board' : 'Dropbox locked')
+    : 'Loading…';
+
+  const metric = (opts) => `
+    <${opts.href ? 'a' : 'div'} class="ops-metric ${opts.tone || ''}"${opts.href ? ` href="${opts.href}"` : ''} title="${escAttr(opts.title || opts.label)}">
+      <span class="ops-metric-label"><span class="ao-dot ao-dot--${opts.dot}"></span>${opts.label}</span>
+      <span class="ops-metric-value">${opts.value}</span>
+      <span class="ops-metric-note">${escHTML(opts.note)}</span>
+    </${opts.href ? 'a' : 'div'}>`;
+
+  el.innerHTML = [
+    metric({
+      label: 'Online', dot: 'active', value: counts.online, note: `${agentState.length} on the roster`,
+      title: 'Agents reachable right now',
+    }),
+    metric({
+      label: 'Working', dot: 'active', value: counts.working, note: counts.idle + ' idle',
+      title: 'Agents with a task in hand',
+    }),
+    metric({
+      label: 'Blocked', dot: 'blocked', value: counts.blocked, note: counts.blocked ? 'Needs attention' : 'All clear',
+      tone: counts.blocked ? 'is-alert' : '', title: 'Agents that cannot work right now',
+    }),
+    metric({
+      label: 'Queued', dot: 'queued', value: queueValue, note: queueNote,
+      href: '/mission-board.html', title: 'Open items on the Mission Board',
+    }),
+    `<a class="ops-metric ops-next ${next.tone === 'alert' ? 'is-alert' : ''}" href="/mission-board.html?reminder=due" title="Next thing that needs you">
+      <span class="ops-metric-label"><span class="ao-dot ao-dot--${next.tone === 'alert' ? 'blocked' : 'queued'}"></span>Next action</span>
+      <span class="ops-next-value">${escHTML(next.text)}</span>
+      <span class="ops-next-meta">${next.meta ? `<span class="ao-badge ${next.tone === 'alert' ? 'ao-badge--danger' : ''}">${escHTML(next.meta)}</span>` : ''}</span>
+    </a>`,
+  ].join('');
 }
 
 // ─── ACTIVITY FEED ────────────────────────────────────────────
@@ -1127,12 +1272,10 @@ function syncAgentElement(agent) {
 
   const dot = el.querySelector('.agent-status-dot');
   if (dot) {
-    const status = agentDisplayStatus(agent);
-    dot.style.background = status === 'active'
-      ? 'var(--green)'
-      : status === 'idle'
-        ? 'var(--yellow)'
-        : 'var(--muted)';
+    // Same vocabulary as the status cards and the summary above the room.
+    const state = agentStateMeta(agent);
+    dot.style.background = state.color;
+    dot.title = state.label;
   }
 
   applyAgentDepth(el, projected);
@@ -1253,14 +1396,16 @@ window.SETTINGS = (() => {
     grid.innerHTML = Object.entries(THEMES).map(([key, t]) => {
       const on = key === active;
       const a = t.accent;
-      return `<button onclick="SETTINGS.applyTheme('${key}')" style="display:flex;flex-direction:column;align-items:center;gap:8px;background:${surface.panel(a)};border:2px solid ${on ? a : surface.border(a)};border-radius:12px;padding:14px 16px;cursor:pointer;min-width:76px;transition:border-color 0.15s;">
-        <div style="display:flex;gap:4px;">
-          <div style="width:13px;height:13px;border-radius:50%;background:${surface.wash(a)};border:1px solid ${surface.border(a)};"></div>
-          <div style="width:13px;height:13px;border-radius:50%;background:${surface.panel(a)};border:1px solid ${surface.border(a)};"></div>
-          <div style="width:13px;height:13px;border-radius:50%;background:${a};"></div>
-        </div>
-        <div style="font-size:11px;color:#e8ecf5;font-weight:${on ? 600 : 400};">${t.label}</div>
-        ${on ? `<div style="font-size:9px;color:${a};">✓ Active</div>` : '<div style="font-size:9px;color:transparent;">·</div>'}
+      // The three dots preview the page, panel and accent this theme derives,
+      // so their colours are genuinely data. Everything else is a class.
+      return `<button class="theme-swatch${on ? ' is-active' : ''}" style="--swatch-accent:${a}; --swatch-panel:${surface.panel(a)}; --swatch-border:${surface.border(a)};" onclick="SETTINGS.applyTheme('${key}')" aria-pressed="${on}">
+        <span class="theme-swatch-dots">
+          <span class="theme-swatch-dot" style="background:${surface.wash(a)};"></span>
+          <span class="theme-swatch-dot" style="background:${surface.panel(a)};"></span>
+          <span class="theme-swatch-dot" style="background:${a}; border-color:${a};"></span>
+        </span>
+        <span class="theme-swatch-name">${escHTML(t.label)}</span>
+        <span class="theme-swatch-state">${on ? '✓ Active' : ''}</span>
       </button>`;
     }).join('');
   }
@@ -1370,12 +1515,13 @@ window.SETTINGS = (() => {
     const dot = document.getElementById('settings-gateway-dot');
     const label = document.getElementById('settings-gateway-state');
     const endpoint = document.getElementById('settings-gateway-endpoint');
-    const color = state === 'online' ? '#22c55e'
-      : state === 'offline' ? '#ef4444'
-        : state === 'partial' ? '#f59e0b'
-          : '#64748b';
+    // The dot speaks the same state vocabulary as the rest of the app.
+    const modifier = state === 'online' ? 'active'
+      : state === 'offline' ? 'blocked'
+        : state === 'partial' ? 'idle'
+          : 'offline';
     if (dot) {
-      dot.style.background = color;
+      dot.className = `ao-dot ao-dot--${modifier}`;
       dot.title = message;
     }
     if (label) label.textContent = message;
@@ -1670,8 +1816,8 @@ window.SETTINGS = (() => {
     const msg = document.getElementById('settings-gateway-msg');
     if (msg) {
       msg.textContent = savedLocal && savedLan ? 'Saved.' : (!local && !lan ? 'Cleared for this browser.' : 'Saved locally.');
-      msg.style.display = 'inline';
-      setTimeout(() => { msg.style.display = 'none'; }, 2000);
+      msg.hidden = false;
+      setTimeout(() => { msg.hidden = true; }, 2000);
     }
   }
 
@@ -1712,7 +1858,11 @@ function switchView(view, navEl) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('view-' + view).classList.add('active');
+  // Pages call this with document.querySelector('.nav-item.active'), which is
+  // null now that the sidebar no longer hand-marks its own row — so fall back
+  // to working the highlight out from the URL.
   if (navEl) navEl.classList.add('active');
+  else markActiveNav();
   const handler = VIEW_HANDLERS[view];
   if (handler && typeof handler.enter === 'function') handler.enter();
   currentView = view;
@@ -2682,17 +2832,87 @@ function toggleNavSub(e, chevronEl) {
   saveNavState(state);
 }
 
-// Dropbox and Reminders are the same page told apart by ?view=ios, so the
-// markup's active item is right for only one of them.
-function markActiveNavForQuery() {
-  if (new URLSearchParams(location.search).get('view') !== 'ios') return;
-  document.querySelectorAll('.nav-item[href^="/mission-board.html"]').forEach(item => {
-    item.classList.toggle('active', item.getAttribute('href').includes('view=ios'));
+// Which nav row is highlighted is read off the URL rather than written into
+// each page's markup. The sidebar is copied into thirteen pages; when every
+// copy also had to hand-mark its own row, the copies drifted (index.html and
+// memory.html disagreed on both the label and the order of the Office
+// sub-menu). Now the markup is identical everywhere and this decides.
+function navItemPath(href) {
+  const url = new URL(href, location.origin);
+  return { path: url.pathname === '/index.html' ? '/' : url.pathname, params: url.searchParams };
+}
+
+function markActiveNav() {
+  const here = location.pathname === '/index.html' ? '/' : location.pathname;
+  const isIosView = new URLSearchParams(location.search).get('view') === 'ios';
+
+  document.querySelectorAll('.nav .nav-item').forEach(item => {
+    const href = item.getAttribute('href');
+    // Rows that leave the app (AI Portal, My Websites) are never "where you
+    // are", and neither are the pure-button rows.
+    if (!href || /^https?:/i.test(href)) { item.classList.remove('active'); return; }
+
+    const target = navItemPath(href);
+    let active = target.path === here;
+    // Dropbox and Reminders are the same page told apart by ?view=ios.
+    if (active && target.path === '/mission-board.html') {
+      active = (target.params.get('view') === 'ios') === isIosView;
+    }
+    item.classList.toggle('active', active);
   });
 }
 
+// ─── SIDEBAR COMPACT RAIL ─────────────────────────────────────
+// Collapsing to icons is a preference, so it is restored before first paint by
+// the inline script in each page's <head>; this only keeps the two in step.
+const NAV_COMPACT_KEY = 'ao-nav-compact';
+
+function navCompactPreferred() {
+  try { return localStorage.getItem(NAV_COMPACT_KEY) === '1'; } catch { return false; }
+}
+
+function applyNavCompact(compact) {
+  document.documentElement.classList.toggle('nav-compact', compact);
+  const btn = document.getElementById('nav-collapse-btn');
+  if (btn) {
+    btn.setAttribute('aria-expanded', String(!compact));
+    btn.title = compact ? 'Expand sidebar' : 'Collapse sidebar';
+    const label = btn.querySelector('.nav-collapse-label');
+    if (label) label.textContent = compact ? 'Expand' : 'Collapse';
+  }
+  const nav = document.querySelector('.nav');
+  if (nav) nav.setAttribute('aria-label', compact ? 'Primary (compact)' : 'Primary');
+  // In the rail the label is gone, so the row's own tooltip is the only thing
+  // naming it.
+  document.querySelectorAll('.nav .nav-item, .nav .nav-link').forEach(item => {
+    if (!item.dataset.navTitle) {
+      const text = (item.querySelector('.nav-item-label') || item).textContent.trim();
+      if (text) item.dataset.navTitle = text;
+    }
+    if (compact && item.dataset.navTitle) item.setAttribute('title', item.dataset.navTitle);
+    else if (item.dataset.navTitle) item.removeAttribute('title');
+  });
+}
+
+function toggleNavCompact() {
+  const compact = !document.documentElement.classList.contains('nav-compact');
+  try { localStorage.setItem(NAV_COMPACT_KEY, compact ? '1' : '0'); } catch {}
+  applyNavCompact(compact);
+  // The office is sized to its column, so it has to be re-measured.
+  if (typeof officeHasAutoCentered !== 'undefined' && document.getElementById('officesvg')) {
+    setTimeout(() => { resizeCanvas(); renderAgents(); }, 260);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-  markActiveNavForQuery();
+  markActiveNav();
+  applyNavCompact(navCompactPreferred());
+  if (document.getElementById('ops-summary')) {
+    renderOpsSummary();
+    refreshOpsQueue();
+    // The board changes from a phone or a Shortcut, not just from here.
+    setInterval(refreshOpsQueue, 120000);
+  }
   const state = getNavState();
   document.querySelectorAll('.nav-item-parent').forEach(parentEl => {
     const sub = parentEl.parentElement && parentEl.parentElement.querySelector('.nav-sub');
@@ -2725,17 +2945,21 @@ document.addEventListener('DOMContentLoaded', () => {
 // ─── PANEL COLLAPSE ───────────────────────────────────────────────────────────
 let feedPanelOpen = false;
 
+// Both toggles used to paint their own colours inline, which is why the "on"
+// accent was a hardcoded indigo that ignored the chosen theme. The state is a
+// class now and shared.css owns what it looks like.
+function setToggleButton(id, on) {
+  const btn = document.getElementById(id);
+  if (!btn) return null;
+  btn.classList.toggle('is-on', on);
+  btn.setAttribute('aria-pressed', String(on));
+  return btn;
+}
+
 function toggleFeedPanel() {
   feedPanelOpen = !feedPanelOpen;
-  const layout = document.querySelector('.layout');
-  const btn = document.getElementById('feed-toggle-btn');
-  if (feedPanelOpen) {
-    layout.classList.remove('feed-collapsed');
-    if (btn) { btn.style.color = 'var(--accent)'; btn.style.borderColor = 'var(--accent)'; btn.style.background = 'rgba(99,102,241,0.12)'; }
-  } else {
-    layout.classList.add('feed-collapsed');
-    if (btn) { btn.style.color = 'var(--muted)'; btn.style.borderColor = 'var(--border)'; btn.style.background = 'transparent'; }
-  }
+  document.querySelector('.layout').classList.toggle('feed-collapsed', !feedPanelOpen);
+  setToggleButton('feed-toggle-btn', feedPanelOpen);
 }
 
 let focusMode = false;
@@ -2743,22 +2967,9 @@ let focusMode = false;
 function setFocusMode(enabled) {
   focusMode = enabled;
   const layout = document.querySelector('.layout');
-  const btn = document.getElementById('focus-btn');
-  if (focusMode) {
-    layout.classList.add('nav-collapsed', 'feed-collapsed');
-    btn.style.color = 'var(--accent)';
-    btn.style.borderColor = 'var(--accent)';
-    btn.style.background = 'rgba(99,102,241,0.12)';
-    btn.textContent = '⛶ Focus';
-  } else {
-    layout.classList.remove('nav-collapsed');
-    if (!feedPanelOpen) layout.classList.add('feed-collapsed');
-    else layout.classList.remove('feed-collapsed');
-    btn.style.color = 'var(--muted)';
-    btn.style.borderColor = 'var(--border)';
-    btn.style.background = 'transparent';
-    btn.textContent = '⛶ Focus';
-  }
+  layout.classList.toggle('nav-collapsed', focusMode);
+  layout.classList.toggle('feed-collapsed', focusMode || !feedPanelOpen);
+  setToggleButton('focus-btn', focusMode);
 }
 
 // ─── MOBILE NAV ───────────────────────────────────────────────────────────────
@@ -2780,18 +2991,22 @@ function toggleFocusMode() {
   setFocusMode(!focusMode);
 }
 
+function setMobileNavOpen(open) {
+  const nav = document.querySelector('.nav');
+  const overlay = document.getElementById('mobile-overlay');
+  if (nav) nav.classList.toggle('mobile-open', open);
+  if (overlay) overlay.classList.toggle('is-open', open);
+  const toggle = document.querySelector('.mobile-nav-toggle');
+  if (toggle) toggle.setAttribute('aria-expanded', String(open));
+}
+
 function toggleMobileNav() {
-  var nav = document.querySelector('.nav');
-  var overlay = document.getElementById('mobile-overlay');
-  var isOpen = nav.classList.toggle('mobile-open');
-  if (overlay) overlay.style.display = isOpen ? 'block' : 'none';
+  const nav = document.querySelector('.nav');
+  setMobileNavOpen(!(nav && nav.classList.contains('mobile-open')));
   // Other sections are always-visible headings; the My Websites & Projects dropdown keeps its own state.
 }
 function closeMobileNav() {
-  var nav = document.querySelector('.nav');
-  var overlay = document.getElementById('mobile-overlay');
-  if (nav) nav.classList.remove('mobile-open');
-  if (overlay) overlay.style.display = 'none';
+  setMobileNavOpen(false);
 }
 // Close nav when a nav-item is tapped on mobile
 document.querySelectorAll('.nav-item').forEach(el => {
@@ -2839,14 +3054,14 @@ function showPassphraseModal() {
     const submitBtn = document.getElementById('passphrase-submit');
     const cancelBtn = document.getElementById('passphrase-cancel');
 
-    errorEl.style.display = 'none';
+    errorEl.hidden = true;
     errorEl.textContent = '';
     input.value = '';
-    modal.style.display = 'flex';
+    modal.hidden = false;
     setTimeout(() => input.focus(), 100);
 
     function cleanup() {
-      modal.style.display = 'none';
+      modal.hidden = true;
       submitBtn.removeEventListener('click', onSubmit);
       cancelBtn.removeEventListener('click', onCancel);
       input.removeEventListener('keydown', onKeydown);
@@ -2874,9 +3089,9 @@ function showPassphraseError(message) {
   const errorEl = document.getElementById('passphrase-error');
   const input = document.getElementById('passphrase-input');
   errorEl.textContent = message;
-  errorEl.style.display = 'block';
+  errorEl.hidden = false;
   input.value = '';
-  modal.style.display = 'flex';
+  modal.hidden = false;
   setTimeout(() => input.focus(), 100);
 }
 
@@ -3582,35 +3797,41 @@ const MEM = (() => {
     } catch { return _cache || []; }
   }
 
+  // An agent's colour reaches a chip as --chip-color; the shape and the
+  // selected treatment are .ao-chip's business, in shared.css.
+  function agentChip(agent, { selected, onclick }) {
+    return `<button class="ao-chip${selected ? ' is-active' : ''}" data-agent="${agent.id}"
+      style="--chip-color:${agent.color};" onclick="${onclick}">${agent.emoji} ${escHTML(agent.name)}</button>`;
+  }
+
   function selectFormAgent(id) {
     document.getElementById('mem-agent').value = id;
-    document.querySelectorAll('#mem-agent-tabs .mem-tab').forEach(b => {
-      const a = AGENTS.find(x => x.id === b.dataset.agent);
-      if (!a) return;
-      const sel = b.dataset.agent === id;
-      b.style.background = sel ? a.color + '25' : 'transparent';
-      b.style.borderColor = sel ? a.color : 'var(--border)';
-      b.style.color = sel ? a.color : 'var(--muted)';
+    document.querySelectorAll('#mem-agent-tabs .ao-chip').forEach(b => {
+      b.classList.toggle('is-active', b.dataset.agent === id);
     });
+  }
+
+  function openForm() {
+    const form = document.getElementById('mem-form');
+    form.hidden = false;
+    document.getElementById('mem-content').focus();
   }
 
   function showForm() {
     _editingId = null;
     const tabs = document.getElementById('mem-agent-tabs');
-    tabs.innerHTML = AGENTS.map(a =>
-      `<button class="mem-tab" data-agent="${a.id}" onclick="MEM.selectFormAgent('${a.id}')"
-        style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; white-space:nowrap;">${a.emoji} ${a.name}</button>`
-    ).join('');
     const preselect = activeAgent !== 'all' ? activeAgent : AGENTS[0].id;
-    selectFormAgent(preselect);
+    tabs.innerHTML = AGENTS.map(a =>
+      agentChip(a, { selected: a.id === preselect, onclick: `MEM.selectFormAgent('${a.id}')` })
+    ).join('');
+    document.getElementById('mem-agent').value = preselect;
     document.getElementById('mem-content').value = '';
-    document.getElementById('mem-form').style.display = 'block';
-    document.getElementById('mem-content').focus();
+    openForm();
   }
 
   function hideForm() {
     _editingId = null;
-    document.getElementById('mem-form').style.display = 'none';
+    document.getElementById('mem-form').hidden = true;
     document.getElementById('mem-content').value = '';
   }
 
@@ -3619,12 +3840,11 @@ const MEM = (() => {
     if (!entry) return;
     _editingId = id;
     const tabs = document.getElementById('mem-agent-tabs');
-    const agent = AGENTS.find(a => a.id === entry.agent) || { emoji: '?', name: entry.agent, color: '#64748b' };
-    tabs.innerHTML = `<span style="font-size:13px; color:${agent.color}; font-weight:600;">${agent.emoji} ${escHTML(agent.name)}</span>`;
+    const agent = AGENTS.find(a => a.id === entry.agent) || { emoji: '?', name: entry.agent, color: 'var(--muted)' };
+    tabs.innerHTML = `<span class="ao-entity-name" style="--entity-color:${agent.color};">${agent.emoji} ${escHTML(agent.name)}</span>`;
     document.getElementById('mem-agent').value = entry.agent;
     document.getElementById('mem-content').value = entry.content;
-    document.getElementById('mem-form').style.display = 'block';
-    document.getElementById('mem-content').focus();
+    openForm();
   }
 
   async function save() {
@@ -3660,92 +3880,82 @@ const MEM = (() => {
     render();
   }
 
-  function setFilter(agentId, btn) {
+  // The roster cards call this with one argument, which used to throw on
+  // `btn.classList` and left clicking a card dead. The filter bar redraws
+  // itself from activeAgent now, so there is no button to be handed.
+  function setFilter(agentId) {
     activeAgent = agentId;
-    document.querySelectorAll('#mem-filters .mem-filter').forEach(b => {
-      b.classList.remove('active');
-      b.style.background = 'transparent';
-      b.style.borderColor = 'var(--border)';
-      b.style.color = 'var(--muted)';
-    });
-    btn.classList.add('active');
-    const agent = AGENTS.find(a => a.id === agentId);
-    const color = agent ? agent.color : 'var(--accent)';
-    btn.style.background = (agentId === 'all') ? 'rgba(99,102,241,0.15)' : color + '20';
-    btn.style.borderColor = (agentId === 'all') ? 'var(--accent)' : color;
-    btn.style.color = (agentId === 'all') ? 'var(--accent)' : color;
+    renderFilters();
     renderList();
   }
 
   function renderFilters() {
     const bar = document.getElementById('mem-filters');
-    const isAll = activeAgent === 'all';
-    let html = `<button class="mem-filter${isAll ? ' active' : ''}" onclick="MEM.setFilter('all', this)"
-      style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid ${isAll ? 'var(--accent)' : 'var(--border)'}; background:${isAll ? 'rgba(99,102,241,0.15)' : 'transparent'}; color:${isAll ? 'var(--accent)' : 'var(--muted)'}; cursor:pointer;">All</button>`;
-    AGENTS.forEach(a => {
-      const isActive = activeAgent === a.id;
-      html += `<button class="mem-filter${isActive ? ' active' : ''}" onclick="MEM.setFilter('${a.id}', this)"
-        style="font-size:12px; padding:6px 14px; border-radius:20px; border:1px solid ${isActive ? a.color : 'var(--border)'}; background:${isActive ? a.color + '20' : 'transparent'}; color:${isActive ? a.color : 'var(--muted)'}; cursor:pointer;">${a.emoji} ${a.name}</button>`;
-    });
-    bar.innerHTML = html;
+    const all = `<button class="ao-chip${activeAgent === 'all' ? ' is-active' : ''}" onclick="MEM.setFilter('all')">All</button>`;
+    bar.innerHTML = all + AGENTS.map(a =>
+      agentChip(a, { selected: activeAgent === a.id, onclick: `MEM.setFilter('${a.id}')` })
+    ).join('');
   }
 
   async function renderList() {
     const list = document.getElementById('mem-list');
-    list.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--muted);font-size:13px;">Loading...</div>`;
+    list.innerHTML = `<div class="ao-empty">Loading…</div>`;
     const entries = await load();
     const filtered = activeAgent === 'all' ? entries : entries.filter(e => e.agent === activeAgent);
 
     if (filtered.length === 0) {
-      list.innerHTML = `<div style="text-align:center; padding:60px 0; color:var(--muted); font-size:13px;">No memories yet. Hit <strong style="color:var(--text)">+ New Memory</strong> to add one.</div>`;
+      list.innerHTML = `<div class="ao-empty">No memories yet. Hit <strong>＋ New Memory</strong> to add one.</div>`;
       return;
     }
 
-    list.innerHTML = filtered.map(e => {
-      const agent = AGENTS.find(a => a.id === e.agent) || { emoji: '?', name: e.agent, color: '#64748b' };
+    list.innerHTML = `<div class="mem-entries">` + filtered.map(e => {
+      const agent = AGENTS.find(a => a.id === e.agent) || { emoji: '?', name: e.agent, color: 'var(--muted)' };
       const date = new Date(e.date || e.created_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-      return `<div style="background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px 20px; margin-bottom:12px; border-left:3px solid ${agent.color};">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:12px; flex-wrap:wrap;">
-          <div style="display:flex; align-items:center; gap:10px;">
-            <span style="font-size:16px;">${agent.emoji}</span>
-            <span style="font-size:13px; font-weight:600; color:${agent.color};">${escHTML(agent.name)}</span>
+      return `<article class="ao-card ao-entity-card" style="--entity-color:${agent.color};">
+        <div class="ao-card-head">
+          <div class="mem-entry-agent">
+            <span class="ao-entity-emoji">${agent.emoji}</span>
+            <span class="ao-entity-name">${escHTML(agent.name)}</span>
           </div>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span style="font-size:11px; color:var(--muted);">${date}</span>
-            <button onclick="MEM.edit('${e.id}')" style="background:transparent; border:1px solid rgba(99,102,241,0.3); color:var(--accent); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; opacity:0.6; transition:opacity 0.15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">edit</button>
-            <button onclick="MEM.remove('${e.id}')" style="background:transparent; border:1px solid rgba(239,68,68,0.3); color:#ef4444; border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; opacity:0.6; transition:opacity 0.15s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">delete</button>
+          <div class="ao-toolbar">
+            <span class="ao-card-sub">${date}</span>
+            <button class="ao-btn ao-btn--sm" onclick="MEM.edit('${e.id}')">edit</button>
+            <button class="ao-btn ao-btn--sm ao-btn--danger" onclick="MEM.remove('${e.id}')">delete</button>
           </div>
         </div>
-        <div style="font-size:13px; color:var(--text); line-height:1.6; white-space:pre-wrap;">${escHTML(e.content)}</div>
-      </div>`;
-    }).join('');
+        <div class="mem-entry-body">${escHTML(e.content)}</div>
+      </article>`;
+    }).join('') + `</div>`;
   }
 
-    function renderRoster() {
+  function renderRoster() {
     const grid = document.getElementById('mem-roster-grid');
     if (!grid) return;
     grid.innerHTML = Object.entries(AGENT_DESCRIPTIONS).map(([id, info]) => {
-      const agent = AGENTS.find(a => a.id === id) || { color: '#64748b', emoji: '?' };
+      const agent = AGENTS.find(a => a.id === id) || { color: 'var(--muted)', emoji: '?' };
       const memBadge = info.memory
-        ? '<span style="background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600;">MEMORY ON</span>'
-        : '<span style="background:rgba(100,116,139,0.15);color:var(--muted);border:1px solid var(--border);border-radius:20px;padding:2px 8px;font-size:10px;">STATELESS</span>';
-      return '<div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;border-left:3px solid ' + agent.color + ';cursor:pointer;" onclick="MEM.setFilter(\'' + id + '\')">'
-        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
-        + '<div style="display:flex;align-items:center;gap:8px;">'
-        + '<span style="font-size:18px;">' + agent.emoji + '</span>'
-        + '<span style="font-size:13px;font-weight:700;color:' + agent.color + ';">' + info.name + '</span>'
-        + '</div>' + memBadge + '</div>'
-        + '<div style="font-size:11px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">' + info.role + '</div>'
-        + '<div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Model: <span style="color:var(--text);">' + info.model + '</span></div>'
-        + '<div style="font-size:12px;color:var(--text);line-height:1.5;opacity:0.75;">' + info.desc + '</div>'
-        + '</div>';
+        ? '<span class="ao-badge ao-badge--success">MEMORY ON</span>'
+        : '<span class="ao-badge">STATELESS</span>';
+      return `<div class="ao-card ao-card--interactive ao-entity-card" style="--entity-color:${agent.color};" onclick="MEM.setFilter('${id}')">
+          <div class="ao-card-head">
+            <div class="mem-entry-agent">
+              <span class="ao-entity-emoji">${agent.emoji}</span>
+              <span class="ao-entity-name">${escHTML(info.name)}</span>
+            </div>${memBadge}
+          </div>
+          <div>
+            <div class="ao-entity-meta">${escHTML(info.role)}</div>
+            <div class="ao-card-sub">Model: <span class="mem-roster-model">${escHTML(info.model)}</span></div>
+          </div>
+          <div class="ao-card-sub">${escHTML(info.desc)}</div>
+        </div>`;
     }).join('');
   }
   async function render() {
     renderRoster();
     renderFilters();
     if (!(await ensureAuth())) {
-      document.getElementById('mem-list').innerHTML = `<div style="text-align:center; padding:60px 0; color:var(--muted); font-size:13px;">Unlock the dropbox first to access memories.</div>`;
+      document.getElementById('mem-list').innerHTML = `<div class="ao-empty">Unlock the dropbox first to access memories.</div>`;
       return;
     }
     await renderList();
