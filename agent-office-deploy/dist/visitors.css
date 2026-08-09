@@ -272,3 +272,7 @@
   margin-top: 10px;
   line-height: 1.6;
 }
+.visitors-note--lead { margin-top: 0; margin-bottom: 10px; }
+.visitors-note--flush { margin: 0; }
+.visitors-gap-top { margin-top: var(--space-3); }
+.visitors-inline-code { display: inline; padding: 1px 5px; }

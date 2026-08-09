@@ -56,7 +56,7 @@
     const project = projectForAgent(agent);
     const task = taskTitle(agent.current_task_id) || agent.current_task_id || 'No active task';
     return `<article class="ops-card">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;">
+      <div class="ops-card-head">
         <div>
           <h3>${escHTML(agent.name)}</h3>
           <div class="ops-meta">${escHTML(agent.role || 'Agent')} / ${escHTML(agent.model || 'unknown model')}</div>
@@ -67,13 +67,13 @@
       <div class="ops-meta">Project: ${escHTML(project || 'Unassigned')}</div>
       <div class="ops-meta">Source: ${escHTML(agent.source || 'Manual')}</div>
       <div class="ops-meta">Last heartbeat: ${agent.last_heartbeat ? dropFormatDate(agent.last_heartbeat) : 'never'}</div>
-      <div class="ops-actions" style="margin-top:12px;">
+      <div class="ops-actions">
         <select class="mission-inline-select" data-agent-status="${escAttr(agent.id)}">
           ${STATUSES.map(status => `<option value="${status}" ${status === agent.status ? 'selected' : ''}>${status}</option>`).join('')}
         </select>
         <button class="btn btn-secondary" data-agent-heartbeat="${escAttr(agent.id)}">Heartbeat</button>
       </div>
-      ${agent.notes ? `<div class="ops-meta" style="margin-top:10px;">${escHTML(agent.notes)}</div>` : ''}
+      ${agent.notes ? `<div class="ops-meta ops-meta--spaced">${escHTML(agent.notes)}</div>` : ''}
     </article>`;
   }
 

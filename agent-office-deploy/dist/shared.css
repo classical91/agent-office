@@ -118,6 +118,16 @@
      Rooms, Mission Board, Streaks, Visitors, AI Models and Settings. A page
      should be able to lay itself out with these and no inline styles. */
 
+  /* Links in body copy. Nav rows, buttons and cards set their own colour and
+     are excluded, so this only reaches prose. */
+  a:not([class]) {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    transition: border-color var(--duration-fast);
+  }
+  a:not([class]):hover { border-bottom-color: var(--accent); }
+
   /* Focus is visible and identical everywhere. Pointer users never see it. */
   :where(a, button, input, textarea, select, [tabindex]):focus-visible {
     outline: 2px solid var(--accent);
@@ -175,11 +185,14 @@
     line-height: var(--lh-tight);
     letter-spacing: -0.01em;
   }
+  /* Capped at a readable measure. On the wider pages the description was
+     running the full 1240px, which is a long way for an eye to track back. */
   .ao-page-sub {
     font-size: var(--fs-md);
     color: var(--text-dim);
     line-height: var(--lh-normal);
     margin-top: var(--space-2);
+    max-width: 68ch;
   }
   .ao-page-actions {
     display: flex;
@@ -1298,6 +1311,43 @@
   .dev-page-title { font-size: var(--fs-2xl); line-height: 1.1; }
   .dev-page-sub { max-width: 720px; }
 
+  /* Gateway Agents, on Settings. These are OpenClaw's agents as the gateway
+     reports them, so the dot speaks the app's state vocabulary rather than
+     carrying three more hex literals. */
+  .gw-agent { min-height: 82px; }
+  .gw-agent-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-bottom: 7px;
+  }
+  .gw-agent-name { font-size: var(--fs-md); color: var(--text); font-weight: 600; }
+  .gw-agent-role { font-size: var(--fs-xs); color: var(--text-dim); line-height: var(--lh-normal); }
+  .gw-agent-source {
+    font-size: var(--fs-2xs);
+    color: color-mix(in srgb, var(--text-dim) 75%, var(--bg));
+    margin-top: 7px;
+  }
+  .gw-agents-empty {
+    grid-column: 1 / -1;
+    font-size: var(--fs-sm);
+    color: var(--text-dim);
+    padding: var(--space-3) 2px;
+  }
+
+  /* The roster beside the office SVG. */
+  .roster-row { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-1) 0; }
+  .roster-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--entity-color, var(--accent));
+    flex-shrink: 0;
+  }
+  .roster-name { font-weight: 500; color: var(--text-strong); font-size: var(--fs-sm); line-height: 1.2; }
+  .roster-role { font-size: var(--fs-xs); color: var(--text-dim); line-height: 1.2; }
+
   /* MEMORY PAGE */
   .mem-entries { display: flex; flex-direction: column; gap: var(--space-3); }
   .mem-entry-agent { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
@@ -1359,6 +1409,87 @@
     padding: var(--space-3);
     border-top: 1px solid var(--border);
     background: var(--surface-sunken);
+  }
+  .room-build-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-2);
+  }
+  .room-build-row--size { gap: var(--space-4); }
+  .room-build-label {
+    font-size: var(--fs-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    width: 44px;
+    flex-shrink: 0;
+  }
+  .room-build-note { font-size: var(--fs-xs); color: var(--text-dim); }
+  .room-build-error { font-size: var(--fs-xs); color: var(--red); margin-bottom: var(--space-2); }
+  .room-build-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-top: 2px;
+  }
+  .room-build-custom {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--fs-xs);
+    color: var(--text-dim);
+    cursor: pointer;
+  }
+
+  /* A swatch is a colour and nothing else: --swatch is the only thing the
+     renderer still writes inline, because it is the preset's actual value. */
+  .room-swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+  .room-swatch {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
+    cursor: pointer;
+    background: var(--swatch);
+    border: 2px solid rgba(255, 255, 255, 0.16);
+    transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
+  }
+  .room-swatch.is-active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+  .room-color-input {
+    width: 28px;
+    height: 26px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: none;
+    cursor: pointer;
+  }
+
+  .room-stepper { display: flex; align-items: center; gap: 6px; }
+  .room-step {
+    width: 24px;
+    height: 26px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--border);
+    color: var(--text-quiet);
+    font-size: var(--fs-md);
+    line-height: 1;
+    cursor: pointer;
+  }
+  .room-step:hover:not(:disabled) { color: var(--text-strong); border-color: var(--border-strong); }
+  .room-step:disabled { opacity: 0.4; cursor: default; }
+  .room-step-value {
+    min-width: 20px;
+    text-align: center;
+    font-size: var(--fs-sm);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-strong);
   }
 
   /* OFFICE CANVAS AREA */

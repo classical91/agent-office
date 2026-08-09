@@ -35,8 +35,37 @@
 .ops-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px;
+  gap: var(--space-3);
 }
+/* The project list is one column beside its detail pane. */
+.ops-grid--single { grid-template-columns: 1fr; }
+.ops-split {
+  display: grid;
+  grid-template-columns: minmax(260px, 360px) 1fr;
+  gap: var(--space-3);
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .ops-split { grid-template-columns: 1fr; }
+}
+
+/* The card layout bits these pages used to write inline. */
+.ops-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+/* The selected project room, which used to inline a fixed indigo wash that
+   ignored the accent theme. */
+.ops-card.is-selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.ops-meta--spaced { margin-top: var(--space-2); }
+.ops-heading--spaced { margin-top: 18px; }
+.ops-link { color: var(--accent); }
 
 .ops-card {
   border: 1px solid var(--border);
@@ -104,9 +133,10 @@
 
 .ops-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   flex-wrap: wrap;
   align-items: center;
+  margin-top: var(--space-3);
 }
 
 .ops-kpi-row {

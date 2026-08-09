@@ -312,7 +312,7 @@ window.AOStreaks = (() => {
   }
 
   function lockedNotice(message) {
-    return `<div class="streaks-empty">${message}<br/><button class="streaks-btn primary" style="margin-top:12px;" onclick="AOStreaks.unlock()">Unlock</button></div>`;
+    return `<div class="streaks-empty">${message}<br/><button class="streaks-btn primary streaks-btn--spaced" onclick="AOStreaks.unlock()">Unlock</button></div>`;
   }
 
   function renderSummary() {
@@ -403,7 +403,7 @@ window.AOStreaks = (() => {
       wrap.innerHTML = !state.streaks.length
         ? '<div class="streaks-empty">No streaks yet.<br/>Add one and every day you keep it lands on the calendar.</div>'
         : onlyArchivedLeft
-          ? '<div class="streaks-empty">Every streak is archived.<br/><button class="streaks-btn" style="margin-top:12px;" onclick="AOStreaks.toggleShowArchived()">Show archived</button></div>'
+          ? '<div class="streaks-empty">Every streak is archived.<br/><button class="streaks-btn streaks-btn--spaced" onclick="AOStreaks.toggleShowArchived()">Show archived</button></div>'
           : '<div class="streaks-empty">No streak matches this filter.</div>';
       return;
     }
@@ -418,7 +418,7 @@ window.AOStreaks = (() => {
               <div class="streak-card-name">${escHtml(streak.name)}</div>
               <span class="streak-type-chip">${escHtml(typeLabel(streak.type))}</span>
             </div>
-            <div class="streak-card-count">${streak.stats.current}<span style="font-size:11px;"> day${streak.stats.current === 1 ? '' : 's'}</span></div>
+            <div class="streak-card-count">${streak.stats.current}<span class="streak-card-unit"> day${streak.stats.current === 1 ? '' : 's'}</span></div>
           </div>
           ${sparkline(streak)}
           <div class="streak-card-meta">Longest ${streak.stats.longest} · ${streak.stats.total_days} day${streak.stats.total_days === 1 ? '' : 's'} total${streak.stats.last_day ? ` · last ${escHtml(streak.stats.last_day)}` : ''}</div>
@@ -437,10 +437,10 @@ window.AOStreaks = (() => {
     const wrap = el('streak-form');
     if (!wrap) return;
     if (!state.formOpen) {
-      wrap.style.display = 'none';
+      wrap.hidden = true;
       return;
     }
-    wrap.style.display = 'block';
+    wrap.hidden = false;
 
     const picker = el('streak-type-picker');
     if (picker) {
@@ -450,7 +450,7 @@ window.AOStreaks = (() => {
     }
 
     const customField = el('streak-form-custom-field');
-    if (customField) customField.style.display = state.formType === '__custom' ? 'block' : 'none';
+    if (customField) customField.hidden = state.formType !== '__custom';
 
     const title = el('streak-form-title');
     if (title) title.textContent = state.editingId ? 'Edit streak' : 'New streak';
@@ -537,7 +537,7 @@ window.AOStreaks = (() => {
       if (cursor.getDay() === 0) {
         const label = cursor.getMonth() !== lastMonth ? cursor.toLocaleDateString(undefined, { month: 'short' }) : '';
         lastMonth = cursor.getMonth();
-        monthLabels.push(`<span style="width:11px;flex:0 0 11px;">${escHtml(label)}</span>`);
+        monthLabels.push(`<span class="streak-month-label">${escHtml(label)}</span>`);
       }
       if (!kept.length || key > state.today) {
         cells.push(`<div class="streak-year-cell" title="${escHtml(key)}"></div>`);

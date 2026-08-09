@@ -7,8 +7,8 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>Countdowns - Agent Office</title>
-<link rel="stylesheet" href="shared.css?v=template-v2-20260809"/>
-<link rel="stylesheet" href="countdowns.css?v=countdowns-20260809"/>
+<link rel="stylesheet" href="shared.css?v=template-v2-followup-20260809"/>
+<link rel="stylesheet" href="countdowns.css?v=template-v2-followup-20260809"/>
 <!-- Restores the saved theme and sidebar state before first paint, so no page
      flashes the default accent or a full-width sidebar on its way in.
      ACCENTS mirrors THEMES in app-shared.js. -->
@@ -110,27 +110,29 @@
   </nav>
 
   <div class="view view--scroll ao-scroll" id="view-countdowns">
-    <section class="cd-view">
+    <section class="ao-page cd-view">
 
-      <div class="cd-hero">
-        <div class="cd-kicker">Upcoming</div>
-        <h2>Countdowns</h2>
-        <div class="cd-sub">
+      <div class="ao-page-heading">
+        <div class="ao-eyebrow">⏳ COUNTDOWNS</div>
+        <div class="ao-page-sub">
           Everything with a clock on it, in one place — deadlines, goals, work shifts, weekly routines
           and trading dates, alongside what is next on the calendar. Each card carries the time left
           and the next action, so the answer to "what now" is on the card rather than in your head.
         </div>
-        <div class="cd-summary" id="cd-summary"></div>
       </div>
 
-      <div class="cd-banner" id="cd-banner" style="display:none;"></div>
+      <!-- The same tiles as the office's operations summary: a count of things
+           that need you is a count of things that need you, wherever it is. -->
+      <div class="ops-summary cd-summary" id="cd-summary" aria-label="Countdown summary"></div>
 
-      <div class="cd-toolbar">
-        <select class="cd-select" id="cd-filter-category" onchange="AOCountdowns.setCategoryFilter(this.value)" aria-label="Filter by category"></select>
-        <button class="cd-btn" id="cd-toggle-events" onclick="AOCountdowns.toggleEvents()">Hide calendar events</button>
+      <div class="cd-banner" id="cd-banner" hidden></div>
+
+      <div class="ao-toolbar cd-toolbar">
+        <select class="ao-select cd-select" id="cd-filter-category" onchange="AOCountdowns.setCategoryFilter(this.value)" aria-label="Filter by category"></select>
+        <button class="ao-btn" id="cd-toggle-events" onclick="AOCountdowns.toggleEvents()">Hide calendar events</button>
         <div class="spacer"></div>
-        <button class="cd-btn ghost" onclick="AOCountdowns.refresh()">Refresh</button>
-        <button class="cd-btn primary" onclick="AOCountdowns.openForm('')">+ New countdown</button>
+        <button class="ao-btn" onclick="AOCountdowns.refresh()">Refresh</button>
+        <button class="ao-btn ao-btn--primary" onclick="AOCountdowns.openForm('')">+ New countdown</button>
       </div>
 
       <div id="cd-sections"></div>
@@ -184,27 +186,26 @@
       <input type="text" class="cd-input" id="cd-form-notes" placeholder="Anything else worth remembering" maxlength="600" />
     </div>
 
-    <div class="cd-modal-error" id="cd-form-error"></div>
+    <div class="ao-modal-error" id="cd-form-error" hidden></div>
 
     <div class="cd-modal-actions">
-      <button class="cd-btn ghost" onclick="AOCountdowns.closeForm()">Cancel</button>
-      <button class="cd-btn primary" id="cd-form-save" onclick="AOCountdowns.save()">Add countdown</button>
+      <button class="ao-btn" onclick="AOCountdowns.closeForm()">Cancel</button>
+      <button class="ao-btn ao-btn--primary" id="cd-form-save" onclick="AOCountdowns.save()">Add countdown</button>
     </div>
   </div>
 </div>
 
 <!-- PASSPHRASE MODAL -->
-<div id="passphrase-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.75); align-items:center; justify-content:center;">
-  <div style="background:var(--bg); border:1px solid #2a3048; border-radius:12px; padding:28px 24px; width:100%; max-width:360px; margin:0 16px;">
-    <div style="font-size:14px; font-weight:700; color:#e2e8f0; margin-bottom:6px;">🔒 Unlock Countdowns</div>
-    <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">Adding and editing countdowns sits behind the same passphrase as the Dropbox.</div>
-    <input id="passphrase-input" type="password" placeholder="Passphrase..."
-      style="width:100%; background:var(--view-bg); border:1px solid #2a3048; border-radius:8px; padding:12px 14px; font-size:15px; color:#e2e8f0; outline:none; box-sizing:border-box; -webkit-appearance:none;"
-      autocomplete="current-password" autocorrect="off" autocapitalize="none" spellcheck="false" />
-    <div id="passphrase-error" style="display:none; font-size:12px; color:#f87171; margin-top:8px;"></div>
-    <div style="display:flex; gap:10px; margin-top:18px;">
-      <button id="passphrase-cancel" style="flex:1; padding:11px; background:transparent; border:1px solid #2a3048; border-radius:8px; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
-      <button id="passphrase-submit" style="flex:2; padding:11px; background:var(--accent); border:none; border-radius:8px; color:#fff; font-size:13px; font-weight:600; cursor:pointer;">Unlock</button>
+<div id="passphrase-modal" class="ao-modal" hidden>
+  <div class="ao-modal-sheet" role="dialog" aria-modal="true" aria-labelledby="passphrase-title">
+    <div class="ao-modal-title" id="passphrase-title">🔒 Unlock Countdowns</div>
+    <div class="ao-modal-desc">Adding and editing countdowns sits behind the same passphrase as the Dropbox.</div>
+    <input id="passphrase-input" class="ao-input" type="password" placeholder="Passphrase..."
+      autocomplete="current-password" autocorrect="off" autocapitalize="none" spellcheck="false"/>
+    <div id="passphrase-error" class="ao-modal-error" hidden></div>
+    <div class="ao-modal-actions">
+      <button id="passphrase-cancel" class="ao-btn">Cancel</button>
+      <button id="passphrase-submit" class="ao-btn ao-btn--primary">Unlock</button>
     </div>
   </div>
 </div>
