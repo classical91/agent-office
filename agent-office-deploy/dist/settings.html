@@ -7,8 +7,10 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>Settings - Agent Office</title>
-<link rel="stylesheet" href="shared.css?v=feed-menus-20260804"/>
-<!-- Apply saved theme before first paint to avoid a flash of the default theme. Mirrors THEMES in app-shared.js. -->
+<link rel="stylesheet" href="shared.css?v=template-v2-cleanup-20260809"/>
+<!-- Restores the saved theme and sidebar state before first paint, so no page
+     flashes the default accent or a full-width sidebar on its way in.
+     ACCENTS mirrors THEMES in app-shared.js. -->
 <script>
 (function(){
   // A theme is just an accent; shared.css derives every surface from it.
@@ -16,6 +18,7 @@
   try{
     var a=ACCENTS[localStorage.getItem('ao-theme')];
     if(a) document.documentElement.style.setProperty('--accent',a);
+    if(localStorage.getItem('ao-nav-compact')==='1') document.documentElement.classList.add('nav-compact');
   }catch(e){}
 })();
 </script>
@@ -23,226 +26,242 @@
 <body>
 
 <!-- Mobile nav overlay -->
-<div id="mobile-overlay" onclick="closeMobileNav()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999;"></div>
+<div id="mobile-overlay" class="mobile-overlay" onclick="closeMobileNav()"></div>
 
-<div class="topbar">
-  <div style="display:flex; align-items:center; gap:12px;">
+<header class="topbar">
+  <div class="topbar-brand">
     <button class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu" aria-label="Open navigation">&#9776;</button>
-    <div class="topbar-logo">⬡ AGENT OFFICE</div>
+    <a class="topbar-logo" href="/">&#11041; OPENCLAW AGENTS OFFICE</a>
   </div>
   <div class="topbar-meta">
-    <span><span class="online-dot"></span><span id="onlineCount">9</span> agents online</span>
+    <span class="topbar-stat" id="agent-state-chip">
+      <span class="ao-dot ao-dot--active"></span>
+      <span><span id="onlineCount">9</span> <span id="onlineLabel">agents online</span></span>
+    </span>
     <span id="clock">--:--:--</span>
-    <button id="feed-toggle-btn" onclick="toggleFeedPanel()" title="Toggle activity panel" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">☰ Agents</button>
-    <button id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode — hide panels" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">⛶ Focus</button>
+    <button class="ao-btn ao-btn--sm" id="feed-toggle-btn" onclick="toggleFeedPanel()" title="Toggle activity panel" aria-pressed="false">&#9776; Agents</button>
+    <button class="ao-btn ao-btn--sm" id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode &mdash; hide panels" aria-pressed="false">&#9974; Focus</button>
   </div>
-</div>
+</header>
 
 <div class="layout feed-collapsed">
 
   <!-- LEFT NAV -->
-  <nav class="nav">
+  <!-- Generated from scripts/shell/shell.html by `npm run sync:shell`. Edit
+       the template, not this copy: tests/shell-consistency.test.js fails when
+       a page's copy drifts from it. Which row is highlighted is worked out
+       from the URL by markActiveNav() in app-shared.js, so no page marks its
+       own — that is what let the copies disagree in the first place. -->
+  <nav class="nav ao-scroll" aria-label="Primary">
 
-    <!-- WORKSPACE -->
     <div class="nav-section">
       <div class="nav-heading">Workspace</div>
       <div class="nav-items-wrap nav-open">
         <div class="nav-group">
-          <a class="nav-item nav-item-parent" href="/" data-nav-sub="office">Office<span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Office pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">▾</span></a>
+          <a class="nav-item nav-item-parent" href="/" data-nav-sub="office" data-icon="&#127970;"><span class="nav-item-label">Agents Office</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Agents Office pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></a>
           <div class="nav-sub">
-            <a class="nav-item" href="/memory.html">Memory</a>
-            <a class="nav-item" href="/org-chart.html">Org Chart</a>
-            <a class="nav-item" href="/agent-registry.html">Agent Registry</a>
-            <a class="nav-item" href="/project-rooms.html">Project Rooms</a>
+            <a class="nav-item" href="/org-chart.html" data-icon="&#128450;"><span class="nav-item-label">Org Chart</span></a>
+            <a class="nav-item" href="/memory.html" data-icon="&#129504;"><span class="nav-item-label">Memory</span></a>
+            <a class="nav-item" href="/agent-registry.html" data-icon="&#128199;"><span class="nav-item-label">Agent Registry</span></a>
+            <a class="nav-item" href="/project-rooms.html" data-icon="&#128682;"><span class="nav-item-label">Project Rooms</span></a>
           </div>
         </div>
         <div class="nav-group">
-          <div class="nav-item nav-item-parent" data-nav-sub="planning" onclick="toggleNavSub(event, this)">Planning Tools<span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Planning Tools pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">▾</span></div>
+          <div class="nav-item nav-item-parent" data-nav-sub="planning" data-icon="&#128203;" onclick="toggleNavSub(event, this)"><span class="nav-item-label">Planning Tools</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Planning Tools pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></div>
           <div class="nav-sub">
-            <a class="nav-item" href="/mission-board.html?view=ios">Reminders</a>
-            <a class="nav-item" href="/calendar-v3.html">Calendar</a>
-            <a class="nav-item" href="/streaks.html">Streaks</a>
-            <a class="nav-item" href="/resets.html">Countdown Timer</a>
+            <a class="nav-item" href="/mission-board.html?view=ios" data-icon="&#9200;"><span class="nav-item-label">Reminders</span></a>
+            <a class="nav-item" href="/calendar-v3.html" data-icon="&#128197;"><span class="nav-item-label">Calendar</span></a>
+            <a class="nav-item" href="/countdowns.html" data-icon="&#9203;"><span class="nav-item-label">Countdowns</span></a>
+            <a class="nav-item" href="/streaks.html" data-icon="&#128293;"><span class="nav-item-label">Streaks</span></a>
+            <a class="nav-item" href="/resets.html" data-icon="&#8987;"><span class="nav-item-label">Countdown Timer</span></a>
           </div>
         </div>
-        <a class="nav-item" href="/mission-board.html">Dropbox</a>
-        <a class="nav-item" href="/dev.html">Dev Links</a>
-        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/ai.html" target="_blank" rel="noopener noreferrer">AI Portal <span class="link-ext">↗</span></a>
-        <a class="nav-item" href="/ai-landscape.html" data-ai-landscape-nav="true">AI Models</a>
-        <div class="nav-item" onclick="window.open('/prompt-builder.html', '_blank')">AI Prompt Engineer</div>
-        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/apps.html" target="_blank" rel="noopener noreferrer">My Websites &amp; Projects <span class="link-ext">↗</span></a>
-        <a class="nav-item" href="/visitors.html">Visitors</a>
+        <a class="nav-item" href="/mission-board.html" data-icon="&#128229;"><span class="nav-item-label">Dropbox</span></a>
+        <a class="nav-item" href="/dev.html" data-icon="&#128736;"><span class="nav-item-label">Dev Links</span></a>
+        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/ai.html" target="_blank" rel="noopener noreferrer" data-icon="&#127760;"><span class="nav-item-label">AI Portal</span> <span class="link-ext">&#8599;</span></a>
+        <a class="nav-item" href="/ai-landscape.html" data-ai-landscape-nav="true" data-icon="&#129302;"><span class="nav-item-label">AI Models</span></a>
+        <div class="nav-item" data-icon="&#9998;" onclick="window.open('/prompt-builder.html', '_blank')"><span class="nav-item-label">AI Prompt Engineer</span></div>
+        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/apps.html" target="_blank" rel="noopener noreferrer" data-icon="&#129513;"><span class="nav-item-label">My Websites &amp; Projects</span> <span class="link-ext">&#8599;</span></a>
+        <a class="nav-item" href="/visitors.html" data-icon="&#128099;"><span class="nav-item-label">Visitors</span></a>
       </div>
     </div>
 
-<!-- SYSTEM -->
     <div class="nav-section nav-section-bottom">
       <div class="nav-heading">System</div>
       <div class="nav-items-wrap nav-open">
-        <a class="nav-item active" href="/settings.html">Settings</a>
+        <a class="nav-item" href="/settings.html" data-icon="&#9881;"><span class="nav-item-label">Settings</span></a>
         <a class="nav-link" data-dev-only="true" data-gateway="local" href="http://localhost:18789" target="_blank">
-          <div class="link-dot" style="background:var(--accent);"></div> Gateway (local) <span class="link-ext">↗</span>
+          <div class="link-dot"></div> Gateway (local) <span class="link-ext">&#8599;</span>
         </a>
         <a class="nav-link" data-dev-only="true" data-gateway="lan" href="http://10.0.0.106:18789" target="_blank">
-          <div class="link-dot" style="background:var(--accent);"></div> Gateway (LAN) <span class="link-ext">↗</span>
+          <div class="link-dot"></div> Gateway (LAN) <span class="link-ext">&#8599;</span>
         </a>
       </div>
+    </div>
+
+    <div class="nav-footer">
+      <button class="nav-collapse-btn" id="nav-collapse-btn" onclick="toggleNavCompact()" aria-expanded="true" title="Collapse sidebar">
+        <span class="nav-collapse-icon" aria-hidden="true">&#171;</span>
+        <span class="nav-collapse-label">Collapse</span>
+      </button>
     </div>
 
   </nav>
 
-  <div class="view" id="view-settings" style="flex-direction:column; background:var(--view-bg); overflow-y:auto;">
-  <div style="max-width:720px; width:100%; margin:0 auto; padding:40px 28px 80px;">
+  <div class="view view--scroll ao-scroll" id="view-settings">
+  <div class="ao-page ao-page--narrow settings-page">
 
-    <div style="margin-bottom:36px;">
-      <div style="font-family:'Press Start 2P',monospace; font-size:13px; color:var(--accent); margin-bottom:8px;">⚙️ SETTINGS</div>
-      <div style="font-size:13px; color:var(--muted);">Configure Agent Office preferences and manage local data.</div>
+    <div class="ao-page-head">
+      <div class="ao-page-heading">
+        <div class="ao-eyebrow">⚙️ SETTINGS</div>
+        <div class="ao-page-sub">Configure Agent Office preferences and manage local data.</div>
+      </div>
     </div>
 
     <!-- Theme -->
-    <div style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:20px;">
-      <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px;">Theme</div>
-      <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">Choose a color theme. Saved to this browser's localStorage.</div>
-      <div id="settings-theme-grid" style="display:flex; gap:12px; flex-wrap:wrap;"></div>
+    <div class="ao-card settings-card">
+      <div class="ao-card-title">Theme</div>
+      <div class="ao-card-desc">Choose a color theme. Saved to this browser's localStorage.</div>
+      <div id="settings-theme-grid" class="ao-chips"></div>
     </div>
 
     <!-- Gateway URLs -->
-    <div style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:20px;">
-      <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px;">Gateway URLs</div>
-      <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">Set custom gateway endpoints. Saved to Agent Office settings when available, with browser storage as fallback.</div>
-      <div style="margin-bottom:14px;">
-        <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">Local Gateway</label>
-        <input id="settings-gateway-local" type="url" placeholder="http://localhost:18789" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:13px; color:var(--text); outline:none; box-sizing:border-box;" />
+    <div class="ao-card settings-card">
+      <div class="ao-card-title">Gateway URLs</div>
+      <div class="ao-card-desc">Set custom gateway endpoints. Saved to Agent Office settings when available, with browser storage as fallback.</div>
+      <div class="ao-field settings-field">
+        <label class="ao-label settings-label">Local Gateway</label>
+        <input id="settings-gateway-local" type="url" placeholder="http://localhost:18789" class="ao-input" />
       </div>
-      <div style="margin-bottom:18px;">
-        <label style="font-size:11px; color:var(--muted); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.1em;">LAN Gateway</label>
-        <input id="settings-gateway-lan" type="url" placeholder="http://10.0.0.106:18789" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; font-size:13px; color:var(--text); outline:none; box-sizing:border-box;" />
+      <div class="ao-field settings-field">
+        <label class="ao-label settings-label">LAN Gateway</label>
+        <input id="settings-gateway-lan" type="url" placeholder="http://10.0.0.106:18789" class="ao-input" />
       </div>
-      <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:16px;">
-        <button onclick="SETTINGS.saveGateway()" style="background:var(--accent); color:#fff; border:none; border-radius:8px; padding:10px 20px; font-size:13px; font-weight:600; cursor:pointer;">Save Gateway URLs</button>
-        <button onclick="SETTINGS.checkGateway()" style="background:transparent; color:var(--text); border:1px solid var(--border); border-radius:8px; padding:10px 16px; font-size:13px; font-weight:600; cursor:pointer;">Check Local Gateway</button>
+      <div class="ao-toolbar settings-actions">
+        <button onclick="SETTINGS.saveGateway()" class="ao-btn ao-btn--primary">Save Gateway URLs</button>
+        <button onclick="SETTINGS.checkGateway()" class="ao-btn">Check Local Gateway</button>
       </div>
-      <span id="settings-gateway-msg" style="font-size:12px; color:#22c55e; margin-left:14px; display:none;">Saved.</span>
-      <div style="padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border); margin-top:14px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:6px;">
-          <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em;">Local OpenClaw Status</div>
-          <div id="settings-gateway-dot" title="Not checked" style="width:9px; height:9px; border-radius:50%; background:#64748b; flex:0 0 auto;"></div>
+      <span id="settings-gateway-msg" class="settings-saved-msg" hidden>Saved.</span>
+      <div class="ao-well settings-well-spaced">
+        <div class="ao-well--row settings-well-head">
+          <div class="ao-well-label settings-well-label-flush">Local OpenClaw Status</div>
+          <div id="settings-gateway-dot" class="ao-dot ao-dot--offline" title="Not checked"></div>
         </div>
-        <div id="settings-gateway-state" style="font-size:13px; color:var(--text);">Not checked yet.</div>
-        <div id="settings-gateway-endpoint" style="font-size:11px; color:var(--muted); margin-top:6px; word-break:break-all;">http://localhost:18789</div>
-        <div id="settings-gateway-probe" style="margin-top:12px; padding-top:10px; border-top:1px solid var(--border);"></div>
+        <div id="settings-gateway-state" class="ao-well-value">Not checked yet.</div>
+        <div id="settings-gateway-endpoint" class="ao-well-note">http://localhost:18789</div>
+        <div id="settings-gateway-probe" class="settings-probe"></div>
       </div>
     </div>
 
     <!-- Gateway Agents -->
-    <div style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:20px;">
-      <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px;">Gateway Agents</div>
-      <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">OpenClaw agents visible to this office surface.</div>
-      <div id="settings-gateway-agents" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:10px;"></div>
+    <div class="ao-card settings-card">
+      <div class="ao-card-title">Gateway Agents</div>
+      <div class="ao-card-desc">OpenClaw agents visible to this office surface.</div>
+      <div id="settings-gateway-agents" class="ao-grid settings-agent-grid"></div>
     </div>
 
     <!-- Phone inbox / Shortcuts -->
-    <div id="settings-shortcuts" style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:20px;">
-      <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px;">Phone Inbox (iOS Shortcuts)</div>
-      <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">Send a note or reminder to the Dropbox from your phone, and pull back whatever has come due. Authenticated with <code>SHORTCUTS_TOKEN</code>, not the Dropbox passphrase.</div>
+    <div id="settings-shortcuts" class="ao-card settings-card">
+      <div class="ao-card-title">Phone Inbox (iOS Shortcuts)</div>
+      <div class="ao-card-desc">Send a note or reminder to the Dropbox from your phone, and pull back whatever has come due. Authenticated with <code>SHORTCUTS_TOKEN</code>, not the Dropbox passphrase.</div>
 
-      <div style="display:flex; flex-direction:column; gap:12px;">
-        <div style="padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
-          <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;">Status</div>
-          <div id="settings-shortcuts-state" style="font-size:13px; color:var(--text);">Checking…</div>
+      <div class="ao-stack">
+        <div class="ao-well">
+          <div class="ao-well-label">Status</div>
+          <div id="settings-shortcuts-state" class="ao-well-value">Checking…</div>
         </div>
-        <div style="padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
-          <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;">Send (POST)</div>
-          <div id="settings-shortcuts-send" style="font-size:12px; color:var(--text); word-break:break-all; font-family:ui-monospace,monospace;">—</div>
+        <div class="ao-well">
+          <div class="ao-well-label">Send (POST)</div>
+          <div id="settings-shortcuts-send" class="ao-code">—</div>
         </div>
-        <div style="padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
-          <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;">Pull (GET)</div>
-          <div id="settings-shortcuts-pull" style="font-size:12px; color:var(--text); word-break:break-all; font-family:ui-monospace,monospace;">—</div>
+        <div class="ao-well">
+          <div class="ao-well-label">Pull (GET)</div>
+          <div id="settings-shortcuts-pull" class="ao-code">—</div>
         </div>
-        <div style="padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
-          <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;">Auth Header</div>
-          <div id="settings-shortcuts-header" style="font-size:12px; color:var(--text); font-family:ui-monospace,monospace;">—</div>
-          <div style="font-size:11px; color:var(--muted); margin-top:6px;">Value is your <code>SHORTCUTS_TOKEN</code>. Step-by-step Shortcut recipes are in the README.</div>
+        <div class="ao-well">
+          <div class="ao-well-label">Auth Header</div>
+          <div id="settings-shortcuts-header" class="ao-code">—</div>
+          <div class="ao-well-note">Value is your <code>SHORTCUTS_TOKEN</code>. Step-by-step Shortcut recipes are in the README.</div>
         </div>
       </div>
     </div>
 
     <!-- Website visitors -->
-    <div id="settings-visitors" style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:20px;">
-      <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px;">Website Visitors</div>
-      <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">Who is on your sites, from the tracker script below. A visitor is a random id their own browser keeps — nothing is looked up against any outside service. Full detail is on the <a href="/visitors.html" style="color:var(--accent); text-decoration:none;">Visitors page</a>.</div>
+    <div id="settings-visitors" class="ao-card settings-card">
+      <div class="ao-card-title">Website Visitors</div>
+      <div class="ao-card-desc">Who is on your sites, from the tracker script below. A visitor is a random id their own browser keeps — nothing is looked up against any outside service. Full detail is on the <a href="/visitors.html" style="color:var(--accent); text-decoration:none;">Visitors page</a>.</div>
 
-      <div style="display:flex; flex-direction:column; gap:12px;">
-        <div style="padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
-          <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;">Status</div>
-          <div id="settings-visitors-state" style="font-size:13px; color:var(--text);">Checking…</div>
-          <div id="settings-visitors-snapshot" style="font-size:11px; color:var(--muted); margin-top:6px;"></div>
+      <div class="ao-stack">
+        <div class="ao-well">
+          <div class="ao-well-label">Status</div>
+          <div id="settings-visitors-state" class="ao-well-value">Checking…</div>
+          <div id="settings-visitors-snapshot" class="ao-well-note"></div>
         </div>
 
-        <div style="padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
-          <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;">Tracker Snippet</div>
-          <div id="settings-visitors-snippet" style="font-size:12px; color:var(--text); word-break:break-all; font-family:ui-monospace,monospace;">—</div>
-          <div style="font-size:11px; color:var(--muted); margin-top:8px;">Paste before <code>&lt;/body&gt;</code> on any site you run. It shows up here on its first visitor.</div>
-          <button onclick="SETTINGS.copyTrackerSnippet(this)" style="margin-top:10px; background:transparent; color:var(--text); border:1px solid var(--border); border-radius:6px; padding:7px 14px; font-size:12px; cursor:pointer;">Copy snippet</button>
+        <div class="ao-well">
+          <div class="ao-well-label">Tracker Snippet</div>
+          <div id="settings-visitors-snippet" class="ao-code">—</div>
+          <div class="ao-well-note">Paste before <code>&lt;/body&gt;</code> on any site you run. It shows up here on its first visitor.</div>
+          <button onclick="SETTINGS.copyTrackerSnippet(this)" class="ao-btn ao-btn--sm settings-btn-spaced">Copy snippet</button>
         </div>
 
-        <div style="padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
-          <div style="font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;">Tracked Sites</div>
-          <div id="settings-visitors-sites" style="font-size:12px; color:var(--text);">—</div>
+        <div class="ao-well">
+          <div class="ao-well-label">Tracked Sites</div>
+          <div id="settings-visitors-sites" class="ao-well-value">—</div>
         </div>
 
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+        <div class="ao-well ao-well--row">
           <div>
-            <div style="font-size:13px; color:var(--text); margin-bottom:2px;">Recorded Visits</div>
-            <div id="settings-visitors-retention" style="font-size:11px; color:var(--muted);">Page views are deleted automatically after a set number of days.</div>
+            <div class="settings-row-name">Recorded Visits</div>
+            <div id="settings-visitors-retention" class="settings-row-note">Page views are deleted automatically after a set number of days.</div>
           </div>
-          <button onclick="SETTINGS.clearVisits(this)" style="flex:none; background:transparent; color:#ef4444; border:1px solid #ef4444; border-radius:6px; padding:7px 14px; font-size:12px; cursor:pointer;">Delete all</button>
+          <button onclick="SETTINGS.clearVisits(this)" class="ao-btn ao-btn--sm ao-btn--danger">Delete all</button>
         </div>
       </div>
     </div>
 
     <!-- Data Management -->
-    <div style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:20px;">
-      <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:4px;">Local Data</div>
-      <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">All data is stored in this browser's localStorage. Nothing is sent to any server.</div>
-      <div style="display:flex; flex-direction:column; gap:12px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+    <div class="ao-card settings-card">
+      <div class="ao-card-title">Local Data</div>
+      <div class="ao-card-desc">All data is stored in this browser's localStorage. Nothing is sent to any server.</div>
+      <div class="ao-stack">
+        <div class="ao-well ao-well--row">
           <div>
-            <div style="font-size:13px; color:var(--text); margin-bottom:2px;">Reset Countdowns</div>
-            <div style="font-size:11px; color:var(--muted);">Clears all API reset countdown cards</div>
+            <div class="settings-row-name">Reset Countdowns</div>
+            <div class="settings-row-note">Clears all API reset countdown cards</div>
           </div>
-          <button onclick="SETTINGS.clearKey('agent-office-per-card-countdowns-v2', this)" style="background:transparent; color:#ef4444; border:1px solid #ef4444; border-radius:6px; padding:7px 14px; font-size:12px; cursor:pointer;">Clear</button>
+          <button onclick="SETTINGS.clearKey('agent-office-per-card-countdowns-v2', this)" class="ao-btn ao-btn--sm ao-btn--danger">Clear</button>
         </div>
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+        <div class="ao-well ao-well--row">
           <div>
-            <div style="font-size:13px; color:var(--text); margin-bottom:2px;">Memory Entries</div>
-            <div style="font-size:11px; color:var(--muted);">Clears all saved agent memory entries</div>
+            <div class="settings-row-name">Memory Entries</div>
+            <div class="settings-row-note">Clears all saved agent memory entries</div>
           </div>
-          <button onclick="SETTINGS.clearKey('ao-memory', this)" style="background:transparent; color:#ef4444; border:1px solid #ef4444; border-radius:6px; padding:7px 14px; font-size:12px; cursor:pointer;">Clear</button>
+          <button onclick="SETTINGS.clearKey('ao-memory', this)" class="ao-btn ao-btn--sm ao-btn--danger">Clear</button>
         </div>
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+        <div class="ao-well ao-well--row">
           <div>
-            <div style="font-size:13px; color:var(--text); margin-bottom:2px;">Nav Layout</div>
-            <div style="font-size:11px; color:var(--muted);">Resets sidebar collapsed/expanded state</div>
+            <div class="settings-row-name">Nav Layout</div>
+            <div class="settings-row-note">Resets sidebar collapsed/expanded state</div>
           </div>
-          <button onclick="SETTINGS.clearKey('nav-collapsed-state', this)" style="background:transparent; color:#ef4444; border:1px solid #ef4444; border-radius:6px; padding:7px 14px; font-size:12px; cursor:pointer;">Clear</button>
+          <button onclick="SETTINGS.clearKey('nav-collapsed-state', this)" class="ao-btn ao-btn--sm ao-btn--danger">Clear</button>
         </div>
-        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+        <div class="ao-well ao-well--row">
           <div>
-            <div style="font-size:13px; color:var(--text); margin-bottom:2px;">All Local Data</div>
-            <div style="font-size:11px; color:var(--muted);">Wipes everything stored by this app</div>
+            <div class="settings-row-name">All Local Data</div>
+            <div class="settings-row-note">Wipes everything stored by this app</div>
           </div>
-          <button onclick="SETTINGS.clearAll()" style="background:#ef4444; color:#fff; border:none; border-radius:6px; padding:7px 14px; font-size:12px; font-weight:600; cursor:pointer;">Clear All</button>
+          <button onclick="SETTINGS.clearAll()" class="ao-btn ao-btn--sm settings-btn-destructive">Clear All</button>
         </div>
       </div>
     </div>
 
     <!-- About -->
-    <div style="background:var(--panel); border:1px solid var(--border); border-radius:14px; padding:24px;">
-      <div style="font-size:13px; font-weight:600; color:var(--text); margin-bottom:12px;">About</div>
-      <div style="font-size:12px; color:var(--muted); line-height:1.7;">
+    <div class="ao-card">
+      <div class="ao-card-title">About</div>
+      <div class="ao-card-desc settings-about">
         <div>Agent Office — AI agent management dashboard</div>
-        <div style="margin-top:4px; color:color-mix(in srgb, var(--muted) 75%, var(--bg));">All data is local. No telemetry. No account required.</div>
+        <div class="settings-about-note">All data is local. No telemetry. No account required.</div>
       </div>
     </div>
 

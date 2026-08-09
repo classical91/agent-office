@@ -1,0 +1,14 @@
+<!-- Restores the saved theme and sidebar state before first paint, so no page
+     flashes the default accent or a full-width sidebar on its way in.
+     ACCENTS mirrors THEMES in app-shared.js. -->
+<script>
+(function(){
+  // A theme is just an accent; shared.css derives every surface from it.
+  var ACCENTS={dark:'#6366f1',midnight:'#10b981',ocean:'#38bdf8',crimson:'#ef4444',forest:'#22c55e',amber:'#f59e0b'};
+  try{
+    var a=ACCENTS[localStorage.getItem('ao-theme')];
+    if(a) document.documentElement.style.setProperty('--accent',a);
+    if(localStorage.getItem('ao-nav-compact')==='1') document.documentElement.classList.add('nav-compact');
+  }catch(e){}
+})();
+</script>

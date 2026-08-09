@@ -7,8 +7,10 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>Org Chart - Agent Office</title>
-<link rel="stylesheet" href="shared.css?v=feed-menus-20260804"/>
-<!-- Apply saved theme before first paint to avoid a flash of the default theme. Mirrors THEMES in app-shared.js. -->
+<link rel="stylesheet" href="shared.css?v=template-v2-cleanup-20260809"/>
+<!-- Restores the saved theme and sidebar state before first paint, so no page
+     flashes the default accent or a full-width sidebar on its way in.
+     ACCENTS mirrors THEMES in app-shared.js. -->
 <script>
 (function(){
   // A theme is just an accent; shared.css derives every surface from it.
@@ -16,6 +18,7 @@
   try{
     var a=ACCENTS[localStorage.getItem('ao-theme')];
     if(a) document.documentElement.style.setProperty('--accent',a);
+    if(localStorage.getItem('ao-nav-compact')==='1') document.documentElement.classList.add('nav-compact');
   }catch(e){}
 })();
 </script>
@@ -23,81 +26,95 @@
 <body>
 
 <!-- Mobile nav overlay -->
-<div id="mobile-overlay" onclick="closeMobileNav()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999;"></div>
+<div id="mobile-overlay" class="mobile-overlay" onclick="closeMobileNav()"></div>
 
-<div class="topbar">
-  <div style="display:flex; align-items:center; gap:12px;">
+<header class="topbar">
+  <div class="topbar-brand">
     <button class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu" aria-label="Open navigation">&#9776;</button>
-    <div class="topbar-logo">⬡ AGENT OFFICE</div>
+    <a class="topbar-logo" href="/">&#11041; OPENCLAW AGENTS OFFICE</a>
   </div>
   <div class="topbar-meta">
-    <span><span class="online-dot"></span><span id="onlineCount">9</span> agents online</span>
+    <span class="topbar-stat" id="agent-state-chip">
+      <span class="ao-dot ao-dot--active"></span>
+      <span><span id="onlineCount">9</span> <span id="onlineLabel">agents online</span></span>
+    </span>
     <span id="clock">--:--:--</span>
-    <button id="feed-toggle-btn" onclick="toggleFeedPanel()" title="Toggle activity panel" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">☰ Agents</button>
-    <button id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode — hide panels" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">⛶ Focus</button>
+    <button class="ao-btn ao-btn--sm" id="feed-toggle-btn" onclick="toggleFeedPanel()" title="Toggle activity panel" aria-pressed="false">&#9776; Agents</button>
+    <button class="ao-btn ao-btn--sm" id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode &mdash; hide panels" aria-pressed="false">&#9974; Focus</button>
   </div>
-</div>
+</header>
 
 <div class="layout feed-collapsed">
 
   <!-- LEFT NAV -->
-  <nav class="nav">
+  <!-- Generated from scripts/shell/shell.html by `npm run sync:shell`. Edit
+       the template, not this copy: tests/shell-consistency.test.js fails when
+       a page's copy drifts from it. Which row is highlighted is worked out
+       from the URL by markActiveNav() in app-shared.js, so no page marks its
+       own — that is what let the copies disagree in the first place. -->
+  <nav class="nav ao-scroll" aria-label="Primary">
 
-    <!-- WORKSPACE -->
     <div class="nav-section">
       <div class="nav-heading">Workspace</div>
       <div class="nav-items-wrap nav-open">
         <div class="nav-group">
-          <a class="nav-item nav-item-parent" href="/" data-nav-sub="office">Office<span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Office pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">▾</span></a>
+          <a class="nav-item nav-item-parent" href="/" data-nav-sub="office" data-icon="&#127970;"><span class="nav-item-label">Agents Office</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Agents Office pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></a>
           <div class="nav-sub">
-            <a class="nav-item" href="/memory.html">Memory</a>
-            <a class="nav-item active" href="/org-chart.html">Org Chart</a>
-            <a class="nav-item" href="/agent-registry.html">Agent Registry</a>
-            <a class="nav-item" href="/project-rooms.html">Project Rooms</a>
+            <a class="nav-item" href="/org-chart.html" data-icon="&#128450;"><span class="nav-item-label">Org Chart</span></a>
+            <a class="nav-item" href="/memory.html" data-icon="&#129504;"><span class="nav-item-label">Memory</span></a>
+            <a class="nav-item" href="/agent-registry.html" data-icon="&#128199;"><span class="nav-item-label">Agent Registry</span></a>
+            <a class="nav-item" href="/project-rooms.html" data-icon="&#128682;"><span class="nav-item-label">Project Rooms</span></a>
           </div>
         </div>
         <div class="nav-group">
-          <div class="nav-item nav-item-parent" data-nav-sub="planning" onclick="toggleNavSub(event, this)">Planning Tools<span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Planning Tools pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">▾</span></div>
+          <div class="nav-item nav-item-parent" data-nav-sub="planning" data-icon="&#128203;" onclick="toggleNavSub(event, this)"><span class="nav-item-label">Planning Tools</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Planning Tools pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></div>
           <div class="nav-sub">
-            <a class="nav-item" href="/mission-board.html?view=ios">Reminders</a>
-            <a class="nav-item" href="/calendar-v3.html">Calendar</a>
-            <a class="nav-item" href="/streaks.html">Streaks</a>
-            <a class="nav-item" href="/resets.html">Countdown Timer</a>
+            <a class="nav-item" href="/mission-board.html?view=ios" data-icon="&#9200;"><span class="nav-item-label">Reminders</span></a>
+            <a class="nav-item" href="/calendar-v3.html" data-icon="&#128197;"><span class="nav-item-label">Calendar</span></a>
+            <a class="nav-item" href="/countdowns.html" data-icon="&#9203;"><span class="nav-item-label">Countdowns</span></a>
+            <a class="nav-item" href="/streaks.html" data-icon="&#128293;"><span class="nav-item-label">Streaks</span></a>
+            <a class="nav-item" href="/resets.html" data-icon="&#8987;"><span class="nav-item-label">Countdown Timer</span></a>
           </div>
         </div>
-        <a class="nav-item" href="/mission-board.html">Dropbox</a>
-        <a class="nav-item" href="/dev.html">Dev Links</a>
-        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/ai.html" target="_blank" rel="noopener noreferrer">AI Portal <span class="link-ext">↗</span></a>
-        <a class="nav-item" href="/ai-landscape.html" data-ai-landscape-nav="true">AI Models</a>
-        <div class="nav-item" onclick="window.open('/prompt-builder.html', '_blank')">AI Prompt Engineer</div>
-        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/apps.html" target="_blank" rel="noopener noreferrer">My Websites &amp; Projects <span class="link-ext">↗</span></a>
-        <a class="nav-item" href="/visitors.html">Visitors</a>
+        <a class="nav-item" href="/mission-board.html" data-icon="&#128229;"><span class="nav-item-label">Dropbox</span></a>
+        <a class="nav-item" href="/dev.html" data-icon="&#128736;"><span class="nav-item-label">Dev Links</span></a>
+        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/ai.html" target="_blank" rel="noopener noreferrer" data-icon="&#127760;"><span class="nav-item-label">AI Portal</span> <span class="link-ext">&#8599;</span></a>
+        <a class="nav-item" href="/ai-landscape.html" data-ai-landscape-nav="true" data-icon="&#129302;"><span class="nav-item-label">AI Models</span></a>
+        <div class="nav-item" data-icon="&#9998;" onclick="window.open('/prompt-builder.html', '_blank')"><span class="nav-item-label">AI Prompt Engineer</span></div>
+        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/apps.html" target="_blank" rel="noopener noreferrer" data-icon="&#129513;"><span class="nav-item-label">My Websites &amp; Projects</span> <span class="link-ext">&#8599;</span></a>
+        <a class="nav-item" href="/visitors.html" data-icon="&#128099;"><span class="nav-item-label">Visitors</span></a>
       </div>
     </div>
 
-<!-- SYSTEM -->
     <div class="nav-section nav-section-bottom">
       <div class="nav-heading">System</div>
       <div class="nav-items-wrap nav-open">
-        <a class="nav-item" href="/settings.html">Settings</a>
+        <a class="nav-item" href="/settings.html" data-icon="&#9881;"><span class="nav-item-label">Settings</span></a>
         <a class="nav-link" data-dev-only="true" data-gateway="local" href="http://localhost:18789" target="_blank">
-          <div class="link-dot" style="background:var(--accent);"></div> Gateway (local) <span class="link-ext">↗</span>
+          <div class="link-dot"></div> Gateway (local) <span class="link-ext">&#8599;</span>
         </a>
         <a class="nav-link" data-dev-only="true" data-gateway="lan" href="http://10.0.0.106:18789" target="_blank">
-          <div class="link-dot" style="background:var(--accent);"></div> Gateway (LAN) <span class="link-ext">↗</span>
+          <div class="link-dot"></div> Gateway (LAN) <span class="link-ext">&#8599;</span>
         </a>
       </div>
+    </div>
+
+    <div class="nav-footer">
+      <button class="nav-collapse-btn" id="nav-collapse-btn" onclick="toggleNavCompact()" aria-expanded="true" title="Collapse sidebar">
+        <span class="nav-collapse-icon" aria-hidden="true">&#171;</span>
+        <span class="nav-collapse-label">Collapse</span>
+      </button>
     </div>
 
   </nav>
 
-  <div class="view" id="view-org" style="overflow-y:auto; padding:40px 32px 60px; background:#0b0c10; flex-direction:column; align-items:center;">
+  <div class="view view--scroll ao-scroll org-view" id="view-org">
     <div class="org-page">
 
       <div class="org-row-center">
-        <div class="org-card glow-indigo org-card-wide" onclick="showAgentInfo('devin'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('devin')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
-          <div class="org-card-inner" onclick="showAgentInfo('traderclaw'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('traderclaw')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
-            <div class="org-avatar" style="background:color-mix(in srgb, var(--accent) 15%, transparent);border-color:color-mix(in srgb, var(--accent) 25%, transparent);">🛠️</div>
+        <div class="org-card glow-indigo org-card-wide" onclick="showAgentInfo('devin');">
+          <div class="org-card-inner" onclick="showAgentInfo('traderclaw');">
+            <div class="org-avatar">🛠️</div>
             <div class="org-body">
               <div class="org-name">Devin</div>
               <div class="org-title">Project Overseer</div>
@@ -116,9 +133,9 @@
       <div class="org-connector-v"></div>
 
       <div class="org-row-center">
-        <div class="org-card org-card-wide" style="border-color:rgba(100,116,139,0.2);">
+        <div class="org-card org-card-wide" style="--entity-color:#64748b;">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(100,116,139,0.15);border-color:rgba(100,116,139,0.25);">👑</div>
+            <div class="org-avatar" style="--entity-color:#64748b;">👑</div>
             <div class="org-body">
               <div class="org-name">FatherClaw</div>
               <div class="org-title">Orchestrator</div>
@@ -143,7 +160,7 @@
       <div class="org-row-3">
         <div class="org-card glow-orange">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(249,115,22,0.15);border-color:rgba(249,115,22,0.25);">⚙️</div>
+            <div class="org-avatar" style="--entity-color:#f97316;">⚙️</div>
             <div class="org-body">
               <div class="org-name">Coder</div>
               <div class="org-title">General Dev Agent</div>
@@ -159,7 +176,7 @@
         </div>
         <div class="org-card glow-green">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.25);">🤖</div>
+            <div class="org-avatar" style="--entity-color:#22c55e;">🤖</div>
             <div class="org-body">
               <div class="org-name">Codex</div>
               <div class="org-title">Lightweight Coder</div>
@@ -175,7 +192,7 @@
         </div>
         <div class="org-card glow-pink">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(236,72,153,0.15);border-color:rgba(236,72,153,0.25);">🔨</div>
+            <div class="org-avatar" style="--entity-color:#ec4899;">🔨</div>
             <div class="org-body">
               <div class="org-name">Forge</div>
               <div class="org-title">In-house Dev Agent</div>
@@ -191,14 +208,14 @@
         </div>
       </div>
 
-      <div class="org-section-label" style="margin-top:24px;">
+      <div class="org-section-label">
         <div class="line"></div><div class="text">⌘ EXTERNAL CODING TOOLS</div><div class="line"></div>
       </div>
 
       <div class="org-row-3">
         <div class="org-card glow-orange">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(217,119,87,0.18);border-color:rgba(217,119,87,0.3);">🧠</div>
+            <div class="org-avatar" style="--entity-color:#d97757;">🧠</div>
             <div class="org-body">
               <div class="org-name">Claude Code</div>
               <div class="org-title">Anthropic CLI</div>
@@ -214,7 +231,7 @@
         </div>
         <div class="org-card glow-blue">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.25);">⌘</div>
+            <div class="org-avatar" style="--entity-color:#3b82f6;">⌘</div>
             <div class="org-body">
               <div class="org-name">Cursor</div>
               <div class="org-title">Agentic IDE</div>
@@ -230,7 +247,7 @@
         </div>
         <div class="org-card glow-purple">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.25);">🐙</div>
+            <div class="org-avatar" style="--entity-color:#a855f7;">🐙</div>
             <div class="org-body">
               <div class="org-name">GitHub Copilot</div>
               <div class="org-title">Pair Programmer</div>
@@ -258,10 +275,10 @@
         <div class="line"></div><div class="text">💻 OPERATIONS</div><div class="line"></div>
       </div>
 
-      <div class="org-row-2" style="max-width:680px; margin: 0 auto;">
-        <div class="org-card glow-green" onclick="showAgentInfo('webclaw'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('webclaw')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
-          <div class="org-card-inner" onclick="showAgentInfo('xhunter'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('xhunter')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
-            <div class="org-avatar" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.25);">📈</div>
+      <div class="org-row-2 org-row-2--narrow">
+        <div class="org-card glow-green" onclick="showAgentInfo('webclaw');">
+          <div class="org-card-inner" onclick="showAgentInfo('xhunter');">
+            <div class="org-avatar" style="--entity-color:#22c55e;">📈</div>
             <div class="org-body">
               <div class="org-name">TraderClaw</div>
               <div class="org-title">Market Signals + Risk</div>
@@ -275,9 +292,9 @@
           </div>
           <div class="org-cta">VIEW AGENT →→</div>
         </div>
-        <div class="org-card glow-blue" onclick="showAgentInfo('penny'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('penny')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
-          <div class="org-card-inner" onclick="showAgentInfo('reaper'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('reaper')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
-            <div class="org-avatar" style="background:rgba(59,130,246,0.15);border-color:rgba(59,130,246,0.25);">🌐</div>
+        <div class="org-card glow-blue" onclick="showAgentInfo('penny');">
+          <div class="org-card-inner" onclick="showAgentInfo('reaper');">
+            <div class="org-avatar" style="--entity-color:#3b82f6;">🌐</div>
             <div class="org-body">
               <div class="org-name">WebClaw</div>
               <div class="org-title">Web Developer</div>
@@ -293,14 +310,14 @@
         </div>
       </div>
 
-      <div class="org-section-label" style="margin-top:32px;">
+      <div class="org-section-label org-section-label--spaced">
         <div class="line"></div><div class="text">⚡ EXECUTION LAYER</div><div class="line"></div>
       </div>
 
       <div class="org-row-4">
-        <div class="org-card glow-cyan" onclick="showAgentInfo('forge'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('forge')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
+        <div class="org-card glow-cyan" onclick="showAgentInfo('forge');">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(6,182,212,0.15);border-color:rgba(6,182,212,0.25);">🐦</div>
+            <div class="org-avatar" style="--entity-color:#06b6d4;">🐦</div>
             <div class="org-body">
               <div class="org-name">X-Hunter</div>
               <div class="org-title">Social Scout</div>
@@ -314,9 +331,9 @@
           </div>
           <div class="org-cta">VIEW AGENT →→</div>
         </div>
-        <div class="org-card glow-orange" onclick="showAgentInfo('xbot'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('xbot')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
+        <div class="org-card glow-orange" onclick="showAgentInfo('xbot');">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(249,115,22,0.15);border-color:rgba(249,115,22,0.25);">⚙️</div>
+            <div class="org-avatar" style="--entity-color:#f97316;">⚙️</div>
             <div class="org-body">
               <div class="org-name">Forge</div>
               <div class="org-title">Dev Agent</div>
@@ -330,9 +347,9 @@
           </div>
           <div class="org-cta">VIEW AGENT →→</div>
         </div>
-        <div class="org-card glow-purple" onclick="showAgentInfo('fatherclaw'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('fatherclaw')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
+        <div class="org-card glow-purple" onclick="showAgentInfo('fatherclaw');">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(168,85,247,0.15);border-color:rgba(168,85,247,0.25);">✨</div>
+            <div class="org-avatar" style="--entity-color:#a855f7;">✨</div>
             <div class="org-body">
               <div class="org-name">Lyra</div>
               <div class="org-title">Innerverse</div>
@@ -346,9 +363,9 @@
           </div>
           <div class="org-cta">VIEW AGENT →→</div>
         </div>
-        <div class="org-card" style="border-color:rgba(34,197,94,0.2);">
+        <div class="org-card" style="--entity-color:#22c55e;">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.2);">💀</div>
+            <div class="org-avatar" style="--entity-color:#22c55e;">💀</div>
             <div class="org-body">
               <div class="org-name">Reaper</div>
               <div class="org-title">Farm Operator</div>
@@ -362,9 +379,9 @@
           </div>
           <div class="org-cta">VIEW AGENT →→</div>
         </div>
-        <div class="org-card" style="border-color:rgba(234,179,8,0.2);">
+        <div class="org-card" style="--entity-color:#eab308;">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.2);">🪙</div>
+            <div class="org-avatar" style="--entity-color:#eab308;">🪙</div>
             <div class="org-body">
               <div class="org-name">Penny</div>
               <div class="org-title">Utility Agent</div>
@@ -378,9 +395,9 @@
           </div>
           <div class="org-cta">VIEW AGENT →→</div>
         </div>
-        <div class="org-card" style="border-color:rgba(234,179,8,0.2);" onclick="showAgentInfo('swarm'); document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active')); const navEl = Array.from(document.querySelectorAll('.nav-item')).find(el => el.getAttribute('onclick') && el.getAttribute('onclick').includes('swarm')); if(navEl) navEl.classList.add('active');" style="cursor:pointer;">
+        <div class="org-card" style="--entity-color:#eab308;" onclick="showAgentInfo('swarm');">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(234,179,8,0.1);border-color:rgba(234,179,8,0.2);">🐝</div>
+            <div class="org-avatar" style="--entity-color:#eab308;">🐝</div>
             <div class="org-body">
               <div class="org-name">Swarm</div>
               <div class="org-title">Codex Agent</div>
@@ -396,7 +413,7 @@
         </div>
         <div class="org-card glow-pink">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(236,72,153,0.15);border-color:rgba(236,72,153,0.25);">🤖</div>
+            <div class="org-avatar" style="--entity-color:#ec4899;">🤖</div>
             <div class="org-body">
               <div class="org-name">XBot</div>
               <div class="org-title">X Publisher</div>
@@ -412,14 +429,14 @@
         </div>
       </div>
 
-      <div class="org-section-label" style="margin-top:32px;">
+      <div class="org-section-label org-section-label--spaced">
         <div class="line"></div><div class="text">🔬 RESEARCH & SUPPORT</div><div class="line"></div>
       </div>
 
       <div class="org-row-3">
         <div class="org-card glow-indigo">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:color-mix(in srgb, var(--accent) 15%, transparent);border-color:color-mix(in srgb, var(--accent) 25%, transparent);">🔭</div>
+            <div class="org-avatar">🔭</div>
             <div class="org-body">
               <div class="org-name">Nova</div>
               <div class="org-title">Product Researcher</div>
@@ -435,7 +452,7 @@
         </div>
         <div class="org-card glow-orange">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(245,158,11,0.18);border-color:rgba(245,158,11,0.3);">🪙</div>
+            <div class="org-avatar" style="--entity-color:#f59e0b;">🪙</div>
             <div class="org-body">
               <div class="org-name">Penny</div>
               <div class="org-title">OSS / Community</div>
@@ -451,7 +468,7 @@
         </div>
         <div class="org-card glow-green">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.25);">🌾</div>
+            <div class="org-avatar" style="--entity-color:#22c55e;">🌾</div>
             <div class="org-body">
               <div class="org-name">FarmBot</div>
               <div class="org-title">Comment Farming</div>
@@ -467,31 +484,31 @@
         </div>
       </div>
 
-      <div class="org-section-label" style="margin-top:32px;">
+      <div class="org-section-label org-section-label--spaced">
         <div class="line"></div><div class="text">🛡 SECURITY</div><div class="line"></div>
       </div>
 
       <div class="org-row-center">
-        <div class="org-card org-card-wide" style="border-color:rgba(239,68,68,0.15);">
+        <div class="org-card org-card-wide" style="--entity-color:#ef4444;">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.2);">🛡</div>
+            <div class="org-avatar" style="--entity-color:#ef4444;">🛡</div>
             <div class="org-body">
               <div class="org-name">Guardian</div>
               <div class="org-title">Security</div>
               <div class="org-desc">Monitors gateway access, reviews auth logs, and keeps the OpenClaw system locked down. Silent and watchful.</div>
               <div class="org-tags">
-                <span class="org-tag" style="background:rgba(239,68,68,0.12);color:#fca5a5;">Security</span>
-                <span class="org-tag" style="background:rgba(239,68,68,0.12);color:#fca5a5;">Auth</span>
-                <span class="org-tag" style="background:rgba(239,68,68,0.12);color:#fca5a5;">Gateway</span>
+                <span class="org-tag org-tag-red">Security</span>
+                <span class="org-tag org-tag-red">Auth</span>
+                <span class="org-tag org-tag-red">Gateway</span>
               </div>
             </div>
           </div>
           <div class="org-cta">VIEW AGENT →→</div>
         </div>
       </div>
-        <div class="org-card" onclick="showAgentInfo('command');" style="cursor:pointer;border-color:rgba(100,116,139,0.2);">
+        <div class="org-card" onclick="showAgentInfo('command');" style="--entity-color:#64748b;">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(100,116,139,0.1);border-color:rgba(100,116,139,0.2);">📡</div>
+            <div class="org-avatar" style="--entity-color:#64748b;">📡</div>
             <div class="org-body">
               <div class="org-name">Command</div>
               <div class="org-title">Orchestrator</div>
@@ -506,17 +523,17 @@
           <div class="org-cta">VIEW AGENT →</div>
         </div>
 
-      <div class="org-section-label" style="margin-top:32px;">
+      <div class="org-section-label org-section-label--spaced">
         <div class="line"></div><div class="text">⬡ META LAYER - OPENCLAW GATEWAY</div><div class="line"></div>
       </div>
 
-      <div class="org-row-2" style="max-width:680px; margin: 0 auto;">
+      <div class="org-row-2 org-row-2--narrow">
         <div class="org-card">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(255,255,255,0.05);font-size:18px;">📡</div>
+            <div class="org-avatar org-avatar--plain">📡</div>
             <div class="org-body">
-              <div class="org-name" style="font-size:13px;">Gateway</div>
-              <div class="org-title" style="font-size:11px;">localhost:18789</div>
+              <div class="org-name org-name--sm">Gateway</div>
+              <div class="org-title org-title--sm">localhost:18789</div>
               <div class="org-desc">Routes messages, manages sessions, handles Telegram bindings.</div>
               <div class="org-tags"><span class="org-tag org-tag-orange">Railway</span><span class="org-tag org-tag-teal">Telegram</span></div>
             </div>
@@ -524,10 +541,10 @@
         </div>
         <div class="org-card">
           <div class="org-card-inner">
-            <div class="org-avatar" style="background:rgba(255,255,255,0.05);font-size:18px;">⚡</div>
+            <div class="org-avatar org-avatar--plain">⚡</div>
             <div class="org-body">
-              <div class="org-name" style="font-size:13px;">Models</div>
-              <div class="org-title" style="font-size:11px;">AI Providers</div>
+              <div class="org-name org-name--sm">Models</div>
+              <div class="org-title org-title--sm">AI Providers</div>
               <div class="org-desc">Sonnet 4.6 (default) · GPT-5.4 (WebClaw) · Gemma 4-31B (Penny) · Qwen3.6 (Codex, FarmBot)</div>
               <div class="org-tags"><span class="org-tag org-tag-indigo">Claude</span><span class="org-tag org-tag-green">GPT-5.4</span><span class="org-tag org-tag-orange">Gemma</span><span class="org-tag org-tag-teal">Qwen</span></div>
             </div>

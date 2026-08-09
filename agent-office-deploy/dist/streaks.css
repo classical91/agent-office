@@ -365,6 +365,36 @@
 .streak-modal-actions { display: flex; gap: 8px; margin-top: 14px; }
 .streak-modal-actions .streaks-btn { flex: 1; }
 
+/* The add/edit form and its custom-colour field are shown with the hidden
+   attribute now rather than an inline display, so neither may set display
+   here — [hidden] would lose to it. */
+.streak-form {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 13px;
+  margin-bottom: 14px;
+  background: rgba(0, 0, 0, 0.18);
+}
+.streak-color-input {
+  width: 56px;
+  height: 34px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 2px;
+  cursor: pointer;
+}
+.streaks-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.streaks-panel-title--flush { margin: 0; }
+.streaks-btn--spaced { margin-top: var(--space-3); }
+.streak-card-unit { font-size: var(--fs-xs); }
+.streak-month-label { width: 11px; flex: 0 0 11px; }
 .streak-form-field { margin-bottom: 10px; }
 .streak-form-label {
   display: block;

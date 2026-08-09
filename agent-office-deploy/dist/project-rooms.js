@@ -22,7 +22,7 @@
 
   function renderProjectCard(project) {
     const active = project.id === selectedId;
-    return `<article class="ops-card" data-project-id="${escAttr(project.id)}" style="${active ? 'border-color:var(--accent);background:rgba(99,102,241,0.08);' : ''}">
+    return `<article class="ops-card${active ? ' is-selected' : ''}" data-project-id="${escAttr(project.id)}">
       <h3>${escHTML(project.name)}</h3>
       <div class="ops-meta">${escHTML(project.status || 'No status')} / ${activeTaskCount(project)} active tasks</div>
       <div class="ops-meta">Branch: ${escHTML(project.current_branch || 'unknown')}</div>
@@ -43,11 +43,11 @@
         <div class="ops-kpi"><strong>${related.filter(d => d.priority === 'urgent').length}</strong><span>Urgent</span></div>
         <div class="ops-kpi"><strong>${related.filter(d => d.status === 'ready_to_deploy').length}</strong><span>Ready to deploy</span></div>
       </div>
-      <div class="ops-meta">GitHub: ${project.github_repo ? `<a href="${escAttr(project.github_repo)}" target="_blank" style="color:var(--accent);">open repo</a>` : 'not set'}</div>
-      <div class="ops-meta">Railway: ${project.railway_url ? `<a href="${escAttr(project.railway_url)}" target="_blank" style="color:var(--accent);">open deploy</a>` : 'not set'}</div>
+      <div class="ops-meta">GitHub: ${project.github_repo ? `<a href="${escAttr(project.github_repo)}" target="_blank" class="ops-link">open repo</a>` : 'not set'}</div>
+      <div class="ops-meta">Railway: ${project.railway_url ? `<a href="${escAttr(project.railway_url)}" target="_blank" class="ops-link">open deploy</a>` : 'not set'}</div>
       <div class="ops-meta">Local path: ${escHTML(project.local_path || 'not set')}</div>
       <div class="ops-meta">Last commit: ${escHTML(project.last_commit || 'unknown')}</div>
-      <h3 style="margin-top:18px;">Open Tasks</h3>
+      <h3 class="ops-heading--spaced">Open Tasks</h3>
       ${open.length ? open.slice(0, 8).map(drop => `<div class="mission-ticket" data-task-id="${escAttr(drop.id)}">
         <strong>${escHTML(drop.title || 'Untitled task')}</strong>
         <span>${escHTML(drop.status || 'idea')} / ${escHTML(drop.priority || 'normal')}</span>
@@ -104,8 +104,8 @@
         <div class="ops-kpi"><strong>${drops.filter(d => !['done', 'archived'].includes(d.status)).length}</strong><span>Active tasks</span></div>
         <div class="ops-kpi"><strong>${projects.reduce((sum, p) => sum + taskCount(p), 0)}</strong><span>Linked tasks</span></div>
       </div>
-      <div style="display:grid;grid-template-columns:minmax(260px,360px) 1fr;gap:14px;align-items:start;">
-        <div class="ops-grid" style="grid-template-columns:1fr;">${projects.length ? projects.map(renderProjectCard).join('') : '<div class="ops-card"><div class="ops-meta">No project rooms yet.</div></div>'}</div>
+      <div class="ops-split">
+        <div class="ops-grid ops-grid--single">${projects.length ? projects.map(renderProjectCard).join('') : '<div class="ops-card"><div class="ops-meta">No project rooms yet.</div></div>'}</div>
         ${renderOverview(selected)}
       </div>
     </div>`;

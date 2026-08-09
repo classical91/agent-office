@@ -1,31 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
-<meta http-equiv="Pragma" content="no-cache"/>
-<meta http-equiv="Expires" content="0"/>
-<title>AI Models - Agent Office</title>
-<link rel="stylesheet" href="shared.css?v=template-v2-cleanup-20260809"/>
-<!-- Restores the saved theme and sidebar state before first paint, so no page
-     flashes the default accent or a full-width sidebar on its way in.
-     ACCENTS mirrors THEMES in app-shared.js. -->
-<script>
-(function(){
-  // A theme is just an accent; shared.css derives every surface from it.
-  var ACCENTS={dark:'#6366f1',midnight:'#10b981',ocean:'#38bdf8',crimson:'#ef4444',forest:'#22c55e',amber:'#f59e0b'};
-  try{
-    var a=ACCENTS[localStorage.getItem('ao-theme')];
-    if(a) document.documentElement.style.setProperty('--accent',a);
-    if(localStorage.getItem('ao-nav-compact')==='1') document.documentElement.classList.add('nav-compact');
-  }catch(e){}
-})();
-</script>
-<link rel="stylesheet" href="ai-landscape.css?v=office-submenu-20260727"/>
-</head>
-<body>
-
 <!-- Mobile nav overlay -->
 <div id="mobile-overlay" class="mobile-overlay" onclick="closeMobileNav()"></div>
 
@@ -108,29 +80,3 @@
     </div>
 
   </nav>
-
-  <div class="view" id="view-ai-landscape">
-    <div id="ai-landscape-root" class="ai-landscape"></div>
-  </div>
-
-  <!-- ACTIVITY FEED -->
-  <aside class="feed">
-    <div class="feed-header">
-      Activity <span class="badge" id="feedCount">0</span>
-    </div>
-    <div class="feed-list" id="feedList"></div>
-  </aside>
-
-</div>
-
-<!-- BOTTOM STATUS BAR -->
-<div class="statusbar" id="statusbar"></div>
-
-<script src="app-shared.js?v=note-page-20260804"></script>
-<script src="ai-landscape.js?v=ai-video-websites-20260708"></script>
-<script>
-document.addEventListener('DOMContentLoaded', () => switchView('ai-landscape', document.querySelector('.nav-item.active')));
-</script>
-
-</body>
-</html>

@@ -1,2 +1,4 @@
 node_modules/
 drops.json
+# The file-storage fallback for countdowns; Postgres is what production uses.
+countdowns.json

@@ -11,20 +11,22 @@
   ];
 
   const AGENT_OPTIONS = [
-    ["codex", "Codex"],
-    ["claude-code", "Claude Code"],
-    ["openclaw", "OpenClaw"],
-    ["guardian", "Guardian"],
-    ["oss", "Penny"],
-    ["webclaw", "WebClaw"],
-    ["nutrimind", "NutriMind"],
-    ["pc", "PC"],
-    ["traderclaw", "TraderClaw"],
-    ["studioclaw", "Studio Director"],
-    ["commentfarm", "CommentFarm"],
-    ["youtubeclaw", "YouTube Claw"],
-    ["nightwaveaudio", "Nightwave Audio"],
-    ["newsreporter", "ShareBot67"],
+    ['codex', 'Codex'],
+    ['claude-code', 'Claude Code'],
+    ['openclaw', 'OpenClaw'],
+    ['reaper', 'Reaper'],
+    ['traderclaw', 'TraderClaw'],
+    ['webclaw', 'WebClaw'],
+    ['studioclaw', 'Studio Director'],
+    ['nightwaveaudio', 'Nightwave Audio'],
+    ['youtubeclaw', 'YouTube Claw'],
+    ['commentfarm', 'CommentFarm'],
+    ['newsreporter', 'ShareBot67'],
+    ['researcher', 'Researcher'],
+    ['guardian', 'Guardian'],
+    ['farmbot', 'FarmBot'],
+    ['rankforge', 'RankForge'],
+    ['world-monitor', 'World Monitor'],
   ];
 
   function statusLabel(value) {

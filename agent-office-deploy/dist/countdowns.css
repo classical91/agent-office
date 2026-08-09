@@ -1,0 +1,230 @@
+/* Countdowns — cards for the things with a clock on them, grouped into Today,
+   This Week and Later. It shares the visual language of Streaks (hero, panel,
+   pill buttons) so the two planning pages read as one app, but the unit here is
+   a card with time left on it rather than a day on a grid. */
+
+.cd-view { --ao-page-max: 1240px; color: var(--text); }
+
+/* The hero, its stat tiles and the pill buttons this page arrived with were
+   near-copies of .ao-page-head, .ops-metric and .ao-btn. They are gone; the
+   page composes the shared components instead, and what is left here is what
+   is genuinely particular to Countdowns. */
+.cd-toolbar { margin-bottom: var(--space-3); }
+.cd-toolbar .spacer { flex: 1 1 auto; }
+.cd-select { width: auto; min-width: 160px; }
+
+.cd-input,
+.cd-select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  padding: 9px 11px;
+  outline: none;
+}
+.cd-input:focus,
+.cd-select:focus { border-color: color-mix(in srgb, var(--accent) 70%, transparent); }
+.cd-input { width: 100%; box-sizing: border-box; }
+
+
+/* ─── Sections ────────────────────────────────────────────────────────── */
+
+.cd-section { margin-bottom: 22px; }
+.cd-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.cd-section-title { font-size: 14px; font-weight: 800; letter-spacing: 0.02em; }
+.cd-section-count {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+.cd-section-hint { font-size: 11.5px; color: var(--muted); margin-left: auto; }
+
+.cd-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  gap: 12px;
+}
+
+/* ─── Cards ───────────────────────────────────────────────────────────── */
+
+.cd-card {
+  position: relative;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--cd-color, var(--accent));
+  border-radius: 14px;
+  background: var(--panel);
+  padding: 14px 15px;
+  min-width: 0;
+}
+.cd-card.urgent { border-color: color-mix(in srgb, var(--cd-color, var(--accent)) 60%, transparent); }
+.cd-card.overdue {
+  border-color: rgba(239, 68, 68, 0.7);
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.1), var(--panel));
+}
+/* A trading card on a weekend is deliberately turned down rather than hidden:
+   the market is shut, so it is information, not a thing to act on tonight. */
+.cd-card.quiet { opacity: 0.6; }
+.cd-card.event { border-left-style: dashed; }
+
+.cd-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.cd-card-title { font-size: 14.5px; font-weight: 700; line-height: 1.3; min-width: 0; overflow-wrap: anywhere; }
+.cd-card-left {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--cd-color, var(--accent));
+  white-space: nowrap;
+  text-align: right;
+}
+.cd-card.overdue .cd-card-left { color: #f87171; }
+
+.cd-chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.cd-chip {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-radius: 999px;
+  padding: 3px 8px;
+  color: var(--cd-color, var(--accent));
+  background: color-mix(in srgb, var(--cd-color, var(--accent)) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--cd-color, var(--accent)) 40%, transparent);
+}
+.cd-chip.plain {
+  color: var(--muted);
+  background: rgba(0, 0, 0, 0.25);
+  border-color: var(--border);
+}
+
+.cd-card-when { font-size: 11.5px; color: var(--muted); margin-top: 9px; }
+.cd-card-action {
+  font-size: 12px;
+  margin-top: 9px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.26);
+  border: 1px solid var(--border);
+  line-height: 1.45;
+}
+.cd-card-action b {
+  display: block;
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.cd-card-notes { font-size: 11.5px; color: var(--muted); margin-top: 7px; font-style: italic; }
+
+.cd-card-actions { display: flex; gap: 6px; margin-top: 11px; flex-wrap: wrap; }
+/* The calendar link is an <a> wearing a button; it needs the centring a
+   <button> gets for free. */
+.cd-card-link { text-align: center; text-decoration: none; }
+/* The action row splits its width evenly whatever is in it. */
+.cd-card-actions .ao-btn { flex: 1; min-width: 64px; }
+
+.cd-empty {
+  color: var(--muted);
+  font-size: 12.5px;
+  text-align: center;
+  padding: 22px 10px;
+  line-height: 1.6;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+}
+
+.cd-banner {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.24);
+  color: var(--muted);
+  font-size: 12px;
+  padding: 11px 14px;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+.cd-banner.warn { border-color: rgba(245, 158, 11, 0.6); }
+
+/* ─── The add / edit form ─────────────────────────────────────────────── */
+
+.cd-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.68);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  padding: 16px;
+}
+.cd-modal-backdrop.open { display: flex; }
+.cd-modal {
+  width: 100%;
+  max-width: 460px;
+  max-height: 86vh;
+  overflow-y: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+}
+.cd-modal-title { font-size: 16px; font-weight: 800; margin-bottom: 14px; }
+.cd-field { margin-bottom: 11px; }
+.cd-label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin-bottom: 5px;
+  font-weight: 800;
+}
+.cd-field-row { display: flex; gap: 8px; }
+.cd-field-row > * { flex: 1; min-width: 0; }
+.cd-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+.cd-picker-option {
+  border: 1px solid color-mix(in srgb, var(--cd-color, var(--accent)) 35%, transparent);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 6px 11px;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.cd-picker-option.on {
+  background: color-mix(in srgb, var(--cd-color, var(--accent)) 22%, transparent);
+  border-color: var(--cd-color, var(--accent));
+  color: var(--cd-color, var(--accent));
+}
+.cd-modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+.cd-modal-actions .ao-btn { flex: 1; }
+
+
+@media (max-width: 700px) {
+  .cd-view { padding: 16px 10px 70px; }
+  .cd-grid { grid-template-columns: 1fr; }
+  .cd-toolbar .spacer { display: none; }
+  .cd-toolbar .cd-select { flex: 1 1 130px; min-width: 0; }
+  .cd-section-hint { display: none; }
+}

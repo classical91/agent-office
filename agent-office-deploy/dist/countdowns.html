@@ -6,8 +6,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
-<title>Dropbox - Agent Office</title>
+<title>Countdowns - Agent Office</title>
 <link rel="stylesheet" href="shared.css?v=template-v2-cleanup-20260809"/>
+<link rel="stylesheet" href="countdowns.css?v=template-v2-followup-20260809"/>
 <!-- Restores the saved theme and sidebar state before first paint, so no page
      flashes the default accent or a full-width sidebar on its way in.
      ACCENTS mirrors THEMES in app-shared.js. -->
@@ -22,7 +23,6 @@
   }catch(e){}
 })();
 </script>
-<link rel="stylesheet" href="workspace-systems.css?v=template-v2-followup-20260809"/>
 </head>
 <body>
 
@@ -109,98 +109,34 @@
 
   </nav>
 
-  <div class="view view--scroll ao-scroll" id="view-dropbox">
-    <section id="dropbox-view" class="dropbox-view">
-      <div class="dropbox-toolbar">
-        <h2>Dropbox</h2>
-        <div class="dropbox-actions">
-          <button id="new-drop-btn" class="btn btn-primary">New Drop</button>
-          <button id="dropbox-view-list" class="btn btn-secondary active">Table</button>
-          <button id="dropbox-view-detail" class="btn btn-secondary">Cards</button>
+  <div class="view view--scroll ao-scroll" id="view-countdowns">
+    <section class="ao-page cd-view">
+
+      <div class="ao-page-heading">
+        <div class="ao-eyebrow">⏳ COUNTDOWNS</div>
+        <div class="ao-page-sub">
+          Everything with a clock on it, in one place — deadlines, goals, work shifts, weekly routines
+          and trading dates, alongside what is next on the calendar. Each card carries the time left
+          and the next action, so the answer to "what now" is on the card rather than in your head.
         </div>
       </div>
 
-      <!-- Search and subject are the two you reach for; on a phone the rest sit
-           behind the More filters button rather than filling the screen. -->
-      <div class="dropbox-filters">
-        <input id="drop-search" type="search" placeholder="Search drops..." />
-        <select id="drop-filter-subject">
-          <option value="">All Subjects</option>
-        </select>
-        <button id="drop-filters-toggle" type="button" class="dropbox-filters-toggle" aria-expanded="false">More filters</button>
+      <!-- The same tiles as the office's operations summary: a count of things
+           that need you is a count of things that need you, wherever it is. -->
+      <div class="ops-summary cd-summary" id="cd-summary" aria-label="Countdown summary"></div>
 
-        <div id="dropbox-filters-more" class="dropbox-filters-more is-collapsed-mobile">
-          <select id="drop-filter-status">
-            <option value="">All Statuses</option>
-            <option value="inbox">Inbox</option>
-            <option value="idea">Idea</option>
-            <option value="researching">Researching</option>
-            <option value="ready">Ready</option>
-            <option value="building">Building</option>
-            <option value="archived">Archived</option>
-          </select>
-          <select id="drop-filter-reminder">
-            <option value="">All Reminders</option>
-            <option value="due">Due Now</option>
-            <option value="has">Has Reminder</option>
-          </select>
-          <select id="drop-sort">
-            <option value="updated_desc">Newest</option>
-            <option value="updated_asc">Oldest</option>
-            <option value="remind_asc">Reminder Time</option>
-            <option value="title_asc">Title</option>
-          </select>
-        </div>
+      <div class="cd-banner" id="cd-banner" hidden></div>
+
+      <div class="ao-toolbar cd-toolbar">
+        <select class="ao-select cd-select" id="cd-filter-category" onchange="AOCountdowns.setCategoryFilter(this.value)" aria-label="Filter by category"></select>
+        <button class="ao-btn" id="cd-toggle-events" onclick="AOCountdowns.toggleEvents()">Hide calendar events</button>
+        <div class="spacer"></div>
+        <button class="ao-btn" onclick="AOCountdowns.refresh()">Refresh</button>
+        <button class="ao-btn ao-btn--primary" onclick="AOCountdowns.openForm('')">+ New countdown</button>
       </div>
 
-      <div class="dropbox-layout">
-        <div class="dropbox-main">
-          <!-- Reminders is its own thing: something to be handed back later,
-               not a task to be worked. Two fields and nothing else. It has no
-               button on this page - the "Reminders" side-menu item is the way
-               in, and it opens this panel on a screen of its own. -->
-          <div id="dropbox-reminder-capture" class="dropbox-reminder-capture is-collapsed">
-            <div class="capture-heading">Reminders</div>
-            <textarea id="reminder-content" rows="3" placeholder="Remind me about…"></textarea>
-            <input id="reminder-when" type="text" placeholder="When? (tomorrow 9am, in 2h, friday, 6pm)" />
-            <div class="dropbox-row">
-              <button id="save-reminder-btn" class="btn btn-primary">Save Reminder</button>
-              <button id="cancel-reminder-btn" class="btn btn-secondary">Cancel</button>
-            </div>
-            <div id="reminder-saved-note" class="reminder-saved-note is-collapsed"></div>
-          </div>
+      <div id="cd-sections"></div>
 
-          <!-- Closed until New Note asks for it, so the page opens on the notes
-               themselves rather than on an empty form. -->
-          <div id="dropbox-quick-capture" class="dropbox-quick-capture is-collapsed">
-            <input id="drop-title" type="text" placeholder="Title" />
-            <input id="drop-subject" type="text" placeholder="Subject / Category" />
-            <input id="drop-project" type="text" placeholder="Project" />
-            <input id="drop-tags" type="text" placeholder="Tags (comma separated)" />
-
-            <div class="dropbox-row">
-              <select id="drop-status">
-                <option value="inbox">Inbox</option>
-                <option value="idea" selected>Idea</option>
-                <option value="researching">Researching</option>
-                <option value="ready">Ready</option>
-                <option value="building">Building</option>
-                <option value="archived">Archived</option>
-              </select>
-            </div>
-
-            <textarea id="drop-content" rows="5" placeholder="Capture your note, idea, reminder, or task... Use [[linked note]] syntax for internal links."></textarea>
-
-            <div class="dropbox-row">
-              <button id="save-drop-btn" class="btn btn-primary">Save Drop</button>
-              <button id="clear-drop-btn" class="btn btn-secondary">Clear</button>
-            </div>
-          </div>
-
-          <div id="dropbox-table-wrap" class="dropbox-table-wrap"></div>
-          <div id="dropbox-cards-wrap" class="dropbox-cards-wrap hidden"></div>
-        </div>
-      </div>
     </section>
   </div>
 
@@ -214,15 +150,56 @@
 
 </div>
 
-<!-- BOTTOM STATUS BAR -->
-<div class="statusbar" id="statusbar"></div>
+<!-- ADD / EDIT -->
+<div id="cd-modal" class="cd-modal-backdrop" onclick="if (event.target === this) AOCountdowns.closeForm()">
+  <div class="cd-modal">
+    <div class="cd-modal-title" id="cd-modal-title">New countdown</div>
 
+    <div class="cd-field">
+      <label class="cd-label" for="cd-form-title-input">What are you counting down to?</label>
+      <input type="text" class="cd-input" id="cd-form-title-input" placeholder="e.g. Instagram download review" maxlength="160" />
+    </div>
 
-  <!-- PASSPHRASE MODAL -->
-  <div id="passphrase-modal" class="ao-modal" hidden>
+    <div class="cd-field">
+      <label class="cd-label" for="cd-form-target">Date and time</label>
+      <input type="datetime-local" class="cd-input" id="cd-form-target" />
+    </div>
+
+    <div class="cd-field">
+      <label class="cd-label">Category</label>
+      <div class="cd-picker" id="cd-form-category"></div>
+    </div>
+
+    <div class="cd-field">
+      <label class="cd-label">Repeats</label>
+      <div class="cd-picker" id="cd-form-repeat"></div>
+      <div class="cd-card-notes" id="cd-form-hint"></div>
+    </div>
+
+    <div class="cd-field">
+      <label class="cd-label" for="cd-form-action">Next action</label>
+      <input type="text" class="cd-input" id="cd-form-action" placeholder="The one thing to do about it next" maxlength="300" />
+    </div>
+
+    <div class="cd-field">
+      <label class="cd-label" for="cd-form-notes">Notes (optional)</label>
+      <input type="text" class="cd-input" id="cd-form-notes" placeholder="Anything else worth remembering" maxlength="600" />
+    </div>
+
+    <div class="ao-modal-error" id="cd-form-error" hidden></div>
+
+    <div class="cd-modal-actions">
+      <button class="ao-btn" onclick="AOCountdowns.closeForm()">Cancel</button>
+      <button class="ao-btn ao-btn--primary" id="cd-form-save" onclick="AOCountdowns.save()">Add countdown</button>
+    </div>
+  </div>
+</div>
+
+<!-- PASSPHRASE MODAL -->
+<div id="passphrase-modal" class="ao-modal" hidden>
   <div class="ao-modal-sheet" role="dialog" aria-modal="true" aria-labelledby="passphrase-title">
-    <div class="ao-modal-title" id="passphrase-title">🔒 Unlock Dropbox</div>
-    <div class="ao-modal-desc">Enter the passphrase to access your drops.</div>
+    <div class="ao-modal-title" id="passphrase-title">🔒 Unlock Countdowns</div>
+    <div class="ao-modal-desc">Adding and editing countdowns sits behind the same passphrase as the Dropbox.</div>
     <input id="passphrase-input" class="ao-input" type="password" placeholder="Passphrase..."
       autocomplete="current-password" autocorrect="off" autocapitalize="none" spellcheck="false"/>
     <div id="passphrase-error" class="ao-modal-error" hidden></div>
@@ -233,10 +210,13 @@
   </div>
 </div>
 
+<!-- BOTTOM STATUS BAR -->
+<div class="statusbar" id="statusbar"></div>
+
 <script src="app-shared.js?v=note-page-20260804"></script>
-<script src="mission-board.js?v=board-view-20260804"></script>
+<script src="countdowns-page.js?v=countdowns-20260809"></script>
 <script>
-switchView('dropbox', document.querySelector('.nav-item.active'));
+switchView('countdowns', document.querySelector('.nav-item.active'));
 </script>
 
 </body>

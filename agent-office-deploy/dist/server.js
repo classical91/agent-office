@@ -7,6 +7,7 @@ const agentMeta = require('./calendar-agent-meta.js');
 const scheduling = require('./calendar-scheduling.js');
 const googleSync = require('./calendar-google-sync.js');
 const reminderTime = require('./reminder-time.js');
+const countdowns = require('./countdowns.js');
 
 process.env.TZ = process.env.APP_TIMEZONE || 'America/Vancouver';
 
@@ -22,8 +23,10 @@ const APP_SETTINGS_FILE = path.resolve(__dirname, process.env.APP_SETTINGS_FILE 
 const PROMPTS_FILE = path.resolve(__dirname, process.env.PROMPTS_FILE || 'prompts.json');
 const STREAKS_FILE = path.resolve(__dirname, process.env.STREAKS_FILE || 'streaks.json');
 const STREAK_DAYS_FILE = path.resolve(__dirname, process.env.STREAK_DAYS_FILE || 'streak-days.json');
+const COUNTDOWNS_FILE = path.resolve(__dirname, process.env.COUNTDOWNS_FILE || 'countdowns.json');
 const VISITS_FILE = path.resolve(__dirname, process.env.VISITS_FILE || 'visits.json');
 const MAX_BODY_BYTES = 50 * 1024;
+const DAY_MS = 24 * 60 * 60 * 1000;
 const SESSION_COOKIE = 'agent_office_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
 const ALLOWED_PRIORITIES = new Set(['normal', 'high', 'urgent']);
@@ -35,20 +38,22 @@ const LEGACY_STATUS_MAP = new Map([
 const ALLOWED_AGENT_STATUSES = new Set(['idle', 'running', 'blocked', 'failed', 'needs_input', 'offline']);
 const ALLOWED_APP_SETTING_KEYS = new Set(['ao-gateway-local', 'ao-gateway-lan']);
 const DEFAULT_AGENTS = [
-  { id: "codex", name: "Codex", role: "Coding Agent", model: "GPT-5", status: "idle", source: "Codex", notes: "Repo work, reviews, implementation, and local verification." },
-  { id: "claude-code", name: "Claude Code", role: "Coding Agent", model: "Claude Sonnet", status: "idle", source: "CLI", notes: "Parallel coding and refactor support." },
-  { id: "openclaw", name: "OpenClaw", role: "Agent Harness", model: "Mixed", status: "idle", source: "OpenClaw", notes: "Routes low-cost and specialized agent runs." },
-  { id: "guardian", name: "Guardian", role: "Security Agent", model: "Claude Sonnet", status: "idle", source: "Manual", notes: "Security checklist, deployment risk, and auth review." },
-  { id: "oss", name: "Penny", role: "Sole Orchestrator", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "Sole command/orchestration agent for Jason. Owns delegation, cron governance, routing, delivery, failure handling, and operator communication." },
-  { id: "webclaw", name: "WebClaw", role: "Web Agency Specialist", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "Local web-agency prospects, demos, follow-ups, and WebClaw service-hub work." },
-  { id: "nutrimind", name: "NutriMind", role: "Nutrition App Specialist", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "NutriMind diet-plan repo implementation, content, search, planner tests, and repo maintenance." },
-  { id: "pc", name: "PC", role: "Windows Workstation Specialist", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "Local Windows cleanup audits, security checks, optimization, troubleshooting, and file/app search." },
-  { id: "traderclaw", name: "TraderClaw", role: "Market Signals and Risk Specialist", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "Owns Market Dashboard trading-signal notifications, market monitoring, TradingView/Hyperliquid paper-trading pipeline work, signal review, trade logs, and risk checks. Paper mode only; no real trades without approval." },
-  { id: "studioclaw", name: "Studio Director", role: "Studio Routing Lead", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "Routes and reviews studio work under Penny using YouTube Claw, CommentFarm, Nightwave Audio, ShareBot67, and WebClaw; public output stays approval-gated." },
-  { id: "commentfarm", name: "CommentFarm", role: "Engagement Specialist", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "Engagement drafts, comment workflows, community activity, queue review, and CommentFarm repo maintenance." },
-  { id: "youtubeclaw", name: "YouTube Claw", role: "YouTube Packaging Specialist", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "YouTube workflow, video packaging, titles, descriptions, publishing prep, generated assets, and repo maintenance." },
-  { id: "nightwaveaudio", name: "Nightwave Audio", role: "Audio Specialist", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "Nightwave music-maker app, AI music prompts, sound beds, sonic identity, track concepts, and music lab workflows." },
-  { id: "newsreporter", name: "ShareBot67", role: "News and Geopolitics Specialist", model: "OpenAI GPT-5.5", status: "idle", source: "OpenClaw", notes: "News discovery, source capture, geopolitics/news briefs, reporter-page workflows, and claim-safe drafts. Market Dashboard trading-signal notifications belong to TraderClaw." },
+  { id: 'codex', name: 'Codex', role: 'Coding Agent', model: 'GPT-5', status: 'idle', source: 'Codex', notes: 'Repo work, reviews, implementation, and local verification.' },
+  { id: 'claude-code', name: 'Claude Code', role: 'Coding Agent', model: 'Claude Sonnet', status: 'idle', source: 'CLI', notes: 'Parallel coding and refactor support.' },
+  { id: 'openclaw', name: 'OpenClaw', role: 'Agent Harness', model: 'Mixed', status: 'idle', source: 'OpenClaw', notes: 'Routes low-cost and specialized agent runs.' },
+  { id: 'reaper', name: 'Reaper', role: 'Farm Bot', model: 'GPT-4o-mini', status: 'idle', source: 'OpenClaw', notes: 'Legacy CommentFarm discover, posting, and engagement cycles.' },
+  { id: 'traderclaw', name: 'TraderClaw', role: 'Market Signals and Risk Specialist', model: 'Claude Sonnet', status: 'running', source: 'Railway', notes: 'Owns Market Dashboard trading-signal notifications, BTC/market analysis, signal review, trade logs, and risk checks. Paper mode only; no real trades without approval.' },
+  { id: 'webclaw', name: 'WebClaw', role: 'Web Developer', model: 'GPT-5.4', status: 'idle', source: 'Railway', notes: 'Demo sites, client landing pages, and pitch assets.' },
+  { id: 'studioclaw', name: 'Studio Director', role: 'Studio Routing Lead', model: 'GPT-5.5', status: 'idle', source: 'OpenClaw', notes: 'Routes and reviews studio work under Penny, using YouTube Claw, CommentFarm, Nightwave Audio, ShareBot67, and WebClaw; public output stays approval-gated.' },
+  { id: 'nightwaveaudio', name: 'Nightwave Audio', role: 'Audio Specialist', model: 'GPT-5.5', status: 'idle', source: 'OpenClaw', notes: 'Nightwave music-maker app, prompts, track concepts, sound-bed workflow, sonic direction, and audio job reporting.' },
+  { id: 'youtubeclaw', name: 'YouTube Claw', role: 'YouTube Packaging Specialist', model: 'GPT-5.5', status: 'idle', source: 'OpenClaw', notes: 'Turns video ideas and assets into titles, thumbnail direction, descriptions, tags, chapters, scripts, and publishing prep.' },
+  { id: 'commentfarm', name: 'CommentFarm', role: 'Engagement Specialist', model: 'GPT-5.5', status: 'idle', source: 'OpenClaw', notes: 'Drafts concise, platform-aware comments, replies, hooks, and review queues for studio workflows.' },
+  { id: 'newsreporter', name: 'ShareBot67', role: 'News and Geopolitics Specialist', model: 'GPT-5.5', status: 'idle', source: 'OpenClaw', notes: 'News discovery, source capture, geopolitics/news briefs, reporter-page workflows, and claim-safe drafts. Market Dashboard trading-signal notifications belong to TraderClaw.' },
+  { id: 'researcher', name: 'Researcher', role: 'Research Agent', model: 'GPT-5', status: 'idle', source: 'Manual', notes: 'Briefs, scans, and source gathering.' },
+  { id: 'guardian', name: 'Guardian', role: 'Security Agent', model: 'Claude Sonnet', status: 'idle', source: 'Manual', notes: 'Security checklist, deployment risk, and auth review.' },
+  { id: 'farmbot', name: 'FarmBot', role: 'Outreach Agent', model: 'Qwen', status: 'idle', source: 'OpenClaw', notes: 'Scheduled farm sessions and engagement automation.' },
+  { id: 'rankforge', name: 'RankForge', role: 'SEO Agent', model: 'Claude Sonnet', status: 'idle', source: 'Railway', notes: 'SEO scans, local search, and content positioning.' },
+  { id: 'world-monitor', name: 'World Monitor', role: 'Monitoring Agent', model: 'GPT-5', status: 'idle', source: 'Railway', notes: 'World events and geopolitical watch loops.' },
 ];
 const ALLOWED_ORIGIN = process.env.APP_ORIGIN || process.env.PUBLIC_APP_URL || '';
 const PASSPHRASE_HASH = resolvePassphraseHash();
@@ -506,6 +511,27 @@ function toClientStreak(row, dayKeys = []) {
   };
 }
 
+// ─── Countdowns ──────────────────────────────────────────────────────────────
+// The rule for how a countdown repeats is stored as `repeat_rule` in Postgres
+// and handed to the client as `repeat`; the column name keeps clear of SQL's
+// repeat() and the client name matches what the page and countdowns.js use.
+
+function toClientCountdown(row) {
+  return {
+    id: row.id,
+    title: row.title || '',
+    target_at: toIsoOrEmpty(row.target_at),
+    category: countdowns.normalizeCategory(row.category),
+    repeat: countdowns.normalizeRepeat(row.repeat_rule !== undefined ? row.repeat_rule : row.repeat),
+    next_action: row.next_action || '',
+    notes: row.notes || '',
+    pinned: Boolean(row.pinned),
+    archived: Boolean(row.archived),
+    created_at: toIsoOrEmpty(row.created_at),
+    updated_at: toIsoOrEmpty(row.updated_at),
+  };
+}
+
 function validatePromptInput(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     return { ok: false, error: 'Body must be a JSON object.' };
@@ -791,6 +817,24 @@ async function loadStreaksFromFile() {
 async function saveStreaksToFile(streaks) {
   writeQueue = writeQueue.then(() =>
     fs.writeFile(STREAKS_FILE, JSON.stringify(streaks, null, 2), 'utf8')
+  );
+  await writeQueue;
+}
+
+async function loadCountdownsFromFile() {
+  try {
+    const raw = await fs.readFile(COUNTDOWNS_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
+}
+
+async function saveCountdownsToFile(rows) {
+  writeQueue = writeQueue.then(() =>
+    fs.writeFile(COUNTDOWNS_FILE, JSON.stringify(rows, null, 2), 'utf8')
   );
   await writeQueue;
 }
@@ -1229,6 +1273,30 @@ function createFileStorage() {
         .filter(day => (!range.from || day.day >= range.from) && (!range.to || day.day <= range.to))
         .sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
     },
+    async listCountdowns() {
+      return (await loadCountdownsFromFile()).map(toClientCountdown);
+    },
+    async createCountdown(countdown) {
+      const rows = await loadCountdownsFromFile();
+      rows.push(countdown);
+      await saveCountdownsToFile(rows);
+      return toClientCountdown(countdown);
+    },
+    async updateCountdown(id, patch) {
+      const rows = await loadCountdownsFromFile();
+      const row = rows.find(item => item.id === id);
+      if (!row) return null;
+      Object.assign(row, patch, { updated_at: new Date().toISOString() });
+      await saveCountdownsToFile(rows);
+      return toClientCountdown(row);
+    },
+    async deleteCountdown(id) {
+      const rows = await loadCountdownsFromFile();
+      const next = rows.filter(item => item.id !== id);
+      const deleted = next.length !== rows.length;
+      if (deleted) await saveCountdownsToFile(next);
+      return deleted;
+    },
     async markStreakDay(streakId, day, note) {
       const streaks = await loadStreaksFromFile();
       if (!streaks.some(item => item.id === streakId)) return null;
@@ -1536,6 +1604,26 @@ async function createPostgresStorage() {
     )
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS streak_days_day_idx ON streak_days (day)`);
+
+  // `target_at` is the first time the countdown comes due, not the next one:
+  // the next one is worked out on every read from the repeat rule, so a
+  // repeating card never needs a write just because a day went by.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS countdowns (
+      id TEXT PRIMARY KEY,
+      title VARCHAR(160) NOT NULL,
+      target_at TIMESTAMPTZ NOT NULL,
+      category VARCHAR(32) NOT NULL DEFAULT 'deadline',
+      repeat_rule VARCHAR(16) NOT NULL DEFAULT 'none',
+      next_action TEXT NOT NULL DEFAULT '',
+      notes TEXT NOT NULL DEFAULT '',
+      pinned BOOLEAN NOT NULL DEFAULT FALSE,
+      archived BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS countdowns_target_idx ON countdowns (target_at)`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS app_settings (
@@ -1967,6 +2055,71 @@ async function createPostgresStorage() {
     },
     async deleteStreak(id) {
       const result = await pool.query('DELETE FROM streaks WHERE id = $1', [id]);
+      return result.rowCount > 0;
+    },
+    async listCountdowns() {
+      const result = await pool.query(`
+        SELECT id, title, target_at, category, repeat_rule, next_action, notes, pinned, archived, created_at, updated_at
+        FROM countdowns
+        ORDER BY target_at ASC
+      `);
+      return result.rows.map(toClientCountdown);
+    },
+    async createCountdown(countdown) {
+      const result = await pool.query(
+        `
+          INSERT INTO countdowns
+            (id, title, target_at, category, repeat_rule, next_action, notes, pinned, archived, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10)
+          RETURNING id, title, target_at, category, repeat_rule, next_action, notes, pinned, archived, created_at, updated_at
+        `,
+        [
+          countdown.id,
+          countdown.title,
+          countdown.target_at,
+          countdown.category,
+          countdown.repeat,
+          countdown.next_action,
+          countdown.notes,
+          countdown.pinned,
+          countdown.archived,
+          countdown.created_at,
+        ]
+      );
+      return toClientCountdown(result.rows[0]);
+    },
+    async updateCountdown(id, patch) {
+      const result = await pool.query(
+        `
+          UPDATE countdowns SET
+            title = COALESCE($2, title),
+            target_at = COALESCE($3, target_at),
+            category = COALESCE($4, category),
+            repeat_rule = COALESCE($5, repeat_rule),
+            next_action = COALESCE($6, next_action),
+            notes = COALESCE($7, notes),
+            pinned = COALESCE($8, pinned),
+            archived = COALESCE($9, archived),
+            updated_at = NOW()
+          WHERE id = $1
+          RETURNING id, title, target_at, category, repeat_rule, next_action, notes, pinned, archived, created_at, updated_at
+        `,
+        [
+          id,
+          patch.title === undefined ? null : patch.title,
+          patch.target_at === undefined ? null : patch.target_at,
+          patch.category === undefined ? null : patch.category,
+          patch.repeat === undefined ? null : patch.repeat,
+          patch.next_action === undefined ? null : patch.next_action,
+          patch.notes === undefined ? null : patch.notes,
+          patch.pinned === undefined ? null : patch.pinned,
+          patch.archived === undefined ? null : patch.archived,
+        ]
+      );
+      return result.rows[0] ? toClientCountdown(result.rows[0]) : null;
+    },
+    async deleteCountdown(id) {
+      const result = await pool.query('DELETE FROM countdowns WHERE id = $1', [id]);
       return result.rowCount > 0;
     },
     async listStreakDays(range = {}) {
@@ -2694,6 +2847,113 @@ async function currentCalendarEvents() {
   return source.map(toSchedulingEvent).filter(event => event.start && event.end);
 }
 
+function nextShareBotCycle(now = new Date()) {
+  const base = new Date(2026, 7, 9, 8, 0, 0, 0);
+  const candidate = new Date(now);
+  candidate.setHours(8, 0, 0, 0);
+
+  for (let offset = 0; offset < 14; offset += 1) {
+    const dayIndex = Math.floor((startOfLocalDay(candidate) - startOfLocalDay(base)) / DAY_MS);
+    if (dayIndex < 0 || dayIndex % 2 !== 0) continue;
+    if (candidate.getTime() > now.getTime()) return candidate;
+    candidate.setDate(candidate.getDate() + 1);
+    candidate.setHours(8, 0, 0, 0);
+  }
+
+  const fallback = new Date(now);
+  fallback.setDate(fallback.getDate() + 2);
+  fallback.setHours(8, 0, 0, 0);
+  return fallback;
+}
+
+function startOfLocalDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+function shareBotReportCountdowns(now = new Date()) {
+  const cycle = nextShareBotCycle(now);
+  const offset = minutes => new Date(cycle.getTime() + minutes * 60 * 1000).toISOString();
+  return [
+    {
+      id: 'sharebot-report-crypto-economics',
+      title: 'ShareBot Report 1 - Crypto, Stocks, Economics',
+      target_at: offset(0),
+      category: 'routine',
+      repeat: 'none',
+      next_action: 'Generate and post the crypto, stock, and economics report.',
+      notes: 'Runs from the ShareBot news cycle at 8:00 AM Vancouver time every two days.',
+      pinned: true,
+      archived: false,
+    },
+    {
+      id: 'sharebot-report-geopolitics',
+      title: 'ShareBot Report 2 - Geopolitics',
+      target_at: offset(20),
+      category: 'routine',
+      repeat: 'none',
+      next_action: 'Generate and post the geopolitics report after Report 1 is done.',
+      notes: 'Estimated start is about 20 minutes after the cycle begins.',
+      pinned: true,
+      archived: false,
+    },
+    {
+      id: 'sharebot-report-cycle-complete',
+      title: 'ShareBot Full Cycle - Estimated Complete',
+      target_at: offset(40),
+      category: 'routine',
+      repeat: 'none',
+      next_action: 'Confirm both reports posted or surface the failed target.',
+      notes: 'Estimated completion window for both ShareBot reports.',
+      pinned: true,
+      archived: false,
+    },
+  ];
+}
+
+/**
+ * Everything the Countdowns page draws, in one payload.
+ *
+ * The calendar half is best-effort on purpose: a countdown you typed in
+ * yourself should still be readable when Google is down or was never
+ * connected, so a failure there costs the events and nothing else.
+ */
+async function buildCountdownsPayload(options = {}) {
+  const storage = await storageReady;
+  const now = options.now instanceof Date ? options.now : new Date();
+  const stored = await storage.listCountdowns();
+  const storedIds = new Set(stored.map(item => item.id));
+  const reportCountdowns = options.includeShareBotReports
+    ? shareBotReportCountdowns(now).filter(item => !storedIds.has(item.id))
+    : [];
+
+  let events = [];
+  let calendarState = 'disconnected';
+  if (options.includeEvents !== false) {
+    try {
+      events = await currentCalendarEvents();
+      calendarState = (await isGcalConnected()) ? 'connected' : (events.length ? 'local-only' : 'disconnected');
+    } catch (error) {
+      console.error('Countdowns: unable to load calendar events.', error);
+      calendarState = 'error';
+    }
+  } else {
+    calendarState = 'skipped';
+  }
+
+  return {
+    ...countdowns.buildUpcoming({
+      countdowns: reportCountdowns.concat(stored),
+      events,
+      now,
+      includeArchived: Boolean(options.includeArchived),
+    }),
+    calendar: { state: calendarState, connected: calendarState === 'connected' },
+    categories: countdowns.CATEGORIES,
+    repeats: countdowns.REPEATS,
+    timezone: process.env.TZ,
+  };
+}
+
 async function suggestScheduleSlots(body = {}) {
   const preferences = await getSchedulingPreferences();
   const events = await currentCalendarEvents();
@@ -3364,6 +3624,24 @@ async function handleShortcutsRequest(req, res, url, storage) {
       due: due.length,
       upcoming: upcoming.length,
       next: upcoming.length ? toShortcutItem(upcoming[0], now, req) : null,
+    });
+    return true;
+  }
+
+  // The evening roll-up pulls this. It is the same selection the Countdowns
+  // page leads with, as plain text a Shortcut can paste straight into a note.
+  if (req.method === 'GET' && pathname === '/api/shortcuts/countdowns') {
+    const payload = await buildCountdownsPayload({ now });
+    const limit = Number.parseInt(url.searchParams.get('limit') || '', 10);
+    if (String(url.searchParams.get('format') || 'text') === 'text') {
+      sendText(res, 200, countdowns.formatRollupText(payload, limit));
+      return true;
+    }
+    sendJson(res, 200, {
+      ok: true,
+      now: payload.now,
+      counts: payload.counts,
+      items: countdowns.selectRollupItems(payload, limit),
     });
     return true;
   }
@@ -4241,6 +4519,7 @@ const server = http.createServer(async (req, res) => {
         pull_url: `${origin}/api/shortcuts/drops?due=now`,
         pull_text_url: `${origin}/api/shortcuts/drops?due=now&format=text`,
         status_url: `${origin}/api/shortcuts/status`,
+        countdowns_url: `${origin}/api/shortcuts/countdowns?limit=5&format=text`,
         header: 'X-Shortcuts-Token',
       });
       return;
@@ -4643,6 +4922,91 @@ const server = http.createServer(async (req, res) => {
       const deleted = await storage.deleteStreak(id);
       if (!deleted) {
         sendJson(res, 404, { error: 'Streak not found.' });
+        return;
+      }
+
+      sendJson(res, 200, { ok: true });
+      return;
+    }
+
+    // -- COUNTDOWNS API -----------------------------------------
+    // Reading is open, the same as the calendar this page shows alongside the
+    // cards; writing sits behind the Dropbox passphrase like every other
+    // personal record in here.
+    if (req.method === 'GET' && pathname === '/api/countdowns/rollup') {
+      const payload = await buildCountdownsPayload();
+      const limit = Number.parseInt(parsedUrl.searchParams.get('limit') || '', 10);
+      const items = countdowns.selectRollupItems(payload, limit);
+      if (String(parsedUrl.searchParams.get('format') || '') === 'text') {
+        sendText(res, 200, countdowns.formatRollupText(payload, limit));
+        return;
+      }
+      sendJson(res, 200, { now: payload.now, counts: payload.counts, items });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/api/countdowns') {
+      sendJson(res, 200, await buildCountdownsPayload({
+        includeArchived: parsedUrl.searchParams.get('archived') === '1',
+        includeEvents: parsedUrl.searchParams.get('events') !== '0',
+        includeShareBotReports: parsedUrl.searchParams.get('sharebot') === '1',
+      }));
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/countdowns') {
+      if (!requireDropsAuth(res, req)) return;
+
+      const payload = countdowns.validateCountdownInput(await readJsonBody(req));
+      if (!payload.ok) {
+        sendJson(res, 400, { error: payload.error });
+        return;
+      }
+
+      const now = new Date().toISOString();
+      const created = await storage.createCountdown({
+        id: `countdown-${typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now()}`,
+        created_at: now,
+        updated_at: now,
+        ...payload.value,
+      });
+
+      sendJson(res, 201, countdowns.decorateCountdown(created));
+      return;
+    }
+
+    if (req.method === 'PATCH' && pathname.startsWith('/api/countdowns/')) {
+      if (!requireDropsAuth(res, req)) return;
+
+      const id = decodeURIComponent(pathname.slice('/api/countdowns/'.length)).trim();
+      if (!id) {
+        sendJson(res, 400, { error: 'Countdown id is required.' });
+        return;
+      }
+
+      const payload = countdowns.validateCountdownInput(await readJsonBody(req), true);
+      if (!payload.ok) {
+        sendJson(res, 400, { error: payload.error });
+        return;
+      }
+
+      const updated = await storage.updateCountdown(id, payload.value);
+      if (!updated) {
+        sendJson(res, 404, { error: 'Countdown not found.' });
+        return;
+      }
+
+      sendJson(res, 200, countdowns.decorateCountdown(updated));
+      return;
+    }
+
+    if (req.method === 'DELETE' && pathname.startsWith('/api/countdowns/')) {
+      if (!requireDropsAuth(res, req)) return;
+
+      const id = decodeURIComponent(pathname.slice('/api/countdowns/'.length)).trim();
+      const deleted = await storage.deleteCountdown(id);
+      if (!deleted) {
+        sendJson(res, 404, { error: 'Countdown not found.' });
         return;
       }
 
