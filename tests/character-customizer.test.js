@@ -69,7 +69,11 @@ test('every live agent resolves to a detailed Habbo-style sprite instead of the 
     resolvedSprites.push(resolved);
   }
   assert.equal(new Set(resolvedSprites).size, resolvedSprites.length, 'live agents should not share the same sprite');
-  assert.match(index, /app-shared\.js\?v=avatar-editor-20260805/);
+  // The office loads a cache-busted app-shared.js. The version string itself
+  // moves every time that file changes — pinning the literal one meant an
+  // honest cache-bust broke a sprite test. What matters here is that the query
+  // is there at all; tests/static-assets.test.js holds the pages to one version.
+  assert.match(index, /app-shared\.js\?v=[^"]+/);
 });
 
 test('the redesign invents no agents and drops none', () => {
