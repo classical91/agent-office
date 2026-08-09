@@ -1066,6 +1066,19 @@
   .org-cta { position: absolute; bottom: 14px; right: 18px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--border); transition: color 0.2s; }
   .org-card:hover .org-cta { color: #a5b4fc; }
   .org-card .org-cta { color: color-mix(in srgb, var(--muted) 75%, var(--bg)); }
+  /* The agent cards' "VIEW AGENT" CTA is gone with the agent-info panel it
+     opened — the panel never made it out of the monolith. .org-cta stays for
+     the memory-link cards below, which do go somewhere. The one field the
+     panel had that the card lacked, repo, is on the card now. */
+  .org-repo {
+    margin-top: var(--space-2);
+    font-size: var(--fs-2xs);
+    font-family: var(--font-mono);
+    color: var(--text-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   .org-row-center { display: flex; justify-content: center; width: 100%; }
   .org-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; max-width: 680px; }
