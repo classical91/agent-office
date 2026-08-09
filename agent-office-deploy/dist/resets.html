@@ -6,8 +6,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
-<title>Resets - Agent Office</title>
+<title>Countdown Timers - Agent Office</title>
 <link rel="stylesheet" href="shared.css?v=template-v2-cleanup-20260809"/>
+<link rel="stylesheet" href="resets.css?v=resets-redesign-20260809"/>
 <!-- Restores the saved theme and sidebar state before first paint, so no page
      flashes the default accent or a full-width sidebar on its way in.
      ACCENTS mirrors THEMES in app-shared.js. -->
@@ -73,7 +74,7 @@
             <a class="nav-item" href="/calendar-v3.html" data-icon="&#128197;"><span class="nav-item-label">Calendar</span></a>
             <a class="nav-item" href="/countdowns.html" data-icon="&#9203;"><span class="nav-item-label">Countdowns</span></a>
             <a class="nav-item" href="/streaks.html" data-icon="&#128293;"><span class="nav-item-label">Streaks</span></a>
-            <a class="nav-item" href="/resets.html" data-icon="&#8987;"><span class="nav-item-label">Countdown Timer</span></a>
+            <a class="nav-item" href="/resets.html" data-icon="&#8987;"><span class="nav-item-label">Countdown Timers</span></a>
           </div>
         </div>
         <a class="nav-item" href="/mission-board.html" data-icon="&#128229;"><span class="nav-item-label">Dropbox</span></a>
@@ -109,49 +110,50 @@
   </nav>
 
   <div class="view view--scroll ao-scroll" id="view-resets">
-    <section class="resets-view">
-      <div class="resets-hero">
-        <div class="resets-kicker">Reset Signals</div>
-        <h2>API Reset Countdown</h2>
-        <div class="resets-sub">
-          Track separate usage reset windows and attach a different Pushcut webhook to each card.
-          Webhook URLs are saved only in this browser's localStorage.
-        </div>
+    <section class="ao-page rst-view">
 
-        <div class="resets-controls">
-          <input id="reset-new-title" class="resets-input" placeholder="New countdown name, e.g. Gemini API Reset" />
-          <div>
-            <button type="button" class="resets-btn" onclick="AOResets.openNewPicker()">Pick date and time</button>
-            <div id="reset-new-time-label" class="resets-picked-label">No time selected</div>
+      <div class="ao-page-head">
+        <div class="ao-page-heading">
+          <div class="ao-eyebrow">&#9203; COUNTDOWN TIMERS</div>
+          <div class="ao-page-title">Countdown Timers</div>
+          <div class="ao-page-sub">
+            Usage windows, backups and the routines that come round again. Each card carries the time
+            left and can ping its own Pushcut webhook the moment it lands. Tap a card to edit it.
+            Timers and webhook URLs are saved only in this browser.
           </div>
-          <button type="button" class="resets-btn" onclick="AOResets.addCard()">Add Countdown</button>
+        </div>
+        <div class="ao-page-actions">
+          <button class="ao-btn ao-btn--primary" onclick="AOResets.openForm()">+ New Countdown</button>
         </div>
       </div>
 
-      <main class="resets-grid" id="reset-cards"></main>
+      <div class="ao-toolbar rst-toolbar">
+        <div class="rst-control">
+          <label class="ao-label" for="rst-sort">Sort</label>
+          <select class="ao-select rst-select" id="rst-sort" aria-label="Sort countdowns"
+                  onchange="AOResets.setSort(this.value)"></select>
+        </div>
+        <div class="rst-control">
+          <label class="ao-label" for="rst-filter">Show</label>
+          <select class="ao-select rst-select" id="rst-filter" aria-label="Filter countdowns"
+                  onchange="AOResets.setFilter(this.value)"></select>
+        </div>
+        <div class="rst-spacer"></div>
+        <span class="rst-count" id="rst-count"></span>
+      </div>
+
+      <main class="rst-list" id="reset-cards"></main>
+
+      <div class="rst-empty" id="rst-empty" hidden>
+        <div class="rst-empty-art" aria-hidden="true">&#9200;</div>
+        <div class="rst-empty-title" data-role="empty-title">No countdowns yet</div>
+        <div class="rst-empty-body" data-role="empty-body">Create your first countdown and it will show up here, ticking.</div>
+        <button class="ao-btn ao-btn--primary" data-role="empty-new" onclick="AOResets.openForm()">+ New Countdown</button>
+      </div>
+
+      <div class="rst-footnote">All times are in your local timezone.</div>
+
     </section>
-
-    <div id="reset-date-picker-modal" class="reset-modal-backdrop">
-      <div class="reset-date-modal">
-        <div class="reset-date-modal-head">
-          <button type="button" class="resets-btn" onclick="AOResets.changePickerMonth(-1)">&lt;</button>
-          <div id="reset-picker-month-label" class="reset-date-modal-title"></div>
-          <button type="button" class="resets-btn" onclick="AOResets.changePickerMonth(1)">&gt;</button>
-        </div>
-
-        <div id="reset-calendar-grid" class="reset-calendar-grid"></div>
-
-        <div class="reset-time-row">
-          <select id="reset-picker-hour" class="resets-select"></select>
-          <select id="reset-picker-minute" class="resets-select"></select>
-        </div>
-
-        <div class="reset-modal-actions">
-          <button type="button" class="resets-btn" onclick="AOResets.closePicker()">Cancel</button>
-          <button type="button" class="resets-btn" onclick="AOResets.applyPicker()">Use this time</button>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- ACTIVITY FEED -->
@@ -164,10 +166,52 @@
 
 </div>
 
+<!-- ADD COUNTDOWN -->
+<div id="rst-modal" class="ao-modal" hidden onclick="if (event.target === this) AOResets.closeForm()">
+  <div class="ao-modal-sheet rst-modal-sheet" role="dialog" aria-modal="true" aria-labelledby="rst-modal-title">
+    <div class="ao-modal-title" id="rst-modal-title">Add New Countdown</div>
+    <div class="ao-modal-desc">Name it, say when it lands, and point it at a Pushcut webhook if you want a nudge.</div>
+
+    <div class="ao-field">
+      <label class="ao-label" for="rst-new-title">Countdown name</label>
+      <input class="ao-input" id="rst-new-title" maxlength="160" placeholder="e.g. Gemini API Reset" />
+    </div>
+
+    <div class="rst-field-row">
+      <div class="ao-field">
+        <label class="ao-label" for="rst-new-date">Reset date</label>
+        <input class="ao-input" id="rst-new-date" type="date" />
+      </div>
+      <div class="ao-field">
+        <label class="ao-label" for="rst-new-time">Time</label>
+        <input class="ao-input" id="rst-new-time" type="time" />
+      </div>
+    </div>
+
+    <div class="ao-field">
+      <label class="ao-label" for="rst-new-repeat">Repeats</label>
+      <select class="ao-select" id="rst-new-repeat"></select>
+    </div>
+
+    <div class="ao-field">
+      <label class="ao-label" for="rst-new-webhook">Pushcut webhook (optional)</label>
+      <input class="ao-input" id="rst-new-webhook" inputmode="url" placeholder="https://api.pushcut.io/..." />
+    </div>
+
+    <div class="ao-modal-error" id="rst-form-error" hidden></div>
+
+    <div class="ao-modal-actions">
+      <button class="ao-btn" onclick="AOResets.closeForm()">Cancel</button>
+      <button class="ao-btn ao-btn--primary" onclick="AOResets.addFromForm()">Add Countdown</button>
+    </div>
+  </div>
+</div>
+
 <!-- BOTTOM STATUS BAR -->
 <div class="statusbar" id="statusbar"></div>
 
 <script src="app-shared.js?v=note-page-20260804"></script>
+<script src="resets.js?v=resets-redesign-20260809"></script>
 <script>
 switchView('resets', document.querySelector('.nav-item.active'));
 </script>
