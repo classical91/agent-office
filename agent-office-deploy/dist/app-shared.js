@@ -1937,6 +1937,14 @@ window.AOResets = (() => {
     return d.toISOString();
   }
 
+  function daysFromNowIso(days, hour = 9) {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    d.setHours(hour, 0, 0, 0);
+    if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+    return d.toISOString();
+  }
+
   function randomId() {
     if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
     return 'reset-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
@@ -1947,10 +1955,10 @@ window.AOResets = (() => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return ensureShareBotCards(parsed);
+        if (Array.isArray(parsed)) return ensureDefaultCards(parsed);
       } catch (err) {}
     }
-    return ensureShareBotCards([
+    return ensureDefaultCards([
       {
         id: randomId(),
         title: 'Claude Code Usage Reset',
@@ -2011,6 +2019,54 @@ window.AOResets = (() => {
       }
     });
     return inputCards;
+  }
+
+  function ensurePersonalRoutineCards(inputCards) {
+    const routineCards = [
+      {
+        id: 'routine-beard-mustache-face-7d',
+        title: 'Trim Beard + Mustache + Face',
+        resetAt: daysFromNowIso(7),
+        webhookUrl: '',
+        fired: false,
+        message: 'Repeats every 7 days.'
+      },
+      {
+        id: 'routine-haircut-14d',
+        title: 'Haircut',
+        resetAt: daysFromNowIso(14),
+        webhookUrl: '',
+        fired: false,
+        message: 'Repeats every 2 weeks.'
+      },
+      {
+        id: 'routine-bedsheets-carpet-14d',
+        title: 'Clean Bedsheets + Carpet',
+        resetAt: daysFromNowIso(14),
+        webhookUrl: '',
+        fired: false,
+        message: 'Repeats every 2 weeks.'
+      }
+    ];
+    const cardsById = new Map((inputCards || []).map(card => [card.id, card]));
+    routineCards.slice().reverse().forEach(card => {
+      const existing = cardsById.get(card.id);
+      if (existing) {
+        existing.title = card.title;
+        existing.message = card.message;
+        if (!existing.resetAt || new Date(existing.resetAt).getTime() <= Date.now()) {
+          existing.resetAt = card.resetAt;
+          existing.fired = false;
+        }
+      } else {
+        inputCards.unshift(card);
+      }
+    });
+    return inputCards;
+  }
+
+  function ensureDefaultCards(inputCards) {
+    return ensurePersonalRoutineCards(ensureShareBotCards(inputCards));
   }
 
   function saveCards() {
