@@ -26,6 +26,7 @@ const STREAK_DAYS_FILE = path.resolve(__dirname, process.env.STREAK_DAYS_FILE ||
 const COUNTDOWNS_FILE = path.resolve(__dirname, process.env.COUNTDOWNS_FILE || 'countdowns.json');
 const VISITS_FILE = path.resolve(__dirname, process.env.VISITS_FILE || 'visits.json');
 const MAX_BODY_BYTES = 50 * 1024;
+const DAY_MS = 24 * 60 * 60 * 1000;
 const SESSION_COOKIE = 'agent_office_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
 const ALLOWED_PRIORITIES = new Set(['normal', 'high', 'urgent']);
@@ -2846,6 +2847,69 @@ async function currentCalendarEvents() {
   return source.map(toSchedulingEvent).filter(event => event.start && event.end);
 }
 
+function nextShareBotCycle(now = new Date()) {
+  const base = new Date(2026, 7, 9, 8, 0, 0, 0);
+  const candidate = new Date(now);
+  candidate.setHours(8, 0, 0, 0);
+
+  for (let offset = 0; offset < 14; offset += 1) {
+    const dayIndex = Math.floor((startOfLocalDay(candidate) - startOfLocalDay(base)) / DAY_MS);
+    if (dayIndex < 0 || dayIndex % 2 !== 0) continue;
+    if (candidate.getTime() > now.getTime()) return candidate;
+    candidate.setDate(candidate.getDate() + 1);
+    candidate.setHours(8, 0, 0, 0);
+  }
+
+  const fallback = new Date(now);
+  fallback.setDate(fallback.getDate() + 2);
+  fallback.setHours(8, 0, 0, 0);
+  return fallback;
+}
+
+function startOfLocalDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+function shareBotReportCountdowns(now = new Date()) {
+  const cycle = nextShareBotCycle(now);
+  const offset = minutes => new Date(cycle.getTime() + minutes * 60 * 1000).toISOString();
+  return [
+    {
+      id: 'sharebot-report-crypto-economics',
+      title: 'ShareBot Report 1 - Crypto, Stocks, Economics',
+      target_at: offset(0),
+      category: 'routine',
+      repeat: 'none',
+      next_action: 'Generate and post the crypto, stock, and economics report.',
+      notes: 'Runs from the ShareBot news cycle at 8:00 AM Vancouver time every two days.',
+      pinned: true,
+      archived: false,
+    },
+    {
+      id: 'sharebot-report-geopolitics',
+      title: 'ShareBot Report 2 - Geopolitics',
+      target_at: offset(20),
+      category: 'routine',
+      repeat: 'none',
+      next_action: 'Generate and post the geopolitics report after Report 1 is done.',
+      notes: 'Estimated start is about 20 minutes after the cycle begins.',
+      pinned: true,
+      archived: false,
+    },
+    {
+      id: 'sharebot-report-cycle-complete',
+      title: 'ShareBot Full Cycle - Estimated Complete',
+      target_at: offset(40),
+      category: 'routine',
+      repeat: 'none',
+      next_action: 'Confirm both reports posted or surface the failed target.',
+      notes: 'Estimated completion window for both ShareBot reports.',
+      pinned: true,
+      archived: false,
+    },
+  ];
+}
+
 /**
  * Everything the Countdowns page draws, in one payload.
  *
@@ -2855,7 +2919,12 @@ async function currentCalendarEvents() {
  */
 async function buildCountdownsPayload(options = {}) {
   const storage = await storageReady;
+  const now = options.now instanceof Date ? options.now : new Date();
   const stored = await storage.listCountdowns();
+  const storedIds = new Set(stored.map(item => item.id));
+  const reportCountdowns = options.includeShareBotReports
+    ? shareBotReportCountdowns(now).filter(item => !storedIds.has(item.id))
+    : [];
 
   let events = [];
   let calendarState = 'disconnected';
@@ -2873,9 +2942,9 @@ async function buildCountdownsPayload(options = {}) {
 
   return {
     ...countdowns.buildUpcoming({
-      countdowns: stored,
+      countdowns: reportCountdowns.concat(stored),
       events,
-      now: options.now instanceof Date ? options.now : new Date(),
+      now,
       includeArchived: Boolean(options.includeArchived),
     }),
     calendar: { state: calendarState, connected: calendarState === 'connected' },
@@ -4880,6 +4949,7 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 200, await buildCountdownsPayload({
         includeArchived: parsedUrl.searchParams.get('archived') === '1',
         includeEvents: parsedUrl.searchParams.get('events') !== '0',
+        includeShareBotReports: parsedUrl.searchParams.get('sharebot') === '1',
       }));
       return;
     }

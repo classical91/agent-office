@@ -1917,6 +1917,40 @@ window.AOResets = (() => {
     return d.toISOString();
   }
 
+  function nextShareBotCycle() {
+    const now = new Date();
+    const d = new Date();
+    d.setHours(8, 0, 0, 0);
+    const base = new Date(2026, 7, 9, 8, 0, 0, 0);
+    while (d < now || ((d - base) / 86400000) % 2 !== 0) {
+      d.setDate(d.getDate() + 1);
+      d.setHours(8, 0, 0, 0);
+    }
+    return d;
+  }
+
+  function offsetIso(date, minutes) {
+    const d = new Date(date);
+    d.setMinutes(d.getMinutes() + minutes);
+    return d.toISOString();
+  }
+
+  function daysFromNowIso(days, hour = 9) {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    d.setHours(hour, 0, 0, 0);
+    if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+    return d.toISOString();
+  }
+
+  function codexUsageResetIso() {
+    return new Date(2026, 7, 15, 13, 28, 0, 0).toISOString();
+  }
+
+  function claudeUsageResetIso() {
+    return new Date(2026, 7, 14, 14, 59, 0, 0).toISOString();
+  }
+
   function randomId() {
     if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
     return 'reset-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
@@ -1927,10 +1961,10 @@ window.AOResets = (() => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) return ensureDefaultCards(parsed);
       } catch (err) {}
     }
-    return [
+    return ensureDefaultCards([
       {
         id: randomId(),
         title: 'Claude Code Usage Reset',
@@ -1947,7 +1981,140 @@ window.AOResets = (() => {
         fired: false,
         message: 'Example: resets tomorrow.'
       }
+    ]);
+  }
+
+  function ensureShareBotCards(inputCards) {
+    const nextCycle = nextShareBotCycle();
+    const shareBotCards = [
+      {
+        id: 'sharebot-report-crypto-economics',
+        title: 'ShareBot Report 1 - Crypto, Stocks, Economics',
+        resetAt: nextCycle.toISOString(),
+        webhookUrl: '',
+        fired: false,
+        message: 'Starts at the next 8:00 AM PDT ShareBot cycle.'
+      },
+      {
+        id: 'sharebot-report-geopolitics',
+        title: 'ShareBot Report 2 - Geopolitics',
+        resetAt: offsetIso(nextCycle, 20),
+        webhookUrl: '',
+        fired: false,
+        message: 'Estimated start after Report 1 posts.'
+      },
+      {
+        id: 'sharebot-report-cycle-complete',
+        title: 'ShareBot Full Cycle - Estimated Complete',
+        resetAt: offsetIso(nextCycle, 40),
+        webhookUrl: '',
+        fired: false,
+        message: 'Estimated completion window for both reports.'
+      }
     ];
+    const cardsById = new Map((inputCards || []).map(card => [card.id, card]));
+    shareBotCards.slice().reverse().forEach(card => {
+      const existing = cardsById.get(card.id);
+      if (existing) {
+        existing.title = card.title;
+        existing.resetAt = card.resetAt;
+        existing.message = card.message;
+        existing.fired = false;
+      } else {
+        inputCards.unshift(card);
+      }
+    });
+    return inputCards;
+  }
+
+  function ensurePersonalRoutineCards(inputCards) {
+    const routineCards = [
+      {
+        id: 'routine-beard-mustache-face-7d',
+        title: 'Trim Beard + Mustache + Face',
+        resetAt: daysFromNowIso(7),
+        webhookUrl: '',
+        fired: false,
+        message: 'Repeats every 7 days.'
+      },
+      {
+        id: 'routine-haircut-14d',
+        title: 'Haircut',
+        resetAt: daysFromNowIso(14),
+        webhookUrl: '',
+        fired: false,
+        message: 'Repeats every 2 weeks.'
+      },
+      {
+        id: 'routine-bedsheets-carpet-14d',
+        title: 'Clean Bedsheets + Carpet',
+        resetAt: daysFromNowIso(14),
+        webhookUrl: '',
+        fired: false,
+        message: 'Repeats every 2 weeks.'
+      }
+    ];
+    const cardsById = new Map((inputCards || []).map(card => [card.id, card]));
+    routineCards.slice().reverse().forEach(card => {
+      const existing = cardsById.get(card.id);
+      if (existing) {
+        existing.title = card.title;
+        existing.message = card.message;
+        if (!existing.resetAt || new Date(existing.resetAt).getTime() <= Date.now()) {
+          existing.resetAt = card.resetAt;
+          existing.fired = false;
+        }
+      } else {
+        inputCards.unshift(card);
+      }
+    });
+    return inputCards;
+  }
+
+  function ensureCodexUsageResetCard(inputCards) {
+    const card = {
+      id: 'codex-usage-reset-2026-08-15-1328',
+      title: 'Codex Usage Reset',
+      resetAt: codexUsageResetIso(),
+      webhookUrl: '',
+      fired: false,
+      message: 'Resets Aug 15, 2026 at 1:28 PM.'
+    };
+    const existing = inputCards.find(item => item.id === card.id);
+    if (existing) {
+      existing.title = card.title;
+      existing.resetAt = card.resetAt;
+      existing.message = card.message;
+      existing.fired = false;
+    } else {
+      inputCards.unshift(card);
+    }
+    return inputCards;
+  }
+
+  function ensureClaudeUsageResetCard(inputCards) {
+    const card = {
+      id: 'claude-usage-reset-2026-08-14-1459',
+      title: 'Claude Usage Reset',
+      resetAt: claudeUsageResetIso(),
+      webhookUrl: '',
+      fired: false,
+      message: 'Resets Friday, Aug 14, 2026 at 2:59 PM.'
+    };
+    const existing = inputCards.find(item => item.id === card.id);
+    if (existing) {
+      existing.title = card.title;
+      existing.resetAt = card.resetAt;
+      existing.message = card.message;
+      existing.fired = false;
+    } else {
+      inputCards.unshift(card);
+    }
+    return inputCards;
+  }
+
+  function ensureDefaultCards(inputCards) {
+    return ensureClaudeUsageResetCard(ensureCodexUsageResetCard(ensurePersonalRoutineCards(ensureShareBotCards(inputCards))));
   }
 
   function saveCards() {
