@@ -2361,6 +2361,22 @@ async function createStorage() {
   }
 }
 
+const MIME_TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+};
+
+// A URL is a page if it names no file extension, or names an .html one. Those
+// fall back to the app shell when they miss, because a deep link into a view
+// should still land somewhere. Everything else is an asset, and a missing
+// asset is an error, not a page.
+function isPageRequest(filePath) {
+  const ext = path.extname(filePath);
+  return ext === '' || ext === '.html';
+}
+
 async function handleStatic(req, res, pathname) {
   const relativePath = pathname === '/' || pathname === '/index.html'
     ? 'index.html'
@@ -2374,24 +2390,29 @@ async function handleStatic(req, res, pathname) {
 
   try {
     const data = await fs.readFile(filePath);
-    const ext = path.extname(filePath);
-    const mimeType = {
-      '.html': 'text/html; charset=utf-8',
-      '.js': 'text/javascript; charset=utf-8',
-      '.css': 'text/css; charset=utf-8',
-      '.json': 'application/json; charset=utf-8',
-    }[ext] || 'text/plain; charset=utf-8';
 
     // Static assets carried no cache headers at all, so browsers fell back to
     // heuristic caching and the ?v= query was the only cache-buster — forget to
     // bump it and a stale stylesheet pairs with fresh markup. Revalidate
     // instead; these files are small and this app is single-user.
     res.writeHead(200, {
-      'Content-Type': mimeType,
+      'Content-Type': MIME_TYPES[path.extname(filePath)] || 'text/plain; charset=utf-8',
       'Cache-Control': 'no-cache',
     });
     res.end(data);
   } catch (error) {
+    // Every miss used to answer with index.html at 200, assets included. A
+    // half-deployed build then failed silently: the browser asked for
+    // resets.css, got a page, applied none of it, and the screen looked like an
+    // older version of the app rather than a broken one. A stylesheet or script
+    // that is not there now says so, in the status and in the server log.
+    if (!isPageRequest(filePath)) {
+      console.warn(`Static asset missing: ${pathname}`);
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-cache' });
+      res.end('Not Found');
+      return;
+    }
+
     try {
       const data = await fs.readFile(path.join(__dirname, 'index.html'));
       res.writeHead(200, {
