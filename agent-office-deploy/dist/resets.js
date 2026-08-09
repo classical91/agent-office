@@ -16,6 +16,16 @@ window.AOResets = (() => {
   const FILTER_KEY = 'ao-resets-filter';
   const TICK_MS = 1000;
   const DAY_MS = 86400000;
+  const HAPPY_HOUR_ID = 'routine-happy-hour-daily';
+  const HAPPY_HOUR_DEALS = [
+    '50% off Burger Patties',
+    '50% off Marinated Chicken Kebobs',
+    '50% off Marinated Chicken Kebobs',
+    '50\u00a2 each Marinated Split Chicken Wings',
+    '50% off Fresh Appetizers',
+    '50% off Fresh Appetizers',
+    '50% off Burger Patties',
+  ];
 
   const REPEAT_OPTIONS = [
     { value: 0, label: 'Does not repeat' },
@@ -54,6 +64,7 @@ window.AOResets = (() => {
   // A countdown with a face on it. First rule that matches the name wins, and
   // the colour lands on the icon tile and the time, nowhere else.
   const ICONS = [
+    [/happy hour|kebob|chicken|burger|appetizer/i, '\u{1F37D}\uFE0F', 'var(--orange)'],
     [/claude|anthropic/i, '\u{1F9E0}', 'var(--purple)'],
     [/openai|chatgpt|\bgpt\b|codex/i, '⚡', 'var(--green)'],
     [/gemini|google/i, '✨', 'var(--blue)'],
@@ -110,6 +121,49 @@ window.AOResets = (() => {
     return atHour(date, hour == null ? 9 : hour, 0).toISOString();
   }
 
+  function happyHourDetails(now = new Date()) {
+    const current = new Date(now);
+    const reminder = atHour(current, 14, 30);
+    const starts = atHour(current, 15, 0);
+    const ends = atHour(current, 18, 0);
+    let dealDate = current;
+    let target = reminder;
+    let phase = 'upcoming';
+
+    if (current >= ends) {
+      dealDate = new Date(current);
+      dealDate.setDate(dealDate.getDate() + 1);
+      target = atHour(dealDate, 14, 30);
+      phase = 'tomorrow';
+    } else if (current >= starts) {
+      target = ends;
+      phase = 'open';
+    } else if (current >= reminder) {
+      target = starts;
+      phase = 'starting';
+    }
+
+    const dayName = dealDate.toLocaleDateString([], { weekday: 'long' });
+    return {
+      phase,
+      target,
+      title: `Happy Hour ${phase === 'tomorrow' ? 'Tomorrow' : 'Today'} \u2014 ${HAPPY_HOUR_DEALS[dealDate.getDay()]}`,
+      message: `${dayName}: ${HAPPY_HOUR_DEALS[dealDate.getDay()]}. Happy Hour is 3:00\u20136:00 PM; the countdown starts at 2:30 PM. More Rewards card required; while quantities last.`,
+    };
+  }
+
+  function syncHappyHourCard(card, now = new Date()) {
+    const details = happyHourDetails(now);
+    card.title = details.title;
+    card.resetAt = details.target.toISOString();
+    card.repeatDays = 0;
+    card.message = details.message;
+    card.status = 'active';
+    card.fired = false;
+    card.happyHourPhase = details.phase;
+    return details;
+  }
+
   function iconFor(title) {
     const match = ICONS.find(rule => rule[0].test(title || ''));
     return match ? { glyph: match[1], color: match[2] } : { glyph: '⏳', color: 'var(--accent)' };
@@ -148,10 +202,19 @@ window.AOResets = (() => {
   // A timer that has been ticked off is not counting down any more, so the big
   // number stands down rather than carrying on in the background.
   function timeLabel(view) {
+    if (view.card.id === HAPPY_HOUR_ID) {
+      const prefix = view.card.happyHourPhase === 'open'
+        ? 'Open now \u00b7 ends in '
+        : view.card.happyHourPhase === 'starting'
+          ? 'Starts in '
+          : 'Heads-up in ';
+      return prefix + formatRemaining(view.remaining);
+    }
     return view.state === 'completed' ? 'Done' : formatRemaining(view.remaining);
   }
 
   function whenLabel(view) {
+    if (view.card.id === HAPPY_HOUR_ID) return 'Happy Hour 3:00\u20136:00 PM \u00b7 heads-up begins 2:30 PM';
     const when = formatWhen(view.card.resetAt);
     if (!when) return '';
     if (view.state === 'completed') return `Marked done — was set for ${when}`;
@@ -189,6 +252,13 @@ window.AOResets = (() => {
     const cycle = nextShareBotCycle();
     const offset = (date, minutes) => new Date(date.getTime() + minutes * 60000).toISOString();
     return [
+      {
+        id: HAPPY_HOUR_ID,
+        title: 'Happy Hour',
+        resetAt: new Date().toISOString(),
+        repeatDays: 0,
+        message: '',
+      },
       {
         id: 'sharebot-report-crypto-economics',
         title: 'ShareBot Report 1 - Crypto, Stocks, Economics',
@@ -304,6 +374,12 @@ window.AOResets = (() => {
     // that stays deleted.
     const source = stored || seedCards().map(seed => ({ ...seed, createdAt: Date.now(), status: 'active' }));
     const cards = source.map(normalizeCard).filter(Boolean);
+    let happyHour = cards.find(card => card.id === HAPPY_HOUR_ID);
+    if (!happyHour) {
+      happyHour = normalizeCard({ id: HAPPY_HOUR_ID, title: 'Happy Hour', resetAt: new Date().toISOString() }, cards.length);
+      cards.push(happyHour);
+    }
+    syncHappyHourCard(happyHour);
     cards.forEach(rollForward);
     return cards;
   }
@@ -383,7 +459,7 @@ window.AOResets = (() => {
           <span class="rst-icon" aria-hidden="true">${icon.glyph}</span>
           <span class="rst-head-main">
             <span class="rst-head-top">
-              <span class="rst-title">${escHtml(card.title)}</span>
+              <span class="rst-title" data-role="title">${escHtml(card.title)}</span>
               <span class="ao-status ao-status--${meta.tone} rst-state" data-role="status">
                 <span class="ao-dot ao-dot--${meta.dot}"></span>${meta.label}
               </span>
@@ -494,13 +570,22 @@ window.AOResets = (() => {
     if (!list) return;
 
     let orderChanged = false;
-    state.cards.forEach(card => { if (rollForward(card)) orderChanged = true; });
+    state.cards.forEach(card => {
+      if (card.id === HAPPY_HOUR_ID) {
+        const before = `${card.title}|${card.resetAt}|${card.happyHourPhase}`;
+        syncHappyHourCard(card);
+        if (`${card.title}|${card.resetAt}|${card.happyHourPhase}` !== before) orderChanged = true;
+      } else if (rollForward(card)) orderChanged = true;
+    });
 
     list.querySelectorAll('.rst-card').forEach(node => {
       const card = state.cards.find(item => item.id === node.dataset.id);
       if (!card) return;
       const view = viewOf(card);
       const meta = STATES[view.state];
+
+      const title = node.querySelector('[data-role="title"]');
+      if (title) title.textContent = card.title;
 
       const time = node.querySelector('[data-role="time"]');
       if (time) time.textContent = timeLabel(view);
@@ -806,5 +891,5 @@ window.AOResets = (() => {
     if (!state.tickTimer) state.tickTimer = setInterval(tick, TICK_MS);
   }
 
-  return { init, setSort, setFilter, openForm, closeForm, addFromForm };
+  return { init, setSort, setFilter, openForm, closeForm, addFromForm, happyHourDetails };
 })();
