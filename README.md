@@ -1,6 +1,6 @@
-# Agent Office
+# OpenClaw Agents Office
 
-A multi-page web app that acts as a personal "office" for AI agents — a place to capture ideas, manage agent memory, plan a calendar, and view an org chart of your AI team.
+A multi-page web app that acts as the command center for OpenClaw agents, tasks, routes, rollups, memory, planning, and the org chart of Jason's AI team.
 
 ## Features
 
