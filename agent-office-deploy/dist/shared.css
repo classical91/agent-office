@@ -1048,7 +1048,9 @@
      agent cards above them. */
   .org-name--sm { font-size: var(--fs-md); }
   .org-title--sm { font-size: var(--fs-xs); }
-  .org-row-2--narrow { max-width: 680px; margin: 0 auto; }
+  /* Agent cards carry a stripe in the agent's own colour. .org-card already
+     derives its border and hover from --entity-color; this adds the edge. */
+  .org-card--striped { border-left: 3px solid var(--entity-color, var(--accent)); }
   .org-title { font-size: 13px; color: color-mix(in srgb, var(--muted) 60%, var(--text)); margin-bottom: 8px; }
   .org-desc { font-size: 12px; color: var(--muted); line-height: 1.6; margin-bottom: 12px; }
   .org-tags { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -1067,6 +1069,10 @@
 
   .org-row-center { display: flex; justify-content: center; width: 100%; }
   .org-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; max-width: 680px; }
+  /* These are single classes like .org-row-2 itself, so they have to come
+     after it to win. */
+  .org-row-2--narrow { max-width: 680px; margin: 0 auto; }
+  .org-row-2--wide { max-width: 760px; margin: 0 auto; }
   .org-row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; width: 100%; }
   .org-row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; width: 100%; }
   .org-coders-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; width: 100%; }
@@ -1252,6 +1258,25 @@
   .settings-row-note { font-size: var(--fs-xs); color: var(--text-dim); }
   .settings-saved-msg { font-size: var(--fs-sm); color: var(--green); margin-left: var(--space-3); }
   .settings-saved-msg[hidden] { display: none; }
+  .gw-probe-row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: 3px 0;
+  }
+  .gw-probe-path { font-size: var(--fs-xs); color: var(--text); font-family: var(--font-mono); }
+  .gw-probe-note { font-size: var(--fs-xs); color: var(--text-dim); margin-bottom: var(--space-2); }
+  /* An endpoint that answered, one that answered oddly, one that did not. */
+  .gw-probe-answer { font-size: var(--fs-xs); }
+  .gw-probe-answer.is-ok { color: var(--green); }
+  .gw-probe-answer.is-warn { color: var(--yellow); }
+  .gw-probe-answer.is-bad { color: var(--red); }
+
+  .agent-info-mem { color: var(--text-dim); }
+  .agent-info-mem.is-on { color: var(--green); }
+
+  .drop-meta-project { font-size: var(--fs-sm); color: var(--text-dim); }
+
   .settings-probe { margin-top: var(--space-3); padding-top: var(--space-2); border-top: 1px solid var(--border); }
   .settings-about { line-height: 1.7; margin-bottom: 0; }
   .settings-about-note { margin-top: var(--space-1); color: color-mix(in srgb, var(--text-dim) 75%, var(--bg)); }
@@ -2042,13 +2067,16 @@
     width: 22px; height: 22px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     flex-shrink: 0;
+    background: color-mix(in srgb, var(--entity-color, var(--accent)) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--entity-color, var(--accent)) 27%, transparent);
   }
 
   .feed-name {
-    font-size: 11px;
+    font-size: var(--fs-xs);
     font-weight: 600;
+    color: var(--entity-color, var(--text));
   }
 
   .feed-tag {
@@ -2124,6 +2152,8 @@
     font-size: var(--fs-base);
     font-weight: 600;
     flex-shrink: 0;
+    background: color-mix(in srgb, var(--entity-color, var(--accent)) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--entity-color, var(--accent)) 33%, transparent);
   }
 
   .status-card-info { overflow: hidden; flex: 1; min-width: 0; }
