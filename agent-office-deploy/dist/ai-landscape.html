@@ -7,8 +7,10 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>AI Models - Agent Office</title>
-<link rel="stylesheet" href="shared.css?v=feed-menus-20260804"/>
-<!-- Apply saved theme before first paint to avoid a flash of the default theme. Mirrors THEMES in app-shared.js. -->
+<link rel="stylesheet" href="shared.css?v=template-v2-20260809"/>
+<!-- Restores the saved theme and sidebar state before first paint, so no page
+     flashes the default accent or a full-width sidebar on its way in.
+     ACCENTS mirrors THEMES in app-shared.js. -->
 <script>
 (function(){
   // A theme is just an accent; shared.css derives every surface from it.
@@ -16,6 +18,7 @@
   try{
     var a=ACCENTS[localStorage.getItem('ao-theme')];
     if(a) document.documentElement.style.setProperty('--accent',a);
+    if(localStorage.getItem('ao-nav-compact')==='1') document.documentElement.classList.add('nav-compact');
   }catch(e){}
 })();
 </script>
@@ -24,76 +27,89 @@
 <body>
 
 <!-- Mobile nav overlay -->
-<div id="mobile-overlay" onclick="closeMobileNav()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999;"></div>
+<div id="mobile-overlay" class="mobile-overlay" onclick="closeMobileNav()"></div>
 
-<div class="topbar">
-  <div style="display:flex; align-items:center; gap:12px;">
+<header class="topbar">
+  <div class="topbar-brand">
     <button class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu" aria-label="Open navigation">&#9776;</button>
-    <div class="topbar-logo">⬡ AGENT OFFICE</div>
+    <a class="topbar-logo" href="/">&#11041; OPENCLAW AGENTS OFFICE</a>
   </div>
   <div class="topbar-meta">
-    <span><span class="online-dot"></span><span id="onlineCount">9</span> agents online</span>
+    <span class="topbar-stat" id="agent-state-chip">
+      <span class="ao-dot ao-dot--active"></span>
+      <span><span id="onlineCount">9</span> <span id="onlineLabel">agents online</span></span>
+    </span>
     <span id="clock">--:--:--</span>
-    <button id="feed-toggle-btn" onclick="toggleFeedPanel()" title="Toggle activity panel" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">☰ Agents</button>
-    <button id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode — hide panels" style="background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; transition:all 0.15s; -webkit-tap-highlight-color:transparent;">⛶ Focus</button>
+    <button class="ao-btn ao-btn--sm" id="feed-toggle-btn" onclick="toggleFeedPanel()" title="Toggle activity panel" aria-pressed="false">&#9776; Agents</button>
+    <button class="ao-btn ao-btn--sm" id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode &mdash; hide panels" aria-pressed="false">&#9974; Focus</button>
   </div>
-</div>
+</header>
 
 <div class="layout feed-collapsed">
 
   <!-- LEFT NAV -->
-  <nav class="nav">
+  <!-- Generated from scripts/shell/shell.html by `npm run sync:shell`. Edit
+       the template, not this copy: tests/shell-consistency.test.js fails when
+       a page's copy drifts from it. Which row is highlighted is worked out
+       from the URL by markActiveNav() in app-shared.js, so no page marks its
+       own — that is what let the copies disagree in the first place. -->
+  <nav class="nav ao-scroll" aria-label="Primary">
 
-    <!-- WORKSPACE -->
     <div class="nav-section">
       <div class="nav-heading">Workspace</div>
       <div class="nav-items-wrap nav-open">
         <div class="nav-group">
-          <a class="nav-item nav-item-parent" href="/" data-nav-sub="office">Office<span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Office pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">▾</span></a>
+          <a class="nav-item nav-item-parent" href="/" data-nav-sub="office" data-icon="&#127970;"><span class="nav-item-label">Agents Office</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Agents Office pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></a>
           <div class="nav-sub">
-            <a class="nav-item" href="/memory.html">Memory</a>
-            <a class="nav-item" href="/org-chart.html">Org Chart</a>
-            <a class="nav-item" href="/agent-registry.html">Agent Registry</a>
-            <a class="nav-item" href="/project-rooms.html">Project Rooms</a>
+            <a class="nav-item" href="/org-chart.html" data-icon="&#128450;"><span class="nav-item-label">Org Chart</span></a>
+            <a class="nav-item" href="/memory.html" data-icon="&#129504;"><span class="nav-item-label">Memory</span></a>
+            <a class="nav-item" href="/agent-registry.html" data-icon="&#128199;"><span class="nav-item-label">Agent Registry</span></a>
+            <a class="nav-item" href="/project-rooms.html" data-icon="&#128682;"><span class="nav-item-label">Project Rooms</span></a>
           </div>
         </div>
         <div class="nav-group">
-          <div class="nav-item nav-item-parent" data-nav-sub="planning" onclick="toggleNavSub(event, this)">Planning Tools<span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Planning Tools pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">▾</span></div>
+          <div class="nav-item nav-item-parent" data-nav-sub="planning" data-icon="&#128203;" onclick="toggleNavSub(event, this)"><span class="nav-item-label">Planning Tools</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Planning Tools pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></div>
           <div class="nav-sub">
-            <a class="nav-item" href="/mission-board.html?view=ios">Reminders</a>
-            <a class="nav-item" href="/calendar-v3.html">Calendar</a>
-            <a class="nav-item" href="/countdowns.html">Countdowns</a>
-            <a class="nav-item" href="/streaks.html">Streaks</a>
-            <a class="nav-item" href="/resets.html">Countdown Timer</a>
+            <a class="nav-item" href="/mission-board.html?view=ios" data-icon="&#9200;"><span class="nav-item-label">Reminders</span></a>
+            <a class="nav-item" href="/calendar-v3.html" data-icon="&#128197;"><span class="nav-item-label">Calendar</span></a>
+            <a class="nav-item" href="/countdowns.html" data-icon="&#9203;"><span class="nav-item-label">Countdowns</span></a>
+            <a class="nav-item" href="/streaks.html" data-icon="&#128293;"><span class="nav-item-label">Streaks</span></a>
+            <a class="nav-item" href="/resets.html" data-icon="&#8987;"><span class="nav-item-label">Countdown Timer</span></a>
           </div>
         </div>
-        <a class="nav-item" href="/mission-board.html">Dropbox</a>
-        <a class="nav-item" href="/dev.html">Dev Links</a>
-        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/ai.html" target="_blank" rel="noopener noreferrer">AI Portal <span class="link-ext">↗</span></a>
-        <a class="nav-item active" href="/ai-landscape.html" data-ai-landscape-nav="true">AI Models</a>
-        <div class="nav-item" onclick="window.open('/prompt-builder.html', '_blank')">AI Prompt Engineer</div>
-        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/apps.html" target="_blank" rel="noopener noreferrer">My Websites &amp; Projects <span class="link-ext">↗</span></a>
-        <a class="nav-item" href="/visitors.html">Visitors</a>
+        <a class="nav-item" href="/mission-board.html" data-icon="&#128229;"><span class="nav-item-label">Dropbox</span></a>
+        <a class="nav-item" href="/dev.html" data-icon="&#128736;"><span class="nav-item-label">Dev Links</span></a>
+        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/ai.html" target="_blank" rel="noopener noreferrer" data-icon="&#127760;"><span class="nav-item-label">AI Portal</span> <span class="link-ext">&#8599;</span></a>
+        <a class="nav-item" href="/ai-landscape.html" data-ai-landscape-nav="true" data-icon="&#129302;"><span class="nav-item-label">AI Models</span></a>
+        <div class="nav-item" data-icon="&#9998;" onclick="window.open('/prompt-builder.html', '_blank')"><span class="nav-item-label">AI Prompt Engineer</span></div>
+        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/apps.html" target="_blank" rel="noopener noreferrer" data-icon="&#129513;"><span class="nav-item-label">My Websites &amp; Projects</span> <span class="link-ext">&#8599;</span></a>
+        <a class="nav-item" href="/visitors.html" data-icon="&#128099;"><span class="nav-item-label">Visitors</span></a>
       </div>
     </div>
 
-<!-- SYSTEM -->
     <div class="nav-section nav-section-bottom">
       <div class="nav-heading">System</div>
       <div class="nav-items-wrap nav-open">
-        <a class="nav-item" href="/settings.html">Settings</a>
+        <a class="nav-item" href="/settings.html" data-icon="&#9881;"><span class="nav-item-label">Settings</span></a>
         <a class="nav-link" data-dev-only="true" data-gateway="local" href="http://localhost:18789" target="_blank">
-          <div class="link-dot" style="background:var(--accent);"></div> Gateway (local) <span class="link-ext">↗</span>
+          <div class="link-dot"></div> Gateway (local) <span class="link-ext">&#8599;</span>
         </a>
         <a class="nav-link" data-dev-only="true" data-gateway="lan" href="http://10.0.0.106:18789" target="_blank">
-          <div class="link-dot" style="background:var(--accent);"></div> Gateway (LAN) <span class="link-ext">↗</span>
+          <div class="link-dot"></div> Gateway (LAN) <span class="link-ext">&#8599;</span>
         </a>
       </div>
+    </div>
+
+    <div class="nav-footer">
+      <button class="nav-collapse-btn" id="nav-collapse-btn" onclick="toggleNavCompact()" aria-expanded="true" title="Collapse sidebar">
+        <span class="nav-collapse-icon" aria-hidden="true">&#171;</span>
+        <span class="nav-collapse-label">Collapse</span>
+      </button>
     </div>
 
   </nav>
 
-  <div class="view" id="view-ai-landscape" style="flex-direction:column; background:var(--view-bg); overflow:hidden;">
+  <div class="view" id="view-ai-landscape">
     <div id="ai-landscape-root" class="ai-landscape"></div>
   </div>
 
