@@ -1949,6 +1949,10 @@ window.AOResets = (() => {
     return new Date(2026, 7, 15, 13, 28, 0, 0).toISOString();
   }
 
+  function claudeUsageResetIso() {
+    return new Date(2026, 7, 14, 14, 59, 0, 0).toISOString();
+  }
+
   function randomId() {
     if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
     return 'reset-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
@@ -2090,8 +2094,29 @@ window.AOResets = (() => {
     return inputCards;
   }
 
+  function ensureClaudeUsageResetCard(inputCards) {
+    const card = {
+      id: 'claude-usage-reset-2026-08-14-1459',
+      title: 'Claude Usage Reset',
+      resetAt: claudeUsageResetIso(),
+      webhookUrl: '',
+      fired: false,
+      message: 'Resets Friday, Aug 14, 2026 at 2:59 PM.'
+    };
+    const existing = inputCards.find(item => item.id === card.id);
+    if (existing) {
+      existing.title = card.title;
+      existing.resetAt = card.resetAt;
+      existing.message = card.message;
+      existing.fired = false;
+    } else {
+      inputCards.unshift(card);
+    }
+    return inputCards;
+  }
+
   function ensureDefaultCards(inputCards) {
-    return ensureCodexUsageResetCard(ensurePersonalRoutineCards(ensureShareBotCards(inputCards)));
+    return ensureClaudeUsageResetCard(ensureCodexUsageResetCard(ensurePersonalRoutineCards(ensureShareBotCards(inputCards))));
   }
 
   function saveCards() {
