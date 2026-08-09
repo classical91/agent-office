@@ -1945,6 +1945,10 @@ window.AOResets = (() => {
     return d.toISOString();
   }
 
+  function codexUsageResetIso() {
+    return new Date(2026, 7, 15, 13, 28, 0, 0).toISOString();
+  }
+
   function randomId() {
     if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
     return 'reset-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
@@ -2065,8 +2069,29 @@ window.AOResets = (() => {
     return inputCards;
   }
 
+  function ensureCodexUsageResetCard(inputCards) {
+    const card = {
+      id: 'codex-usage-reset-2026-08-15-1328',
+      title: 'Codex Usage Reset',
+      resetAt: codexUsageResetIso(),
+      webhookUrl: '',
+      fired: false,
+      message: 'Resets Aug 15, 2026 at 1:28 PM.'
+    };
+    const existing = inputCards.find(item => item.id === card.id);
+    if (existing) {
+      existing.title = card.title;
+      existing.resetAt = card.resetAt;
+      existing.message = card.message;
+      existing.fired = false;
+    } else {
+      inputCards.unshift(card);
+    }
+    return inputCards;
+  }
+
   function ensureDefaultCards(inputCards) {
-    return ensurePersonalRoutineCards(ensureShareBotCards(inputCards));
+    return ensureCodexUsageResetCard(ensurePersonalRoutineCards(ensureShareBotCards(inputCards)));
   }
 
   function saveCards() {
