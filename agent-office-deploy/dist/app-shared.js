@@ -1,28 +1,3 @@
-// Populate SVG roster panel
-(function() {
-  const roster = [
-    {name:'Penny', role:'Sole Orchestrator', color:'#f59e0b'},
-    {name:'WebClaw', role:'Web Agency Specialist', color:'#3b82f6'},
-    {name:'NutriMind', role:'Nutrition App Specialist', color:'#22c55e'},
-    {name:'PC', role:'Windows Workstation Specialist', color:'#10b981'},
-    {name:'Studio Director', role:'Studio Routing Lead', color:'#8b5cf6'},
-    {name:'Nightwave Audio', role:'Audio Specialist', color:'#06b6d4'},
-    {name:'YouTube Claw', role:'YouTube Packaging', color:'#ef4444'},
-    {name:'CommentFarm', role:'Engagement Specialist', color:'#84cc16'},
-    {name:'ShareBot67', role:'News and Trends', color:'#f97316'},
-  ];
-  const el = document.getElementById('svg-roster');
-  if (el) {
-    el.innerHTML = roster.map(a => `
-      <div class="roster-row">
-        <div class="roster-dot" style="--entity-color:${a.color};"></div>
-        <div>
-          <div class="roster-name">${a.name}</div>
-          <div class="roster-role">${a.role}</div>
-        </div>
-      </div>`).join('');
-  }
-})();
 // ─── AGENT DATA ───────────────────────────────────────────────
 const AGENTS = [
   {
@@ -2416,37 +2391,6 @@ const AGENT_DESCRIPTIONS = Object.fromEntries(
   }])
 );
 
-// The agent-info panel this fills lives in the old monolithic
-// agent-office.html and was never carried into the split pages, so on the Org
-// Chart every card click threw on the first missing element. Bail out when
-// there is no panel to fill: a click is a no-op rather than an exception.
-function showAgentInfo(id) {
-  closeMobileNav();
-  const info = AGENT_DESCRIPTIONS[id];
-  if (!info) return;
-  const panel = document.getElementById('agent-info-panel');
-  if (!panel) return;
-
-  const setText = (elId, value) => {
-    const el = document.getElementById(elId);
-    if (el) el.textContent = value;
-  };
-  setText('agent-info-name', info.name);
-  setText('agent-info-role', info.role);
-  setText('agent-info-model', '\u26a1 ' + (info.model || ''));
-  setText('agent-info-desc', info.desc);
-
-  const memEl = document.getElementById('agent-info-memory');
-  if (memEl) {
-    memEl.innerHTML = info.memory
-      ? '<span class="agent-info-mem is-on">\u25cf</span> Memory enabled'
-      : '<span class="agent-info-mem">\u25cb</span> No memory (stateless)';
-  }
-
-  panel.hidden = false;
-  const nav = document.querySelector('.nav');
-  if (nav) nav.scrollTop = 99999;
-}
 
 
 function renderOrgChart() {
@@ -2458,7 +2402,7 @@ function renderOrgChart() {
     ? '<span class="org-tag org-tag-green">Memory</span>'
     : '<span class="org-tag">Stateless</span>';
   const orgCard = (agent, wide = false) => `
-    <div class="org-card org-card--striped ${wide ? 'org-card-wide glow-indigo' : 'glow-blue'}" onclick="showAgentInfo('${agent.id}')" style="--entity-color:${agent.color};">
+    <div class="org-card org-card--striped ${wide ? 'org-card-wide glow-indigo' : 'glow-blue'}" style="--entity-color:${agent.color};">
       <div class="org-card-inner">
         <div class="org-avatar">${agent.emoji}</div>
         <div class="org-body">
@@ -2470,9 +2414,9 @@ function renderOrgChart() {
             ${memoryBadge(agent)}
             <span class="org-tag org-tag-blue">${escHTML(agent.workspace || 'workspace')}</span>
           </div>
+          ${agent.repo ? `<div class="org-repo">${escHTML(agent.repo)}</div>` : ''}
         </div>
       </div>
-      <div class="org-cta">VIEW AGENT \u2192</div>
     </div>`;
   orgView.innerHTML = `
     <div class="org-page">
@@ -2495,7 +2439,7 @@ function renderOrgChart() {
                 <div class="org-tags">${memoryBadge(agent)}<span class="org-tag org-tag-teal">${escHTML(agent.id)}</span></div>
               </div>
             </div>
-            <div class="org-cta">OPEN MEMORY ?</div>
+            <div class="org-cta">OPEN MEMORY \u2192</div>
           </div>`).join('')}
       </div>
     </div>`;
