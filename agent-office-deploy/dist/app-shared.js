@@ -9,7 +9,7 @@
     {name:'Nightwave Audio', role:'Audio Specialist', color:'#06b6d4'},
     {name:'YouTube Claw', role:'YouTube Packaging', color:'#ef4444'},
     {name:'CommentFarm', role:'Engagement Specialist', color:'#84cc16'},
-    {name:'News Reporter', role:'News and Trends', color:'#f97316'},
+    {name:'ShareBot67', role:'News and Trends', color:'#f97316'},
   ];
   const el = document.getElementById('svg-roster');
   if (el) {
@@ -160,7 +160,7 @@ const AGENTS = [
     feed: [
       'Studio Director routing playbook shipped',
       'Penny remains command center',
-      'YouTube, CommentFarm, Nightwave Audio, News Reporter, and WebClaw smoke checks passed',
+      'YouTube, CommentFarm, Nightwave Audio, ShareBot67, and WebClaw smoke checks passed',
       'Public output approval gates confirmed',
       'Internal ID remains studioclaw',
     ]
@@ -251,7 +251,7 @@ const AGENTS = [
   },
   {
     id: 'newsreporter',
-    name: 'News Reporter',
+    name: 'ShareBot67',
     emoji: 'NR',
     color: '#f97316',
     role: 'News and Trend Specialist',
@@ -270,7 +270,7 @@ const AGENTS = [
       'Avoiding market calls',
     ],
     feed: [
-      'News Reporter smoke check passed',
+      'ShareBot67 smoke check passed',
       'Claim-safe brief scope assigned',
       'Market-dashboard workspace linked',
       'Publishing remains approval-gated',

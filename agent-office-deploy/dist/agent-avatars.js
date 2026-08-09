@@ -123,7 +123,7 @@
       defaults: { face: 'friendly', skin: '#ba7651', hair: 'swept', hairColor: '#b96c32', outfit: 'overshirt', outfitColor: '#343948', accessory: 'earpiece' },
     },
     {
-      id: 'newsreporter', name: 'News Reporter', shortRole: 'News & trends', role: 'News and trend specialist', color: '#f97316',
+      id: 'newsreporter', name: 'ShareBot67', shortRole: 'News & trends', role: 'News and trend specialist', color: '#f97316',
       station: { gx: 11, gy: 5 },
       defaults: { face: 'stoic', skin: '#8b5036', hair: 'bald', hairColor: '#151518', outfit: 'director', outfitColor: '#d9d8d2', accessory: 'glasses' },
     },

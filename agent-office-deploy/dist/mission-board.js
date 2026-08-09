@@ -21,7 +21,7 @@
     ['nightwaveaudio', 'Nightwave Audio'],
     ['youtubeclaw', 'YouTube Claw'],
     ['commentfarm', 'CommentFarm'],
-    ['newsreporter', 'News Reporter'],
+    ['newsreporter', 'ShareBot67'],
     ['researcher', 'Researcher'],
     ['guardian', 'Guardian'],
     ['farmbot', 'FarmBot'],
