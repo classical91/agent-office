@@ -1083,7 +1083,7 @@ function renderStatusBar() {
     const state = agentStateMeta(agent);
     return `
     <div class="status-card ${state.css}" title="${escAttr(agent.name)} — ${state.label}">
-      <div class="status-card-avatar" style="background: ${agent.color}33; border: 1px solid ${agent.color}55;">
+      <div class="status-card-avatar" style="--entity-color:${agent.color};">
         ${agent.emoji}
       </div>
       <div class="status-card-info">
@@ -1213,10 +1213,10 @@ function addFeedItem(agent, msg) {
   item.className = 'feed-item';
   item.innerHTML = `
     <div class="feed-item-top">
-      <div class="feed-avatar" style="background: ${agent.color}33; border: 1px solid ${agent.color}44;">
+      <div class="feed-avatar" style="--entity-color:${agent.color};">
         ${agent.emoji}
       </div>
-      <span class="feed-name" style="color: ${agent.color}">${agent.name}</span>
+      <span class="feed-name" style="--entity-color:${agent.color};">${agent.name}</span>
       <span class="feed-tag">${agent.role}</span>
     </div>
     <div class="feed-msg">${msg}</div>
@@ -1550,16 +1550,17 @@ window.SETTINGS = (() => {
       const answer = endpoint.status
         ? `${endpoint.status} · ${endpoint.shape}${endpoint.agents ? ` · ${endpoint.agents} agents` : ''}`
         : endpoint.shape;
-      const colour = endpoint.status >= 200 && endpoint.status < 300 ? '#22c55e' : endpoint.status ? '#f59e0b' : '#ef4444';
-      return `<div style="display:flex; justify-content:space-between; gap:12px; padding:3px 0;">
-        <code style="font-size:11px; color:var(--text);">${escapeHtml(endpoint.path)}</code>
-        <span style="font-size:11px; color:${colour};">${escapeHtml(answer)}</span>
+      // 2xx answered, anything else with a status is odd, no status at all is dead.
+      const tone = endpoint.status >= 200 && endpoint.status < 300 ? 'ok' : endpoint.status ? 'warn' : 'bad';
+      return `<div class="gw-probe-row">
+        <code class="gw-probe-path">${escapeHtml(endpoint.path)}</code>
+        <span class="gw-probe-answer is-${tone}">${escapeHtml(answer)}</span>
       </div>`;
     }).join('');
 
-    el.innerHTML = `<div style="font-size:11px; color:var(--muted); margin-bottom:8px;">${escapeHtml(lines.join(' '))}</div>`
+    el.innerHTML = `<div class="gw-probe-note">${escapeHtml(lines.join(' '))}</div>`
       + (probe.attempted
-        ? `<div style="font-size:11px; color:var(--muted); margin-bottom:4px;">Probed from the server at <code>${escapeHtml(probe.url)}</code>:</div>${rows}`
+        ? `<div class="gw-probe-note">Probed from the server at <code>${escapeHtml(probe.url)}</code>:</div>${rows}`
         : '');
   }
 
@@ -2402,454 +2403,6 @@ window.AOResets = (() => {
   };
 })();
 
-const DE = (() => {
-const TAG_STYLE={X:{bg:"#1d4ed820",border:"#3b82f6",text:"#93c5fd"},TG:{bg:"#0369a120",border:"#0ea5e9",text:"#7dd3fc"},GOOGLE:{bg:"#15803d20",border:"#22c55e",text:"#86efac"},CMC:{bg:"#c2410c20",border:"#f97316",text:"#fdba74"},MEXC:{bg:"#7c3aed20",border:"#a78bfa",text:"#c4b5fd"},TV:{bg:"#0f766e20",border:"#14b8a6",text:"#5eead4"},RSI:{bg:"#b4520920",border:"#d97706",text:"#fcd34d"},SC:{bg:"#4338ca20",border:"#818cf8",text:"#a5b4fc"},TA:{bg:"#05966920",border:"#10b981",text:"#6ee7b7"},ETF:{bg:"#0e749020",border:"#06b6d4",text:"#67e8f9"},FUTURES:{bg:"#be123c20",border:"#f43f5e",text:"#fda4af"},SECTORS:{bg:"#92400e20",border:"#f59e0b",text:"#fbbf24"},ALERTS:{bg:"#6b21a820",border:"#a855f7",text:"#d8b4fe"},CORR:{bg:"#1e3a5f20",border:"#3b82f6",text:"#93c5fd"},SCAN:{bg:"#064e3b20",border:"#059669",text:"#34d399"},DERIV:{bg:"#7f1d1d20",border:"#ef4444",text:"#fca5a5"},CRYPTOPY:{bg:"#1c191720",border:"#78716c",text:"#a8a29e"},SENT:{bg:"#1e293b20",border:"#64748b",text:"#94a3b8"}};
-const OT_TEMPLATE=[{id:"fib_618",label:".618 - Fib level plotted",hint:"Most common reversal zone.",weight:3},{id:"fib_65",label:".65 - Fib level plotted",hint:"Upper edge of the golden pocket.",weight:3},{id:"fib_gp",label:"Golden Pocket (.618 to .65) identified",hint:"Highest probability long entry.",weight:4},{id:"fib_5",label:".5 - Mid level plotted",hint:"Equilibrium.",weight:2},{id:"fib_786",label:".786 - Deep retrace plotted",hint:"Trend strength weakening.",weight:2},{id:"vp_os",label:"Oversold zone identified (low vol node)",hint:"Price below VAL = discount.",weight:3},{id:"vp_poc",label:"POC (Point of Control) marked",hint:"Highest volume node.",weight:4},{id:"vp_ob",label:"Overbought zone identified (high vol node)",hint:"Price above VAH = premium.",weight:3},{id:"vp_pos",label:"Price position vs VP noted",hint:"Discount / Fair Value / Premium.",weight:3},{id:"sr_key",label:"Key support level identified",hint:"Where will buyers step in?",weight:3},{id:"sr_res",label:"Key resistance level identified",hint:"Where will sellers push back?",weight:3},{id:"sr_flip",label:"Flip zone identified (S→R or R→S)",hint:"High-conviction levels.",weight:4},{id:"sr_clear",label:"Clear path to next resistance",hint:"No major clusters to first TP.",weight:3},{id:"ms_trend",label:"Trend confirmed (HH/HL or LH/LL)",hint:"HH+HL = uptrend.",weight:4},{id:"ms_bos",label:"BOS (Break of Structure) identified",hint:"Confirmed BOS = trend continuation.",weight:4},{id:"ms_bo",label:"Breakout setup visible on chart",hint:"Price coiling at resistance.",weight:3},{id:"ms_choch",label:"No CHoCH against your position",hint:"CHoCH opposite = potential reversal.",weight:4},{id:"ms_range",label:"Range / consolidation zone mapped",hint:"Mark the high and low.",weight:2}];
-const OT_TOKENS=[{prefix:"btc",label:"BITCOIN",sub:"Review BTC drawings on TradingView."},{prefix:"usdtd",label:"USDT.D",sub:"Review USDT.D drawings on TradingView."},{prefix:"total",label:"TOTAL",sub:"Review TOTAL drawings on TradingView."},{prefix:"btcd",label:"BTC.D",sub:"Review BTC.D drawings on TradingView."}];
-const CU_GROUPS=[{id:"cu_tv",label:"TRADINGVIEW CHARTS",links:[{id:"a",label:"Market Dominance",url:"https://www.tradingview.com/chart/uwHQFIja/"},{id:"b",label:"All Market Spectrum",url:"https://www.tradingview.com/chart/tDSfdLfo/"},{id:"c",label:"Global OI Layout",url:"https://www.tradingview.com/chart/UBsUirLO/"},{id:"d",label:"Market Summary",url:"https://www.tradingview.com/#main-market-summary"}]},{id:"cu_cmc",label:"COINMARKETCAP",links:[{id:"e",label:"Crypto Market Overview",url:"https://coinmarketcap.com/charts/"},{id:"f",label:"Leaderboards",url:"https://coinmarketcap.com/best-cryptos/"}]},{id:"cu_macro",label:"MACRO & MARKETS",links:[{id:"g",label:"CNBC",url:"https://www.cnbc.com/"},{id:"h",label:"Futures Overview",url:"https://www.barchart.com/futures"},{id:"i",label:"Indexes",url:"https://tradingeconomics.com/stocks"},{id:"j",label:"Currencies",url:"https://tradingeconomics.com/currencies"}]},{id:"cu_moon",label:"MOON PHASES",links:[{id:"k",label:"Moon Phases",url:"https://www.timeanddate.com/moon/phases/"}]}];
-const MTD_GROUPS=[{id:"mtd_news",label:"NEWS & ANALYSIS",sub:"Run bots and agents first.",items:[{id:"n_gpt",label:"GPT TA Agent - Screenshot BTC, USDT.D, TOTAL, BTC.D",hint:"Run your GPT TA agent.",weight:4},{id:"n_4h",label:"4H Chart-IMG Bot - Check latest output",hint:"Pull the latest 4H chart image.",weight:3},{id:"n_auto",label:"Automation for Cryptocurrency - Check latest",hint:"Run or check the automation.",weight:3},{id:"n_news",label:"CoinTrendsZBot - Run /news",hint:"Read the latest crypto news.",weight:3}]},{id:"mtd_vol",label:"VOLUME ANALYSIS",sub:"ETF inflows, CVD vs OI, funding rates.",items:[{id:"etf_pos",label:"ETF inflows positive in last 24H",hint:"Positive = institutional demand.",weight:4},{id:"etf_size",label:"ETF inflow size is meaningful",hint:"$200M+ = strong conviction.",weight:2},{id:"cvd_oi",label:"CVD vs OI checked on CoinAnk",hint:"Diverging or converging?",weight:4},{id:"cvd_read",label:"CVD and OI relationship noted",hint:"Converging = confirms the move.",weight:3},{id:"vol_tmpl",label:"Volume template reviewed on TradingView",hint:"Does volume support price action?",weight:3},{id:"vol_spike",label:"Volume spike on the key candle",hint:"High volume on breakout = real participation.",weight:3},{id:"vol_dry",label:"Volume dried up on the pullback",hint:"Low volume retrace = weak selling.",weight:3},{id:"fund_chk",label:"Funding rate checked on Coinglass",hint:"Check before entering.",weight:4,link:"https://www.coinglass.com/FundingRate/BTC"},{id:"fund_ok",label:"Funding rate not extreme (<0.05%/8H)",hint:"High positive funding = overcrowded.",weight:3}]},{id:"mtd_qual",label:"QUALITATIVE ANALYSIS",sub:"Check X, TradingView Ideas, Telegram bot.",items:[{id:"q_x",label:"X - Check sentiment and narrative",hint:"What are traders saying?",weight:3},{id:"q_tv",label:"TradingView Ideas - Check published ideas",hint:"Read recent TV ideas on BTC.",weight:3},{id:"q_bot",label:"Telegram Bot - Run /ideas",hint:"Compare against your analysis.",weight:3}]}];
-const BTC_GROUPS=[{id:"bsg_price",label:"PRICE & OVERVIEW",links:[{id:"a",label:"CoinMarketCap BTC",url:"https://coinmarketcap.com/currencies/bitcoin/"},{id:"b",label:"TradingView Overview",url:"https://www.tradingview.com/symbols/BTCUSDT.P/"},{id:"c",label:"Barchart - BTC History",url:"https://www.barchart.com/crypto/quotes/%5EBTCUSD/price-history/historical"}]},{id:"bsg_flow",label:"ORDER FLOW",links:[{id:"a",label:"Orderbook (Futures)",url:"https://www.coinglass.com/mergev2/BTC-USDT"},{id:"b",label:"Longs vs Shorts",url:"https://www.coinglass.com/LongShortRatio"},{id:"c",label:"Daily Exchange Volume",url:"https://www.theblock.co/data/crypto-markets/spot/total-exchange-volume-daily/embed"}]},{id:"bsg_ta",label:"TECHNICAL ANALYSIS",links:[{id:"a",label:"BTC Technical Analysis",url:"https://coinalyze.net/bitcoin/technical-analysis/"},{id:"b",label:"Indicators Summary",url:"https://www.tradingview.com/symbols/BTCUSD/technicals/"},{id:"c",label:"Superchart - Coinalyze",url:"https://coinalyze.net/bitcoin/usd/binance/btcusd_perp/price-chart-live/"},{id:"d",label:"Superchart - Coinglass",url:"https://www.coinglass.com/tv/Binance_BTCUSDT"}]},{id:"bsg_onchain",label:"ON-CHAIN & SENTIMENT",links:[{id:"a",label:"CryptoQuant",url:"https://cryptoquant.com/asset/btc/summary"},{id:"b",label:"Glassnode - Active Addresses",url:"https://studio.glassnode.com/charts/addresses.ActiveCount?a=BTC"},{id:"c",label:"Google Trends (BTC)",url:"https://trends.google.com/trends/explore?date=today%203-m&geo=CA&q=bitcoin"}]}];
-const ALT_RESEARCH_GROUPS=[{id:"ar_market",label:"MARKET OVERVIEW",links:[{id:"a",label:"Crypto Bubbles",url:"https://cryptobubbles.net/"},{id:"b",label:"Cryptocurrency Sectors 24H",url:"https://coinmarketcap.com/cryptocurrency-category/"}]},{id:"ar_etf",label:"ETF & POSITIONING",links:[{id:"a",label:"ETF Tracker (ETH)",url:"https://coinank.com/etf/EthEtf"},{id:"b",label:"Top Futures Trader Positions",url:"https://www.coinglass.com/position"}]},{id:"ar_scan",label:"SCREENERS",links:[{id:"a",label:"Better Crypto Scanner",url:"https://bettertrader.io/cryptoscanner"},{id:"b",label:"RSI Heatmap",url:"https://coinank.com/chart/derivatives/rsi-map"},{id:"c",label:"Crypto Derivatives Visual Screener",url:"https://coinank.com/chart/derivatives/visual-map"}]}];
-const ALT_LIST=[{id:"p1",phase:true,label:"PHASE 1 - SOCIAL & SENTIMENT",sub:"Search the token across platforms."},{id:"a_x",tag:"X",label:"X - Search token on your trading account",hint:"Sentiment, key takes.",weight:3},{id:"a_tg",tag:"TG",label:"Telegram - Search token in crypto groups",hint:"Major trading channels.",weight:3},{id:"a_g",tag:"GOOGLE",label:"Google - Token name + news (72H only)",hint:"Recent listings, partnerships, FUD?",weight:2},{id:"a_mn",tag:"MEXC",label:"MEXC - % notification alert fired",hint:"Large % move alert triggered?",weight:3},{id:"a_s",tag:"SENT",label:"Overall sentiment: net bullish",hint:"Is the crowd leaning long?",weight:2},{id:"p2",phase:true,label:"PHASE 2 - MARKET DATA",sub:"Where does this token sit vs the market?"},{id:"m_cs",tag:"CMC",label:"CMC Sectors - Token in hot sector (24H)",hint:"Sector up 5%+ in 24H?",weight:4},{id:"m_ct",tag:"CMC",label:"CMC Trending - Token on trending list",hint:"Retail attention incoming.",weight:3},{id:"m_mf",tag:"MEXC",label:"MEXC Futures - Token in top % movers",hint:"Top 20 MEXC futures % change.",weight:3},{id:"m_ms",tag:"MEXC",label:"MEXC Spot - Token in top spot movers",hint:"Spot leading futures = organic.",weight:2},{id:"m_tv",tag:"TV",label:"TradingView - Token in top % change",hint:"TV screener % change.",weight:3},{id:"p3",phase:true,label:"PHASE 3 - SCREENERS & CHARTS",sub:"Look at the actual chart."},{id:"c_ts",tag:"TV",label:"TradingView Screener - Token passes filter",hint:"RSI < 35 or > 65, volume spike.",weight:4},{id:"c_rh",tag:"RSI",label:"RSI Heatmap - Token at RSI extreme",hint:"RSI < 30 oversold, > 70 overbought.",weight:4},{id:"c_ma",tag:"TA",label:"Price above key MAs (EMA 20 / EMA 50)",hint:"Above MAs = momentum aligned.",weight:3},{id:"c_vo",tag:"TA",label:"Volume spike visible on chart",hint:"2x+ volume vs 20-period avg.",weight:3},{id:"c_st",tag:"TA",label:"Market structure intact (Higher Lows)",hint:"HH + HL = trend is your friend.",weight:3},{id:"p4",phase:true,label:"PHASE 4 - TOOL CHECKS",sub:"Run through Brave bookmark tools."},{id:"t_e",tag:"ETF",label:"ETH ETF Inflows - Positive",hint:"Positive ETF inflows = risk-on.",weight:3},{id:"t_fp",tag:"FUTURES",label:"Top Futures Traders - Not max long",hint:"Max long = crowded trade.",weight:3},{id:"t_d",tag:"DERIV",label:"Derivatives Screener - OI and funding OK",hint:"Funding > 0.1%/8H = overcrowded.",weight:4},{id:"t_sc",tag:"SCAN",label:"Better Crypto Scanner - Token passes",hint:"Breakout or reversal setup?",weight:3},{id:"p5",phase:true,label:"PHASE 5 - FINAL FILTER",sub:"Hard rules before entry."},{id:"f_v",label:"24H volume > 2x 7-day average",hint:"Volume spike = real demand.",weight:4},{id:"f_b",label:"BTC.D not strongly rising",hint:"Rising dominance = alts get drained.",weight:4},{id:"f_f",label:"Funding rate below 0.05%/8H",hint:"Not overcrowded.",weight:3},{id:"f_u",label:"USDT.D not rising aggressively",hint:"Rising USDT.D = risk-off.",weight:4}];
-const VIEWS=[{id:"home",label:"HOME",dot:"#e4e4e7"},{id:"markettd",label:"MARKET TOP-DOWN",dot:"#a78bfa"},{id:"bottomup",label:"CRYPTO BOTTOM-UP",dot:"#38bdf8"},{id:"btcstrat",label:"BTC STRATEGY",dot:"#f97316"},{id:"altres",label:"ALT RESEARCH",dot:"#f59e0b"},{id:"drafting",label:"DRAFTING IDEAS",dot:"#71717a"}];
-
-const st={view:"home",menuOpen:false,checks:{},collapsed:{},filter:"all",altToken:"",altChecks:{},altCollapsed:{},altFilter:"all",drafts:[{id:1,text:"",done:false}],draftsOpen:false,tdStep:1,td:{usdt_above_ema:null,usdt_change:"",btc_d_rising:null,total_bull:null,dxy_bull:null,blackout:false,adx:"",price_ema50:null,ema50_ema200:null,atr_state:null,daily_ema200:null,ema50_cross:null,structure:null,trend:null,momentum:null,reversal:null,participation:null,volatility:null,cipher:null,balance:"",risk:"1",atr_val:"",entry:"",dir:null},linkOpen:{},cuOpen:false,mtdCollapsed:{}};
-Object.assign(st, JSON.parse(localStorage.getItem('de-state') || '{}'));
-
-function fmt(n,d=0){if(isNaN(n)||!isFinite(n))return"-";return Number(n).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});}
-function pill(color,text){const m={green:"background:rgba(6,78,59,0.5);color:#6ee7b7;border:1px solid rgba(16,185,129,0.4)",red:"background:rgba(127,29,29,0.5);color:#fca5a5;border:1px solid rgba(239,68,68,0.4)",amber:"background:rgba(120,53,15,0.5);color:#fcd34d;border:1px solid rgba(245,158,11,0.4)",blue:"background:rgba(12,74,110,0.5);color:#7dd3fc;border:1px solid rgba(14,165,233,0.4)",gray:"background:rgba(39,39,42,0.8);color:#a1a1aa;border:1px solid rgba(63,63,70,0.5)"};return`<span style="font-size:11px;font-family:monospace;padding:2px 8px;border-radius:3px;${m[color]||m.gray}">${text}</span>`;}
-function tagBadge(tag){const t=TAG_STYLE[tag];if(!t)return"";return`<span style="background:${t.bg};color:${t.text};border:1px solid ${t.border};font-size:10px;font-family:monospace;padding:2px 6px;border-radius:3px;">${tag}</span>`;}
-
-function checkItem(item,value,index,checkKey){
-  const isY=value==="yes",isN=value==="no",isS=value==="skip";
-  const rowBg=isY?"background:rgba(5,46,22,0.15)":isN?"background:rgba(69,10,10,0.15)":"";
-  const boxStyle=isY?"background:#10b981;border-color:#10b981;color:#000":isN?"background:#ef4444;border-color:#ef4444;color:#fff":isS?"background:#3f3f46;border-color:#52525b;color:#a1a1aa":"border:1px solid #3f3f46;color:#52525b";
-  const boxTxt=isY?"✓":isN?"✕":isS?"-":index;
-  const yS=isY?"background:rgba(6,78,59,0.6);color:#6ee7b7;border-color:#10b981":"border:1px solid #27272a;color:#52525b";
-  const nS=isN?"background:rgba(127,29,29,0.6);color:#fca5a5;border-color:#ef4444":"border:1px solid #27272a;color:#52525b";
-  const sS=isS?"background:#3f3f46;color:#d4d4d8;border-color:#52525b":"border:1px solid #27272a;color:#52525b";
-  const hw=item.weight>=4?`<span style="font-size:10px;font-family:monospace;color:#d97706;margin-left:4px;">HIGH WT</span>`:"";
-  return`<div style="border-bottom:1px solid rgba(39,39,42,0.4);${rowBg}"><div style="display:flex;align-items:flex-start;gap:10px;padding:10px 16px;"><div style="flex-shrink:0;width:22px;padding-top:2px;"><div style="width:20px;height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:11px;font-family:monospace;${boxStyle}">${boxTxt}</div></div><div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${item.tag?tagBadge(item.tag):""}<span style="font-size:11px;font-family:monospace;color:${isY?"#e4e4e7":isN?"#52525b":"#d4d4d8"}">${item.label}</span>${hw}</div>${item.hint?`<div style="font-size:10px;font-family:monospace;color:#3f3f46;margin-top:2px;">${item.hint}</div>`:""}</div><div style="display:flex;gap:4px;flex-shrink:0;margin-top:2px;"><button style="padding:3px 8px;font-size:10px;font-family:monospace;border-radius:3px;cursor:pointer;${yS}" data-deaction="check" data-id="${item.id}" data-val="yes" data-key="${checkKey}">YES</button><button style="padding:3px 8px;font-size:10px;font-family:monospace;border-radius:3px;cursor:pointer;${nS}" data-deaction="check" data-id="${item.id}" data-val="no" data-key="${checkKey}">NO</button><button style="padding:3px 8px;font-size:10px;font-family:monospace;border-radius:3px;cursor:pointer;${sS}" data-deaction="check" data-id="${item.id}" data-val="skip" data-key="${checkKey}">-</button></div></div></div>`;
-}
-
-function grpHdr(id,label,sub,yes,total,collapsed){
-  return`<button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;border-bottom:1px solid #1c1c1e;cursor:pointer;text-align:left;" data-deaction="toggle-group" data-group="${id}"><div style="flex:1;min-width:0;"><div style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;letter-spacing:.05em;">${label}</div>${sub?`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-top:2px;">${sub}</div>`:""}</div><div style="display:flex;align-items:center;gap:8px;margin-left:10px;flex-shrink:0;"><span style="font-size:11px;font-family:monospace;color:#10b981;">${yes}</span><span style="font-size:11px;font-family:monospace;color:#3f3f46;">/</span><span style="font-size:11px;font-family:monospace;color:#71717a;">${total}</span><span style="font-size:11px;font-family:monospace;color:#52525b;">${collapsed?"▶":"▼"}</span></div></button>`;
-}
-
-function linkDrop(gid,label,links){
-  const open=st.linkOpen[gid];
-  return`<div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;margin-bottom:4px;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-link" data-linkgroup="${gid}"><span style="font-size:11px;font-family:monospace;color:#a1a1aa;">${label}</span><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:10px;font-family:monospace;color:#52525b;">${links.length}</span><span style="font-size:10px;font-family:monospace;color:#52525b;">${open?"▼":"▶"}</span></div></button>${open?`<div style="border-top:1px solid #1c1c1e;">${links.map(l=>`<a href="${l.url}" target="_blank" style="display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid rgba(28,28,30,0.5);text-decoration:none;" onmouseover="this.style.background='#1c1c1e'" onmouseout="this.style.background='transparent'"><span style="font-size:10px;font-family:monospace;color:#3f3f46;">↗</span><span style="font-size:11px;font-family:monospace;color:#71717a;">${l.label}</span></a>`).join("")}</div>`:""}</div>`;
-}
-
-function row(label,hint,content){
-  return`<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 16px;border-bottom:1px solid rgba(39,39,42,0.4);"><div><div style="font-size:11px;font-family:monospace;color:#d4d4d8;">${label}</div>${hint?`<div style="font-size:10px;font-family:monospace;color:#3f3f46;margin-top:2px;">${hint}</div>`:""}</div>${content}</div>`;
-}
-function ct(key,tl,fl){
-  const val=st.td[key];
-  const yA=val===true?"background:rgba(6,78,59,0.5);color:#6ee7b7;border-color:#10b981":"border:1px solid #27272a;color:#52525b";
-  const nA=val===false?"background:rgba(127,29,29,0.5);color:#fca5a5;border-color:#ef4444":"border:1px solid #27272a;color:#52525b";
-  return`<div style="display:flex;gap:4px;"><button style="padding:4px 10px;font-size:10px;font-family:monospace;border-radius:3px;cursor:pointer;${yA}" data-deaction="set-td" data-key="${key}" data-value="true">${tl}</button><button style="padding:4px 10px;font-size:10px;font-family:monospace;border-radius:3px;cursor:pointer;${nA}" data-deaction="set-td" data-key="${key}" data-value="false">${fl}</button></div>`;
-}
-function mu(key,opts){
-  const val=st.td[key];
-  return`<div style="display:flex;flex-wrap:wrap;gap:4px;">${opts.map(o=>`<button style="padding:4px 10px;font-size:10px;font-family:monospace;border-radius:3px;cursor:pointer;${val===o.v?"background:#3f3f46;color:#e4e4e7;border:1px solid #52525b":"border:1px solid #27272a;color:#52525b"}" data-deaction="set-td" data-key="${key}" data-value="${o.v}">${o.l}</button>`).join("")}</div>`;
-}
-function fld(key,ph){
-  return`<input value="${st.td[key]||""}" placeholder="${ph}" style="width:110px;background:#18181b;border:1px solid #3f3f46;color:#e4e4e7;font-size:11px;font-family:monospace;padding:6px 8px;border-radius:3px;" data-deaction="td-input" data-key="${key}"/>`;
-}
-function ph(title,right){
-  return`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid #1c1c1e;"><span style="font-size:10px;font-family:monospace;color:#52525b;letter-spacing:.1em;">${title}</span>${right||""}</div>`;
-}
-function panel(content){return`<div style="border:1px solid #1c1c1e;border-radius:3px;margin-bottom:12px;">${content}</div>`;}
-function fbar(fkey,label){
-  const f=st[fkey];
-  return`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><span style="font-size:10px;font-family:monospace;color:#3f3f46;">${label}</span><div style="display:flex;gap:4px;"><button style="padding:4px 10px;font-size:10px;font-family:monospace;border-radius:3px;cursor:pointer;${f==="all"?"background:#3f3f46;color:#e4e4e7;border:1px solid #52525b":"border:1px solid #27272a;color:#52525b"}" data-deaction="set-filter" data-filterkey="${fkey}" data-filterval="all">ALL</button><button style="padding:4px 10px;font-size:10px;font-family:monospace;border-radius:3px;cursor:pointer;${f==="unanswered"?"background:#3f3f46;color:#e4e4e7;border:1px solid #52525b":"border:1px solid #27272a;color:#52525b"}" data-deaction="set-filter" data-filterkey="${fkey}" data-filterval="unanswered">UNANSWERED</button><button style="padding:4px 10px;font-size:10px;font-family:monospace;border-radius:3px;cursor:pointer;border:1px solid #27272a;color:#52525b;" data-deaction="reset-checks" data-filterkey="${fkey}">RESET</button></div></div>`;
-}
-
-function buildHome(){
-  const now=new Date();
-  const t=now.toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:true});
-  const d=now.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
-  const wf=[{id:"markettd",n:"01",label:"MARKET TOP-DOWN",desc:"Get the macro picture first.",dot:"#a78bfa"},{id:"bottomup",n:"02",label:"CRYPTO BOTTOM-UP",desc:"Review all object trees.",dot:"#38bdf8"},{id:"btcstrat",n:"03",label:"BTC STRATEGY",desc:"Deep dive into BTC.",dot:"#f97316"},{id:"altres",n:"04",label:"ALT RESEARCH",desc:"Scan for alt opportunities.",dot:"#f59e0b"}];
-  return`<div style="margin-bottom:28px;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;margin-bottom:4px;">${d}</div><div style="font-size:24px;font-family:monospace;font-weight:700;color:#e4e4e7;margin-bottom:4px;">Decision Engine</div><div style="font-size:10px;font-family:monospace;color:#52525b;">@DiamondHands811 · ${t}</div></div><div style="margin-bottom:20px;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;letter-spacing:.1em;margin-bottom:8px;">SESSION WORKFLOW</div>${wf.map(w=>`<button style="width:100%;display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid #1c1c1e;border-radius:3px;background:#0d0d0f;margin-bottom:4px;cursor:pointer;text-align:left;" data-deaction="nav" data-view="${w.id}" onmouseover="this.style.background='#1c1c1e'" onmouseout="this.style.background='#0d0d0f'"><span style="font-size:10px;font-family:monospace;color:#3f3f46;width:20px;">${w.n}</span><div style="width:8px;height:8px;border-radius:50%;background:${w.dot};flex-shrink:0;"></div><div style="flex:1;"><div style="font-size:11px;font-family:monospace;font-weight:600;color:#d4d4d8;">${w.label}</div><div style="font-size:10px;font-family:monospace;color:#3f3f46;margin-top:2px;">${w.desc}</div></div><span style="font-size:11px;font-family:monospace;color:#27272a;">→</span></button>`).join("")}</div><div style="margin-bottom:16px;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;letter-spacing:.1em;margin-bottom:8px;">ALL SECTIONS</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;">${VIEWS.filter(v=>v.id!=="home").map(v=>`<button style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;text-align:left;" data-deaction="nav" data-view="${v.id}"><div style="width:6px;height:6px;border-radius:50%;background:${v.dot};flex-shrink:0;"></div><span style="font-size:10px;font-family:monospace;color:#52525b;">${v.label}</span></button>`).join("")}</div></div><div style="border:1px solid rgba(28,28,30,0.5);border-radius:3px;padding:14px;text-align:center;"><div style="font-size:10px;font-family:monospace;color:#3f3f46;font-style:italic;">"Process over prediction. System over impulse."</div></div>`;
-}
-
-function buildMTD(){
-  let h=`<div style="border:1px solid #1c1c1e;border-radius:3px;margin-bottom:16px;overflow:hidden;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-cu"><div><div style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">DASHBOARD - QUICK LINKS</div></div><span style="font-size:10px;font-family:monospace;color:#52525b;">${st.cuOpen?"▼":"▶"}</span></button>${st.cuOpen?`<div style="padding:8px;border-top:1px solid #1c1c1e;">${CU_GROUPS.map(g=>linkDrop(g.id,g.label,g.links)).join("")}</div>`:""}</div><div style="display:flex;flex-direction:column;gap:8px;">`;
-  MTD_GROUPS.forEach(grp=>{
-    const yes=grp.items.filter(i=>st.checks[i.id]==="yes").length,isC=st.mtdCollapsed[grp.id]!==false;
-    h+=`<div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;">${grpHdr(grp.id,grp.label,grp.sub,yes,grp.items.length,isC)}`;
-    if(!isC){h+="<div>";grp.items.forEach((item,idx)=>{h+=checkItem(item,st.checks[item.id]||null,idx+1,"checks");if(item.link)h+=`<div style="padding:0 16px 10px;"><a href="${item.link}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;font-size:10px;font-family:monospace;border:1px solid #3f3f46;color:#a1a1aa;border-radius:3px;text-decoration:none;">↗ Coinglass Funding</a></div>`;});h+="</div>";}
-    h+="</div>";
-  });
-  return h+"</div>";
-}
-
-function buildBU(){
-  const sections=[];let curSec=null,curGrp=null;
-  const buList=[{id:"sec1",sectionDiv:true,label:"SECTION 1 - OBJECT TREE",sub:"Open TradingView. Review each chart."},...OT_TOKENS.flatMap(t=>[{id:`g_${t.prefix}`,group:true,label:`${t.label} - OBJECT TREE`,sub:t.sub},...OT_TEMPLATE.map(i=>({...i,id:`${t.prefix}_${i.id}`}))])];
-  buList.forEach(i=>{if(i.sectionDiv){curSec={...i,groups:[]};sections.push(curSec);curGrp=null;}else if(i.group){curGrp={...i,items:[]};if(curSec)curSec.groups.push(curGrp);}else if(curGrp)curGrp.items.push(i);});
-  let h=fbar("filter","S1: OBJECT TREE · S2: SAVED DRAFTS");
-  sections.forEach(sec=>{
-    const all=sec.groups.flatMap(g=>g.items),secY=all.filter(i=>st.checks[i.id]==="yes").length;
-    h+=`<div style="display:flex;align-items:center;gap:10px;margin:16px 0 10px;"><div style="flex:1;height:1px;background:#1c1c1e;"></div><div style="padding:4px 10px;border:1px solid #27272a;border-radius:3px;background:#0d0d0f;font-size:10px;font-family:monospace;font-weight:600;color:#a1a1aa;letter-spacing:.1em;">${sec.label}</div><div style="font-size:10px;font-family:monospace;color:#52525b;">${secY}/${all.length}</div><div style="flex:1;height:1px;background:#1c1c1e;"></div></div>`;
-    sec.groups.forEach(grp=>{
-      const yes=grp.items.filter(i=>st.checks[i.id]==="yes").length,isC=st.collapsed[grp.id]!==false;
-      h+=`<div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;margin-bottom:8px;">${grpHdr(grp.id,grp.label,grp.sub,yes,grp.items.length,isC)}`;
-      if(!isC){h+="<div>";let idx=0;grp.items.forEach(item=>{if(st.filter==="unanswered"&&st.checks[item.id])return;idx++;h+=checkItem(item,st.checks[item.id]||null,idx,"checks");});h+="</div>";}
-      h+="</div>";
-    });
-  });
-  const done=st.drafts.filter(d=>d.done).length;
-  h+=`<div style="display:flex;align-items:center;gap:10px;margin:16px 0 10px;"><div style="flex:1;height:1px;background:#1c1c1e;"></div><div style="padding:4px 10px;border:1px solid #27272a;border-radius:3px;background:#0d0d0f;font-size:10px;font-family:monospace;font-weight:600;color:#a1a1aa;letter-spacing:.1em;">SECTION 2 - SAVED DRAFTS</div><div style="font-size:10px;font-family:monospace;color:#52525b;">${done}/${st.drafts.length}</div><div style="flex:1;height:1px;background:#1c1c1e;"></div></div><div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-drafts"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">CHART DRAFTS</span><a href="https://t.me/tesr56788/14817" target="_blank" onclick="event.stopPropagation()" style="font-size:10px;font-family:monospace;padding:2px 8px;border:1px solid #27272a;color:#71717a;border-radius:3px;text-decoration:none;">↗ Telegram Drafts</a></div><div style="display:flex;align-items:center;gap:6px;"><span style="font-size:11px;font-family:monospace;color:#10b981;">${done}</span><span style="font-size:10px;font-family:monospace;color:#3f3f46;">/</span><span style="font-size:11px;font-family:monospace;color:#71717a;">${st.drafts.length}</span><span style="font-size:10px;font-family:monospace;color:#52525b;">${st.draftsOpen?"▼":"▶"}</span></div></button>`;
-  if(st.draftsOpen){h+="<div>";st.drafts.forEach((d,i)=>{h+=`<div style="display:flex;align-items:center;gap:10px;padding:8px 16px;border-bottom:1px solid rgba(28,28,30,0.4);${d.done?"background:rgba(5,46,22,0.1)":""}"><div style="width:20px;height:20px;border-radius:3px;border:1px solid ${d.done?"#10b981":"#3f3f46"};display:flex;align-items:center;justify-content:center;font-size:11px;font-family:monospace;cursor:pointer;${d.done?"background:#10b981;color:#000":"color:#52525b"}" data-deaction="toggle-draft" data-draftid="${d.id}">${d.done?"✓":i+1}</div><input value="${d.text.replace(/"/g,"&quot;")}" placeholder="Draft ${i+1} - describe the setup..." style="flex:1;background:transparent;border:none;border-bottom:1px solid #1c1c1e;color:${d.done?"#52525b":"#d4d4d8"};font-size:11px;font-family:monospace;padding:2px 0;${d.done?"text-decoration:line-through":""}" data-deaction="edit-draft" data-draftid="${d.id}"/><button style="font-size:10px;font-family:monospace;color:#27272a;background:transparent;border:none;cursor:pointer;" data-deaction="remove-draft" data-draftid="${d.id}">✕</button></div>`;});h+=`<button style="width:100%;padding:8px 16px;font-size:10px;font-family:monospace;color:#3f3f46;background:transparent;border:none;border-top:1px solid #1c1c1e;cursor:pointer;text-align:left;" data-deaction="add-draft">+ add draft</button></div>`;}
-  return h+"</div>";
-}
-
-function buildBTC(){return`<div style="border:1px solid #1c1c1e;border-radius:3px;padding:14px;margin-bottom:16px;"><div style="font-size:10px;font-family:monospace;color:#52525b;letter-spacing:.1em;margin-bottom:4px;">BTC STRATEGY</div><div style="font-size:10px;font-family:monospace;color:#3f3f46;">All BTC research and analysis tools.</div></div>${BTC_GROUPS.map(g=>linkDrop(g.id,g.label,g.links)).join("")}`;}
-
-function buildAlt(){
-  const phases=[];let cur=null;ALT_LIST.forEach(i=>{if(i.phase){cur={...i,items:[]};phases.push(cur);}else if(cur)cur.items.push(i);});
-  let total=0,earned=0,answered=0;ALT_LIST.forEach(i=>{if(i.phase)return;total+=i.weight||1;if(st.altChecks[i.id]==="yes"){earned+=i.weight||1;answered++;}else if(st.altChecks[i.id]==="no")answered++;});
-  const pct=total?Math.round((earned/total)*100):0;
-  let verdict={label:"RESEARCHING...",color:"#52525b",sub:"Work through each phase."};
-  if(answered>=5){if(pct>=80)verdict={label:"HIGH CONVICTION",color:"#10b981",sub:"Strong signal."};else if(pct>=65)verdict={label:"MODERATE SIGNAL",color:"#f59e0b",sub:"Wait for 1 more confirmation."};else if(pct>=45)verdict={label:"WEAK SIGNAL",color:"#f97316",sub:"Too many gaps."};else verdict={label:"PASS - NO TRADE",color:"#ef4444",sub:"Not enough confluence."};}
-  let h=`${ALT_RESEARCH_GROUPS.map(g=>linkDrop(g.id,g.label,g.links)).join("")}<div style="border:1px solid #1c1c1e;border-radius:3px;padding:14px;margin:16px 0;"><div style="font-size:10px;font-family:monospace;color:#52525b;letter-spacing:.1em;margin-bottom:10px;">TOKEN UNDER RESEARCH</div><div style="display:flex;gap:8px;"><input value="${st.altToken}" placeholder="e.g. HBAR, SUI, TAO..." style="flex:1;background:#18181b;border:1px solid #3f3f46;color:#e4e4e7;font-size:12px;font-family:monospace;padding:8px;border-radius:3px;" data-deaction="set-token"/><button style="padding:8px 14px;font-size:10px;font-family:monospace;border:1px solid #27272a;color:#52525b;background:transparent;border-radius:3px;cursor:pointer;" data-deaction="clear-token">CLEAR</button></div>${st.altToken?`<div style="display:flex;align-items:center;gap:8px;margin-top:10px;"><div style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></div><span style="font-size:10px;font-family:monospace;color:#f59e0b;letter-spacing:.1em;">RESEARCHING: ${st.altToken}</span></div>`:""}</div>${fbar("altFilter","RESEARCH PHASES")}<div style="display:flex;flex-direction:column;gap:8px;">`;
-  phases.forEach(ph=>{
-    const yes=ph.items.filter(i=>st.altChecks[i.id]==="yes").length,isC=st.altCollapsed[ph.id]!==false;
-    h+=`<div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;">${grpHdr(ph.id,ph.label,ph.sub,yes,ph.items.length,isC)}`;
-    if(!isC){h+="<div>";let idx=0;ph.items.forEach(item=>{if(st.altFilter==="unanswered"&&st.altChecks[item.id])return;idx++;h+=checkItem(item,st.altChecks[item.id]||null,idx,"altChecks");});h+="</div>";}
-    h+="</div>";
-  });
-  h+="</div>";
-  if(answered>=10)h+=`<div style="margin-top:16px;border:1px solid ${verdict.color}40;border-radius:3px;padding:14px;background:${verdict.color}08;"><div style="display:flex;align-items:flex-start;justify-content:space-between;"><div><div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:4px;">${st.altToken?st.altToken+" - ":""}VERDICT</div><div style="font-size:18px;font-family:monospace;font-weight:700;color:${verdict.color};">${verdict.label}</div><div style="font-size:10px;font-family:monospace;color:#71717a;margin-top:4px;">${verdict.sub}</div></div><div style="text-align:right;margin-left:16px;"><div style="font-size:10px;font-family:monospace;color:#52525b;">SCORE</div><div style="font-size:36px;font-family:monospace;font-weight:700;color:${verdict.color};">${pct}%</div></div></div></div>`;
-  return h;
-}
-
-function buildDrafting(){
-  const notes=[{id:"dn_ind",title:"Indicator setup",lines:["Object tree from HTF to LTF","Volatility (indicator + chart)","2x Volume + MA","MACD for range","Moving avgs for trend","Stochastic/AO/Cipher (accumulation vs distribution)","USDT.D vs BTC"]},{id:"dn_alt",title:"Alt research",lines:["Use trading X account","Telegram/Twitter/Google search of the specific crypto token","Mexc % notification - futures and spot % change","Coinmarketcap hot sectors","TradingView % change + screener/heatmaps","ETH ETF inflows, Top Futures Positions, Sectors 24H","Cryptoalerts.ai, Correlation Tool, Better Crypto Scanner","Crypto Derivatives Visual Screener, Cryptopy, RSI Heatmap","Supercharts, order book, moving avgs, oscillators, divergences","Market structure, oversold/overbought, local tops/bottoms","GPT TA agent, Telegram TA bot, Sharebot67","Templates, Trading focus, Volatility checker","Fundamental analysis, Technical analysis, Sentiment analysis","Qualitative analysis, Risk management"]}];
-  return`<div style="border:1px solid #1c1c1e;border-radius:3px;padding:14px;margin-bottom:16px;"><div style="font-size:10px;font-family:monospace;color:#52525b;letter-spacing:.1em;margin-bottom:4px;">DRAFTING IDEAS</div><div style="font-size:10px;font-family:monospace;color:#3f3f46;">Reference notes.</div></div><div style="display:flex;flex-direction:column;gap:8px;">${notes.map(n=>{const isC=st.collapsed[n.id]!==false;return`<div style="border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;"><button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:transparent;border:none;cursor:pointer;" data-deaction="toggle-group" data-group="${n.id}"><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">${n.title}</span><span style="font-size:10px;font-family:monospace;color:#52525b;">${isC?"▶":"▼"}</span></button>${!isC?`<div style="padding:10px 16px;border-top:1px solid #1c1c1e;">${n.lines.map(l=>`<div style="font-size:10px;font-family:monospace;color:#71717a;line-height:1.8;">${l}</div>`).join("")}</div>`:""}</div>`;}).join("")}</div>`;
-}
-
-function buildTD(){
-  const s=st.td,step=st.tdStep;
-  const uc=parseFloat(s.usdt_change),ro=s.usdt_above_ema===true&&uc>0.75,rn=s.usdt_above_ema===false&&uc<-0.25;
-  const ms=s.blackout?"BLACKOUT":ro?"RISK_OFF":rn?"RISK_ON":"NEUTRAL";
-  const msc=s.blackout?0:rn?20:ro?0:10,mc={RISK_ON:"green",RISK_OFF:"red",NEUTRAL:"amber",BLACKOUT:"amber"}[ms];
-  const adx=parseFloat(s.adx);let regime="UNCLASSIFIED",rc="gray";
-  if(s.atr_state==="high"){regime="VOLATILE EXP";rc="amber";}else if(s.atr_state==="low"){regime="COMPRESSION";rc="gray";}else if(adx>25&&s.price_ema50==="above"&&s.ema50_ema200==="above"){regime="TREND UP";rc="green";}else if(adx>25&&s.price_ema50==="below"&&s.ema50_ema200==="below"){regime="TREND DOWN";rc="red";}else if(adx<20){regime="RANGE";rc="blue";}
-  const b3=s.daily_ema200==="above"&&s.ema50_cross===true&&s.structure==="HL",be3=s.daily_ema200==="below"&&s.ema50_cross===false&&s.structure==="LH";
-  const bl=b3?"BULLISH":be3?"BEARISH":"NEUTRAL",bsc=(b3||be3)?30:15,bc={BULLISH:"green",BEARISH:"red",NEUTRAL:"amber"}[bl];
-  const fired=[s.trend,s.momentum,s.reversal,s.participation,s.volatility].filter(v=>v===true).length;
-  const sigsc=fired>=3?20:fired===2?10:0,volsc=s.participation===true?15:s.participation===false?0:7,atsc=s.volatility===true?10:0,fsc=s.cipher==="accum"?5:0;
-  const conf=Math.min(100,bsc+msc+sigsc+volsc+atsc+fsc),sco=conf>=80?"#10b981":conf>=65?"#f59e0b":"#ef4444";
-  const sm=conf>=80?1:conf>=65?0.5:conf>=50?0.25:0;
-  const bal=parseFloat(s.balance),rf=parseFloat(s.risk)/100,av=parseFloat(s.atr_val),ep=parseFloat(s.entry);
-  const ev=!!(bal&&av&&ep&&s.dir&&sm>0),ra=ev?bal*rf*sm:0,sd=ev?1.5*av:0,ps=ev?ra/sd:0;
-  const sp=ev?(s.dir==="long"?ep-sd:ep+sd):0,t1=ev?(s.dir==="long"?ep+1.5*sd:ep-1.5*sd):0,t2=ev?(s.dir==="long"?ep+2.5*sd:ep-2.5*sd):0;
-  const cc={green:"color:#10b981",red:"color:#ef4444",amber:"color:#f59e0b",blue:"color:#38bdf8",gray:"color:#52525b"};
-  const steps=[{id:1,label:"Macro",dot:ms==="RISK_ON"?"#10b981":ms==="RISK_OFF"?"#ef4444":"#f59e0b"},{id:2,label:"Regime",dot:rc==="green"?"#10b981":rc==="red"?"#ef4444":rc==="blue"?"#38bdf8":"#f59e0b"},{id:3,label:"Bias",dot:bc==="green"?"#10b981":bc==="red"?"#ef4444":"#f59e0b"},{id:4,label:"Signals",dot:fired>=3?"#10b981":fired>=2?"#f59e0b":"#ef4444"},{id:5,label:"Score",dot:conf>=80?"#10b981":conf>=65?"#f59e0b":"#ef4444"},{id:6,label:"Execute",dot:ev?"#10b981":"#27272a"}];
-  let h=`<div style="display:flex;gap:2px;margin-bottom:20px;border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;">${steps.map(st2=>`<button style="flex:1;padding:10px 6px;text-align:left;background:${step===st2.id?"#1c1c1e":"transparent"};border:none;border-right:1px solid #1c1c1e;cursor:pointer;last-child{border-right:none}" data-deaction="td-step" data-step="${st2.id}"><div style="display:flex;align-items:center;gap:4px;margin-bottom:4px;"><div style="width:6px;height:6px;border-radius:50%;background:${st2.dot};"></div><span style="font-size:9px;font-family:monospace;color:#52525b;">${String(st2.id).padStart(2,"0")}</span></div><div style="font-size:10px;font-family:monospace;font-weight:600;color:#d4d4d8;">${st2.label}</div></button>`).join("")}</div>`;
-
-  if(step===1){h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 01 / MACRO - Bad macro = no trade.</div>${panel(ph("USDT.D - PRIMARY RISK GAUGE",pill(mc,ms))+row("USDT.D above 4H EMA20?","Rising = money leaving crypto = risk off",ct("usdt_above_ema","ABOVE","BELOW"))+row("USDT.D 24H % change",">+0.75% = risk-off | <-0.25% = risk-on",fld("usdt_change","e.g. -0.8")))}${panel(ph("DOMINANCE + STRUCTURE","")+row("BTC.D rising (above 4H EMA20)?","",ct("btc_d_rising","RISING","FALLING"))+row("TOTAL above Daily EMA200?","",ct("total_bull","ABOVE (BULL)","BELOW (BEAR)"))+row("DXY above Daily EMA50?","",ct("dxy_bull","YES (HEADWIND)","NO (TAILWIND)"))+row("News blackout active?","",ct("blackout","BLACKOUT","CLEAR")))}<div style="border:1px solid ${ro?"#7f1d1d":rn?"#064e3b":"#3f3f46"};border-radius:3px;padding:10px;font-size:11px;font-family:monospace;background:${ro?"#450a0a15":rn?"#022c2215":"#0d0d0f"};margin-bottom:12px;"><span style="color:#52525b;">VERDICT - </span><span style="${cc[mc]};font-weight:600;">${ms}</span><span style="color:#52525b;margin-left:12px;">${{RISK_OFF:"No longs. Shorts only. 50% size.",RISK_ON:"Longs preferred. Full size.",NEUTRAL:"Longs OK. 75% size.",BLACKOUT:"Stand aside."}[ms]}</span></div><button style="width:100%;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="2">NEXT - CLASSIFY REGIME →</button>`;}
-
-  if(step===2){const am={"TREND UP":"Pullback longs only","TREND DOWN":"Bounce shorts only",RANGE:"Mean reversion both sides","VOLATILE EXP":"Breakout continuation",COMPRESSION:"No entries",UNCLASSIFIED:"Needs more data"};const fm={"TREND UP":"Shorts, mean reversion","TREND DOWN":"Longs, mean reversion",RANGE:"Breakout chasing","VOLATILE EXP":"Scalps, mean reversion",COMPRESSION:"Everything",UNCLASSIFIED:"Trading without clarity"};h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 02 / REGIME</div>${panel(ph("4H STRUCTURE READ",pill(rc,regime))+row("ADX(14) value",">25 trending | <20 ranging",fld("adx","e.g. 31"))+row("Price vs 4H EMA50","",mu("price_ema50",[{l:"ABOVE",v:"above"},{l:"BELOW",v:"below"}]))+row("EMA50 vs 4H EMA200","",mu("ema50_ema200",[{l:"50>200 BULL",v:"above"},{l:"50<200 BEAR",v:"below"}]))+row("ATR vs 20-period avg","",mu("atr_state",[{l:"NORMAL",v:"normal"},{l:">1.5x HIGH",v:"high"},{l:"<0.6x LOW",v:"low"}])))}<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;"><div style="border:1px solid #1c1c1e;border-radius:3px;padding:10px;"><div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:4px;">ALLOWED</div><div style="font-size:11px;font-family:monospace;color:#10b981;">${am[regime]||"-"}</div></div><div style="border:1px solid #1c1c1e;border-radius:3px;padding:10px;"><div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:4px;">FORBIDDEN</div><div style="font-size:11px;font-family:monospace;color:#ef4444;">${fm[regime]||"-"}</div></div></div><div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="1">← MACRO</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="3">DAILY BIAS →</button></div>`;}
-
-  if(step===3){h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 03 / DAILY BIAS - All 3 must agree.</div>${panel(ph("3-CONDITION HTF FILTER",pill(bc,bl))+row("Daily close above EMA200?","",mu("daily_ema200",[{l:"ABOVE",v:"above"},{l:"BELOW",v:"below"}]))+row("Daily EMA50 above EMA200?","",ct("ema50_cross","YES (GOLDEN)","NO (DEATH)"))+row("Last confirmed market structure","",mu("structure",[{l:"HL (BULL)",v:"HL"},{l:"LH (BEAR)",v:"LH"},{l:"UNCLEAR",v:"unclear"}])))}<div style="border:1px solid #1c1c1e;border-radius:3px;padding:10px;margin-bottom:12px;"><div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:4px;">VERDICT</div><div style="font-size:16px;font-family:monospace;font-weight:700;${cc[bc]}">${bl}</div><div style="font-size:10px;font-family:monospace;color:#52525b;margin-top:4px;">${{NEUTRAL:"Scalp only. 50% max.",BULLISH:"Full stack. Longs preferred.",BEARISH:"Short bias. Longs need 80+."}[bl]}</div></div><div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="2">← REGIME</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="4">SIGNALS →</button></div>`;}
-
-  if(step===4){h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 04 / SIGNALS - 3 of 5 buckets required.</div>${panel(ph("5-BUCKET CONFLUENCE",pill(fired>=3?"green":fired>=2?"amber":"red",fired+"/5 FIRING"))+[{k:"trend",n:"TREND",h:"EMA stack aligned"},{k:"momentum",n:"MOMENTUM",h:"MACD histogram direction"},{k:"reversal",n:"REVERSAL",h:"Stoch cross from extreme"},{k:"participation",n:"PARTICIPATION",h:"Volume > 1.5x MA"},{k:"volatility",n:"VOLATILITY",h:"ATR within normal range"}].map(b=>row(b.n,b.h,ct(b.k,"FIRES","DEAD"))).join(""))}${panel(ph("CIPHER B / AO","")+row("Cipher B mode","Accumulation = smart money buying",mu("cipher",[{l:"ACCUMULATION",v:"accum"},{l:"DISTRIBUTION",v:"dist"},{l:"NEUTRAL",v:"neutral"}])))}<div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="3">← BIAS</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#a1a1aa;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="5">SCORE →</button></div>`;}
-
-  if(step===5){const sb=[{label:"HTF Trend Alignment",pts:bsc,max:30},{label:"Macro Filter",pts:msc,max:20},{label:"Signal Confluence",pts:sigsc,max:20},{label:"Volume Confirmation",pts:volsc,max:15},{label:"Volatility",pts:atsc,max:10},{label:"Funding / Cipher",pts:fsc,max:5}];h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 05 / CONFIDENCE SCORE</div>${panel(ph("SCORE BREAKDOWN","")+sb.map(item=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 16px;border-bottom:1px solid rgba(28,28,30,0.4);"><div style="font-size:11px;font-family:monospace;color:#d4d4d8;">${item.label}</div><div style="display:flex;align-items:center;gap:10px;"><div style="width:80px;height:4px;background:#1c1c1e;border-radius:2px;overflow:hidden;"><div style="height:100%;border-radius:2px;background:${sco};width:${(item.pts/item.max)*100}%"></div></div><span style="font-size:10px;font-family:monospace;color:#a1a1aa;width:40px;text-align:right;">${item.pts}/${item.max}</span></div></div>`).join(""))}<div style="border:1px solid #1c1c1e;border-radius:3px;padding:16px;margin-bottom:12px;"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;"><span style="font-size:10px;font-family:monospace;color:#52525b;">TOTAL</span><span style="font-size:10px;font-family:monospace;color:${sco};">${conf>=80?"FULL SIZE":conf>=65?"HALF SIZE":conf>=50?"25% SIZE":"NO TRADE"}</span></div><div style="font-size:48px;font-family:monospace;font-weight:700;color:${sco};margin-bottom:10px;">${conf}<span style="font-size:14px;color:#27272a;margin-left:4px;">/ 100</span></div><div style="height:4px;background:#1c1c1e;border-radius:2px;overflow:hidden;"><div style="height:100%;border-radius:2px;background:${sco};width:${conf}%;"></div></div></div><div style="display:flex;gap:8px;"><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-step" data-step="4">← SIGNALS</button><button style="flex:1;padding:10px;font-size:10px;font-family:monospace;border:1px solid #1c1c1e;border-radius:3px;cursor:pointer;${conf>=65?"color:#a1a1aa;background:transparent":"color:#27272a;background:transparent;cursor:not-allowed"}" ${conf<50?"disabled":""} data-deaction="td-step" data-step="6">${conf>=65?"EXECUTE →":"SCORE TOO LOW"}</button></div>`;}
-
-  if(step===6){h+=`<div style="font-size:10px;font-family:monospace;color:#52525b;margin-bottom:12px;letter-spacing:.1em;">STEP 06 / EXECUTION</div>${panel(ph("TRADE PARAMETERS",pill(conf>=80?"green":"amber","SCORE "+conf))+row("Direction","",mu("dir",[{l:"LONG",v:"long"},{l:"SHORT",v:"short"}]))+row("Account balance","",fld("balance","e.g. 10000"))+row("Risk %","",mu("risk",[{l:"1%",v:"1"},{l:"1.5%",v:"1.5"},{l:"2%",v:"2"}]))+row("ATR(14) value","",fld("atr_val","e.g. 1250"))+row("Entry price","",fld("entry","e.g. 87000")))}${ev?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;border:1px solid #1c1c1e;border-radius:3px;overflow:hidden;margin-bottom:12px;">${[{l:"POSITION SIZE",v:ps.toFixed(5)+" BTC",c:"color:#e4e4e7"},{l:"RISK AMOUNT",v:"$"+fmt(ra,2),c:"color:#e4e4e7"},{l:"STOP LOSS",v:"$"+fmt(sp,0),c:"color:#ef4444"},{l:"STOP DIST",v:"$"+fmt(sd,0)+" (1.5x ATR)",c:"color:#52525b"},{l:"TP1 1.5R (40%)",v:"$"+fmt(t1,0),c:"color:#10b981"},{l:"TP2 2.5R (40%)",v:"$"+fmt(t2,0),c:"color:#6ee7b7"},{l:"RUNNER (20%)",v:"Trail 1x ATR after TP2",c:"color:#38bdf8"},{l:"SIZE MULT",v:(sm*100).toFixed(0)+"%",c:"color:#f59e0b"}].map(item=>`<div style="background:#0d0d0f;padding:10px 12px;"><div style="font-size:9px;font-family:monospace;color:#3f3f46;">${item.l}</div><div style="font-size:12px;font-family:monospace;font-weight:600;margin-top:4px;${item.c}">${item.v}</div></div>`).join("")}</div>`:""}  <button style="width:100%;padding:10px;font-size:10px;font-family:monospace;color:#52525b;border:1px solid #1c1c1e;border-radius:3px;background:transparent;cursor:pointer;" data-deaction="td-reset">RESET - NEW ANALYSIS</button>`;}
-  return h;
-}
-
-function buildApp(){
-  const cur=VIEWS.find(v=>v.id===st.view)||VIEWS[0];
-  let content="";
-  if(st.view==="home")content=buildHome();
-  else if(st.view==="markettd")content=buildMTD();
-  else if(st.view==="bottomup")content=buildBU();
-  else if(st.view==="btcstrat")content=buildBTC();
-  else if(st.view==="altres")content=buildAlt();
-  else if(st.view==="drafting")content=buildDrafting();
-  else if(st.view==="topdown")content=buildTD();
-
-  const menuHtml=st.menuOpen?`<div style="border-top:1px solid #1c1c1e;padding:8px 16px;display:flex;flex-wrap:wrap;gap:4px;">${VIEWS.map(v=>`<button style="padding:4px 10px;font-size:10px;font-family:monospace;border-radius:3px;cursor:pointer;border:1px solid ${st.view===v.id?"#52525b":"#1c1c1e"};background:${st.view===v.id?"#27272a":"transparent"};color:${st.view===v.id?"#e4e4e7":"#52525b"};" data-deaction="nav" data-view="${v.id}">${v.label}</button>`).join("")}<button style="padding:4px 10px;font-size:10px;font-family:monospace;border-radius:3px;cursor:pointer;border:1px solid #1c1c1e;background:transparent;color:#52525b;" data-deaction="nav" data-view="topdown">TOP-DOWN WIZARD</button></div>`:"";
-
-  return`<div style="min-height:100%;background:#09090b;color:#e4e4e7;"><div style="position:sticky;top:0;z-index:100;border-bottom:1px solid #1c1c1e;background:rgba(9,9,11,0.97);">${menuHtml?`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;"><div style="display:flex;align-items:center;gap:10px;">${st.view!=="home"?`<button style="font-size:11px;font-family:monospace;color:#52525b;background:transparent;border:none;cursor:pointer;" data-deaction="nav" data-view="home">←</button>`:""}  <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:50%;background:${cur.dot};"></div><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">${cur.label}</span></div></div><button style="font-size:10px;font-family:monospace;color:#52525b;background:transparent;border:1px solid #1c1c1e;border-radius:3px;padding:4px 10px;cursor:pointer;" data-deaction="toggle-menu">MENU</button></div>${menuHtml}`:`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;"><div style="display:flex;align-items:center;gap:10px;">${st.view!=="home"?`<button style="font-size:11px;font-family:monospace;color:#52525b;background:transparent;border:none;cursor:pointer;" data-deaction="nav" data-view="home">←</button>`:""}  <div style="display:flex;align-items:center;gap:6px;"><div style="width:8px;height:8px;border-radius:50%;background:${cur.dot};"></div><span style="font-size:11px;font-family:monospace;font-weight:600;color:#e4e4e7;">${cur.label}</span></div></div><button style="font-size:10px;font-family:monospace;color:#52525b;background:transparent;border:1px solid #1c1c1e;border-radius:3px;padding:4px 10px;cursor:pointer;" data-deaction="toggle-menu">MENU</button></div>`}</div><div style="padding:16px;max-width:640px;margin:0 auto;">${content}</div></div>`;
-}
-
-function render(){
-  const el=document.getElementById("de-app");
-  if(!el)return;
-  localStorage.setItem('de-state', JSON.stringify(st));
-  el.innerHTML=buildApp();
-  el.addEventListener("click",handleClick,{once:true});
-  el.addEventListener("input",handleInput,{once:true});
-}
-
-function handleClick(e){
-  const el=e.target.closest("[data-deaction]");
-  if(!el){render();return;}
-  const a=el.dataset.deaction;
-  if(a==="nav"){st.view=el.dataset.view;st.menuOpen=false;render();return;}
-  if(a==="toggle-menu"){st.menuOpen=!st.menuOpen;render();return;}
-  if(a==="toggle-group"){const g=el.dataset.group;st.collapsed[g]=st.collapsed[g]===false?true:false;render();return;}
-  if(a==="toggle-link"){const g=el.dataset.linkgroup;st.linkOpen[g]=!st.linkOpen[g];render();return;}
-  if(a==="toggle-cu"){st.cuOpen=!st.cuOpen;render();return;}
-  if(a==="toggle-drafts"){st.draftsOpen=!st.draftsOpen;render();return;}
-  if(a==="add-draft"){st.drafts.push({id:Date.now(),text:"",done:false});render();return;}
-  if(a==="toggle-draft"){const id=parseInt(el.dataset.draftid);const d=st.drafts.find(x=>x.id===id);if(d)d.done=!d.done;render();return;}
-  if(a==="remove-draft"){const id=parseInt(el.dataset.draftid);st.drafts=st.drafts.filter(x=>x.id!==id);render();return;}
-  if(a==="check"){const{id,val,key}=el.dataset;if(st[key][id]===val)st[key][id]=null;else st[key][id]=val;render();return;}
-  if(a==="set-filter"){st[el.dataset.filterkey]=el.dataset.filterval;render();return;}
-  if(a==="reset-checks"){const k=el.dataset.filterkey;if(k==="filter")st.checks={};else if(k==="altFilter")st.altChecks={};render();return;}
-  if(a==="set-td"){const{key,value}=el.dataset;st.td[key]=value==="true"?true:value==="false"?false:value;render();return;}
-  if(a==="td-step"){const s=parseInt(el.dataset.step);if(!isNaN(s)){st.tdStep=s;render();}return;}
-  if(a==="td-reset"){st.td={usdt_above_ema:null,usdt_change:"",btc_d_rising:null,total_bull:null,dxy_bull:null,blackout:false,adx:"",price_ema50:null,ema50_ema200:null,atr_state:null,daily_ema200:null,ema50_cross:null,structure:null,trend:null,momentum:null,reversal:null,participation:null,volatility:null,cipher:null,balance:"",risk:"1",atr_val:"",entry:"",dir:null};st.tdStep=1;render();return;}
-  if(a==="clear-token"){st.altToken="";st.altChecks={};render();return;}
-  render();
-}
-
-function handleInput(e){
-  const el=e.target;const a=el.dataset.deaction;
-  if(a==="td-input"){st.td[el.dataset.key]=el.value;render();return;}
-  if(a==="edit-draft"){const id=parseInt(el.dataset.draftid);const d=st.drafts.find(x=>x.id===id);if(d)d.text=el.value;render();return;}
-  if(a==="set-token"){st.altToken=el.value.toUpperCase();render();return;}
-  render();
-}
-
-return{render};
-})();
-const SORA = (() => {
-const STAGES=[{id:"idea",label:"Idea",color:"#a78bfa"},{id:"queued",label:"Queued",color:"#fbbf24"},{id:"generating",label:"Generating",color:"#34d399"},{id:"review",label:"Review",color:"#60a5fa"},{id:"done",label:"Archive",color:"#94a3b8"}];
-const ASPECT_RATIOS=["16:9","9:16","1:1","4:3","2.35:1"];
-const DURATIONS=[5,8,10,12,15,20];
-
-let ideas=[
-  {id:1,title:"Neon Reflections in Rain",prompt:"A lone figure walks through a neon-lit urban street at 3am, rain falling in slow motion, vivid neon signs reflecting on wet pavement, motion blur and bokeh, surreal atmosphere",stage:"queued",aspectRatio:"16:9",duration:10,tags:["urban","surreal","neon","rain","cinematic"],notes:"Urban / Surreal category. Grainy 35mm film style. High contrast neon palette. Reference: Wong Kar-wai aesthetic.",referenceImage:null,createdAt:"2025-03-15"},
-  {id:2,title:"The Higher Self Awakens",prompt:"A translucent human figure rising slowly upward through layers of golden light, energy radiating from the chest outward, cosmic particles dissolving into stardust, transcendent and serene",stage:"queued",aspectRatio:"9:16",duration:12,tags:["spiritual","transformation","ascension","golden-light"],notes:"Self & Transformation category. Ethereal lighting. Soft bloom, no hard shadows. Ties into Ascension Glossary - Higher Self concept.",referenceImage:null,createdAt:"2025-03-15"},
-  {id:3,title:"Stardust Falling on Skin",prompt:"Extreme close-up of stardust and golden particles slowly drifting onto dark skin, each particle glowing softly, cosmic and intimate, macro lens aesthetic",stage:"idea",aspectRatio:"1:1",duration:8,tags:["cosmic","intimate","macro","stardust"],notes:"Cosmic / Mystical category. Pair with soft ambient music. Could work as a loop.",referenceImage:null,createdAt:"2025-03-15"},
-  {id:4,title:"Golden Hour on Skin",prompt:"Warm golden-hour sunlight slowly moving across a face in extreme close-up, soft shadows shifting, skin texture and light refracting beautifully, meditative and still",stage:"idea",aspectRatio:"9:16",duration:8,tags:["nature","golden-hour","minimalism","portrait"],notes:"Nature & Minimalism category. No movement except the light. Film grain overlay.",referenceImage:null,createdAt:"2025-03-15"},
-  {id:5,title:"Memory of a Past Life",prompt:"A blurred, desaturated figure walks through faded architectural hallways that morph and dissolve into new scenes - beaches, forests, city streets - layered like fragmented memory, dreamlike transitions",stage:"idea",aspectRatio:"16:9",duration:15,tags:["dreamlike","mood","memory","surreal"],notes:"Dream & Mood category. Desaturated with flashes of warm color. Slow dissolve transitions.",referenceImage:null,createdAt:"2025-03-15"},
-  {id:6,title:"Between Love and Letting Go",prompt:"Two figures in slow motion, one slowly fading into golden particles as the other reaches out, soft light, emotional and cinematic, backlit silhouette",stage:"idea",aspectRatio:"16:9",duration:12,tags:["emotion","human","silhouette","letting-go"],notes:"Human Emotion category. Backlit scene. Particle dissolve effect on the fading figure.",referenceImage:null,createdAt:"2025-03-15"},
-  {id:7,title:"Celestial Drift - Mood Concept",prompt:"Slow aerial drift through luminous clouds at dusk, warm amber and violet sky, camera gliding weightlessly, serene and infinite, loopable",stage:"idea",aspectRatio:"16:9",duration:10,tags:["ethereal","dreamlike","cloud9","brand-concept","loopable"],notes:"From Idea 1 - Ethereal / Dreamlike. One of the strongest visual brand moods. 'Celestial Drift' as a title/track name candidate.",referenceImage:null,createdAt:"2025-03-15"},
-  {id:8,title:"Heaven.exe - Digital Spiritual Aesthetic",prompt:"A digital interface dissolving into sacred geometry and soft light - UI elements glitching into clouds and golden halos, merging tech and transcendence, surreal and beautiful",stage:"idea",aspectRatio:"9:16",duration:10,tags:["aesthetic","culture","digital","glitch","spiritual"],notes:"From Idea 1 - Aesthetic / Culture. 'Heaven.exe' and 'Angel Error' are strong visual identity titles.",referenceImage:null,createdAt:"2025-03-15"},
-  {id:9,title:"Akashic Records Visualization",prompt:"An infinite luminous library of light - pillars of glowing data streams rising into a vast cosmic architecture, records crystallizing and dissolving, otherworldly and vast",stage:"idea",aspectRatio:"16:9",duration:15,tags:["ascension-glossary","akashic","cosmic","spiritual"],notes:"From Ascension Glossary - Akashic Records: universal memory-matrix of consciousness.",referenceImage:null,createdAt:"2025-03-15"},
-  {id:10,title:"5D Ascension - Timeline Shift",prompt:"A figure standing at a crossroads of parallel realities - layered dimensions visible simultaneously, each slightly different, light bending between them, gradual merging into one radiant path",stage:"idea",aspectRatio:"16:9",duration:15,tags:["ascension-glossary","5D","timelines","transformation"],notes:"Combines Ascension Glossary: 5D Ascension + Timelines. Great for longer-form content.",referenceImage:null,createdAt:"2025-03-15"},
-  {id:11,title:"IQ & Age Norms - Explainer Concept",prompt:"Animated data visualization showing two bell curves side by side (adult vs child IQ distribution), age groups highlighted, scores shifting to show relative comparison - clean and informative",stage:"idea",aspectRatio:"16:9",duration:12,tags:["educational","explainer","data-viz","psychology"],notes:"IQ tests are age-normed. Key insight: a child with IQ 130 outperforms age peers, not adults. Short-form educational visual.",referenceImage:null,createdAt:"2025-03-15"},
-];
-const _savedSora = localStorage.getItem('sora-ideas'); if(_savedSora) try { ideas = JSON.parse(_savedSora); } catch(e) {}
-
-let selectedId=1,search="",filterStage="all",newTag="";
-
-function getStage(id){return STAGES.find(s=>s.id===id);}
-function stageCount(id){return ideas.filter(i=>i.stage===id).length;}
-function getSelected(){return ideas.find(i=>i.id===selectedId);}
-function getFiltered(){
-  return ideas.filter(i=>{
-    const ms=i.title.toLowerCase().includes(search.toLowerCase())||i.prompt.toLowerCase().includes(search.toLowerCase());
-    const mf=filterStage==="all"||i.stage===filterStage;
-    return ms&&mf;
-  });
-}
-function updateIdea(field,value){ideas=ideas.map(i=>i.id===selectedId?{...i,[field]:value}:i);}
-function addIdea(){const n={id:Date.now(),title:"Untitled Sequence",prompt:"",stage:"idea",aspectRatio:"16:9",duration:10,tags:[],notes:"",referenceImage:null,createdAt:new Date().toISOString().split("T")[0]};ideas=[n,...ideas];selectedId=n.id;}
-function deleteIdea(id){const r=ideas.filter(i=>i.id!==id);ideas=r;if(selectedId===id)selectedId=r[0]?.id||null;}
-function advanceStage(){const s=getSelected();if(!s)return;const idx=STAGES.findIndex(st=>st.id===s.stage);if(idx<STAGES.length-1)updateIdea("stage",STAGES[idx+1].id);}
-
-function buildList(){
-  const filtered=getFiltered();
-  const stageFilters=["all",...STAGES.map(s=>s.id)];
-  return`<div style="width:260px;border-right:1px solid #14141f;display:flex;flex-direction:column;background:#08080e;flex-shrink:0;overflow:hidden;">
-    <div style="padding:10px;border-bottom:1px solid #14141f;flex-shrink:0;">
-      <div style="position:relative;margin-bottom:8px;">
-        <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#28283a;font-size:10px;">🔍</span>
-        <input value="${search.replace(/"/g,"&quot;")}" placeholder="Search..." style="width:100%;background:#0e0e18;border:1px solid #14141f;border-radius:5px;padding:6px 8px 6px 26px;color:#ddd8cc;font-size:11px;outline:none;box-sizing:border-box;font-family:inherit;" data-soraaction="search"/>
-      </div>
-      <button style="width:100%;background:linear-gradient(135deg,#6d28d9,#4f46e5);border:none;border-radius:5px;padding:7px 10px;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:5px;justify-content:center;font-family:inherit;letter-spacing:.04em;" data-soraaction="add-idea">+ New Sequence</button>
-    </div>
-    <div style="padding:6px 10px;border-bottom:1px solid #14141f;display:flex;gap:4px;flex-wrap:wrap;flex-shrink:0;">
-      ${stageFilters.map(s=>{const stage=s==="all"?null:getStage(s);const isA=filterStage===s;return`<button style="background:${isA?(stage?.color||"#a78bfa")+"18":"transparent"};border:1px solid ${isA?stage?.color||"#a78bfa":"#1c1c2a"};border-radius:3px;padding:2px 7px;color:${isA?stage?.color||"#a78bfa":"#32324a"};font-size:9px;cursor:pointer;font-family:inherit;text-transform:uppercase;letter-spacing:.06em;" data-soraaction="filter-stage" data-stage="${s}">${s==="all"?"All":stage?.label}</button>`;}).join("")}
-    </div>
-    <div style="overflow-y:auto;flex:1;">
-      ${filtered.length===0?`<div style="padding:24px 14px;font-size:11px;color:#28283a;text-align:center;">No sequences found</div>`:""}
-      ${filtered.map(idea=>{
-        const stage=getStage(idea.stage);const isSel=idea.id===selectedId;
-        return`<div style="padding:11px 12px;border-bottom:1px solid #0e0e18;cursor:pointer;background:${isSel?"#0e0e18":"transparent"};border-left:2px solid ${isSel?"#7c3aed":"transparent"};" data-soraaction="select-idea" data-id="${idea.id}">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:6px;">
-            <span style="font-size:12px;font-weight:600;color:${isSel?"#ddd8cc":"#8888a0"};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">${idea.title}</span>
-            <span style="font-size:8px;padding:2px 5px;border-radius:3px;background:${stage?.color+"18"};color:${stage?.color};border:1px solid ${stage?.color+"33"};flex-shrink:0;text-transform:uppercase;letter-spacing:.06em;">${stage?.label}</span>
-          </div>
-          <div style="font-size:10px;color:#2e2e44;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${idea.prompt||"No prompt yet..."}</div>
-          ${idea.tags.length>0?`<div style="display:flex;gap:3px;margin-top:5px;flex-wrap:wrap;">${idea.tags.slice(0,3).map(t=>`<span style="font-size:8px;color:#3a3a56;background:#0e0e18;padding:1px 5px;border-radius:2px;border:1px solid #1a1a28;">#${t}</span>`).join("")}</div>`:""}
-        </div>`;
-      }).join("")}
-    </div>
-  </div>`;
-}
-
-function buildDetail(){
-  const sel=getSelected();
-  if(!sel)return`<div style="flex:1;display:flex;align-items:center;justify-content:center;color:#1e1e2e;font-size:12px;">Select a sequence</div>`;
-  const activeIdx=STAGES.findIndex(s=>s.id===sel.stage);
-  return`<div style="flex:1;overflow-y:auto;padding:24px 32px 40px;background:#06060a;">
-    <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:20px;">
-      <div style="flex:1;">
-        <input value="${sel.title.replace(/"/g,"&quot;")}" style="background:transparent;border:none;outline:none;font-size:22px;font-weight:700;color:#ddd8cc;font-family:inherit;width:100%;letter-spacing:-.02em;" data-soraaction="edit-title"/>
-        <div style="display:flex;align-items:center;gap:4px;margin-top:10px;flex-wrap:wrap;">
-          ${STAGES.map((s,i)=>{
-            const isCur=s.id===sel.stage,isPast=i<activeIdx;
-            return`<div style="display:flex;align-items:center;gap:4px;">
-              <button style="background:${isCur?s.color+"18":"transparent"};border:1px solid ${isCur?s.color:isPast?"#22222e":"#14141f"};border-radius:4px;padding:3px 9px;color:${isCur?s.color:isPast?"#2e2e44":"#1c1c2a"};font-size:9px;cursor:pointer;font-family:inherit;text-transform:uppercase;letter-spacing:.08em;" data-soraaction="set-stage" data-stage="${s.id}">${s.label}</button>
-              ${i<STAGES.length-1?`<span style="color:#1c1c2a;font-size:9px;">›</span>`:""}
-            </div>`;
-          }).join("")}
-        </div>
-      </div>
-      <button style="background:transparent;border:1px solid #14141f;border-radius:5px;padding:7px 10px;cursor:pointer;color:#28283a;margin-top:4px;" data-soraaction="delete-idea" data-id="${sel.id}" title="Delete">🗑</button>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
-      <div style="grid-column:1/-1;">
-        <div style="font-size:9px;color:#32324a;text-transform:uppercase;letter-spacing:.12em;margin-bottom:7px;font-weight:600;">Prompt</div>
-        <textarea rows="4" style="width:100%;background:#0c0c14;border:1px solid #14141f;border-radius:7px;padding:11px 13px;color:#ddd8cc;font-size:12px;font-family:inherit;resize:vertical;outline:none;line-height:1.65;box-sizing:border-box;" data-soraaction="edit-prompt">${sel.prompt}</textarea>
-      </div>
-
-      <div style="grid-column:1/-1;">
-        <div style="font-size:9px;color:#32324a;text-transform:uppercase;letter-spacing:.12em;margin-bottom:7px;font-weight:600;">Reference Image</div>
-        ${sel.referenceImage
-          ?`<div style="position:relative;display:inline-block;"><img src="${sel.referenceImage}" style="max-width:100%;max-height:220px;border-radius:8px;border:1px solid #1a1a28;display:block;"/><button style="position:absolute;top:8px;right:8px;background:#06060acc;border:1px solid #1a1a28;border-radius:4px;padding:4px 6px;cursor:pointer;color:#8888a0;font-size:10px;" data-soraaction="clear-image">✕</button></div>`
-          :`<div style="background:#0c0c14;border:1px dashed #1c1c2a;border-radius:8px;padding:28px 20px;text-align:center;cursor:pointer;color:#28283a;font-size:11px;" data-soraaction="upload-trigger"><div style="font-size:20px;margin-bottom:8px;opacity:.3;">⬆</div>Click to upload reference image<div style="font-size:9px;margin-top:4px;color:#1c1c2a;">PNG · JPG · WEBP</div></div>`}
-        <input type="file" accept="image/*" id="sora-file-input" style="display:none;" data-soraaction="file-input"/>
-      </div>
-
-      <div>
-        <div style="font-size:9px;color:#32324a;text-transform:uppercase;letter-spacing:.12em;margin-bottom:7px;font-weight:600;">Aspect Ratio</div>
-        <div style="display:flex;gap:5px;flex-wrap:wrap;">
-          ${ASPECT_RATIOS.map(ar=>`<button style="background:${sel.aspectRatio===ar?"#6d28d918":"#0c0c14"};border:1px solid ${sel.aspectRatio===ar?"#7c3aed":"#14141f"};border-radius:4px;padding:5px 10px;color:${sel.aspectRatio===ar?"#a78bfa":"#2e2e44"};font-size:10px;cursor:pointer;font-family:inherit;" data-soraaction="set-aspect" data-val="${ar}">${ar}</button>`).join("")}
-        </div>
-      </div>
-
-      <div>
-        <div style="font-size:9px;color:#32324a;text-transform:uppercase;letter-spacing:.12em;margin-bottom:7px;font-weight:600;">Duration</div>
-        <div style="display:flex;gap:5px;flex-wrap:wrap;">
-          ${DURATIONS.map(d=>`<button style="background:${sel.duration===d?"#6d28d918":"#0c0c14"};border:1px solid ${sel.duration===d?"#7c3aed":"#14141f"};border-radius:4px;padding:5px 10px;color:${sel.duration===d?"#a78bfa":"#2e2e44"};font-size:10px;cursor:pointer;font-family:inherit;" data-soraaction="set-duration" data-val="${d}">${d}s</button>`).join("")}
-        </div>
-      </div>
-
-      <div style="grid-column:1/-1;">
-        <div style="font-size:9px;color:#32324a;text-transform:uppercase;letter-spacing:.12em;margin-bottom:7px;font-weight:600;">Tags</div>
-        <div style="background:#0c0c14;border:1px solid #14141f;border-radius:7px;padding:8px 10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;min-height:38px;">
-          ${sel.tags.map(tag=>`<span style="background:#14141f;border:1px solid #1c1c2a;border-radius:3px;padding:2px 7px;font-size:10px;color:#5a5a78;display:inline-flex;align-items:center;gap:5px;">#${tag}<span style="cursor:pointer;opacity:.6;font-size:9px;" data-soraaction="remove-tag" data-tag="${tag}">✕</span></span>`).join("")}
-          <input value="${newTag.replace(/"/g,"&quot;")}" placeholder="${sel.tags.length===0?"Type a tag and press Enter...":"+"}" style="background:transparent;border:none;outline:none;font-size:10px;color:#5a5a78;font-family:inherit;flex:1;min-width:80px;" data-soraaction="tag-input"/>
-        </div>
-      </div>
-
-      <div style="grid-column:1/-1;">
-        <div style="font-size:9px;color:#32324a;text-transform:uppercase;letter-spacing:.12em;margin-bottom:7px;font-weight:600;">Director's Notes</div>
-        <textarea rows="3" style="width:100%;background:#0c0c14;border:1px solid #14141f;border-radius:7px;padding:10px 13px;color:#8888a0;font-size:11px;font-family:inherit;resize:vertical;outline:none;line-height:1.65;box-sizing:border-box;font-style:italic;" data-soraaction="edit-notes">${sel.notes}</textarea>
-      </div>
-
-      <div style="grid-column:1/-1;">
-        ${sel.stage!=="done"
-          ?`<button style="background:linear-gradient(135deg,#6d28d9,#4f46e5);border:none;border-radius:6px;padding:9px 18px;color:#fff;font-size:11px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;letter-spacing:.04em;" data-soraaction="advance-stage">Move to ${STAGES[activeIdx+1]?.label||""} ›</button>`
-          :`<div style="background:#94a3b818;border:1px solid #94a3b830;border-radius:6px;padding:9px 16px;font-size:11px;color:#94a3b8;">✓ Archived - this sequence is complete</div>`}
-      </div>
-    </div>
-
-    <div style="margin-top:28px;padding-top:12px;border-top:1px solid #0e0e18;font-size:9px;color:#1e1e2e;display:flex;gap:16px;text-transform:uppercase;letter-spacing:.08em;">
-      <span>Created ${sel.createdAt}</span><span>${sel.aspectRatio}</span><span>${sel.duration}s</span><span>ID #${sel.id}</span>
-    </div>
-  </div>`;
-}
-
-function buildApp(){
-  return`<div style="height:100%;display:flex;flex-direction:column;background:#06060a;color:#ddd8cc;font-family:'DM Mono','Fira Code','Courier New',monospace;overflow:hidden;">
-    <div style="border-bottom:1px solid #14141f;padding:0 20px;height:46px;display:flex;align-items:center;gap:12px;background:#08080e;flex-shrink:0;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:14px;">🎬</span>
-        <span style="font-size:12px;font-weight:700;color:#ddd8cc;letter-spacing:.14em;text-transform:uppercase;">Sora Studio</span>
-        <span style="font-size:10px;color:#28283a;margin-left:2px;">/ sequences</span>
-      </div>
-      <div style="flex:1;"></div>
-      <div style="display:flex;gap:14px;font-size:10px;color:#28283a;">
-        ${STAGES.map(s=>`<span><span style="color:${s.color}">${stageCount(s.id)}</span> ${s.label}</span>`).join("")}
-      </div>
-    </div>
-    <div style="display:flex;flex:1;overflow:hidden;">
-      ${buildList()}
-      ${buildDetail()}
-    </div>
-  </div>`;
-}
-
-function render(){
-  const el=document.getElementById("sora-app");
-  if(!el)return;
-  localStorage.setItem('sora-ideas', JSON.stringify(ideas));
-  el.innerHTML=buildApp();
-  attachEvents();
-}
-
-function attachEvents(){
-  const el=document.getElementById("sora-app");
-  if(!el)return;
-  el.addEventListener("click",handleClick,{once:true});
-  el.addEventListener("input",handleInput,{once:true});
-  el.addEventListener("keydown",handleKeydown,{once:true});
-  const fi=document.getElementById("sora-file-input");
-  if(fi)fi.addEventListener("change",handleFileUpload,{once:true});
-}
-
-function handleClick(e){
-  const t=e.target.closest("[data-soraaction]");
-  if(!t){render();return;}
-  const a=t.dataset.soraaction;
-  if(a==="select-idea"){selectedId=parseInt(t.dataset.id);render();return;}
-  if(a==="add-idea"){addIdea();render();return;}
-  if(a==="delete-idea"){deleteIdea(parseInt(t.dataset.id));render();return;}
-  if(a==="filter-stage"){filterStage=t.dataset.stage;render();return;}
-  if(a==="set-stage"){updateIdea("stage",t.dataset.stage);render();return;}
-  if(a==="set-aspect"){updateIdea("aspectRatio",t.dataset.val);render();return;}
-  if(a==="set-duration"){updateIdea("duration",parseInt(t.dataset.val));render();return;}
-  if(a==="advance-stage"){advanceStage();render();return;}
-  if(a==="remove-tag"){const sel=getSelected();if(sel)updateIdea("tags",sel.tags.filter(t2=>t2!==t.dataset.tag));render();return;}
-  if(a==="upload-trigger"){const fi=document.getElementById("sora-file-input");if(fi)fi.click();render();return;}
-  if(a==="clear-image"){updateIdea("referenceImage",null);render();return;}
-  render();
-}
-
-function handleInput(e){
-  const t=e.target;const a=t.dataset.soraaction;
-  if(a==="search"){search=t.value;render();return;}
-  if(a==="edit-title"){updateIdea("title",t.value);attachEvents();return;}
-  if(a==="edit-prompt"){updateIdea("prompt",t.value);attachEvents();return;}
-  if(a==="edit-notes"){updateIdea("notes",t.value);attachEvents();return;}
-  if(a==="tag-input"){newTag=t.value;attachEvents();return;}
-  render();
-}
-
-function handleKeydown(e){
-  const t=e.target;const a=t.dataset?.soraaction;
-  if(a==="tag-input"&&e.key==="Enter"&&newTag.trim()){
-    const sel=getSelected();if(sel)updateIdea("tags",[...(sel.tags||[]),newTag.trim()]);
-    newTag="";render();return;
-  }
-  attachEvents();
-}
-
-function handleFileUpload(e){
-  const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{updateIdea("referenceImage",ev.target.result);render();};
-  reader.readAsDataURL(file);
-}
-
-return{render};
-})();
 const AGENT_DESCRIPTIONS = Object.fromEntries(
   AGENTS.map(agent => [agent.id, {
     name: agent.name,
@@ -2863,20 +2416,34 @@ const AGENT_DESCRIPTIONS = Object.fromEntries(
   }])
 );
 
+// The agent-info panel this fills lives in the old monolithic
+// agent-office.html and was never carried into the split pages, so on the Org
+// Chart every card click threw on the first missing element. Bail out when
+// there is no panel to fill: a click is a no-op rather than an exception.
 function showAgentInfo(id) {
   closeMobileNav();
   const info = AGENT_DESCRIPTIONS[id];
   if (!info) return;
   const panel = document.getElementById('agent-info-panel');
-  document.getElementById('agent-info-name').textContent = info.name;
-  document.getElementById('agent-info-role').textContent = info.role;
-  document.getElementById('agent-info-model').textContent = '\u26a1 ' + (info.model || '');
+  if (!panel) return;
+
+  const setText = (elId, value) => {
+    const el = document.getElementById(elId);
+    if (el) el.textContent = value;
+  };
+  setText('agent-info-name', info.name);
+  setText('agent-info-role', info.role);
+  setText('agent-info-model', '\u26a1 ' + (info.model || ''));
+  setText('agent-info-desc', info.desc);
+
   const memEl = document.getElementById('agent-info-memory');
-  memEl.innerHTML = info.memory
-    ? '<span style="color:#22c55e;">\u25cf</span> Memory enabled'
-    : '<span style="color:#64748b;">\u25cb</span> No memory (stateless)';
-  document.getElementById('agent-info-desc').textContent = info.desc;
-  panel.style.display = 'block';
+  if (memEl) {
+    memEl.innerHTML = info.memory
+      ? '<span class="agent-info-mem is-on">\u25cf</span> Memory enabled'
+      : '<span class="agent-info-mem">\u25cb</span> No memory (stateless)';
+  }
+
+  panel.hidden = false;
   const nav = document.querySelector('.nav');
   if (nav) nav.scrollTop = 99999;
 }
@@ -2891,12 +2458,12 @@ function renderOrgChart() {
     ? '<span class="org-tag org-tag-green">Memory</span>'
     : '<span class="org-tag">Stateless</span>';
   const orgCard = (agent, wide = false) => `
-    <div class="org-card ${wide ? 'org-card-wide glow-indigo' : 'glow-blue'}" onclick="showAgentInfo('${agent.id}')" style="cursor:pointer; border-left:3px solid ${agent.color};">
+    <div class="org-card org-card--striped ${wide ? 'org-card-wide glow-indigo' : 'glow-blue'}" onclick="showAgentInfo('${agent.id}')" style="--entity-color:${agent.color};">
       <div class="org-card-inner">
-        <div class="org-avatar" style="background:${agent.color}22;border-color:${agent.color}55;">${agent.emoji}</div>
+        <div class="org-avatar">${agent.emoji}</div>
         <div class="org-body">
           <div class="org-name">${escHTML(agent.name)}</div>
-          <div class="org-title">${escHTML(agent.role)} ? ${escHTML(agent.model)}</div>
+          <div class="org-title">${escHTML(agent.role)} \u00b7 ${escHTML(agent.model)}</div>
           <div class="org-desc">${escHTML(agent.desc || '')}</div>
           <div class="org-tags">
             <span class="org-tag org-tag-indigo">${escHTML(agent.authority || 'agent')}</span>
@@ -2905,7 +2472,7 @@ function renderOrgChart() {
           </div>
         </div>
       </div>
-      <div class="org-cta">VIEW AGENT ?</div>
+      <div class="org-cta">VIEW AGENT \u2192</div>
     </div>`;
   orgView.innerHTML = `
     <div class="org-page">
@@ -2913,14 +2480,14 @@ function renderOrgChart() {
       <div class="org-row-center">${orgCard(command, true)}</div>
       <div class="org-connector-v"></div><div class="org-connector-fork"></div>
       <div class="org-section-label"><div class="line"></div><div class="text">SPECIALIST AGENTS</div><div class="line"></div></div>
-      <div class="org-row-2" style="max-width:760px; margin:0 auto;">${specialists.map(agent => orgCard(agent)).join('')}</div>
+      <div class="org-row-2 org-row-2--wide">${specialists.map(agent => orgCard(agent)).join('')}</div>
       <div class="org-flow-divider"><div class="line"></div><div class="org-flow-label">shared registry feeds office, chart, and memory</div><div class="line"></div></div>
       <div class="org-section-label"><div class="line"></div><div class="text">MEMORY LINKS</div><div class="line"></div></div>
-      <div class="org-row-3" style="width:100%;">
+      <div class="org-row-3">
         ${AGENTS.map(agent => `
-          <div class="org-card" onclick="window.location.href='/memory.html'" style="cursor:pointer; border-left:3px solid ${agent.color};">
+          <div class="org-card org-card--striped" onclick="window.location.href='/memory.html'" style="--entity-color:${agent.color};">
             <div class="org-card-inner">
-              <div class="org-avatar" style="background:${agent.color}18;border-color:${agent.color}44;">${agent.emoji}</div>
+              <div class="org-avatar">${agent.emoji}</div>
               <div class="org-body">
                 <div class="org-name">${escHTML(agent.name)}</div>
                 <div class="org-title">${agent.memory ? 'Memory bank enabled' : 'No durable memory'}</div>
@@ -3608,7 +3175,7 @@ function openNoteView(drop) {
   if (drop.remind_at) metaParts.push(dropReminderBadge(drop));
   if (!iosMode && drop.subject) metaParts.push(dropBadge(drop.subject, 'subject'));
   if (drop.status)  metaParts.push(dropBadge(drop.status, 'status'));
-  if (drop.project) metaParts.push(`<span style="font-size:12px;color:var(--muted);">${escHTML(drop.project)}</span>`);
+  if (drop.project) metaParts.push(`<span class="drop-meta-project">${escHTML(drop.project)}</span>`);
 
   const linksHtml = (drop.links || []).length
     ? `<div class="drop-detail-section-label">Links</div><div class="drop-detail-links-list">${drop.links.map(l => `<span class="drop-detail-link-item">${escHTML(l)}</span>`).join('')}</div>`
@@ -3926,8 +3493,6 @@ function escHTML(str) {
 
 // View lifecycle hooks - switchView() runs enter() for the view being opened.
 // Views never change focus/nav layout; that stays under the user's control.
-VIEW_HANDLERS.traderclaw = { enter: () => { if (typeof DE !== 'undefined') DE.render(); } };
-VIEW_HANDLERS.lyra       = { enter: () => { if (typeof SORA !== 'undefined') SORA.render(); } };
 VIEW_HANDLERS.dropbox    = { enter: () => enterDropboxView() };
 VIEW_HANDLERS.projects   = { enter: () => { if (window.ProjectRooms) ProjectRooms.render(); } };
 VIEW_HANDLERS.agents     = { enter: () => { if (window.AgentRegistry) AgentRegistry.render(); } };
