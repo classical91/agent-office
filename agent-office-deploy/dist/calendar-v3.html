@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>Calendar v3 - Agent Office</title>
-<link rel="stylesheet" href="shared.css?v=template-v2-cleanup-20260809"/>
+<link rel="stylesheet" href="shared.css?v=template-v2-orphans-20260809"/>
 <!-- Restores the saved theme and sidebar state before first paint, so no page
      flashes the default accent or a full-width sidebar on its way in.
      ACCENTS mirrors THEMES in app-shared.js. -->
@@ -121,7 +121,7 @@
 </style>
 <style id="calendar-v3-compact-focus-style">
 /* Calendar v3 compact focus mode: hides the app chrome and gives the calendar
-   the whole viewport. Everything inside the board â€” toolbar, lane bar, grid â€”
+   the whole viewport. Everything inside the board — toolbar, lane bar, grid —
    is sized by the .calendar-compact-board layer below, so it stays in one
    place instead of being fought over from here. */
 html, body { height: 100%; overflow: hidden; }
@@ -184,7 +184,7 @@ body > .statusbar,
 
 <style id="calendar-v3-true-compact-style">
 /* Calendar v3 true compact view: the board fills the viewport and every piece
-   inside it â€” toolbar, lane bar, month grid, day/week shell, agenda â€” is sized
+   inside it — toolbar, lane bar, month grid, day/week shell, agenda — is sized
    here. This is the only layer that sizes the board. */
 /* The sync chip in the toolbar opens the connection bar on demand, so hiding it
    by default no longer means it is unreachable. */
@@ -506,7 +506,7 @@ body > .statusbar,
        the template, not this copy: tests/shell-consistency.test.js fails when
        a page's copy drifts from it. Which row is highlighted is worked out
        from the URL by markActiveNav() in app-shared.js, so no page marks its
-       own â€” that is what let the copies disagree in the first place. -->
+       own — that is what let the copies disagree in the first place. -->
   <nav class="nav ao-scroll" aria-label="Primary">
 
     <div class="nav-section">
@@ -528,7 +528,7 @@ body > .statusbar,
             <a class="nav-item" href="/calendar-v3.html" data-icon="&#128197;"><span class="nav-item-label">Calendar</span></a>
             <a class="nav-item" href="/countdowns.html" data-icon="&#9203;"><span class="nav-item-label">Countdowns</span></a>
             <a class="nav-item" href="/streaks.html" data-icon="&#128293;"><span class="nav-item-label">Streaks</span></a>
-            <a class="nav-item" href="/resets.html" data-icon="&#8987;"><span class="nav-item-label">Countdown Timer</span></a>
+            <a class="nav-item" href="/resets.html" data-icon="&#8987;"><span class="nav-item-label">Countdown Timers</span></a>
           </div>
         </div>
         <a class="nav-item" href="/mission-board.html" data-icon="&#128229;"><span class="nav-item-label">Dropbox</span></a>
@@ -565,9 +565,9 @@ body > .statusbar,
 
   <div class="view" id="view-calendar-v3">
     <div class="calendar-connection-bar" id="gcal-connection">
-      <span class="calendar-connection-status" id="gcal-status">Checking Google connectionâ€¦</span>
+      <span class="calendar-connection-status" id="gcal-status">Checking Google connection…</span>
       <span class="calendar-connection-account" id="gcal-account" hidden></span>
-      <span class="calendar-connection-copy">Calendar events load through Googleâ€™s API, so this view does not require third-party cookies.</span>
+      <span class="calendar-connection-copy">Calendar events load through Google’s API, so this view does not require third-party cookies.</span>
       <button class="calendar-connection-action" id="gcal-connect" type="button">Connect Google Calendar</button>
       <button class="calendar-connection-action secondary" id="gcal-disconnect" type="button" hidden>Disconnect</button>
       <a class="calendar-google-link" href="https://calendar.google.com/" target="_blank" rel="noopener noreferrer">Open Google Calendar &#8599;</a>

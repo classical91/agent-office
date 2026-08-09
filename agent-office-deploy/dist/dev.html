@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="shared.css?v=template-v2-cleanup-20260809"/>
+<link rel="stylesheet" href="shared.css?v=template-v2-orphans-20260809"/>
 <!-- Restores the saved theme and sidebar state before first paint, so no page
      flashes the default accent or a full-width sidebar on its way in.
      ACCENTS mirrors THEMES in app-shared.js. -->
@@ -54,7 +54,7 @@
        the template, not this copy: tests/shell-consistency.test.js fails when
        a page's copy drifts from it. Which row is highlighted is worked out
        from the URL by markActiveNav() in app-shared.js, so no page marks its
-       own â€” that is what let the copies disagree in the first place. -->
+       own — that is what let the copies disagree in the first place. -->
   <nav class="nav ao-scroll" aria-label="Primary">
 
     <div class="nav-section">
@@ -76,7 +76,7 @@
             <a class="nav-item" href="/calendar-v3.html" data-icon="&#128197;"><span class="nav-item-label">Calendar</span></a>
             <a class="nav-item" href="/countdowns.html" data-icon="&#9203;"><span class="nav-item-label">Countdowns</span></a>
             <a class="nav-item" href="/streaks.html" data-icon="&#128293;"><span class="nav-item-label">Streaks</span></a>
-            <a class="nav-item" href="/resets.html" data-icon="&#8987;"><span class="nav-item-label">Countdown Timer</span></a>
+            <a class="nav-item" href="/resets.html" data-icon="&#8987;"><span class="nav-item-label">Countdown Timers</span></a>
           </div>
         </div>
         <a class="nav-item" href="/mission-board.html" data-icon="&#128229;"><span class="nav-item-label">Dropbox</span></a>
@@ -114,15 +114,15 @@
   <div class="view view--scroll ao-scroll" id="view-dev">
     <div class="ao-page dev-page">
       <div class="ao-page-heading">
-        <div class="ao-eyebrow">âŒ˜ DEV LINKS</div>
+        <div class="ao-eyebrow">⌘ DEV LINKS</div>
         <h1 class="ao-page-title dev-page-title">External control room</h1>
         <p class="ao-page-sub dev-page-sub">Quick exits for model routing, automation, deploys, repos, observability, and docs that support Agent Office work.</p>
       </div>
 
       <div class="dev-search">
         <div class="dev-search-field">
-          <span class="dev-search-icon" aria-hidden="true">âŒ•</span>
-          <input id="dev-search" type="search" placeholder="Search linksâ€¦" title="Press / to focus" autocomplete="off" spellcheck="false" aria-label="Search dev links by name, description, URL, or section" aria-describedby="dev-search-count"/>
+          <span class="dev-search-icon" aria-hidden="true">⌕</span>
+          <input id="dev-search" type="search" placeholder="Search links…" title="Press / to focus" autocomplete="off" spellcheck="false" aria-label="Search dev links by name, description, URL, or section" aria-describedby="dev-search-count"/>
         </div>
         <div class="dev-search-count" id="dev-search-count" role="status" aria-live="polite"></div>
       </div>
@@ -549,7 +549,7 @@ switchView('dev', document.querySelector('.nav-item.active'));
     countEl.textContent = terms.length
       ? shown + ' of ' + cards.length + ' links'
       : cards.length + ' links';
-    emptyTermEl.textContent = 'â€œ' + input.value.trim() + 'â€';
+    emptyTermEl.textContent = '“' + input.value.trim() + '”';
     emptyEl.hidden = !(terms.length && shown === 0);
   }
 
