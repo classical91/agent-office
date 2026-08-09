@@ -6,8 +6,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
-<title>Resets - Agent Office</title>
+<title>Countdowns - Agent Office</title>
 <link rel="stylesheet" href="shared.css?v=template-v2-20260809"/>
+<link rel="stylesheet" href="countdowns.css?v=countdowns-20260809"/>
 <!-- Restores the saved theme and sidebar state before first paint, so no page
      flashes the default accent or a full-width sidebar on its way in.
      ACCENTS mirrors THEMES in app-shared.js. -->
@@ -108,50 +109,33 @@
 
   </nav>
 
-  <div class="view view--scroll ao-scroll" id="view-resets">
-    <section class="resets-view">
-      <div class="resets-hero">
-        <div class="resets-kicker">Reset Signals</div>
-        <h2>API Reset Countdown</h2>
-        <div class="resets-sub">
-          Track separate usage reset windows and attach a different Pushcut webhook to each card.
-          Webhook URLs are saved only in this browser's localStorage.
-        </div>
+  <div class="view view--scroll ao-scroll" id="view-countdowns">
+    <section class="cd-view">
 
-        <div class="resets-controls">
-          <input id="reset-new-title" class="resets-input" placeholder="New countdown name, e.g. Gemini API Reset" />
-          <div>
-            <button type="button" class="resets-btn" onclick="AOResets.openNewPicker()">Pick date and time</button>
-            <div id="reset-new-time-label" class="resets-picked-label">No time selected</div>
-          </div>
-          <button type="button" class="resets-btn" onclick="AOResets.addCard()">Add Countdown</button>
+      <div class="cd-hero">
+        <div class="cd-kicker">Upcoming</div>
+        <h2>Countdowns</h2>
+        <div class="cd-sub">
+          Everything with a clock on it, in one place — deadlines, goals, work shifts, weekly routines
+          and trading dates, alongside what is next on the calendar. Each card carries the time left
+          and the next action, so the answer to "what now" is on the card rather than in your head.
         </div>
+        <div class="cd-summary" id="cd-summary"></div>
       </div>
 
-      <main class="resets-grid" id="reset-cards"></main>
+      <div class="cd-banner" id="cd-banner" style="display:none;"></div>
+
+      <div class="cd-toolbar">
+        <select class="cd-select" id="cd-filter-category" onchange="AOCountdowns.setCategoryFilter(this.value)" aria-label="Filter by category"></select>
+        <button class="cd-btn" id="cd-toggle-events" onclick="AOCountdowns.toggleEvents()">Hide calendar events</button>
+        <div class="spacer"></div>
+        <button class="cd-btn ghost" onclick="AOCountdowns.refresh()">Refresh</button>
+        <button class="cd-btn primary" onclick="AOCountdowns.openForm('')">+ New countdown</button>
+      </div>
+
+      <div id="cd-sections"></div>
+
     </section>
-
-    <div id="reset-date-picker-modal" class="reset-modal-backdrop">
-      <div class="reset-date-modal">
-        <div class="reset-date-modal-head">
-          <button type="button" class="resets-btn" onclick="AOResets.changePickerMonth(-1)">&lt;</button>
-          <div id="reset-picker-month-label" class="reset-date-modal-title"></div>
-          <button type="button" class="resets-btn" onclick="AOResets.changePickerMonth(1)">&gt;</button>
-        </div>
-
-        <div id="reset-calendar-grid" class="reset-calendar-grid"></div>
-
-        <div class="reset-time-row">
-          <select id="reset-picker-hour" class="resets-select"></select>
-          <select id="reset-picker-minute" class="resets-select"></select>
-        </div>
-
-        <div class="reset-modal-actions">
-          <button type="button" class="resets-btn" onclick="AOResets.closePicker()">Cancel</button>
-          <button type="button" class="resets-btn" onclick="AOResets.applyPicker()">Use this time</button>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- ACTIVITY FEED -->
@@ -164,12 +148,74 @@
 
 </div>
 
+<!-- ADD / EDIT -->
+<div id="cd-modal" class="cd-modal-backdrop" onclick="if (event.target === this) AOCountdowns.closeForm()">
+  <div class="cd-modal">
+    <div class="cd-modal-title" id="cd-modal-title">New countdown</div>
+
+    <div class="cd-field">
+      <label class="cd-label" for="cd-form-title-input">What are you counting down to?</label>
+      <input type="text" class="cd-input" id="cd-form-title-input" placeholder="e.g. Instagram download review" maxlength="160" />
+    </div>
+
+    <div class="cd-field">
+      <label class="cd-label" for="cd-form-target">Date and time</label>
+      <input type="datetime-local" class="cd-input" id="cd-form-target" />
+    </div>
+
+    <div class="cd-field">
+      <label class="cd-label">Category</label>
+      <div class="cd-picker" id="cd-form-category"></div>
+    </div>
+
+    <div class="cd-field">
+      <label class="cd-label">Repeats</label>
+      <div class="cd-picker" id="cd-form-repeat"></div>
+      <div class="cd-card-notes" id="cd-form-hint"></div>
+    </div>
+
+    <div class="cd-field">
+      <label class="cd-label" for="cd-form-action">Next action</label>
+      <input type="text" class="cd-input" id="cd-form-action" placeholder="The one thing to do about it next" maxlength="300" />
+    </div>
+
+    <div class="cd-field">
+      <label class="cd-label" for="cd-form-notes">Notes (optional)</label>
+      <input type="text" class="cd-input" id="cd-form-notes" placeholder="Anything else worth remembering" maxlength="600" />
+    </div>
+
+    <div class="cd-modal-error" id="cd-form-error"></div>
+
+    <div class="cd-modal-actions">
+      <button class="cd-btn ghost" onclick="AOCountdowns.closeForm()">Cancel</button>
+      <button class="cd-btn primary" id="cd-form-save" onclick="AOCountdowns.save()">Add countdown</button>
+    </div>
+  </div>
+</div>
+
+<!-- PASSPHRASE MODAL -->
+<div id="passphrase-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.75); align-items:center; justify-content:center;">
+  <div style="background:var(--bg); border:1px solid #2a3048; border-radius:12px; padding:28px 24px; width:100%; max-width:360px; margin:0 16px;">
+    <div style="font-size:14px; font-weight:700; color:#e2e8f0; margin-bottom:6px;">🔒 Unlock Countdowns</div>
+    <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">Adding and editing countdowns sits behind the same passphrase as the Dropbox.</div>
+    <input id="passphrase-input" type="password" placeholder="Passphrase..."
+      style="width:100%; background:var(--view-bg); border:1px solid #2a3048; border-radius:8px; padding:12px 14px; font-size:15px; color:#e2e8f0; outline:none; box-sizing:border-box; -webkit-appearance:none;"
+      autocomplete="current-password" autocorrect="off" autocapitalize="none" spellcheck="false" />
+    <div id="passphrase-error" style="display:none; font-size:12px; color:#f87171; margin-top:8px;"></div>
+    <div style="display:flex; gap:10px; margin-top:18px;">
+      <button id="passphrase-cancel" style="flex:1; padding:11px; background:transparent; border:1px solid #2a3048; border-radius:8px; color:var(--muted); font-size:13px; font-weight:600; cursor:pointer;">Cancel</button>
+      <button id="passphrase-submit" style="flex:2; padding:11px; background:var(--accent); border:none; border-radius:8px; color:#fff; font-size:13px; font-weight:600; cursor:pointer;">Unlock</button>
+    </div>
+  </div>
+</div>
+
 <!-- BOTTOM STATUS BAR -->
 <div class="statusbar" id="statusbar"></div>
 
 <script src="app-shared.js?v=note-page-20260804"></script>
+<script src="countdowns-page.js?v=countdowns-20260809"></script>
 <script>
-switchView('resets', document.querySelector('.nav-item.active'));
+switchView('countdowns', document.querySelector('.nav-item.active'));
 </script>
 
 </body>

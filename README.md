@@ -9,6 +9,7 @@ A multi-page web app that acts as the command center for OpenClaw agents, tasks,
 - **Phone inbox** — a token-authenticated API for iOS Shortcuts: send a note or reminder to the Dropbox from your phone, and pull back whatever has come due. See [Phone inbox](#phone-inbox--ios-shortcuts).
 - **Memory** — per-agent memory entries that agents can reference across sessions.
 - **Calendar** — a Google Calendar-backed control surface for the office: agent/project metadata on every block, live run status, an Agent Assistant drawer, agent-timeline filters, and a scored scheduling policy instead of first-available-slot.
+- **Countdowns** — everything with a clock on it in one page: deadlines, goals, work shifts, weekly routines and trading dates, grouped into Today / This Week / Later alongside what is next on the Google Calendar. Every card carries the time left, the category and the next action. See [Countdowns](#countdowns-1).
 - **Streaks** — every day you kept a habit up, plotted on a month grid and a year strip. Each streak carries a type (Health, Deep Work, Avoid, …) and a colour, the calendar can be filtered down to one streak or one type, and a day is marked from the day itself or from the streak's **Mark today** button. See [Streaks](#streaks-1).
 - **Visitors** — who is on your websites right now, what they are reading, and whether they have been before. One tracker script goes on any site you run; nothing is looked up against any outside service. See [Visitors](#visitors-1).
 - **Org chart** — a visual layout of the agent team.
@@ -41,6 +42,7 @@ agent-office-deploy/
     resets.html                # Resets page
     ai-landscape.html          # AI Landscape page
     streaks.html               # Streaks page
+    countdowns.html            # Countdowns page
     mission-board.html         # Mission Board (Dropbox) page
     project-rooms.html         # Project Rooms page
     agent-registry.html        # Agent Registry page
@@ -53,6 +55,9 @@ agent-office-deploy/
     workspace-systems.css      # Extra styles for Mission Board / Project Rooms / Agent Registry
     mission-board.js           # Mission Board-only logic
     streaks.{js,css}           # Streaks-only logic and styles
+    countdowns.js              # Countdown arithmetic shared by the API and the roll-up (server-side)
+    countdowns-page.js         # Countdowns page-only logic
+    countdowns.css             # Countdowns-only styles
     project-rooms.js           # Project Rooms-only logic
     agent-registry.js          # Agent Registry-only logic
     calendar-view.{js,css}     # Calendar-only logic
@@ -117,7 +122,10 @@ Google's extended properties), the agent run lifecycle, the scheduling policy
 and slot scoring, natural-language plan preview/commit, the incremental
 Google sync state machine, reminder-time parsing, the streaks API (the
 passphrase gate, how a run is built and broken, repeated marks, day ranges,
-rejected dates, and deleting a streak with its days), and the phone inbox
+rejected dates, and deleting a streak with its days), the countdowns API and
+its arithmetic (which occurrence is next, the Today/This Week/Later split,
+weekend-skipping for trading and weekday routines, and what the evening
+roll-up is allowed to nag about), and the phone inbox
 (token auth and throttling, the JSON/form/plain-text/query ways of sending a
 drop, the due scopes, done/snooze, and that a reminder set on the phone shows
 up in the web Dropbox).
@@ -160,6 +168,7 @@ All endpoints return JSON.
 | POST   | `/api/shortcuts/drops/:id/done`   | Mark a pulled item done          |
 | POST   | `/api/shortcuts/drops/:id/snooze` | Push a reminder out              |
 | GET    | `/api/shortcuts/status`           | Due/upcoming counts and the next reminder |
+| GET    | `/api/shortcuts/countdowns`       | The top countdowns as text, for the evening roll-up |
 | GET    | `/api/memories`                   | List memory entries              |
 | POST   | `/api/memories`                   | Create a memory entry            |
 | PATCH  | `/api/memories/:id`               | Update a memory entry            |
@@ -170,6 +179,11 @@ All endpoints return JSON.
 | DELETE | `/api/streaks/:id`                | Delete a streak and its days     |
 | PUT    | `/api/streaks/:id/days/:day`      | Mark a day as kept               |
 | DELETE | `/api/streaks/:id/days/:day`      | Clear a marked day               |
+| GET    | `/api/countdowns`                 | Countdowns and upcoming events, grouped Today / This Week / Later |
+| POST   | `/api/countdowns`                 | Create a countdown               |
+| PATCH  | `/api/countdowns/:id`             | Edit, pin or archive a countdown |
+| DELETE | `/api/countdowns/:id`             | Delete a countdown               |
+| GET    | `/api/countdowns/rollup`          | The top countdowns only, as JSON or `?format=text` |
 | POST   | `/api/visits/track`               | Record a page view or a still-here ping (public) |
 | GET    | `/api/visits/summary`             | Live visitors, totals, top pages and referrers |
 | DELETE | `/api/visits`                     | Delete every recorded page view  |
@@ -237,6 +251,68 @@ right-hand drawer on desktop, with "What should I do next?", "Schedule my
 highest-priority task", "Protect two hours for Agent Office", "Prepare me for
 my next meeting" and "Show conflicts and overdue work", plus a
 natural-language field that previews a plan before anything is created.
+
+## Countdowns
+
+**Countdowns** in the side menu is the "how long have I got" page. A calendar
+event answers *what is happening at 2pm*; a streak answers *did I keep it up
+today*; a countdown answers *how long until the thing, and what do I do next
+about it*. That last question is why every card carries a **next action** and
+why nothing here has an end time.
+
+**A countdown** is a title, a date and time, a **category**, a **repeat rule**,
+a next action and an optional note. The categories are Deadline, Goal, Work
+Shift, Routine, Trading and Personal, each with its own colour. The repeat rules
+are One-off, Daily, Weekdays, Weekly and Monthly — so a weekly routine like the
+Instagram download review is entered once and rolls itself forward, and a
+monthly one on the 31st clamps to the last day of a short month rather than
+skidding into the next.
+
+**Today / This Week / Later.** Every card lands in one of three sections. Today
+is anything due before midnight; This Week is the next seven days, counted from
+today rather than to Sunday, so "this week" on a Friday still means a week.
+Overdue work is not a fourth section — it sits at the top of Today, in red,
+where it cannot be scrolled past. A one-off that has passed stays overdue until
+it is dealt with; only a repeating countdown rolls itself forward.
+
+**The calendar half.** When Google Calendar is connected, upcoming events are
+drawn as cards in the same three sections, so a work shift on the calendar and a
+deadline you typed in are read together. Events are marked with a dashed edge
+and link out to the Calendar rather than being editable here, because the
+calendar owns them. An event that has started but not finished reads as
+*happening now*, not as late. If Google is not connected, or the sync fails,
+the page says so and still shows your own countdowns.
+
+**Weekends and trading.** Trading countdowns never land on a Saturday or a
+Sunday — a repeating one skips a closed market and moves to Monday. On the
+weekend itself, and for any trading card pointing at one, the card goes quiet:
+dimmed, never marked urgent, and left out of the roll-up. It stays on the page,
+because knowing it is there is not the same as being pushed to act on it. The
+Weekdays repeat rule does the same for Mon–Fri routines.
+
+**The evening roll-up.** `GET /api/countdowns/rollup?format=text` returns the
+top cards as plain text, and `/api/shortcuts/countdowns` serves the same thing
+behind the phone-inbox token, so an evening Shortcut can paste them straight
+into a note:
+
+```
+Countdowns — Sat, Aug 8
+• Ship the countdowns page (overdue 11 hrs 20 mins ago) → Deploy from the pushed branch
+• Instagram download review (20 hrs 39 mins — Sun, Aug 9 8:00 PM) → Clear the downloads folder
+• Quarterly tax filing (3 days 17 hrs — Wed, Aug 12 5:00 PM) → Gather receipts
+```
+
+The roll-up takes what is due today or this week (plus anything pinned), and
+skips the quiet trading cards. `?limit=` sets how many, up to 20.
+
+**Where the numbers come from.** All of it — which occurrence is next, the time
+left, the section, whether a card is urgent — is worked out on the server in
+`countdowns.js`, so a phone and a browser agree. The page re-counts only the
+"time left" label between refreshes so the clock keeps moving.
+
+**Access.** Reading is open, like the calendar the page shows alongside the
+cards. Adding, editing and deleting sit behind the same `DROPS_PASSPHRASE` as
+the Dropbox and share its session cookie.
 
 ## Streaks
 
@@ -483,6 +559,11 @@ list instead of JSON, which a Shortcut can show or speak without any parsing:
 
 Run it from a Home Screen widget, or attach it to a **Personal Automation** —
 "Every day at 8:00am" — and the phone reads out whatever came due overnight.
+
+**Shortcut: the evening roll-up.** `GET /api/shortcuts/countdowns?limit=5` uses
+the same token and returns the top countdowns as text, so an evening automation
+can append them to whatever roll-up it already builds. `format=json` returns the
+same selection as objects. See [Countdowns](#countdowns-1).
 
 There is also a no-Shortcut version: bookmark
 `/mission-board.html?reminder=due` on the phone's Home Screen and the Dropbox

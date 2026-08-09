@@ -36,6 +36,7 @@ const PAGES = [
   'resets.html',
   'dev.html',
   'calendar-v3.html',
+  'countdowns.html',
 ];
 
 // The two regions a page hands over. Both are delimited by markup the pages
