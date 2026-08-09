@@ -115,17 +115,28 @@ window.AOResets = (() => {
     return match ? { glyph: match[1], color: match[2] } : { glyph: '⏳', color: 'var(--accent)' };
   }
 
-  // "02d 14h 37m" while there are still days on the clock, then progressively
-  // finer, so the last hour actually ticks instead of sitting on "00d 00h".
+  // "1 Day & 21h" while there are still days on the clock, then progressively
+  // finer, so the last hour actually ticks instead of sitting on "0h 0m".
+  //
+  // The leading unit is never zero-padded — "01d" read as a stutter rather
+  // than a duration — and at day range the days are spelled out, because that
+  // is the part you actually read. Minutes are dropped once there is a day on
+  // the clock: they are noise at that distance and they cost the label the
+  // room to say "Day". Units after the first stay padded, so a readout ticks
+  // down in place instead of jittering between "1h 9m" and "1h 10m".
   function formatRemaining(ms) {
     if (ms <= 0) return 'Finished';
     const days = Math.floor(ms / DAY_MS);
     const hours = Math.floor((ms % DAY_MS) / 3600000);
     const minutes = Math.floor((ms % 3600000) / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
-    if (days > 0) return `${pad(days)}d ${pad(hours)}h ${pad(minutes)}m`;
-    if (hours > 0) return `${pad(hours)}h ${pad(minutes)}m ${pad(seconds)}s`;
-    return `${pad(minutes)}m ${pad(seconds)}s`;
+    if (days > 0) {
+      const label = `${days} Day${days === 1 ? '' : 's'}`;
+      // "1 Day & 0h" is a worse read than "1 Day".
+      return hours > 0 ? `${label} & ${hours}h` : label;
+    }
+    if (hours > 0) return `${hours}h ${pad(minutes)}m ${pad(seconds)}s`;
+    return `${minutes}m ${pad(seconds)}s`;
   }
 
   function formatWhen(iso) {
