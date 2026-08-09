@@ -7,6 +7,7 @@ const agentMeta = require('./calendar-agent-meta.js');
 const scheduling = require('./calendar-scheduling.js');
 const googleSync = require('./calendar-google-sync.js');
 const reminderTime = require('./reminder-time.js');
+const countdowns = require('./countdowns.js');
 
 process.env.TZ = process.env.APP_TIMEZONE || 'America/Vancouver';
 
@@ -22,6 +23,7 @@ const APP_SETTINGS_FILE = path.resolve(__dirname, process.env.APP_SETTINGS_FILE 
 const PROMPTS_FILE = path.resolve(__dirname, process.env.PROMPTS_FILE || 'prompts.json');
 const STREAKS_FILE = path.resolve(__dirname, process.env.STREAKS_FILE || 'streaks.json');
 const STREAK_DAYS_FILE = path.resolve(__dirname, process.env.STREAK_DAYS_FILE || 'streak-days.json');
+const COUNTDOWNS_FILE = path.resolve(__dirname, process.env.COUNTDOWNS_FILE || 'countdowns.json');
 const VISITS_FILE = path.resolve(__dirname, process.env.VISITS_FILE || 'visits.json');
 const MAX_BODY_BYTES = 50 * 1024;
 const SESSION_COOKIE = 'agent_office_session';
@@ -508,6 +510,27 @@ function toClientStreak(row, dayKeys = []) {
   };
 }
 
+// ─── Countdowns ──────────────────────────────────────────────────────────────
+// The rule for how a countdown repeats is stored as `repeat_rule` in Postgres
+// and handed to the client as `repeat`; the column name keeps clear of SQL's
+// repeat() and the client name matches what the page and countdowns.js use.
+
+function toClientCountdown(row) {
+  return {
+    id: row.id,
+    title: row.title || '',
+    target_at: toIsoOrEmpty(row.target_at),
+    category: countdowns.normalizeCategory(row.category),
+    repeat: countdowns.normalizeRepeat(row.repeat_rule !== undefined ? row.repeat_rule : row.repeat),
+    next_action: row.next_action || '',
+    notes: row.notes || '',
+    pinned: Boolean(row.pinned),
+    archived: Boolean(row.archived),
+    created_at: toIsoOrEmpty(row.created_at),
+    updated_at: toIsoOrEmpty(row.updated_at),
+  };
+}
+
 function validatePromptInput(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     return { ok: false, error: 'Body must be a JSON object.' };
@@ -793,6 +816,24 @@ async function loadStreaksFromFile() {
 async function saveStreaksToFile(streaks) {
   writeQueue = writeQueue.then(() =>
     fs.writeFile(STREAKS_FILE, JSON.stringify(streaks, null, 2), 'utf8')
+  );
+  await writeQueue;
+}
+
+async function loadCountdownsFromFile() {
+  try {
+    const raw = await fs.readFile(COUNTDOWNS_FILE, 'utf8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    if (error.code === 'ENOENT') return [];
+    throw error;
+  }
+}
+
+async function saveCountdownsToFile(rows) {
+  writeQueue = writeQueue.then(() =>
+    fs.writeFile(COUNTDOWNS_FILE, JSON.stringify(rows, null, 2), 'utf8')
   );
   await writeQueue;
 }
@@ -1231,6 +1272,30 @@ function createFileStorage() {
         .filter(day => (!range.from || day.day >= range.from) && (!range.to || day.day <= range.to))
         .sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));
     },
+    async listCountdowns() {
+      return (await loadCountdownsFromFile()).map(toClientCountdown);
+    },
+    async createCountdown(countdown) {
+      const rows = await loadCountdownsFromFile();
+      rows.push(countdown);
+      await saveCountdownsToFile(rows);
+      return toClientCountdown(countdown);
+    },
+    async updateCountdown(id, patch) {
+      const rows = await loadCountdownsFromFile();
+      const row = rows.find(item => item.id === id);
+      if (!row) return null;
+      Object.assign(row, patch, { updated_at: new Date().toISOString() });
+      await saveCountdownsToFile(rows);
+      return toClientCountdown(row);
+    },
+    async deleteCountdown(id) {
+      const rows = await loadCountdownsFromFile();
+      const next = rows.filter(item => item.id !== id);
+      const deleted = next.length !== rows.length;
+      if (deleted) await saveCountdownsToFile(next);
+      return deleted;
+    },
     async markStreakDay(streakId, day, note) {
       const streaks = await loadStreaksFromFile();
       if (!streaks.some(item => item.id === streakId)) return null;
@@ -1538,6 +1603,26 @@ async function createPostgresStorage() {
     )
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS streak_days_day_idx ON streak_days (day)`);
+
+  // `target_at` is the first time the countdown comes due, not the next one:
+  // the next one is worked out on every read from the repeat rule, so a
+  // repeating card never needs a write just because a day went by.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS countdowns (
+      id TEXT PRIMARY KEY,
+      title VARCHAR(160) NOT NULL,
+      target_at TIMESTAMPTZ NOT NULL,
+      category VARCHAR(32) NOT NULL DEFAULT 'deadline',
+      repeat_rule VARCHAR(16) NOT NULL DEFAULT 'none',
+      next_action TEXT NOT NULL DEFAULT '',
+      notes TEXT NOT NULL DEFAULT '',
+      pinned BOOLEAN NOT NULL DEFAULT FALSE,
+      archived BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS countdowns_target_idx ON countdowns (target_at)`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS app_settings (
@@ -1969,6 +2054,71 @@ async function createPostgresStorage() {
     },
     async deleteStreak(id) {
       const result = await pool.query('DELETE FROM streaks WHERE id = $1', [id]);
+      return result.rowCount > 0;
+    },
+    async listCountdowns() {
+      const result = await pool.query(`
+        SELECT id, title, target_at, category, repeat_rule, next_action, notes, pinned, archived, created_at, updated_at
+        FROM countdowns
+        ORDER BY target_at ASC
+      `);
+      return result.rows.map(toClientCountdown);
+    },
+    async createCountdown(countdown) {
+      const result = await pool.query(
+        `
+          INSERT INTO countdowns
+            (id, title, target_at, category, repeat_rule, next_action, notes, pinned, archived, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10)
+          RETURNING id, title, target_at, category, repeat_rule, next_action, notes, pinned, archived, created_at, updated_at
+        `,
+        [
+          countdown.id,
+          countdown.title,
+          countdown.target_at,
+          countdown.category,
+          countdown.repeat,
+          countdown.next_action,
+          countdown.notes,
+          countdown.pinned,
+          countdown.archived,
+          countdown.created_at,
+        ]
+      );
+      return toClientCountdown(result.rows[0]);
+    },
+    async updateCountdown(id, patch) {
+      const result = await pool.query(
+        `
+          UPDATE countdowns SET
+            title = COALESCE($2, title),
+            target_at = COALESCE($3, target_at),
+            category = COALESCE($4, category),
+            repeat_rule = COALESCE($5, repeat_rule),
+            next_action = COALESCE($6, next_action),
+            notes = COALESCE($7, notes),
+            pinned = COALESCE($8, pinned),
+            archived = COALESCE($9, archived),
+            updated_at = NOW()
+          WHERE id = $1
+          RETURNING id, title, target_at, category, repeat_rule, next_action, notes, pinned, archived, created_at, updated_at
+        `,
+        [
+          id,
+          patch.title === undefined ? null : patch.title,
+          patch.target_at === undefined ? null : patch.target_at,
+          patch.category === undefined ? null : patch.category,
+          patch.repeat === undefined ? null : patch.repeat,
+          patch.next_action === undefined ? null : patch.next_action,
+          patch.notes === undefined ? null : patch.notes,
+          patch.pinned === undefined ? null : patch.pinned,
+          patch.archived === undefined ? null : patch.archived,
+        ]
+      );
+      return result.rows[0] ? toClientCountdown(result.rows[0]) : null;
+    },
+    async deleteCountdown(id) {
+      const result = await pool.query('DELETE FROM countdowns WHERE id = $1', [id]);
       return result.rowCount > 0;
     },
     async listStreakDays(range = {}) {
@@ -2696,6 +2846,45 @@ async function currentCalendarEvents() {
   return source.map(toSchedulingEvent).filter(event => event.start && event.end);
 }
 
+/**
+ * Everything the Countdowns page draws, in one payload.
+ *
+ * The calendar half is best-effort on purpose: a countdown you typed in
+ * yourself should still be readable when Google is down or was never
+ * connected, so a failure there costs the events and nothing else.
+ */
+async function buildCountdownsPayload(options = {}) {
+  const storage = await storageReady;
+  const stored = await storage.listCountdowns();
+
+  let events = [];
+  let calendarState = 'disconnected';
+  if (options.includeEvents !== false) {
+    try {
+      events = await currentCalendarEvents();
+      calendarState = (await isGcalConnected()) ? 'connected' : (events.length ? 'local-only' : 'disconnected');
+    } catch (error) {
+      console.error('Countdowns: unable to load calendar events.', error);
+      calendarState = 'error';
+    }
+  } else {
+    calendarState = 'skipped';
+  }
+
+  return {
+    ...countdowns.buildUpcoming({
+      countdowns: stored,
+      events,
+      now: options.now instanceof Date ? options.now : new Date(),
+      includeArchived: Boolean(options.includeArchived),
+    }),
+    calendar: { state: calendarState, connected: calendarState === 'connected' },
+    categories: countdowns.CATEGORIES,
+    repeats: countdowns.REPEATS,
+    timezone: process.env.TZ,
+  };
+}
+
 async function suggestScheduleSlots(body = {}) {
   const preferences = await getSchedulingPreferences();
   const events = await currentCalendarEvents();
@@ -3366,6 +3555,24 @@ async function handleShortcutsRequest(req, res, url, storage) {
       due: due.length,
       upcoming: upcoming.length,
       next: upcoming.length ? toShortcutItem(upcoming[0], now, req) : null,
+    });
+    return true;
+  }
+
+  // The evening roll-up pulls this. It is the same selection the Countdowns
+  // page leads with, as plain text a Shortcut can paste straight into a note.
+  if (req.method === 'GET' && pathname === '/api/shortcuts/countdowns') {
+    const payload = await buildCountdownsPayload({ now });
+    const limit = Number.parseInt(url.searchParams.get('limit') || '', 10);
+    if (String(url.searchParams.get('format') || 'text') === 'text') {
+      sendText(res, 200, countdowns.formatRollupText(payload, limit));
+      return true;
+    }
+    sendJson(res, 200, {
+      ok: true,
+      now: payload.now,
+      counts: payload.counts,
+      items: countdowns.selectRollupItems(payload, limit),
     });
     return true;
   }
@@ -4243,6 +4450,7 @@ const server = http.createServer(async (req, res) => {
         pull_url: `${origin}/api/shortcuts/drops?due=now`,
         pull_text_url: `${origin}/api/shortcuts/drops?due=now&format=text`,
         status_url: `${origin}/api/shortcuts/status`,
+        countdowns_url: `${origin}/api/shortcuts/countdowns?limit=5&format=text`,
         header: 'X-Shortcuts-Token',
       });
       return;
@@ -4645,6 +4853,90 @@ const server = http.createServer(async (req, res) => {
       const deleted = await storage.deleteStreak(id);
       if (!deleted) {
         sendJson(res, 404, { error: 'Streak not found.' });
+        return;
+      }
+
+      sendJson(res, 200, { ok: true });
+      return;
+    }
+
+    // -- COUNTDOWNS API -----------------------------------------
+    // Reading is open, the same as the calendar this page shows alongside the
+    // cards; writing sits behind the Dropbox passphrase like every other
+    // personal record in here.
+    if (req.method === 'GET' && pathname === '/api/countdowns/rollup') {
+      const payload = await buildCountdownsPayload();
+      const limit = Number.parseInt(parsedUrl.searchParams.get('limit') || '', 10);
+      const items = countdowns.selectRollupItems(payload, limit);
+      if (String(parsedUrl.searchParams.get('format') || '') === 'text') {
+        sendText(res, 200, countdowns.formatRollupText(payload, limit));
+        return;
+      }
+      sendJson(res, 200, { now: payload.now, counts: payload.counts, items });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/api/countdowns') {
+      sendJson(res, 200, await buildCountdownsPayload({
+        includeArchived: parsedUrl.searchParams.get('archived') === '1',
+        includeEvents: parsedUrl.searchParams.get('events') !== '0',
+      }));
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/countdowns') {
+      if (!requireDropsAuth(res, req)) return;
+
+      const payload = countdowns.validateCountdownInput(await readJsonBody(req));
+      if (!payload.ok) {
+        sendJson(res, 400, { error: payload.error });
+        return;
+      }
+
+      const now = new Date().toISOString();
+      const created = await storage.createCountdown({
+        id: `countdown-${typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now()}`,
+        created_at: now,
+        updated_at: now,
+        ...payload.value,
+      });
+
+      sendJson(res, 201, countdowns.decorateCountdown(created));
+      return;
+    }
+
+    if (req.method === 'PATCH' && pathname.startsWith('/api/countdowns/')) {
+      if (!requireDropsAuth(res, req)) return;
+
+      const id = decodeURIComponent(pathname.slice('/api/countdowns/'.length)).trim();
+      if (!id) {
+        sendJson(res, 400, { error: 'Countdown id is required.' });
+        return;
+      }
+
+      const payload = countdowns.validateCountdownInput(await readJsonBody(req), true);
+      if (!payload.ok) {
+        sendJson(res, 400, { error: payload.error });
+        return;
+      }
+
+      const updated = await storage.updateCountdown(id, payload.value);
+      if (!updated) {
+        sendJson(res, 404, { error: 'Countdown not found.' });
+        return;
+      }
+
+      sendJson(res, 200, countdowns.decorateCountdown(updated));
+      return;
+    }
+
+    if (req.method === 'DELETE' && pathname.startsWith('/api/countdowns/')) {
+      if (!requireDropsAuth(res, req)) return;
+
+      const id = decodeURIComponent(pathname.slice('/api/countdowns/'.length)).trim();
+      const deleted = await storage.deleteCountdown(id);
+      if (!deleted) {
+        sendJson(res, 404, { error: 'Countdown not found.' });
         return;
       }
 

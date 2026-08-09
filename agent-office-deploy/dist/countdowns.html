@@ -6,9 +6,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
-<title>Visitors - Agent Office</title>
+<title>Countdowns - Agent Office</title>
 <link rel="stylesheet" href="shared.css?v=feed-menus-20260804"/>
-<link rel="stylesheet" href="visitors.css?v=visitors-20260804"/>
+<link rel="stylesheet" href="countdowns.css?v=countdowns-20260809"/>
 <!-- Apply saved theme before first paint to avoid a flash of the default theme. Mirrors THEMES in app-shared.js. -->
 <script>
 (function(){
@@ -62,7 +62,7 @@
           <div class="nav-sub">
             <a class="nav-item" href="/mission-board.html?view=ios">Reminders</a>
             <a class="nav-item" href="/calendar-v3.html">Calendar</a>
-            <a class="nav-item" href="/countdowns.html">Countdowns</a>
+            <a class="nav-item active" href="/countdowns.html">Countdowns</a>
             <a class="nav-item" href="/streaks.html">Streaks</a>
             <a class="nav-item" href="/resets.html">Countdown Timer</a>
           </div>
@@ -73,7 +73,7 @@
         <a class="nav-item" href="/ai-landscape.html" data-ai-landscape-nav="true">AI Models</a>
         <div class="nav-item" onclick="window.open('/prompt-builder.html', '_blank')">AI Prompt Engineer</div>
         <a class="nav-item" href="https://main-page-production-9927.up.railway.app/apps.html" target="_blank" rel="noopener noreferrer">My Websites &amp; Projects <span class="link-ext">↗</span></a>
-        <a class="nav-item active" href="/visitors.html">Visitors</a>
+        <a class="nav-item" href="/visitors.html">Visitors</a>
       </div>
     </div>
 
@@ -93,89 +93,32 @@
 
   </nav>
 
-  <div class="view" id="view-visitors" style="flex-direction:column; background:var(--view-bg); overflow-y:auto;">
-    <section class="visitors-view">
+  <div class="view" id="view-countdowns" style="flex-direction:column; background:var(--view-bg); overflow-y:auto;">
+    <section class="cd-view">
 
-      <div class="visitors-hero">
-        <div class="visitors-kicker">Website Visitors</div>
-        <h2>Visitors</h2>
-        <div class="visitors-sub">
-          Who is on your sites right now, what they are reading, and whether they have been before.
-          Each visitor is a random id their own browser made up — there is no lookup against anything,
-          and nothing here tries to work out who anybody is.
+      <div class="cd-hero">
+        <div class="cd-kicker">Upcoming</div>
+        <h2>Countdowns</h2>
+        <div class="cd-sub">
+          Everything with a clock on it, in one place — deadlines, goals, work shifts, weekly routines
+          and trading dates, alongside what is next on the calendar. Each card carries the time left
+          and the next action, so the answer to "what now" is on the card rather than in your head.
         </div>
-        <div class="visitors-summary" id="visitors-summary"></div>
+        <div class="cd-summary" id="cd-summary"></div>
       </div>
 
-      <div class="visitors-toolbar">
-        <select class="visitors-select" id="visitors-site" onchange="AOVisitors.setSite(this.value)" aria-label="Filter by site"></select>
-        <select class="visitors-select" id="visitors-range" onchange="AOVisitors.setRange(this.value)" aria-label="Time range"></select>
+      <div class="cd-banner" id="cd-banner" style="display:none;"></div>
+
+      <div class="cd-toolbar">
+        <select class="cd-select" id="cd-filter-category" onchange="AOCountdowns.setCategoryFilter(this.value)" aria-label="Filter by category"></select>
+        <button class="cd-btn" id="cd-toggle-events" onclick="AOCountdowns.toggleEvents()">Hide calendar events</button>
         <div class="spacer"></div>
-        <button class="visitors-btn on" id="visitors-auto" onclick="AOVisitors.toggleAutoRefresh()">Live: on</button>
-        <button class="visitors-btn" id="visitors-refresh" onclick="AOVisitors.refresh()">Refresh</button>
+        <button class="cd-btn ghost" onclick="AOCountdowns.refresh()">Refresh</button>
+        <button class="cd-btn primary" onclick="AOCountdowns.openForm('')">+ New countdown</button>
       </div>
 
-      <div id="visitors-locked" style="display:none;">
-        <div class="visitors-panel">
-          <div class="visitors-empty">
-            Visitors is locked.
-            <div style="margin-top:12px;">
-              <button class="visitors-btn primary" onclick="AOVisitors.unlock()">Unlock</button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <div id="cd-sections"></div>
 
-      <div id="visitors-body">
-        <div class="visitors-layout">
-
-          <!-- WHO IS HERE NOW -->
-          <div class="visitors-panel">
-            <div class="visitors-panel-title">
-              On the sites now <span class="count" id="visitors-live-count">0</span>
-            </div>
-            <div id="visitors-live"></div>
-          </div>
-
-          <!-- WHAT JUST HAPPENED -->
-          <div class="visitors-panel">
-            <div class="visitors-panel-title">Recent page views</div>
-            <div id="visitors-recent"></div>
-          </div>
-
-          <!-- WHAT THEY READ -->
-          <div class="visitors-panel">
-            <div class="visitors-panel-title">Most read</div>
-            <div class="visitors-bars" id="visitors-pages"></div>
-          </div>
-
-          <!-- HOW THEY GOT THERE -->
-          <div class="visitors-panel">
-            <div class="visitors-panel-title">Came from</div>
-            <div class="visitors-bars" id="visitors-referrers"></div>
-          </div>
-
-          <!-- PUTTING IT ON A SITE -->
-          <div class="visitors-panel wide visitors-setup">
-            <div class="visitors-panel-title">Track another site</div>
-            <div class="visitors-note" style="margin-top:0; margin-bottom:10px;">
-              Paste this before <code style="display:inline; padding:1px 5px;">&lt;/body&gt;</code> on any site you run.
-              It reports back here, and the site shows up in the filter above on its first visitor.
-            </div>
-            <code id="visitors-snippet"></code>
-            <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; align-items:center;">
-              <button class="visitors-btn" id="visitors-copy" onclick="AOVisitors.copySnippet()">Copy</button>
-              <div class="spacer"></div>
-              <span class="visitors-note" id="visitors-retention" style="margin:0;"></span>
-              <button class="visitors-btn ghost danger" onclick="AOVisitors.clearAll()">Delete all visits</button>
-            </div>
-            <div class="visitors-note" id="visitors-truncated" style="display:none;">
-              This range has more page views than one screen can total up — the numbers above cover the most recent 20,000.
-            </div>
-          </div>
-
-        </div>
-      </div>
     </section>
   </div>
 
@@ -189,11 +132,56 @@
 
 </div>
 
+<!-- ADD / EDIT -->
+<div id="cd-modal" class="cd-modal-backdrop" onclick="if (event.target === this) AOCountdowns.closeForm()">
+  <div class="cd-modal">
+    <div class="cd-modal-title" id="cd-modal-title">New countdown</div>
+
+    <div class="cd-field">
+      <label class="cd-label" for="cd-form-title-input">What are you counting down to?</label>
+      <input type="text" class="cd-input" id="cd-form-title-input" placeholder="e.g. Instagram download review" maxlength="160" />
+    </div>
+
+    <div class="cd-field">
+      <label class="cd-label" for="cd-form-target">Date and time</label>
+      <input type="datetime-local" class="cd-input" id="cd-form-target" />
+    </div>
+
+    <div class="cd-field">
+      <label class="cd-label">Category</label>
+      <div class="cd-picker" id="cd-form-category"></div>
+    </div>
+
+    <div class="cd-field">
+      <label class="cd-label">Repeats</label>
+      <div class="cd-picker" id="cd-form-repeat"></div>
+      <div class="cd-card-notes" id="cd-form-hint"></div>
+    </div>
+
+    <div class="cd-field">
+      <label class="cd-label" for="cd-form-action">Next action</label>
+      <input type="text" class="cd-input" id="cd-form-action" placeholder="The one thing to do about it next" maxlength="300" />
+    </div>
+
+    <div class="cd-field">
+      <label class="cd-label" for="cd-form-notes">Notes (optional)</label>
+      <input type="text" class="cd-input" id="cd-form-notes" placeholder="Anything else worth remembering" maxlength="600" />
+    </div>
+
+    <div class="cd-modal-error" id="cd-form-error"></div>
+
+    <div class="cd-modal-actions">
+      <button class="cd-btn ghost" onclick="AOCountdowns.closeForm()">Cancel</button>
+      <button class="cd-btn primary" id="cd-form-save" onclick="AOCountdowns.save()">Add countdown</button>
+    </div>
+  </div>
+</div>
+
 <!-- PASSPHRASE MODAL -->
 <div id="passphrase-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.75); align-items:center; justify-content:center;">
   <div style="background:var(--bg); border:1px solid #2a3048; border-radius:12px; padding:28px 24px; width:100%; max-width:360px; margin:0 16px;">
-    <div style="font-size:14px; font-weight:700; color:#e2e8f0; margin-bottom:6px;">🔒 Unlock Visitors</div>
-    <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">Your visitor stats sit behind the same passphrase as the Dropbox.</div>
+    <div style="font-size:14px; font-weight:700; color:#e2e8f0; margin-bottom:6px;">🔒 Unlock Countdowns</div>
+    <div style="font-size:12px; color:var(--muted); margin-bottom:18px;">Adding and editing countdowns sits behind the same passphrase as the Dropbox.</div>
     <input id="passphrase-input" type="password" placeholder="Passphrase..."
       style="width:100%; background:var(--view-bg); border:1px solid #2a3048; border-radius:8px; padding:12px 14px; font-size:15px; color:#e2e8f0; outline:none; box-sizing:border-box; -webkit-appearance:none;"
       autocomplete="current-password" autocorrect="off" autocapitalize="none" spellcheck="false" />
@@ -209,9 +197,9 @@
 <div class="statusbar" id="statusbar"></div>
 
 <script src="app-shared.js?v=note-page-20260804"></script>
-<script src="visitors.js?v=visitors-20260804"></script>
+<script src="countdowns-page.js?v=countdowns-20260809"></script>
 <script>
-switchView('visitors', document.querySelector('.nav-item.active'));
+switchView('countdowns', document.querySelector('.nav-item.active'));
 </script>
 
 </body>
