@@ -165,10 +165,12 @@ window.AOCountdowns = (() => {
       { label: 'Calendar', value: counts.events || 0 },
       { label: 'Overdue', value: counts.overdue || 0, alert: (counts.overdue || 0) > 0 },
     ];
+    // .ops-metric is the office's summary tile; the counts here mean the same
+    // kind of thing, so they wear the same tile rather than a near-copy.
     target.innerHTML = stats.map(stat => `
-      <div class="cd-stat${stat.alert ? ' alert' : ''}">
-        <div class="cd-stat-value">${stat.value}</div>
-        <div class="cd-stat-label">${escHtml(stat.label)}</div>
+      <div class="ops-metric${stat.alert ? ' is-alert' : ''}">
+        <span class="ops-metric-label">${escHtml(stat.label)}</span>
+        <span class="ops-metric-value">${stat.value}</span>
       </div>
     `).join('');
   }
@@ -180,24 +182,24 @@ window.AOCountdowns = (() => {
 
     if (state.error) {
       target.className = 'cd-banner warn';
-      target.style.display = 'block';
+      target.hidden = false;
       target.textContent = state.error;
       return;
     }
     if (calendar.state === 'error') {
       target.className = 'cd-banner warn';
-      target.style.display = 'block';
+      target.hidden = false;
       target.textContent = 'Google Calendar could not be read, so only your own countdowns are shown. The cards below are still live.';
       return;
     }
     if (calendar.state === 'disconnected') {
       target.className = 'cd-banner';
-      target.style.display = 'block';
+      target.hidden = false;
       target.innerHTML = 'Google Calendar is not connected, so this page is showing countdowns only. '
-        + 'Connect it in <a href="/settings.html" style="color:var(--accent);">Settings</a> to see upcoming events here too.';
+        + 'Connect it in <a href="/settings.html">Settings</a> to see upcoming events here too.';
       return;
     }
-    target.style.display = 'none';
+    target.hidden = true;
   }
 
   function renderFilters() {
@@ -244,11 +246,11 @@ window.AOCountdowns = (() => {
     // Calendar events are owned by the calendar. Editing one here would mean
     // two places to change the same thing, so an event card links out instead.
     const actions = item.kind === 'event'
-      ? '<div class="cd-card-actions"><a class="cd-btn ghost" style="text-align:center; text-decoration:none;" href="/calendar-v3.html">Open calendar</a></div>'
+      ? '<div class="cd-card-actions"><a class="ao-btn cd-card-link" href="/calendar-v3.html">Open calendar</a></div>'
       : `<div class="cd-card-actions">
-           <button class="cd-btn" onclick="AOCountdowns.openForm('${escHtml(item.id)}')">Edit</button>
-           <button class="cd-btn ghost" onclick="AOCountdowns.togglePinned('${escHtml(item.id)}')">${item.pinned ? 'Unpin' : 'Pin'}</button>
-           <button class="cd-btn danger" onclick="AOCountdowns.remove('${escHtml(item.id)}')">Delete</button>
+           <button class="ao-btn ao-btn--sm" onclick="AOCountdowns.openForm('${escHtml(item.id)}')">Edit</button>
+           <button class="ao-btn ao-btn--sm" onclick="AOCountdowns.togglePinned('${escHtml(item.id)}')">${item.pinned ? 'Unpin' : 'Pin'}</button>
+           <button class="ao-btn ao-btn--sm ao-btn--danger" onclick="AOCountdowns.remove('${escHtml(item.id)}')">Delete</button>
          </div>`;
 
     return `
@@ -364,7 +366,7 @@ window.AOCountdowns = (() => {
     const node = el('cd-form-error');
     if (!node) return;
     node.textContent = message || '';
-    node.style.display = message ? 'block' : 'none';
+    node.hidden = !message;
   }
 
   function openForm(id) {

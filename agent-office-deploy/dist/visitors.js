@@ -219,8 +219,8 @@ window.AOVisitors = (() => {
   function render() {
     const lockedBox = el('visitors-locked');
     const body = el('visitors-body');
-    if (lockedBox) lockedBox.style.display = state.locked ? '' : 'none';
-    if (body) body.style.display = state.locked ? 'none' : '';
+    if (lockedBox) lockedBox.hidden = !state.locked;
+    if (body) body.hidden = state.locked;
 
     renderRangeFilter();
     renderSetup();
@@ -237,7 +237,7 @@ window.AOVisitors = (() => {
     renderFooterNote();
 
     const truncated = el('visitors-truncated');
-    if (truncated) truncated.style.display = state.data.truncated ? '' : 'none';
+    if (truncated) truncated.hidden = !state.data.truncated;
   }
 
   // ─── Data ──────────────────────────────────────────────────────────────

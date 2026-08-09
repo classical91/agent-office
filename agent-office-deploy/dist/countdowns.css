@@ -3,57 +3,15 @@
    pill buttons) so the two planning pages read as one app, but the unit here is
    a card with time left on it rather than a day on a grid. */
 
-.cd-view {
-  width: 100%;
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 28px 24px 80px;
-  color: var(--text);
-}
+.cd-view { --ao-page-max: 1240px; color: var(--text); }
 
-.cd-hero {
-  border: 1px solid var(--border);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 10%, transparent), rgba(19, 22, 29, 0.76));
-  border-radius: 18px;
-  padding: 20px 22px;
-  margin-bottom: 16px;
-}
-.cd-kicker {
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
-  font-weight: 800;
-}
-.cd-hero h2 { margin: 6px 0 4px; font-size: 22px; }
-.cd-sub { color: var(--muted); font-size: 12.5px; max-width: 660px; line-height: 1.5; }
-
-.cd-summary { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
-.cd-stat {
-  border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.22);
-  border-radius: 12px;
-  padding: 9px 14px;
-  min-width: 104px;
-}
-.cd-stat-value { font-size: 19px; font-weight: 800; line-height: 1.1; }
-.cd-stat.alert .cd-stat-value { color: #f87171; }
-.cd-stat-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  margin-top: 3px;
-}
-
-.cd-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
-}
+/* The hero, its stat tiles and the pill buttons this page arrived with were
+   near-copies of .ao-page-head, .ops-metric and .ao-btn. They are gone; the
+   page composes the shared components instead, and what is left here is what
+   is genuinely particular to Countdowns. */
+.cd-toolbar { margin-bottom: var(--space-3); }
 .cd-toolbar .spacer { flex: 1 1 auto; }
+.cd-select { width: auto; min-width: 160px; }
 
 .cd-input,
 .cd-select {
@@ -70,25 +28,6 @@
 .cd-select:focus { border-color: color-mix(in srgb, var(--accent) 70%, transparent); }
 .cd-input { width: 100%; box-sizing: border-box; }
 
-.cd-btn {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: linear-gradient(180deg, #202638, #141824);
-  color: var(--text);
-  padding: 9px 13px;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: border-color 0.12s ease, transform 0.12s ease;
-}
-.cd-btn:hover { border-color: color-mix(in srgb, var(--accent) 70%, transparent); }
-.cd-btn:active { transform: translateY(1px); }
-.cd-btn.primary { background: var(--accent); border-color: transparent; color: #fff; }
-.cd-btn.ghost { background: transparent; color: var(--muted); }
-.cd-btn.danger:hover { border-color: rgba(239, 68, 68, 0.85); }
-.cd-btn[disabled] { opacity: 0.5; cursor: default; }
 
 /* ─── Sections ────────────────────────────────────────────────────────── */
 
@@ -196,7 +135,11 @@
 .cd-card-notes { font-size: 11.5px; color: var(--muted); margin-top: 7px; font-style: italic; }
 
 .cd-card-actions { display: flex; gap: 6px; margin-top: 11px; flex-wrap: wrap; }
-.cd-card-actions .cd-btn { flex: 1; min-width: 64px; padding: 7px 8px; font-size: 12px; }
+/* The calendar link is an <a> wearing a button; it needs the centring a
+   <button> gets for free. */
+.cd-card-link { text-align: center; text-decoration: none; }
+/* The action row splits its width evenly whatever is in it. */
+.cd-card-actions .ao-btn { flex: 1; min-width: 64px; }
 
 .cd-empty {
   color: var(--muted);
@@ -275,8 +218,8 @@
   color: var(--cd-color, var(--accent));
 }
 .cd-modal-actions { display: flex; gap: 8px; margin-top: 16px; }
-.cd-modal-actions .cd-btn { flex: 1; }
-.cd-modal-error { font-size: 12px; color: #f87171; margin-top: 10px; display: none; }
+.cd-modal-actions .ao-btn { flex: 1; }
+
 
 @media (max-width: 700px) {
   .cd-view { padding: 16px 10px 70px; }

@@ -7,8 +7,8 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>Visitors - Agent Office</title>
-<link rel="stylesheet" href="shared.css?v=template-v2-20260809"/>
-<link rel="stylesheet" href="visitors.css?v=visitors-20260804"/>
+<link rel="stylesheet" href="shared.css?v=template-v2-followup-20260809"/>
+<link rel="stylesheet" href="visitors.css?v=template-v2-followup-20260809"/>
 <!-- Restores the saved theme and sidebar state before first paint, so no page
      flashes the default accent or a full-width sidebar on its way in.
      ACCENTS mirrors THEMES in app-shared.js. -->
@@ -131,11 +131,11 @@
         <button class="visitors-btn" id="visitors-refresh" onclick="AOVisitors.refresh()">Refresh</button>
       </div>
 
-      <div id="visitors-locked" style="display:none;">
+      <div id="visitors-locked" hidden>
         <div class="visitors-panel">
           <div class="visitors-empty">
             Visitors is locked.
-            <div style="margin-top:12px;">
+            <div class="visitors-gap-top">
               <button class="visitors-btn primary" onclick="AOVisitors.unlock()">Unlock</button>
             </div>
           </div>
@@ -174,18 +174,18 @@
           <!-- PUTTING IT ON A SITE -->
           <div class="visitors-panel wide visitors-setup">
             <div class="visitors-panel-title">Track another site</div>
-            <div class="visitors-note" style="margin-top:0; margin-bottom:10px;">
-              Paste this before <code style="display:inline; padding:1px 5px;">&lt;/body&gt;</code> on any site you run.
+            <div class="visitors-note visitors-note--lead">
+              Paste this before <code class="visitors-inline-code">&lt;/body&gt;</code> on any site you run.
               It reports back here, and the site shows up in the filter above on its first visitor.
             </div>
             <code id="visitors-snippet"></code>
-            <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; align-items:center;">
+            <div class="ao-toolbar visitors-gap-top">
               <button class="visitors-btn" id="visitors-copy" onclick="AOVisitors.copySnippet()">Copy</button>
               <div class="spacer"></div>
-              <span class="visitors-note" id="visitors-retention" style="margin:0;"></span>
+              <span class="visitors-note visitors-note--flush" id="visitors-retention"></span>
               <button class="visitors-btn ghost danger" onclick="AOVisitors.clearAll()">Delete all visits</button>
             </div>
-            <div class="visitors-note" id="visitors-truncated" style="display:none;">
+            <div class="visitors-note" id="visitors-truncated" hidden>
               This range has more page views than one screen can total up — the numbers above cover the most recent 20,000.
             </div>
           </div>

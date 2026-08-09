@@ -7,8 +7,8 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>Streaks - Agent Office</title>
-<link rel="stylesheet" href="shared.css?v=template-v2-20260809"/>
-<link rel="stylesheet" href="streaks.css?v=streaks-20260803"/>
+<link rel="stylesheet" href="shared.css?v=template-v2-followup-20260809"/>
+<link rel="stylesheet" href="streaks.css?v=template-v2-followup-20260809"/>
 <!-- Restores the saved theme and sidebar state before first paint, so no page
      flashes the default accent or a full-width sidebar on its way in.
      ACCENTS mirrors THEMES in app-shared.js. -->
@@ -137,12 +137,12 @@
 
         <!-- STREAK LIST + ADD FORM -->
         <div class="streaks-panel">
-          <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:12px;">
-            <div class="streaks-panel-title" style="margin:0;">My streaks</div>
+          <div class="streaks-panel-head">
+            <div class="streaks-panel-title streaks-panel-title--flush">My streaks</div>
             <button class="streaks-btn primary" onclick="AOStreaks.openForm('')">+ New</button>
           </div>
 
-          <div id="streak-form" style="display:none; border:1px solid var(--border); border-radius:12px; padding:13px; margin-bottom:14px; background:rgba(0,0,0,0.25);">
+          <div id="streak-form" class="streak-form" hidden>
             <div class="streaks-panel-title" id="streak-form-title">New streak</div>
 
             <div class="streak-form-field">
@@ -155,14 +155,14 @@
               <div class="streak-type-picker" id="streak-type-picker"></div>
             </div>
 
-            <div class="streak-form-field" id="streak-form-custom-field" style="display:none;">
+            <div class="streak-form-field" id="streak-form-custom-field" hidden>
               <label class="streak-form-label" for="streak-form-custom">Custom type</label>
               <input type="text" class="streaks-input" id="streak-form-custom" placeholder="e.g. rehab" maxlength="32" />
             </div>
 
             <div class="streak-form-field">
               <label class="streak-form-label" for="streak-form-color">Colour on the calendar</label>
-              <input type="color" id="streak-form-color" value="#6366f1" style="width:56px; height:34px; background:transparent; border:1px solid var(--border); border-radius:8px; padding:2px; cursor:pointer;" />
+              <input type="color" id="streak-form-color" value="#6366f1" class="streak-color-input" />
             </div>
 
             <div class="streak-form-field">

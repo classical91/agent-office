@@ -14,11 +14,11 @@
   const el = document.getElementById('svg-roster');
   if (el) {
     el.innerHTML = roster.map(a => `
-      <div style="display:flex; align-items:center; gap:8px; padding:4px 0;">
-        <div style="width:9px; height:9px; border-radius:50%; background:${a.color}; flex-shrink:0;"></div>
+      <div class="roster-row">
+        <div class="roster-dot" style="--entity-color:${a.color};"></div>
         <div>
-          <div style="font-weight:500; color:#f1f5f9; font-size:12px; line-height:1.2;">${a.name}</div>
-          <div style="font-size:11px; color:#64748b; line-height:1.2;">${a.role}</div>
+          <div class="roster-name">${a.name}</div>
+          <div class="roster-role">${a.role}</div>
         </div>
       </div>`).join('');
   }
@@ -880,23 +880,21 @@ function resetRoomStyle() {
   renderBuildPanel();
 }
 
+// The Build panel's controls. Only a preset's own colour is inline now — the
+// swatch's size, its selected ring and the row around it live in shared.css.
 function buildSwatchRow(label, presets, part, current) {
   const swatches = presets.map(p => {
     const active = p.base.toLowerCase() === current.toLowerCase();
-    return `<button type="button" title="${p.name}" aria-label="${p.name}" aria-pressed="${active}"
-      onclick="setRoomStyle('${part}', '${p.base}')"
-      style="width:26px; height:26px; border-radius:7px; cursor:pointer; background:${p.base};
-             border:2px solid ${active ? 'var(--accent, #6366f1)' : 'rgba(255,255,255,0.16)'};
-             box-shadow:${active ? '0 0 0 2px color-mix(in srgb, var(--accent, #6366f1) 35%, transparent)' : 'none'};"></button>`;
+    return `<button type="button" class="room-swatch${active ? ' is-active' : ''}" title="${p.name}" aria-label="${p.name}" aria-pressed="${active}"
+      onclick="setRoomStyle('${part}', '${p.base}')" style="--swatch:${p.base};"></button>`;
   }).join('');
 
-  return `<div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-    <span style="font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted); width:44px; flex-shrink:0;">${label}</span>
-    <div style="display:flex; gap:6px; flex-wrap:wrap;">${swatches}</div>
-    <label style="display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); cursor:pointer;">
+  return `<div class="room-build-row">
+    <span class="room-build-label">${label}</span>
+    <div class="room-swatches">${swatches}</div>
+    <label class="room-build-custom">
       Custom
-      <input type="color" value="${current}" oninput="setRoomStyle('${part}', this.value)"
-        style="width:28px; height:26px; padding:0; border:1px solid var(--border); border-radius:7px; background:none; cursor:pointer;">
+      <input type="color" class="room-color-input" value="${current}" oninput="setRoomStyle('${part}', this.value)">
     </label>
   </div>`;
 }
@@ -904,15 +902,13 @@ function buildSwatchRow(label, presets, part, current) {
 function buildStepper(label, part, value) {
   const min = roomMinSize[part] || 1;
   const max = ROOM_MAX[part];
-  const btn = (delta, glyph, disabled) => `<button type="button" aria-label="${glyph === '−' ? 'Decrease' : 'Increase'} ${label}"
-    ${disabled ? 'disabled' : ''} onclick="setRoomSize('${part}', ${value + delta})"
-    style="width:24px; height:26px; border-radius:6px; border:1px solid var(--border); background:var(--border);
-           color:color-mix(in srgb, var(--text) 78%, var(--muted)); font-size:13px; line-height:1;
-           cursor:${disabled ? 'default' : 'pointer'}; opacity:${disabled ? 0.4 : 1};">${glyph}</button>`;
-  return `<div style="display:flex; align-items:center; gap:6px;">
-    <span style="font-size:11px; color:var(--muted);">${label}</span>
+  // :disabled carries the dimmed look, so the disabled state is stated once.
+  const btn = (delta, glyph, disabled) => `<button type="button" class="room-step" aria-label="${glyph === '−' ? 'Decrease' : 'Increase'} ${label}"
+    ${disabled ? 'disabled' : ''} onclick="setRoomSize('${part}', ${value + delta})">${glyph}</button>`;
+  return `<div class="room-stepper">
+    <span class="room-build-note">${label}</span>
     ${btn(-1, '−', value <= min)}
-    <span style="min-width:20px; text-align:center; font-size:12px; font-variant-numeric:tabular-nums; color:#f1f5f9;">${value}</span>
+    <span class="room-step-value">${value}</span>
     ${btn(1, '+', value >= max)}
   </div>`;
 }
@@ -921,24 +917,23 @@ function renderBuildPanel() {
   const panel = document.getElementById('room-build-panel');
   if (!panel || panel.hidden) return;
   const sizeRow = window.OfficeRoom
-    ? `<div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:10px;">
-        <span style="font-size:11px; letter-spacing:0.06em; text-transform:uppercase; color:var(--muted); width:44px; flex-shrink:0;">Size</span>
+    ? `<div class="room-build-row room-build-row--size">
+        <span class="room-build-label">Size</span>
         ${buildStepper('Width', 'gridW', roomStyle.gridW)}
         ${buildStepper('Depth', 'gridH', roomStyle.gridH)}
-        <span style="font-size:11px; color:var(--muted);">min ${roomMinSize.gridW} × ${roomMinSize.gridH}, max ${ROOM_MAX.gridW} × ${ROOM_MAX.gridH}</span>
+        <span class="room-build-note">min ${roomMinSize.gridW} × ${roomMinSize.gridH}, max ${ROOM_MAX.gridW} × ${ROOM_MAX.gridH}</span>
       </div>`
     : '';
   const error = roomSizeError
-    ? `<div style="font-size:11px; color:#fca5a5; margin-bottom:8px;">${escHTML(roomSizeError)}</div>`
+    ? `<div class="room-build-error">${escHTML(roomSizeError)}</div>`
     : '';
   panel.innerHTML =
     buildSwatchRow('Floor', FLOOR_PRESETS, 'floor', roomStyle.floor) +
     buildSwatchRow('Walls', WALL_PRESETS, 'wall', roomStyle.wall) +
     sizeRow + error +
-    `<div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:2px;">
-      <span style="font-size:11px; color:var(--muted);">Saved to this browser.</span>
-      <button type="button" onclick="resetRoomStyle()"
-        style="background:var(--border); border:1px solid var(--border); border-radius:8px; padding:0 12px; height:28px; font-size:12px; color:color-mix(in srgb, var(--text) 78%, var(--muted)); cursor:pointer;">Reset</button>
+    `<div class="room-build-foot">
+      <span class="room-build-note">Saved to this browser.</span>
+      <button type="button" class="ao-btn ao-btn--sm" onclick="resetRoomStyle()">Reset</button>
     </div>`;
 }
 
@@ -1475,20 +1470,23 @@ window.SETTINGS = (() => {
     if (!el) return;
     const rows = Array.isArray(agents) ? agents : [];
     if (!rows.length) {
-      el.innerHTML = `<div style="grid-column:1/-1; font-size:12px; color:var(--muted); padding:14px 2px;">${escapeHtml(note || 'No agents reported. Check the gateway below.')}</div>`;
+      el.innerHTML = `<div class="gw-agents-empty">${escapeHtml(note || 'No agents reported. Check the gateway below.')}</div>`;
       return;
     }
     el.innerHTML = rows.map(agent => {
       const status = agent.status || 'unknown';
-      const color = status === 'running' || status === 'active' || status === 'reachable' ? '#22c55e' : status === 'failed' || status === 'offline' ? '#ef4444' : '#64748b';
+      // The gateway's own words for a state, mapped onto the app's four.
+      const dot = status === 'running' || status === 'active' || status === 'reachable' ? 'active'
+        : status === 'failed' || status === 'offline' ? 'blocked'
+          : 'offline';
       const sourceLine = `${agent.source || 'OpenClaw gateway'}${agent.model ? ' / ' + agent.model : ''}`;
-      return `<div style="background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px 14px; min-height:82px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:7px;">
-          <div style="font-size:13px; color:var(--text); font-weight:600;">${escapeHtml(agent.name || agent.id)}</div>
-          <div title="${escapeHtml(status)}" style="width:9px; height:9px; border-radius:50%; background:${color}; flex:0 0 auto;"></div>
+      return `<div class="ao-well gw-agent">
+        <div class="gw-agent-head">
+          <div class="gw-agent-name">${escapeHtml(agent.name || agent.id)}</div>
+          <div class="ao-dot ao-dot--${dot}" title="${escapeHtml(status)}"></div>
         </div>
-        <div style="font-size:11px; color:var(--muted); line-height:1.5;">${escapeHtml(agent.role || 'OpenClaw Agent')}</div>
-        <div style="font-size:10px; color:color-mix(in srgb, var(--muted) 75%, var(--bg)); margin-top:7px;">${escapeHtml(sourceLine)}</div>
+        <div class="gw-agent-role">${escapeHtml(agent.role || 'OpenClaw Agent')}</div>
+        <div class="gw-agent-source">${escapeHtml(sourceLine)}</div>
       </div>`;
     }).join('');
   }
