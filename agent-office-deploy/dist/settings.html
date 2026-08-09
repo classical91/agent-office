@@ -51,7 +51,7 @@
        the template, not this copy: tests/shell-consistency.test.js fails when
        a page's copy drifts from it. Which row is highlighted is worked out
        from the URL by markActiveNav() in app-shared.js, so no page marks its
-       own — that is what let the copies disagree in the first place. -->
+       own â€” that is what let the copies disagree in the first place. -->
   <nav class="nav ao-scroll" aria-label="Primary">
 
     <div class="nav-section">
@@ -113,7 +113,7 @@
 
     <div class="ao-page-head">
       <div class="ao-page-heading">
-        <div class="ao-eyebrow">⚙️ SETTINGS</div>
+        <div class="ao-eyebrow">âš™ï¸ SETTINGS</div>
         <div class="ao-page-sub">Configure Agent Office preferences and manage local data.</div>
       </div>
     </div>
@@ -168,19 +168,19 @@
       <div class="ao-stack">
         <div class="ao-well">
           <div class="ao-well-label">Status</div>
-          <div id="settings-shortcuts-state" class="ao-well-value">Checking…</div>
+          <div id="settings-shortcuts-state" class="ao-well-value">Checkingâ€¦</div>
         </div>
         <div class="ao-well">
           <div class="ao-well-label">Send (POST)</div>
-          <div id="settings-shortcuts-send" class="ao-code">—</div>
+          <div id="settings-shortcuts-send" class="ao-code">â€”</div>
         </div>
         <div class="ao-well">
           <div class="ao-well-label">Pull (GET)</div>
-          <div id="settings-shortcuts-pull" class="ao-code">—</div>
+          <div id="settings-shortcuts-pull" class="ao-code">â€”</div>
         </div>
         <div class="ao-well">
           <div class="ao-well-label">Auth Header</div>
-          <div id="settings-shortcuts-header" class="ao-code">—</div>
+          <div id="settings-shortcuts-header" class="ao-code">â€”</div>
           <div class="ao-well-note">Value is your <code>SHORTCUTS_TOKEN</code>. Step-by-step Shortcut recipes are in the README.</div>
         </div>
       </div>
@@ -189,25 +189,25 @@
     <!-- Website visitors -->
     <div id="settings-visitors" class="ao-card settings-card">
       <div class="ao-card-title">Website Visitors</div>
-      <div class="ao-card-desc">Who is on your sites, from the tracker script below. A visitor is a random id their own browser keeps — nothing is looked up against any outside service. Full detail is on the <a href="/visitors.html" style="color:var(--accent); text-decoration:none;">Visitors page</a>.</div>
+      <div class="ao-card-desc">Who is on your sites, from the tracker script below. A visitor is a random id their own browser keeps â€” nothing is looked up against any outside service. Full detail is on the <a href="/visitors.html" style="color:var(--accent); text-decoration:none;">Visitors page</a>.</div>
 
       <div class="ao-stack">
         <div class="ao-well">
           <div class="ao-well-label">Status</div>
-          <div id="settings-visitors-state" class="ao-well-value">Checking…</div>
+          <div id="settings-visitors-state" class="ao-well-value">Checkingâ€¦</div>
           <div id="settings-visitors-snapshot" class="ao-well-note"></div>
         </div>
 
         <div class="ao-well">
           <div class="ao-well-label">Tracker Snippet</div>
-          <div id="settings-visitors-snippet" class="ao-code">—</div>
+          <div id="settings-visitors-snippet" class="ao-code">â€”</div>
           <div class="ao-well-note">Paste before <code>&lt;/body&gt;</code> on any site you run. It shows up here on its first visitor.</div>
           <button onclick="SETTINGS.copyTrackerSnippet(this)" class="ao-btn ao-btn--sm settings-btn-spaced">Copy snippet</button>
         </div>
 
         <div class="ao-well">
           <div class="ao-well-label">Tracked Sites</div>
-          <div id="settings-visitors-sites" class="ao-well-value">—</div>
+          <div id="settings-visitors-sites" class="ao-well-value">â€”</div>
         </div>
 
         <div class="ao-well ao-well--row">
@@ -260,7 +260,7 @@
     <div class="ao-card">
       <div class="ao-card-title">About</div>
       <div class="ao-card-desc settings-about">
-        <div>Agent Office — AI agent management dashboard</div>
+        <div>Agent Office â€” AI agent management dashboard</div>
         <div class="settings-about-note">All data is local. No telemetry. No account required.</div>
       </div>
     </div>
@@ -281,7 +281,7 @@
 <!-- BOTTOM STATUS BAR -->
 <div class="statusbar" id="statusbar"></div>
 
-<script src="app-shared.js?v=note-page-20260804"></script>
+<script src="app-shared.js?v=agent-office-restore-20260809"></script>
 <script>
 switchView('settings', document.querySelector('.nav-item.active'));
 </script>

@@ -54,7 +54,7 @@
        the template, not this copy: tests/shell-consistency.test.js fails when
        a page's copy drifts from it. Which row is highlighted is worked out
        from the URL by markActiveNav() in app-shared.js, so no page marks its
-       own — that is what let the copies disagree in the first place. -->
+       own â€” that is what let the copies disagree in the first place. -->
   <nav class="nav ao-scroll" aria-label="Primary">
 
     <div class="nav-section">
@@ -114,15 +114,15 @@
   <div class="view view--scroll ao-scroll" id="view-dev">
     <div class="ao-page dev-page">
       <div class="ao-page-heading">
-        <div class="ao-eyebrow">⌘ DEV LINKS</div>
+        <div class="ao-eyebrow">âŒ˜ DEV LINKS</div>
         <h1 class="ao-page-title dev-page-title">External control room</h1>
         <p class="ao-page-sub dev-page-sub">Quick exits for model routing, automation, deploys, repos, observability, and docs that support Agent Office work.</p>
       </div>
 
       <div class="dev-search">
         <div class="dev-search-field">
-          <span class="dev-search-icon" aria-hidden="true">⌕</span>
-          <input id="dev-search" type="search" placeholder="Search links…" title="Press / to focus" autocomplete="off" spellcheck="false" aria-label="Search dev links by name, description, URL, or section" aria-describedby="dev-search-count"/>
+          <span class="dev-search-icon" aria-hidden="true">âŒ•</span>
+          <input id="dev-search" type="search" placeholder="Search linksâ€¦" title="Press / to focus" autocomplete="off" spellcheck="false" aria-label="Search dev links by name, description, URL, or section" aria-describedby="dev-search-count"/>
         </div>
         <div class="dev-search-count" id="dev-search-count" role="status" aria-live="polite"></div>
       </div>
@@ -411,7 +411,7 @@
 <!-- BOTTOM STATUS BAR -->
 <div class="statusbar" id="statusbar"></div>
 
-<script src="app-shared.js?v=note-page-20260804"></script>
+<script src="app-shared.js?v=agent-office-restore-20260809"></script>
 <script>
 switchView('dev', document.querySelector('.nav-item.active'));
 
@@ -549,7 +549,7 @@ switchView('dev', document.querySelector('.nav-item.active'));
     countEl.textContent = terms.length
       ? shown + ' of ' + cards.length + ' links'
       : cards.length + ' links';
-    emptyTermEl.textContent = '“' + input.value.trim() + '”';
+    emptyTermEl.textContent = 'â€œ' + input.value.trim() + 'â€';
     emptyEl.hidden = !(terms.length && shown === 0);
   }
 

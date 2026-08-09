@@ -52,7 +52,7 @@
        the template, not this copy: tests/shell-consistency.test.js fails when
        a page's copy drifts from it. Which row is highlighted is worked out
        from the URL by markActiveNav() in app-shared.js, so no page marks its
-       own — that is what let the copies disagree in the first place. -->
+       own â€” that is what let the copies disagree in the first place. -->
   <nav class="nav ao-scroll" aria-label="Primary">
 
     <div class="nav-section">
@@ -116,7 +116,7 @@
         <div class="streaks-kicker">Streak Calendar</div>
         <h2>Streaks</h2>
         <div class="streaks-sub">
-          Every day you keep something up, marked on the month. This is not the Calendar —
+          Every day you keep something up, marked on the month. This is not the Calendar â€”
           nothing here is scheduled and nothing has a time; a day is either kept or it is not.
         </div>
         <div class="streaks-summary" id="streaks-summary"></div>
@@ -127,9 +127,9 @@
         <select class="streaks-select" id="streak-filter-type" onchange="AOStreaks.setFilter('type', this.value)" aria-label="Filter by type"></select>
         <button class="streaks-btn ghost" id="streak-show-archived" onclick="AOStreaks.toggleShowArchived()">Show archived</button>
         <div class="spacer"></div>
-        <button class="streaks-btn" onclick="AOStreaks.changeMonth(-1)" aria-label="Previous month">‹</button>
+        <button class="streaks-btn" onclick="AOStreaks.changeMonth(-1)" aria-label="Previous month">â€¹</button>
         <div class="streaks-month-label" id="streak-month-label"></div>
-        <button class="streaks-btn" onclick="AOStreaks.changeMonth(1)" aria-label="Next month">›</button>
+        <button class="streaks-btn" onclick="AOStreaks.changeMonth(1)" aria-label="Next month">â€º</button>
         <button class="streaks-btn" onclick="AOStreaks.goToday()">Today</button>
       </div>
 
@@ -223,7 +223,7 @@
 <!-- PASSPHRASE MODAL -->
 <div id="passphrase-modal" class="ao-modal" hidden>
   <div class="ao-modal-sheet" role="dialog" aria-modal="true" aria-labelledby="passphrase-title">
-    <div class="ao-modal-title" id="passphrase-title">🔒 Unlock Streaks</div>
+    <div class="ao-modal-title" id="passphrase-title">ðŸ”’ Unlock Streaks</div>
     <div class="ao-modal-desc">Your streaks sit behind the same passphrase as the Dropbox.</div>
     <input id="passphrase-input" class="ao-input" type="password" placeholder="Passphrase..."
       autocomplete="current-password" autocorrect="off" autocapitalize="none" spellcheck="false"/>
@@ -238,7 +238,7 @@
 <!-- BOTTOM STATUS BAR -->
 <div class="statusbar" id="statusbar"></div>
 
-<script src="app-shared.js?v=note-page-20260804"></script>
+<script src="app-shared.js?v=agent-office-restore-20260809"></script>
 <script src="streaks.js?v=streaks-20260803"></script>
 <script>
 switchView('streaks', document.querySelector('.nav-item.active'));
