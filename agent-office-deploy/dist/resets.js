@@ -12,6 +12,7 @@
 
 window.AOResets = (() => {
   const STORAGE_KEY = 'agent-office-per-card-countdowns-v2';
+  const IPHONE_UPDATE_MIGRATION_KEY = 'agent-office-countdown-iphone-updates-v1';
   const SORT_KEY = 'ao-resets-sort';
   const FILTER_KEY = 'ao-resets-filter';
   const TICK_MS = 1000;
@@ -118,6 +119,13 @@ window.AOResets = (() => {
   function daysFromNow(days, hour) {
     const date = new Date();
     date.setDate(date.getDate() + days);
+    return atHour(date, hour == null ? 9 : hour, 0).toISOString();
+  }
+
+  function nextWeekdayAt(weekday, hour) {
+    const date = new Date();
+    const daysAhead = (weekday - date.getDay() + 7) % 7 || 7;
+    date.setDate(date.getDate() + daysAhead);
     return atHour(date, hour == null ? 9 : hour, 0).toISOString();
   }
 
@@ -374,6 +382,24 @@ window.AOResets = (() => {
     // that stays deleted.
     const source = stored || seedCards().map(seed => ({ ...seed, createdAt: Date.now(), status: 'active' }));
     const cards = source.map(normalizeCard).filter(Boolean);
+    try {
+      if (!localStorage.getItem(IPHONE_UPDATE_MIGRATION_KEY)) {
+        if (!cards.some(card => card.id === 'routine-iphone-app-updates-7d')) {
+          cards.unshift(normalizeCard({
+            id: 'routine-iphone-app-updates-7d',
+            title: 'Check iPhone App Updates',
+            resetAt: nextWeekdayAt(0, 19),
+            repeatDays: 7,
+            message: 'Check the App Store for available updates every Sunday.',
+            createdAt: Date.now(),
+            status: 'active',
+          }, 0));
+        }
+        localStorage.setItem(IPHONE_UPDATE_MIGRATION_KEY, '1');
+      }
+    } catch (err) {
+      /* Storage may be blocked; the rest of the countdown page still works. */
+    }
     let happyHour = cards.find(card => card.id === HAPPY_HOUR_ID);
     if (!happyHour) {
       happyHour = normalizeCard({ id: HAPPY_HOUR_ID, title: 'Happy Hour', resetAt: new Date().toISOString() }, cards.length);
