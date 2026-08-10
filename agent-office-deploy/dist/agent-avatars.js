@@ -103,6 +103,11 @@
       defaults: { face: 'stoic', skin: '#dca276', hair: 'swept', hairColor: '#151518', outfit: 'utility', outfitColor: '#0f766e', accessory: 'headset' },
     },
     {
+      id: 'traderclaw', name: 'TraderClaw', shortRole: 'Markets', role: 'Trading and market specialist', color: '#14b8a6',
+      station: { gx: 0, gy: 3 },
+      defaults: { face: 'focused', skin: '#8b5036', hair: 'spiked', hairColor: '#151518', outfit: 'utility', outfitColor: '#115e59', accessory: 'earpiece' },
+    },
+    {
       id: 'studioclaw', name: 'StudioClaw', shortRole: 'Studio director', role: 'Studio director', color: '#8b5cf6',
       station: { gx: 7, gy: 1 },
       defaults: { face: 'friendly', skin: '#f2c49b', hair: 'swept', hairColor: '#151518', outfit: 'director', outfitColor: '#7c3aed', accessory: 'chain' },
@@ -123,7 +128,7 @@
       defaults: { face: 'friendly', skin: '#ba7651', hair: 'swept', hairColor: '#b96c32', outfit: 'overshirt', outfitColor: '#343948', accessory: 'earpiece' },
     },
     {
-      id: 'newsreporter', name: 'ShareBot67', shortRole: 'News & trends', role: 'News and trend specialist', color: '#f97316',
+      id: 'newsreporter', name: 'News Reporter', shortRole: 'News & trends', role: 'News and trend specialist', color: '#f97316',
       station: { gx: 11, gy: 5 },
       defaults: { face: 'stoic', skin: '#8b5036', hair: 'bald', hairColor: '#151518', outfit: 'director', outfitColor: '#d9d8d2', accessory: 'glasses' },
     },
