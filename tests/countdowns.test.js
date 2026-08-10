@@ -59,6 +59,17 @@ test('a weekly routine rolls forward to the next occurrence still ahead', () => 
   assert.equal(countdowns.decorateCountdown(routine, WEDNESDAY).bucket, 'today');
 });
 
+test('a biweekly routine rolls forward in 14-day steps', () => {
+  const routine = make({
+    title: 'Home cleaning',
+    repeat: 'biweekly',
+    category: 'routine',
+    target_at: at(new Date(2026, 6, 29), 16),
+  });
+  const occurrence = countdowns.nextOccurrence(routine, new Date(2026, 7, 13, 9, 0, 0));
+  assert.equal(occurrence.toISOString(), at(new Date(2026, 7, 26), 16));
+});
+
 test('monthly repeats clamp to the last day of a short month', () => {
   const monthly = make({ repeat: 'monthly', target_at: at(new Date(2026, 0, 31), 9) });
   const occurrence = countdowns.nextOccurrence(monthly, new Date(2026, 1, 10, 9, 0, 0));

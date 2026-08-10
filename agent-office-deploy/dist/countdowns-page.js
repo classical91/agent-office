@@ -24,6 +24,7 @@ window.AOCountdowns = (() => {
     daily: 'Daily',
     weekday: 'Weekdays',
     weekly: 'Weekly',
+    biweekly: 'Every 2 weeks',
     monthly: 'Monthly',
   };
 
