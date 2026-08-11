@@ -2894,11 +2894,63 @@
     overflow-wrap: anywhere;
   }
   .drop-folder-meta { font-size: 11.5px; color: var(--muted); }
+
+  /* The same folders as rows. Counts and dates line up in columns you can read
+     straight down, which a wall of tiles cannot do. */
+  .dropbox-folders-wrap.is-list {
+    display: block;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .drop-folder-list-head,
+  .drop-folder-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 72px 110px;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 11px 16px;
+    text-align: left;
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+  .drop-folder-list-head {
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .drop-folder-row {
+    background: none;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    color: var(--text);
+    font-size: 13.5px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .drop-folder-row:last-child { border-bottom: none; }
+  .drop-folder-row:hover { background: rgba(255,255,255,0.04); }
+  .drop-folder-row--all { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .drop-folder-row-name { display: flex; align-items: center; gap: 10px; min-width: 0; font-weight: 600; }
+  .drop-folder-row-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .drop-folder-row .drop-folder-icon { flex-shrink: 0; }
+  .drop-folder-row .drop-folder-icon svg { width: 19px; height: 16px; }
+  .drop-folder-row-count,
+  .drop-folder-row-date { font-size: 12px; color: var(--muted); }
+
   /* Table/Cards/Board are ways to look at notes, and the wall has none on
-     screen; New Note stays, because a note can be filed from anywhere. */
+     screen; Grid/List are the wall's own switch and go the other way. New Note
+     stays either way, because a note can be filed from anywhere. */
   .dropbox-view.is-folder-grid #dropbox-view-list,
   .dropbox-view.is-folder-grid #dropbox-view-detail,
-  .dropbox-view.is-folder-grid #dropbox-view-board { display: none; }
+  .dropbox-view.is-folder-grid #dropbox-view-board,
+  .dropbox-view:not(.is-folder-grid) #dropbox-folders-grid,
+  .dropbox-view:not(.is-folder-grid) #dropbox-folders-list { display: none; }
   .dropbox-folder-bar { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
   .drop-folder-back {
     background: none;
@@ -3016,6 +3068,8 @@
     .dropbox-filters { gap: 6px; }
     .dropbox-folders-wrap { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
     .drop-folder { padding: 13px; gap: 6px; }
+    .drop-folder-list-head,
+    .drop-folder-row { grid-template-columns: minmax(0, 1fr) 44px 62px; gap: 8px; padding: 11px 12px; }
   }
 
   /* The Countdown Timers page carried its own hero, inputs, buttons and card
