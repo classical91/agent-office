@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>Dropbox - Agent Office</title>
-<link rel="stylesheet" href="shared.css?v=template-v2-orphans-20260809"/>
+<link rel="stylesheet" href="shared.css?v=dropbox-folders-20260811"/>
 <!-- Restores the saved theme and sidebar state before first paint, so no page
      flashes the default accent or a full-width sidebar on its way in.
      ACCENTS mirrors THEMES in app-shared.js. -->
@@ -120,16 +120,21 @@
         </div>
       </div>
 
-      <!-- Search and subject are the two you reach for; on a phone the rest sit
-           behind the More filters button rather than filling the screen. -->
+      <!-- Which folder you are in, and the way back out to the wall of them.
+           Filled in by renderDropFolderBar(); empty while the wall is up. -->
+      <div id="dropbox-folder-bar" class="dropbox-folder-bar hidden"></div>
+
+      <!-- Search is the one filter always on show: it is the way past the
+           folders, so it has to be reachable from them. The rest sit behind the
+           More filters button rather than fill the screen. -->
       <div class="dropbox-filters">
-        <input id="drop-search" type="search" placeholder="Search drops..." />
+        <input id="drop-search" type="search" placeholder="Search notes..." />
         <select id="drop-filter-subject">
           <option value="">All Subjects</option>
         </select>
         <button id="drop-filters-toggle" type="button" class="dropbox-filters-toggle" aria-expanded="false">More filters</button>
 
-        <div id="dropbox-filters-more" class="dropbox-filters-more is-collapsed-mobile">
+        <div id="dropbox-filters-more" class="dropbox-filters-more is-collapsed">
           <select id="drop-filter-status">
             <option value="">All Statuses</option>
             <option value="inbox">Inbox</option>
@@ -197,7 +202,10 @@
             </div>
           </div>
 
-          <div id="dropbox-table-wrap" class="dropbox-table-wrap"></div>
+          <!-- The front page: subjects as folders. A note list only appears
+               once one is opened, or once a search asks across all of them. -->
+          <div id="dropbox-folders-wrap" class="dropbox-folders-wrap"></div>
+          <div id="dropbox-table-wrap" class="dropbox-table-wrap hidden"></div>
           <div id="dropbox-cards-wrap" class="dropbox-cards-wrap hidden"></div>
         </div>
       </div>
@@ -233,8 +241,8 @@
   </div>
 </div>
 
-<script src="app-shared.js?v=roster-20260810"></script>
-<script src="mission-board.js?v=board-view-20260804"></script>
+<script src="app-shared.js?v=dropbox-folders-20260811"></script>
+<script src="mission-board.js?v=dropbox-folders-20260811"></script>
 <script>
 switchView('dropbox', document.querySelector('.nav-item.active'));
 </script>

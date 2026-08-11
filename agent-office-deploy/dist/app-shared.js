@@ -2384,10 +2384,17 @@ function handleDropboxRequestError(error, fallbackMessage) {
 
 // ─── Dropbox state & rendering ───────────────────────────────────────────────
 
+// A folder is a subject, plus the two standing ones below. `folder: null` is
+// the front page — the wall of folders, with no note listed until one is
+// opened.
+const DROP_FOLDER_ALL = '__all__';
+const DROP_FOLDER_UNFILED = '__unfiled__';
+
 const dropboxState = {
   drops: [],
   selectedId: null,
   view: 'table',
+  folder: null,
   filters: {
     search: '',
     subject: '',
@@ -2493,6 +2500,7 @@ function getFilteredDrops() {
   if (subject) items = items.filter(drop => (drop.subject || '') === subject);
   if (status)  items = items.filter(drop => (drop.status  || '') === status);
   items = items.filter(drop => iosMode ? (drop.project || '') === 'iOS' : (drop.project || '') !== 'iOS');
+  items = applyDropboxFolderFilter(items);
   items = applyReminderFilter(items, reminder);
 
   items.sort((a, b) => {
@@ -2507,9 +2515,169 @@ function getFilteredDrops() {
 
 function renderDropbox() {
   populateSubjectFilter();
-  if (dropboxState.view === 'table') renderDropTable();
+  syncDropboxChrome();
+  if (isDropboxGridOpen()) renderDropFolders();
+  else if (dropboxState.view === 'table') renderDropTable();
   else renderDropCards();
   renderDetailPanel();
+}
+
+// ─── Folders ─────────────────────────────────────────────────────────────────
+// Notes are filed by subject, so the subjects are the folders and the page
+// opens on them rather than on every note at once. Search is the one way past
+// the wall without opening anything: a search is already a question about all
+// the folders together.
+
+function isDropboxFolderView() {
+  // Reminders (?view=ios) is a lane of its own — one project, always listed.
+  return !document.getElementById('dropbox-view')?.classList.contains('ios-mode');
+}
+
+function isDropboxGridOpen() {
+  return isDropboxFolderView() && dropboxState.folder === null && !dropboxState.filters.search;
+}
+
+function applyDropboxFolderFilter(items) {
+  // Named folders ride on the subject filter, which has already run by here;
+  // only Unfiled needs saying, because "no subject" is not a subject.
+  if (!isDropboxFolderView()) return items;
+  if (dropboxState.folder === DROP_FOLDER_UNFILED) return items.filter(drop => !(drop.subject || '').trim());
+  return items;
+}
+
+function dropFolderLabel(folder) {
+  if (folder === DROP_FOLDER_UNFILED) return 'Unfiled';
+  if (!folder || folder === DROP_FOLDER_ALL) return 'All Notes';
+  return folder;
+}
+
+// Counts are taken from every note the page could show, not from the filtered
+// list, so a folder does not shrink as you type in the search box.
+function dropboxFolders() {
+  const notes = dropboxState.drops.filter(drop => (drop.project || '') !== 'iOS');
+  const byKey = new Map();
+  notes.forEach(drop => {
+    const name = (drop.subject || '').trim();
+    const key = name || DROP_FOLDER_UNFILED;
+    const folder = byKey.get(key) || { key, name: name || 'Unfiled', count: 0, updated: 0 };
+    folder.count += 1;
+    const stamp = new Date(drop.updated_at || drop.date).getTime();
+    if (!Number.isNaN(stamp) && stamp > folder.updated) folder.updated = stamp;
+    byKey.set(key, folder);
+  });
+  const folders = [...byKey.values()].sort((a, b) => {
+    // Unfiled is the leftovers drawer, so it sits at the end of the wall.
+    if (a.key === DROP_FOLDER_UNFILED) return 1;
+    if (b.key === DROP_FOLDER_UNFILED) return -1;
+    return a.name.localeCompare(b.name);
+  });
+  return { folders, total: notes.length };
+}
+
+const DROP_FOLDER_ICON = '<svg viewBox="0 0 24 20" aria-hidden="true"><path fill="currentColor" d="M2 4a2 2 0 0 1 2-2h5.2a2 2 0 0 1 1.5.7L12.2 4H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4Z"/></svg>';
+
+function renderDropFolders() {
+  const wrap = document.getElementById('dropbox-folders-wrap');
+  if (!wrap) return;
+  const { folders, total } = dropboxFolders();
+
+  if (!total) {
+    wrap.innerHTML = '<div class="drop-empty"><div class="drop-empty-title">Dropbox is clear.</div><div class="drop-empty-copy">New Note files your first one, and its subject becomes a folder.</div></div>';
+    return;
+  }
+
+  const tile = (key, name, meta, extraClass) => `
+    <button type="button" class="drop-folder${extraClass ? ' ' + extraClass : ''}" data-folder="${escAttr(key)}">
+      <span class="drop-folder-icon">${DROP_FOLDER_ICON}</span>
+      <span class="drop-folder-name">${escHTML(name)}</span>
+      <span class="drop-folder-meta">${escHTML(meta)}</span>
+    </button>`;
+
+  wrap.innerHTML =
+    tile(DROP_FOLDER_ALL, 'All Notes', dropNoteCount(total), 'drop-folder--all') +
+    folders.map(folder => tile(
+      folder.key,
+      folder.name,
+      folder.updated ? `${dropNoteCount(folder.count)} · ${dropFormatShortDate(folder.updated)}` : dropNoteCount(folder.count)
+    )).join('');
+
+  wrap.querySelectorAll('[data-folder]').forEach(el => {
+    el.addEventListener('click', () => openDropFolder(el.dataset.folder));
+  });
+}
+
+function dropNoteCount(count) {
+  return `${count} note${count === 1 ? '' : 's'}`;
+}
+
+function openDropFolder(folder) {
+  dropboxState.folder = folder;
+  // A named folder is a subject, and the subject filter is what does the work.
+  const subject = folder === DROP_FOLDER_ALL || folder === DROP_FOLDER_UNFILED ? '' : folder;
+  dropboxState.filters.subject = subject;
+  const select = document.getElementById('drop-filter-subject');
+  if (select) select.value = subject;
+  renderDropbox();
+  document.getElementById('view-dropbox')?.scrollTo(0, 0);
+}
+
+function closeDropFolder() {
+  dropboxState.folder = null;
+  dropboxState.filters.subject = '';
+  dropboxState.selectedId = null;
+  // Leaving a search behind would put the wall straight back into results.
+  dropboxState.filters.search = '';
+  const search = document.getElementById('drop-search');
+  if (search) search.value = '';
+  renderDropbox();
+  document.getElementById('view-dropbox')?.scrollTo(0, 0);
+}
+
+// The toolbar tells you where you are: which folder is open, how much is in it,
+// and the way back. It is empty while the wall itself is up.
+function renderDropFolderBar(gridOpen) {
+  const bar = document.getElementById('dropbox-folder-bar');
+  if (!bar) return;
+  if (gridOpen || !isDropboxFolderView()) {
+    bar.innerHTML = '';
+    bar.classList.add('hidden');
+    return;
+  }
+  const shown = getFilteredDrops().length;
+  const label = dropboxState.folder === null ? 'Search results' : dropFolderLabel(dropboxState.folder);
+  bar.classList.remove('hidden');
+  bar.innerHTML = `
+    <button type="button" id="drop-folder-back" class="drop-folder-back">&larr; All folders</button>
+    <span class="drop-folder-crumb">${escHTML(label)}</span>
+    <span class="drop-folder-count">${dropNoteCount(shown)}</span>`;
+  bar.querySelector('#drop-folder-back').addEventListener('click', closeDropFolder);
+}
+
+function syncDropboxChrome() {
+  const view = document.getElementById('dropbox-view');
+  if (!view) return;
+  const gridOpen = isDropboxGridOpen();
+  view.classList.toggle('is-folder-grid', gridOpen);
+  renderDropFolderBar(gridOpen);
+  syncDropboxPanes(gridOpen);
+}
+
+// One place decides which pane is on screen, so the view switch, the folder
+// wall and the Mission Board's extra column view cannot disagree about it.
+function syncDropboxPanes(gridOpen = isDropboxGridOpen()) {
+  const mode = dropboxState.view;
+  [
+    ['dropbox-folders-wrap', gridOpen],
+    ['mission-pipeline',     !gridOpen && mode === 'board'],
+    ['dropbox-table-wrap',   !gridOpen && mode === 'table'],
+    ['dropbox-cards-wrap',   !gridOpen && mode === 'cards'],
+  ].forEach(([id, on]) => document.getElementById(id)?.classList.toggle('hidden', !on));
+
+  [
+    ['dropbox-view-list',   'table'],
+    ['dropbox-view-detail', 'cards'],
+    ['dropbox-view-board',  'board'],
+  ].forEach(([id, name]) => document.getElementById(id)?.classList.toggle('active', mode === name));
 }
 
 function populateSubjectFilter() {
@@ -2522,6 +2690,12 @@ function populateSubjectFilter() {
   const resolved = subjects.includes(current) ? current : '';
   select.value = resolved;
   dropboxState.filters.subject = resolved;
+  // A folder whose last note has just been deleted or refiled no longer
+  // exists, so the wall comes back rather than an empty room.
+  if (dropboxState.folder && dropboxState.folder !== DROP_FOLDER_ALL
+      && dropboxState.folder !== DROP_FOLDER_UNFILED && !subjects.includes(dropboxState.folder)) {
+    dropboxState.folder = null;
+  }
   const subjectEl = document.getElementById('drop-subject');
   if (subjectEl && document.activeElement !== subjectEl) {
     subjectEl.value = resolved;
@@ -2567,17 +2741,30 @@ function renderDropTable() {
     return;
   }
 
+  // Title and when it was touched are what you scan a list for. Subject only
+  // earns a column when the list spans folders; project and tags live on the
+  // note itself, where there is room for them.
+  const showSubject = !iosMode && !dropboxState.filters.subject;
+  const secondary = iosMode || showSubject;
+  // Both spellings of the timestamp ship; CSS picks one, so a phone gets
+  // "Aug 10" where the desktop has room for the whole thing.
+  const updatedCell = drop => `<td class="col-updated"><span class="date-full">${dropFormatDate(drop.updated_at || drop.date)}</span><span class="date-short">${dropFormatShortDate(drop.updated_at || drop.date)}</span></td>`;
+
   wrap.innerHTML = `
-    <table class="dropbox-table">
+    <table class="dropbox-table${secondary ? ' has-secondary' : ''}">
       <thead><tr>
-        ${iosMode ? '<th>Title</th><th>Reminder</th><th>Updated</th>' : '<th>Title</th><th>Subject</th><th>Project</th><th>Tags</th><th>Updated</th>'}
+        <th>Title</th>
+        ${iosMode ? '<th class="col-reminder">Reminder</th>' : showSubject ? '<th class="col-subject">Subject</th>' : ''}
+        <th class="col-updated">Updated</th>
       </tr></thead>
       <tbody>
         ${items.map(drop => `
           <tr data-drop-id="${escAttr(drop.id)}" class="${drop.id === dropboxState.selectedId ? 'selected' : ''}">
+            <td>${escHTML(drop.title || 'Untitled drop')}</td>
             ${iosMode
-              ? `<td>${escHTML(drop.title || 'Untitled drop')}</td><td>${dropReminderBadge(drop)}</td><td>${dropFormatDate(drop.updated_at || drop.date)}</td>`
-              : `<td>${escHTML(drop.title || 'Untitled drop')}</td><td>${dropBadge(drop.subject, 'subject')}</td><td>${escHTML(drop.project || '-')}</td><td>${(drop.tags || []).slice(0, 3).map(t => dropBadge(t, 'tag')).join(' ')}</td><td>${dropFormatDate(drop.updated_at || drop.date)}</td>`}
+              ? `<td class="col-reminder">${dropReminderBadge(drop)}</td>`
+              : showSubject ? `<td class="col-subject">${dropBadge(drop.subject, 'subject')}</td>` : ''}
+            ${updatedCell(drop)}
           </tr>`).join('')}
       </tbody>
     </table>`;
@@ -2600,9 +2787,13 @@ function renderDropCards() {
     return;
   }
 
+  // Same trim as the table: no tags on a card, and no subject once the folder
+  // you are standing in already says it.
+  const showSubject = !iosMode && !dropboxState.filters.subject;
+
   wrap.innerHTML = items.map(drop => {
     const preview = (drop.content || '').replace(/\s+/g, ' ').trim();
-    const hasMeta = drop.status || (!iosMode && drop.subject) || drop.remind_at || (drop.tags || []).length > 0;
+    const hasMeta = drop.status || (showSubject && drop.subject) || drop.remind_at;
     return `
     <article class="drop-card ${drop.id === dropboxState.selectedId ? 'selected' : ''}" data-drop-id="${escAttr(drop.id)}">
       <div class="drop-card-header">
@@ -2613,8 +2804,7 @@ function renderDropCards() {
       ${hasMeta ? `<div class="drop-card-meta">
         ${dropReminderBadge(drop)}
         ${dropBadge(drop.status, 'status')}
-        ${iosMode ? '' : dropBadge(drop.subject, 'subject')}
-        ${(drop.tags || []).slice(0, 2).map(t => dropBadge(t, 'tag')).join('')}
+        ${showSubject ? dropBadge(drop.subject, 'subject') : ''}
       </div>` : ''}
     </article>`;
   }).join('');
@@ -2897,11 +3087,12 @@ if (document.getElementById('save-drop-btn')) {
     renderDropbox();
   });
 
+  // Kept as a second door into the same rooms: picking a subject here opens
+  // that folder, and "All Subjects" opens the one holding everything.
   document.getElementById('drop-filter-subject').addEventListener('change', e => {
-    dropboxState.filters.subject = e.target.value;
     const subjectEl = document.getElementById('drop-subject');
     if (subjectEl) subjectEl.value = e.target.value;
-    renderDropbox();
+    openDropFolder(e.target.value || DROP_FOLDER_ALL);
   });
 
   document.getElementById('drop-filter-status').addEventListener('change', e => {
@@ -2919,32 +3110,25 @@ if (document.getElementById('save-drop-btn')) {
     renderDropbox();
   });
 
-  // Only does anything on a phone: the button is hidden on wide screens,
-  // where every filter is on show already.
+  // Status, project, agent, reminder and sort start out of sight on every
+  // screen size now, not just on a phone: they are still there, but the folder
+  // you are in is doing most of the filtering.
   document.getElementById('drop-filters-toggle')?.addEventListener('click', e => {
     const more = document.getElementById('dropbox-filters-more');
     if (!more) return;
-    const open = more.classList.toggle('is-collapsed-mobile') === false;
+    const open = more.classList.toggle('is-collapsed') === false;
     e.currentTarget.setAttribute('aria-expanded', String(open));
     e.currentTarget.textContent = open ? 'Fewer filters' : 'More filters';
   });
 
   document.getElementById('dropbox-view-list').addEventListener('click', () => {
     dropboxState.view = 'table';
-    document.getElementById('dropbox-table-wrap').classList.remove('hidden');
-    document.getElementById('dropbox-cards-wrap').classList.add('hidden');
-    document.getElementById('dropbox-view-list').classList.add('active');
-    document.getElementById('dropbox-view-detail').classList.remove('active');
-    renderDropTable();
+    renderDropbox();
   });
 
   document.getElementById('dropbox-view-detail').addEventListener('click', () => {
     dropboxState.view = 'cards';
-    document.getElementById('dropbox-table-wrap').classList.add('hidden');
-    document.getElementById('dropbox-cards-wrap').classList.remove('hidden');
-    document.getElementById('dropbox-view-list').classList.remove('active');
-    document.getElementById('dropbox-view-detail').classList.add('active');
-    renderDropCards();
+    renderDropbox();
   });
 }
 
