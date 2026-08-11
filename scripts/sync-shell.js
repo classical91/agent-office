@@ -26,6 +26,7 @@ const PAGES = [
   'index.html',
   'org-chart.html',
   'memory.html',
+  'traderclaw-journal.html',
   'agent-registry.html',
   'project-rooms.html',
   'mission-board.html',

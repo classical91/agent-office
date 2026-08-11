@@ -26,6 +26,9 @@ const STREAK_DAYS_FILE = path.resolve(__dirname, process.env.STREAK_DAYS_FILE ||
 const COUNTDOWNS_FILE = path.resolve(__dirname, process.env.COUNTDOWNS_FILE || 'countdowns.json');
 const VISITS_FILE = path.resolve(__dirname, process.env.VISITS_FILE || 'visits.json');
 const MAX_BODY_BYTES = 50 * 1024;
+const JOURNAL_TOKEN = String(process.env.JOURNAL_TOKEN || '').trim();
+const JOURNAL_TOKEN_MIN_LENGTH = 24;
+const TRADERCLAW_JOURNAL_KEY = 'traderclaw-journal-v1';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const SESSION_COOKIE = 'agent_office_session';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
@@ -4369,6 +4372,58 @@ async function buildGatewayStatus(storage, requestedUrl) {
   };
 }
 
+function cleanJournalText(value, max = 1200) {
+  return String(value || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max);
+}
+
+function normalizeJournalEntry(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const recordId = cleanJournalText(raw.record_id, 160);
+  const timestamp = cleanJournalText(raw.timestamp_utc, 40);
+  if (!recordId || !timestamp || Number.isNaN(Date.parse(timestamp))) return null;
+  const pickObject = (value, keys) => Object.fromEntries(keys.map(key => [key, cleanJournalText(value && value[key], 700)]));
+  return {
+    record_id: recordId,
+    record_type: cleanJournalText(raw.record_type, 60),
+    timestamp_utc: timestamp,
+    asset: cleanJournalText(raw.asset, 40),
+    direction: cleanJournalText(raw.direction, 20),
+    timeframe: cleanJournalText(raw.timeframe, 30),
+    regime: cleanJournalText(raw.regime, 100),
+    strategy: pickObject(raw.strategy, ['name', 'version']),
+    thesis: pickObject(raw.thesis, ['setup', 'invalidation']),
+    result: pickObject(raw.result, ['status', 'r_multiple', 'expectancy_r', 'profit_factor', 'max_drawdown_r', 'mfe_r', 'mae_r']),
+    quality: pickObject(raw.quality, ['data', 'news']),
+    lesson: pickObject(raw.lesson, ['what_worked', 'what_failed', 'evidence_based_lesson']),
+    promotion_gate: pickObject(raw.promotion_gate, ['status', 'sample_size', 'out_of_sample', 'walk_forward', 'reason']),
+  };
+}
+
+function normalizeJournalPayload(raw) {
+  const entries = (Array.isArray(raw && raw.entries) ? raw.entries : [])
+    .map(normalizeJournalEntry).filter(Boolean).slice(-50)
+    .sort((a, b) => Date.parse(b.timestamp_utc) - Date.parse(a.timestamp_utc));
+  const summaries = (Array.isArray(raw && raw.weekly_summaries) ? raw.weekly_summaries : [])
+    .filter(item => item && typeof item === 'object')
+    .slice(-8)
+    .map(item => ({
+      name: cleanJournalText(item.name, 120),
+      updated_at: cleanJournalText(item.updated_at, 40),
+      content: cleanJournalText(item.content, 8000),
+    }));
+  return {
+    version: 1,
+    synced_at: new Date().toISOString(),
+    entries,
+    weekly_summaries: summaries,
+    counts: {
+      entries: entries.length,
+      validated: entries.filter(item => /validated|paper_candidate/i.test(item.promotion_gate.status)).length,
+      rejected: entries.filter(item => /reject|failed/i.test(item.promotion_gate.status) || /failed/i.test(item.result.status)).length,
+    },
+  };
+}
+
 // ---------------------------------------------------------------
 
 const server = http.createServer(async (req, res) => {
@@ -4524,6 +4579,37 @@ const server = http.createServer(async (req, res) => {
       };
 
       sendJson(res, 200, { ok: true, agents: lastGatewayHeartbeat.agents.length });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/api/traderclaw-journal') {
+      if (!requireDropsAuth(res, req)) return;
+      const stored = await storage.getAppSetting(TRADERCLAW_JOURNAL_KEY);
+      let payload = null;
+      try { payload = stored ? JSON.parse(stored) : null; } catch { payload = null; }
+      sendJson(res, 200, payload || {
+        version: 1,
+        synced_at: null,
+        entries: [],
+        weekly_summaries: [],
+        counts: { entries: 0, validated: 0, rejected: 0 },
+      });
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/traderclaw-journal/sync') {
+      if (!JOURNAL_TOKEN || JOURNAL_TOKEN.length < JOURNAL_TOKEN_MIN_LENGTH) {
+        sendJson(res, 503, { error: `Set JOURNAL_TOKEN to at least ${JOURNAL_TOKEN_MIN_LENGTH} characters.` });
+        return;
+      }
+      const supplied = String(req.headers['x-journal-token'] || '').trim();
+      if (!supplied || !safeCompareHash(supplied, sha256(JOURNAL_TOKEN))) {
+        sendJson(res, 401, { error: 'Invalid or missing journal token.' });
+        return;
+      }
+      const payload = normalizeJournalPayload(await readJsonBody(req));
+      await storage.setAppSetting(TRADERCLAW_JOURNAL_KEY, JSON.stringify(payload));
+      sendJson(res, 200, { ok: true, synced_at: payload.synced_at, counts: payload.counts });
       return;
     }
 

@@ -6,8 +6,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
-<title>AI Models - Agent Office</title>
+<title>TraderClaw Journal - Agent Office</title>
 <link rel="stylesheet" href="shared.css?v=folder-pins-20260811"/>
+<link rel="stylesheet" href="traderclaw-journal.css?v=20260811"/>
 <!-- Restores the saved theme and sidebar state before first paint, so no page
      flashes the default accent or a full-width sidebar on its way in.
      ACCENTS mirrors THEMES in app-shared.js. -->
@@ -22,7 +23,6 @@
   }catch(e){}
 })();
 </script>
-<link rel="stylesheet" href="ai-landscape.css?v=office-submenu-20260727"/>
 </head>
 <body>
 
@@ -110,8 +110,67 @@
 
   </nav>
 
-  <div class="view" id="view-ai-landscape">
-    <div id="ai-landscape-root" class="ai-landscape"></div>
+  <div class="view view--scroll ao-scroll" id="view-traderclaw-journal">
+    <main class="ao-page journal-page">
+      <div class="ao-page-head">
+        <div class="ao-page-heading">
+          <div class="ao-eyebrow">TRADERCLAW · LEARNING JOURNAL</div>
+          <h1>Paper research, backtests, and evidence-based lessons</h1>
+          <div class="ao-page-sub" id="journal-sync">Checking journal sync…</div>
+        </div>
+      </div>
+      <section class="journal-metrics" id="journal-metrics"></section>
+      <div class="journal-toolbar">
+        <input id="journal-search" type="search" placeholder="Search asset, strategy, regime, or lesson" aria-label="Search journal">
+        <select id="journal-type" aria-label="Filter journal type"><option value="">All record types</option><option value="backtest">Backtests</option><option value="paper_trade">Paper trades</option><option value="experiment">Experiments</option><option value="dry_run">Dry runs</option></select>
+      </div>
+      <div class="ao-section-label">Journal entries</div>
+      <section class="journal-list" id="journal-list"><div class="ao-card journal-empty">Loading journal…</div></section>
+      <div class="ao-section-label" style="margin-top:28px;">Weekly summaries</div>
+      <section id="journal-summaries"></section>
+    </main>
+    <div id="memory-app" class="ao-page ao-page--narrow" hidden>
+
+      <!-- Header -->
+      <div class="ao-page-head">
+        <div class="ao-page-heading">
+          <div class="ao-eyebrow">🧠 MEMORY</div>
+          <div class="ao-page-sub">Agent memory banks — notes, learnings, and context per bot.</div>
+        </div>
+        <div class="ao-page-actions">
+          <button class="ao-btn ao-btn--primary" onclick="MEM.showForm()"><span>＋</span> New Memory</button>
+        </div>
+      </div>
+
+      <!-- Add form (hidden until New Memory or an edit opens it) -->
+      <div id="mem-form" class="ao-card" hidden>
+        <div class="ao-card-title">New Memory Entry</div>
+        <!-- Agent tabs -->
+        <div id="mem-agent-tabs" class="ao-chips"></div>
+        <input type="hidden" id="mem-agent" value="">
+        <div class="ao-field">
+          <label class="ao-label" for="mem-content">Memory</label>
+          <textarea id="mem-content" class="ao-textarea" rows="6" placeholder="Paste agent memory here..."></textarea>
+        </div>
+        <div class="ao-toolbar" style="justify-content:flex-end;">
+          <button class="ao-btn" onclick="MEM.hideForm()">Cancel</button>
+          <button class="ao-btn ao-btn--primary" onclick="MEM.save()">Save Memory</button>
+        </div>
+      </div>
+
+      <!-- Agent Roster Cards -->
+      <div id="mem-roster">
+        <div class="ao-section-label">Agent Roster</div>
+        <div class="ao-grid" id="mem-roster-grid" style="margin-top:var(--space-3);"></div>
+      </div>
+
+      <!-- Agent filter tabs -->
+      <div id="mem-filters" class="ao-chips"></div>
+
+      <!-- Memory list -->
+      <div id="mem-list"></div>
+
+    </div>
   </div>
 
   <!-- ACTIVITY FEED -->
@@ -128,9 +187,9 @@
 <div class="statusbar" id="statusbar"></div>
 
 <script src="app-shared.js?v=folder-pins-20260811"></script>
-<script src="ai-landscape.js?v=ai-video-websites-20260708"></script>
+<script src="traderclaw-journal.js?v=20260811"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => switchView('ai-landscape', document.querySelector('.nav-item.active')));
+switchView('traderclaw-journal', document.querySelector('.nav-item.active'));
 </script>
 
 </body>
