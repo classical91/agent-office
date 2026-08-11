@@ -133,10 +133,10 @@ test('avatar drafts stay browser-local and do not alter the live roster', () => 
   assert.doesNotMatch(script, /fetch\([^)]*\/api\/agents[^)]*,\s*\{[^}]*method:\s*['"](?:POST|PUT|PATCH)/is);
 });
 
-test('clicking an in-office character opens the appearance editor', () => {
+test('the appearance editor remains available to the operational inspector', () => {
   assert.match(index, /office-avatar-customizer\.js\?v=avatar-editor-20260805/);
   assert.match(shared, /dataset\.agentId = agent\.id/);
-  assert.match(shared, /setAttribute\('aria-label', `Customize \$\{agent\.name\}`\)/);
+  assert.match(shared, /setAttribute\('aria-label', `Inspect \$\{agent\.name\}`\)/);
   assert.match(officeCustomizer, /function characterAtPoint\(clientX, clientY\)/);
   assert.match(officeCustomizer, /getImageData\(/);
   assert.match(officeCustomizer, /Math\.max\(alpha, sample\[index\]\)/);

@@ -1,0 +1,37 @@
+'use strict';
+
+const test = require('node:test');
+const assert = require('node:assert');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const ROOT = path.join(__dirname, '..');
+const DIST = path.join(ROOT, 'agent-office-deploy', 'dist');
+const index = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8');
+const control = fs.readFileSync(path.join(DIST, 'office-control-center.js'), 'utf8');
+const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+
+test('Penny is explicitly the sole orchestrator and office owner', () => {
+  assert.match(readme, /Penny \(`oss`\) is the sole OpenClaw orchestrator/);
+  assert.match(control, /Penny owns this office/);
+  assert.match(control, /Specialists do not command one another/);
+});
+
+test('the office exposes Mission Control and operational agent inspection', () => {
+  assert.match(index, /AOControlCenter\.openMissionControl\(\)/);
+  assert.match(index, /office-control-center\.js\?v=/);
+  assert.match(control, /office\.addEventListener\('click', interceptAgentClick, true\)/);
+  assert.match(control, /fetch\('\/api\/agents'/);
+  assert.match(control, /current_task_title/);
+});
+
+test('Mission Control sends goals to Penny through the authenticated board', () => {
+  assert.match(control, /fetch\('\/api\/drops'/);
+  assert.match(control, /agent: 'oss'/);
+  assert.match(control, /subject: 'Mission Control'/);
+});
+
+test('unsupported runtime controls are disclosed instead of simulated', () => {
+  assert.match(control, /will appear only when the OpenClaw gateway exposes verified control and telemetry endpoints/);
+  assert.doesNotMatch(control, /method:\s*['"](?:PATCH|DELETE)['"].*\/api\/agents/is);
+});

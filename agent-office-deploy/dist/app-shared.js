@@ -967,7 +967,7 @@ function renderAgents() {
     el.dataset.agentId = agent.id;
     el.setAttribute('role', 'button');
     el.setAttribute('tabindex', '0');
-    el.setAttribute('aria-label', `Customize ${agent.name}`);
+    el.setAttribute('aria-label', `Inspect ${agent.name}`);
 
     // Name chip only: thirteen agents at adjacent desks means thirteen
     // overlapping labels, and the task text is already on every agent's card in

@@ -2,6 +2,12 @@
 
 A multi-page web app that acts as the command center for OpenClaw agents, tasks, routes, rollups, memory, planning, and the org chart of Jason's AI team.
 
+## Ownership and command model
+
+**Penny (`oss`) is the sole OpenClaw orchestrator and the owner of Agent Office operations.** Jason gives goals to Penny; Penny selects and dispatches the appropriate specialists, monitors execution, manages approvals and failures, and returns one coherent result. Specialists execute their own domain work and report status/results back to Penny. They do not command one another, change cron schedules, or bypass approval boundaries.
+
+The 3D office is intended to be an operational view of that system, not a decorative simulation. Agent state, workflow stages, blocked items, Mission Control, project assignment, and the activity feed should reflect real OpenClaw data whenever the gateway exposes it. A visual element must be labelled as configured or unavailable when live data/control is not available; the UI must not invent execution, cost, or completion events.
+
 ## Features
 
 - **Dropbox / Mission Board** — capture notes, ideas, reminders, and tasks with subject, status, priority, and tags. Tap any note to open it in a full-screen reading view. Every drop is saved under a title no other drop is using — a second "Weekly review notes" is stored as "Weekly review notes (2)" — so no two rows in the list are indistinguishable.
@@ -13,7 +19,7 @@ A multi-page web app that acts as the command center for OpenClaw agents, tasks,
 - **Streaks** — every day you kept a habit up, plotted on a month grid and a year strip. Each streak carries a type (Health, Deep Work, Avoid, …) and a colour, the calendar can be filtered down to one streak or one type, and a day is marked from the day itself or from the streak's **Mark today** button. See [Streaks](#streaks-1).
 - **Visitors** — who is on your websites right now, what they are reading, and whether they have been before. One tracker script goes on any site you run; nothing is looked up against any outside service. See [Visitors](#visitors-1).
 - **Org chart** — a visual layout of the agent team.
-- **Office view** — a "room" view with each agent's avatar and current status.
+- **Office view** — a live operational room where clicking an agent opens its task, model, workspace, authority, state, and available controls. Penny opens Mission Control; appearance editing remains available from the inspector.
 - **AI Landscape** — a tracker page for the AI model/tooling landscape.
 - **Project Rooms** — per-project overview with linked tasks, repo/deploy links, and next actions.
 - **Agent Registry** — a directory of configured agents.

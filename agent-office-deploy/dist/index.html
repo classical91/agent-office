@@ -118,6 +118,7 @@
         <span class="office-crumb-loc">HQ · Floor 1</span>
       </div>
       <div class="office-bar-meta">
+        <button class="ao-btn ao-btn--sm office-command-btn" type="button" onclick="AOControlCenter.openMissionControl()">Mission Control</button>
         <span class="ao-badge">Main room</span>
       </div>
     </div>
@@ -796,6 +797,20 @@
 
 </div>
 
+<div class="control-center" id="control-center" hidden>
+  <button class="control-center-backdrop" type="button" aria-label="Close panel" onclick="AOControlCenter.close()"></button>
+  <section class="control-center-panel" role="dialog" aria-modal="true" aria-labelledby="control-center-title">
+    <header class="control-center-header">
+      <div>
+        <div class="control-center-kicker" id="control-center-kicker">OPENCLAW CONTROL</div>
+        <h2 id="control-center-title">Mission Control</h2>
+      </div>
+      <button class="ao-btn ao-btn--sm" type="button" onclick="AOControlCenter.close()" aria-label="Close">Close</button>
+    </header>
+    <div id="control-center-body"></div>
+  </section>
+</div>
+
 <!-- BOTTOM STATUS BAR -->
 <div class="statusbar" id="statusbar"></div>
 
@@ -805,6 +820,7 @@
 <script src="agent-avatars.js?v=avatar-studio-20260805"></script>
 <script src="app-shared.js?v=folder-pins-20260811"></script>
 <script src="office-avatar-customizer.js?v=avatar-editor-20260805"></script>
+<script src="office-control-center.js?v=penny-control-center-20260811"></script>
 
 </body>
 </html>
