@@ -9,6 +9,7 @@ const ROOT = path.join(__dirname, '..');
 const DIST = path.join(ROOT, 'agent-office-deploy', 'dist');
 const index = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8');
 const control = fs.readFileSync(path.join(DIST, 'office-control-center.js'), 'utf8');
+const shared = fs.readFileSync(path.join(DIST, 'app-shared.js'), 'utf8');
 const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
 const relay = fs.readFileSync(path.join(ROOT, 'scripts', 'openclaw-heartbeat.js'), 'utf8');
 
@@ -30,6 +31,14 @@ test('Mission Control sends goals to Penny through the authenticated board', () 
   assert.match(control, /fetch\('\/api\/orchestration\/goals'/);
   assert.match(control, /refreshMissionGoals/);
   assert.match(control, /Goals and Outbox/);
+});
+
+test('the top bar exposes one general login backed by the Dropbox session', () => {
+  assert.match(index, /id="ao-login-trigger"[^>]*>Login</);
+  assert.match(index, /id="ao-login-password"[^>]*type="password"/);
+  assert.match(shared, /fetch\('\/api\/session',\s*\{/);
+  assert.match(shared, /JSON\.stringify\(\{ passphrase:/);
+  assert.match(shared, /dropsAuthState = \{ configured: true, authenticated: true/);
 });
 
 test('unsupported runtime controls are disclosed instead of simulated', () => {

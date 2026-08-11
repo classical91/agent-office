@@ -2106,7 +2106,83 @@ function toggleNavCompact() {
   }
 }
 
+let officeSessionAuthenticated = false;
+
+function setOfficeLoginState(authenticated) {
+  officeSessionAuthenticated = Boolean(authenticated);
+  const trigger = document.getElementById('ao-login-trigger');
+  if (!trigger) return;
+  trigger.textContent = officeSessionAuthenticated ? 'Logged in' : 'Login';
+  trigger.classList.toggle('is-authenticated', officeSessionAuthenticated);
+  trigger.title = officeSessionAuthenticated ? 'Click to log out' : 'Log in to Agents Office';
+}
+
+function openOfficeLogin() {
+  if (officeSessionAuthenticated) {
+    fetch('/api/session', { method: 'DELETE' })
+      .then(() => {
+        setOfficeLoginState(false);
+        if (typeof dropsAuthState !== 'undefined') dropsAuthState = { configured: true, authenticated: false, checked: true };
+      })
+      .catch(() => {});
+    return;
+  }
+  const modal = document.getElementById('ao-login-modal');
+  const error = document.getElementById('ao-login-error');
+  const password = document.getElementById('ao-login-password');
+  if (!modal) return;
+  if (error) error.textContent = '';
+  modal.hidden = false;
+  setTimeout(() => password?.focus(), 0);
+}
+
+function closeOfficeLogin() {
+  const modal = document.getElementById('ao-login-modal');
+  const password = document.getElementById('ao-login-password');
+  if (modal) modal.hidden = true;
+  if (password) password.value = '';
+}
+
+async function submitOfficeLogin(event) {
+  event.preventDefault();
+  const password = document.getElementById('ao-login-password');
+  const submit = document.getElementById('ao-login-submit');
+  const error = document.getElementById('ao-login-error');
+  if (submit) submit.disabled = true;
+  if (error) error.textContent = '';
+  try {
+    const response = await fetch('/api/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ passphrase: password?.value || '' }),
+    });
+    if (!response.ok) throw new Error(response.status === 401 ? 'Incorrect password.' : 'Unable to log in.');
+    setOfficeLoginState(true);
+    if (typeof dropsAuthState !== 'undefined') dropsAuthState = { configured: true, authenticated: true, checked: true };
+    closeOfficeLogin();
+  } catch (loginError) {
+    if (error) error.textContent = loginError.message || 'Unable to log in.';
+    password?.select();
+  } finally {
+    if (submit) submit.disabled = false;
+  }
+}
+
+function initOfficeLogin() {
+  const form = document.getElementById('ao-login-form');
+  const modal = document.getElementById('ao-login-modal');
+  if (!form || !modal) return;
+  form.addEventListener('submit', submitOfficeLogin);
+  modal.addEventListener('click', event => { if (event.target === modal) closeOfficeLogin(); });
+  document.addEventListener('keydown', event => { if (event.key === 'Escape' && !modal.hidden) closeOfficeLogin(); });
+  fetch('/api/session', { cache: 'no-store' })
+    .then(response => response.ok ? response.json() : { authenticated: false })
+    .then(state => setOfficeLoginState(state.authenticated))
+    .catch(() => setOfficeLoginState(false));
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  initOfficeLogin();
   markActiveNav();
   applyNavCompact(navCompactPreferred());
   if (document.getElementById('ops-summary')) {

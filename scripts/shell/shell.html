@@ -7,6 +7,7 @@
     <a class="topbar-logo" href="/">&#11041; OPENCLAW AGENTS OFFICE</a>
   </div>
   <div class="topbar-meta">
+    <button class="ao-login-trigger" id="ao-login-trigger" type="button" onclick="openOfficeLogin()">Login</button>
     <span class="topbar-stat" id="agent-state-chip">
       <span class="ao-dot ao-dot--active"></span>
       <span><span id="onlineCount">9</span> <span id="onlineLabel">agents online</span></span>
@@ -16,6 +17,20 @@
     <button class="ao-btn ao-btn--sm" id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode &mdash; hide panels" aria-pressed="false">&#9974; Focus</button>
   </div>
 </header>
+
+<div class="ao-login-modal" id="ao-login-modal" role="dialog" aria-modal="true" aria-labelledby="ao-login-title" hidden>
+  <div class="ao-login-panel">
+    <button class="ao-login-close" type="button" onclick="closeOfficeLogin()" aria-label="Close">&times;</button>
+    <div class="ao-login-kicker">Secure access</div>
+    <h2 id="ao-login-title">Agents Office Login</h2>
+    <p>Enter your password to unlock the Office and Dropbox.</p>
+    <form id="ao-login-form" class="ao-login-form">
+      <input id="ao-login-password" class="ao-login-input" type="password" autocomplete="current-password" placeholder="Password" required />
+      <button id="ao-login-submit" class="ao-login-submit" type="submit">Unlock</button>
+      <div id="ao-login-error" class="ao-login-error" role="alert"></div>
+    </form>
+  </div>
+</div>
 
 <div class="layout feed-collapsed">
 
