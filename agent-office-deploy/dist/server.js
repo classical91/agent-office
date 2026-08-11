@@ -39,7 +39,7 @@ const LEGACY_STATUS_MAP = new Map([
   ['building', 'coding'],
 ]);
 const ALLOWED_AGENT_STATUSES = new Set(['idle', 'running', 'blocked', 'failed', 'needs_input', 'offline']);
-const ORCHESTRATION_STATES = new Set(['queued', 'running', 'completed', 'failed']);
+const ORCHESTRATION_STATES = new Set(['queued', 'running', 'needs_approval', 'completed', 'failed']);
 const ALLOWED_APP_SETTING_KEYS = new Set(['ao-gateway-local', 'ao-gateway-lan']);
 const DEFAULT_AGENTS = [
   { id: 'codex', name: 'Codex', role: 'Coding Agent', model: 'GPT-5', status: 'idle', source: 'Codex', notes: 'Repo work, reviews, implementation, and local verification.' },
@@ -739,6 +739,8 @@ function toClientDrop(row) {
     orchestration_claimed_at: toIsoOrEmpty(row.orchestration_claimed_at),
     orchestration_completed_at: toIsoOrEmpty(row.orchestration_completed_at),
     orchestration_attempts: Number(row.orchestration_attempts) || 0,
+    orchestration_build_approved: Boolean(row.orchestration_build_approved),
+    orchestration_approved_at: toIsoOrEmpty(row.orchestration_approved_at),
   };
 }
 
@@ -1161,6 +1163,17 @@ function createFileStorage() {
       await saveDropsToFile(drops);
       return toClientDrop(goal);
     },
+    async approveOrchestrationGoal(id) {
+      const drops = await loadDropsFromFile();
+      const goal = drops.find(drop => drop.id === id && drop.orchestration_status === 'needs_approval');
+      if (!goal) return null;
+      Object.assign(goal, {
+        orchestration_status: 'queued', orchestration_build_approved: true,
+        orchestration_approved_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+      });
+      await saveDropsToFile(drops);
+      return toClientDrop(goal);
+    },
     async deleteDrop(id) {
       const drops = await loadDropsFromFile();
       const nextDrops = drops.filter(drop => drop.id !== id);
@@ -1566,6 +1579,8 @@ async function createPostgresStorage() {
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_claimed_at TIMESTAMPTZ`);
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_completed_at TIMESTAMPTZ`);
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_attempts INTEGER NOT NULL DEFAULT 0`);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_build_approved BOOLEAN NOT NULL DEFAULT FALSE`);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_approved_at TIMESTAMPTZ`);
   // Pulling the due reminders is the hot path for the phone Shortcut.
   await pool.query(`CREATE INDEX IF NOT EXISTS drops_remind_at_idx ON drops (remind_at) WHERE remind_at IS NOT NULL`);
 
@@ -1829,7 +1844,8 @@ async function createPostgresStorage() {
                content, priority, done, remind_at, created_at AS date, updated_at,
                orchestration_status, orchestration_result, orchestration_error,
                orchestration_session_key, orchestration_claimed_at,
-               orchestration_completed_at, orchestration_attempts
+               orchestration_completed_at, orchestration_attempts,
+               orchestration_build_approved, orchestration_approved_at
         FROM drops
         ORDER BY updated_at DESC, created_at DESC
       `);
@@ -1846,7 +1862,8 @@ async function createPostgresStorage() {
                     content, priority, done, remind_at, created_at AS date, updated_at,
                     orchestration_status, orchestration_result, orchestration_error,
                     orchestration_session_key, orchestration_claimed_at,
-                    orchestration_completed_at, orchestration_attempts
+                    orchestration_completed_at, orchestration_attempts,
+                    orchestration_build_approved, orchestration_approved_at
         `,
         [
           drop.id, drop.title, drop.subject, drop.category, drop.project, drop.agent || '',
@@ -1875,8 +1892,25 @@ async function createPostgresStorage() {
                   content, priority, done, remind_at, created_at AS date, updated_at,
                   orchestration_status, orchestration_result, orchestration_error,
                   orchestration_session_key, orchestration_claimed_at,
-                  orchestration_completed_at, orchestration_attempts
+                  orchestration_completed_at, orchestration_attempts,
+                  orchestration_build_approved, orchestration_approved_at
       `);
+      return result.rows[0] ? toClientDrop(result.rows[0]) : null;
+    },
+    async approveOrchestrationGoal(id) {
+      const result = await pool.query(`
+        UPDATE drops
+        SET orchestration_status = 'queued', orchestration_build_approved = TRUE,
+            orchestration_approved_at = NOW(), updated_at = NOW()
+        WHERE id = $1 AND agent = 'oss' AND subject = 'Mission Control'
+          AND orchestration_status = 'needs_approval'
+        RETURNING id, title, subject, category, project, agent, status, tags, links,
+                  content, priority, done, remind_at, created_at AS date, updated_at,
+                  orchestration_status, orchestration_result, orchestration_error,
+                  orchestration_session_key, orchestration_claimed_at,
+                  orchestration_completed_at, orchestration_attempts,
+                  orchestration_build_approved, orchestration_approved_at
+      `, [id]);
       return result.rows[0] ? toClientDrop(result.rows[0]) : null;
     },
     async updateOrchestrationGoal(id, patch) {
@@ -1891,7 +1925,8 @@ async function createPostgresStorage() {
                   content, priority, done, remind_at, created_at AS date, updated_at,
                   orchestration_status, orchestration_result, orchestration_error,
                   orchestration_session_key, orchestration_claimed_at,
-                  orchestration_completed_at, orchestration_attempts
+                  orchestration_completed_at, orchestration_attempts,
+                  orchestration_build_approved, orchestration_approved_at
       `, [id, patch.orchestration_status, patch.orchestration_result || '', patch.orchestration_error || '', patch.orchestration_completed_at || null]);
       return result.rows[0] ? toClientDrop(result.rows[0]) : null;
     },
@@ -4698,20 +4733,32 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === 'POST' && pathname.startsWith('/api/orchestration/goals/') && pathname.endsWith('/approve')) {
+      if (!requireDropsAuth(res, req)) return;
+      const id = pathname.slice('/api/orchestration/goals/'.length, -'/approve'.length).trim();
+      const goal = await storage.approveOrchestrationGoal(id);
+      if (!goal) {
+        sendJson(res, 409, { error: 'This goal is not waiting for build approval.' });
+        return;
+      }
+      sendJson(res, 200, goal);
+      return;
+    }
+
     if (req.method === 'PATCH' && pathname.startsWith('/api/orchestration/goals/')) {
       if (!requireGatewayToken(res, req)) return;
       const id = pathname.slice('/api/orchestration/goals/'.length).trim();
       const input = await readJsonBody(req);
       const state = cleanText(input.status, 24).toLowerCase();
-      if (!['completed', 'failed'].includes(state)) {
-        sendJson(res, 400, { error: 'Status must be completed or failed.' });
+      if (!['needs_approval', 'completed', 'failed'].includes(state)) {
+        sendJson(res, 400, { error: 'Status must be needs_approval, completed, or failed.' });
         return;
       }
       const goal = await storage.updateOrchestrationGoal(id, {
         orchestration_status: state,
         orchestration_result: cleanText(input.result, 40000),
         orchestration_error: cleanText(input.error, 5000),
-        orchestration_completed_at: new Date().toISOString(),
+        orchestration_completed_at: state === 'needs_approval' ? null : new Date().toISOString(),
       });
       if (!goal) {
         sendJson(res, 404, { error: 'Goal not found.' });

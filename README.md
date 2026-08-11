@@ -21,6 +21,7 @@ The 3D office is intended to be an operational view of that system, not a decora
 - **Org chart** — a visual layout of the agent team.
 - **Office view** — a live operational room where clicking an agent opens its task, model, workspace, authority, state, and available controls. Penny opens Mission Control; appearance editing remains available from the inspector.
 - **Penny execution bridge** — Mission Control goals are claimed by the authenticated desktop relay, run in a dedicated Penny session through the local OpenClaw gateway, delivered to Jason in Telegram, and written back to the Agent Office Outbox. Stale claims recover after 20 minutes; cron is not required for normal execution.
+- **Build safeguards** — code, configuration, infrastructure, scheduled-task, and deployment goals pause after read-only inspection. Penny sends the exact proposed scope to Jason and the Outbox shows **Approve build**. Only that authenticated approval requeues the same Penny session. Approved work must fetch current GitHub `main`/`master`, verify repo/remote/branch/dirty state, preserve unrelated work in a clean branch or worktree, test, commit, and push the tested source. Deployment remains separately approval-gated unless it was explicitly included.
 - **AI Landscape** — a tracker page for the AI model/tooling landscape.
 - **Project Rooms** — per-project overview with linked tasks, repo/deploy links, and next actions.
 - **Agent Registry** — a directory of configured agents.

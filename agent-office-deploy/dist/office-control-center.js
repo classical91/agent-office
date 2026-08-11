@@ -142,10 +142,28 @@
           <div><strong>${escape(goal.title)}</strong><span class="control-state">${escape(goal.orchestration_status)}</span></div>
           ${goal.orchestration_result ? `<p>${escape(goal.orchestration_result)}</p>` : ''}
           ${goal.orchestration_error ? `<p class="mission-result-error">${escape(goal.orchestration_error)}</p>` : ''}
+          ${goal.orchestration_status === 'needs_approval' ? `<button class="ao-btn ao-btn--primary mission-approve" type="button" data-goal-id="${escape(goal.id)}">Approve build</button>` : ''}
           <small>${escape(new Date(goal.updated_at || goal.date).toLocaleString())}</small>
         </article>`).join('');
+      list.querySelectorAll('.mission-approve').forEach(button => {
+        button.addEventListener('click', () => approveGoal(button.dataset.goalId));
+      });
     } catch (error) {
       list.innerHTML = `<div class="control-unavailable">${escape(error.message)}</div>`;
+    }
+  }
+
+  async function approveGoal(id) {
+    if (!window.confirm('Approve Penny to build the proposed scope? Deployment still requires separate approval unless the proposal included it.')) return;
+    try {
+      const response = await fetch(`/api/orchestration/goals/${encodeURIComponent(id)}/approve`, {
+        method: 'POST', credentials: 'same-origin'
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || 'Approval could not be saved.');
+      await refreshMissionGoals();
+    } catch (error) {
+      window.alert(error.message);
     }
   }
 

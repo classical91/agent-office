@@ -10,6 +10,7 @@ const DIST = path.join(ROOT, 'agent-office-deploy', 'dist');
 const index = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8');
 const control = fs.readFileSync(path.join(DIST, 'office-control-center.js'), 'utf8');
 const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
+const relay = fs.readFileSync(path.join(ROOT, 'scripts', 'openclaw-heartbeat.js'), 'utf8');
 
 test('Penny is explicitly the sole orchestrator and office owner', () => {
   assert.match(readme, /Penny \(`oss`\) is the sole OpenClaw orchestrator/);
@@ -34,4 +35,14 @@ test('Mission Control sends goals to Penny through the authenticated board', () 
 test('unsupported runtime controls are disclosed instead of simulated', () => {
   assert.match(control, /will appear only when the OpenClaw gateway exposes verified control and telemetry endpoints/);
   assert.doesNotMatch(control, /method:\s*['"](?:PATCH|DELETE)['"].*\/api\/agents/is);
+});
+
+test('code goals pause for approval and enforce the GitHub push-first workflow', () => {
+  assert.match(relay, /Jason has NOT approved a build/);
+  assert.match(relay, /\[BUILD_APPROVAL_REQUIRED\]/);
+  assert.match(relay, /fetch the latest GitHub main\/master first/);
+  assert.match(relay, /push the exact tested commit to GitHub/);
+  assert.match(relay, /Never deploy unless Jason separately approved deployment/);
+  assert.match(control, /Approve build/);
+  assert.match(control, /\/approve/);
 });

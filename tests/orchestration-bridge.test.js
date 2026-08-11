@@ -65,6 +65,25 @@ test('a goal is queued, atomically claimed, completed, and exposed in the Outbox
     });
     assert.equal((await emptyClaim.json()).goal, null);
 
+    const waitingResponse = await fetch(`${server.origin}/api/orchestration/goals/${created.id}`, {
+      method: 'PATCH', headers: { 'X-Gateway-Token': GATEWAY_TOKEN, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'needs_approval', result: '[BUILD_APPROVAL_REQUIRED] Proposed scope.' }),
+    });
+    assert.equal(waitingResponse.status, 200);
+
+    const approvedResponse = await fetch(`${server.origin}/api/orchestration/goals/${created.id}/approve`, {
+      method: 'POST', headers: { Cookie: server.cookie },
+    });
+    assert.equal(approvedResponse.status, 200);
+    assert.equal((await approvedResponse.json()).orchestration_build_approved, true);
+
+    const reclaimedResponse = await fetch(`${server.origin}/api/orchestration/goals/claim`, {
+      method: 'POST', headers: { 'X-Gateway-Token': GATEWAY_TOKEN },
+    });
+    const reclaimed = (await reclaimedResponse.json()).goal;
+    assert.equal(reclaimed.id, created.id);
+    assert.equal(reclaimed.orchestration_attempts, 2);
+
     const completedResponse = await fetch(`${server.origin}/api/orchestration/goals/${created.id}`, {
       method: 'PATCH', headers: { 'X-Gateway-Token': GATEWAY_TOKEN, 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'completed', result: 'Recommended action: improve the signal review panel.' }),
@@ -89,6 +108,20 @@ test('claim and completion endpoints reject browser sessions without the relay t
       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'completed' }),
     });
     assert.equal(patch.status, 401);
+  } finally {
+    stop(server);
+  }
+});
+
+test('build approval requires an authenticated Jason session and the waiting state', async () => {
+  const server = await startServer();
+  try {
+    const unauthorized = await fetch(`${server.origin}/api/orchestration/goals/not-real/approve`, { method: 'POST' });
+    assert.equal(unauthorized.status, 401);
+    const wrongState = await fetch(`${server.origin}/api/orchestration/goals/not-real/approve`, {
+      method: 'POST', headers: { Cookie: server.cookie },
+    });
+    assert.equal(wrongState.status, 409);
   } finally {
     stop(server);
   }

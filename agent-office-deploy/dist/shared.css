@@ -2155,12 +2155,14 @@
   #mission-results-list { display: grid; gap: 8px; }
   .mission-result { padding: 12px; border: 1px solid var(--border); border-left: 3px solid var(--state-idle); border-radius: 10px; background: var(--view-bg); }
   .mission-result--running { border-left-color: var(--state-active); }
+  .mission-result--needs_approval { border-left-color: #f59e0b; }
   .mission-result--completed { border-left-color: #22c55e; }
   .mission-result--failed { border-left-color: var(--state-blocked); }
   .mission-result > div { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
   .mission-result p { white-space: pre-wrap; max-height: 180px; overflow: auto; color: var(--text-dim); line-height: 1.45; }
   .mission-result .mission-result-error { color: var(--state-blocked); }
   .mission-result small { color: var(--muted); }
+  .mission-approve { margin: 0 0 10px; }
   @media (max-width: 700px) {
     .control-center { grid-template-columns: 1fr; }
     .control-center-backdrop { display: none; }

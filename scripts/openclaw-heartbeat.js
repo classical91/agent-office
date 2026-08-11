@@ -151,6 +151,9 @@ function extractReply(stdout) {
 }
 
 async function runPennyGoal(goal) {
+  const buildApproval = goal.orchestration_build_approved
+    ? 'Jason approved the proposed build through Agent Office. You may now implement only that approved scope.'
+    : 'Jason has NOT approved a build for this goal.';
   const prompt = [
     'Mission Control goal from Jason in OpenClaw Agents Office.',
     `Goal ID: ${goal.id}`,
@@ -160,6 +163,10 @@ async function runPennyGoal(goal) {
     'You are Penny, the sole orchestrator. Own this goal through completion.',
     'Immediately acknowledge receipt to Jason in the current Telegram direct conversation using the message tool.',
     'Delegate only to the appropriate specialist agents; specialists do not command one another.',
+    buildApproval,
+    'For any code, configuration, infrastructure, scheduled-task, or deployment work without build approval: perform read-only inspection only, send Jason the exact proposed scope/affected systems/risks/deployment intent, make no changes, and begin your final response with [BUILD_APPROVAL_REQUIRED].',
+    'For approved code work: fetch the latest GitHub main/master first; verify repo, remote, branch, and dirty state; use a clean branch/worktree; preserve unrelated changes; test; commit; and push the exact tested commit to GitHub.',
+    'Never deploy unless Jason separately approved deployment or the approved scope explicitly included it. Deploy only from the pushed commit and verify production.',
     'Keep Agent Office approval boundaries: no public posting, payments, real trades, production deployment, or destructive action without explicit approval.',
     'Return one coherent final result. Your final reply will also be delivered to Jason and saved to the Agent Office Outbox.',
   ].join('\n');
@@ -192,10 +199,11 @@ async function relayOneGoal() {
   console.log(`${new Date().toISOString()} claimed Mission Control goal ${goal.id}`);
   try {
     const result = await runPennyGoal(goal);
+    const needsApproval = result.includes('[BUILD_APPROVAL_REQUIRED]');
     await officeRequest(`/api/orchestration/goals/${encodeURIComponent(goal.id)}`, {
-      method: 'PATCH', body: JSON.stringify({ status: 'completed', result }),
+      method: 'PATCH', body: JSON.stringify({ status: needsApproval ? 'needs_approval' : 'completed', result }),
     });
-    console.log(`${new Date().toISOString()} completed Mission Control goal ${goal.id}`);
+    console.log(`${new Date().toISOString()} ${needsApproval ? 'paused for approval' : 'completed'} Mission Control goal ${goal.id}`);
   } catch (error) {
     await officeRequest(`/api/orchestration/goals/${encodeURIComponent(goal.id)}`, {
       method: 'PATCH', body: JSON.stringify({ status: 'failed', error: error.message }),
