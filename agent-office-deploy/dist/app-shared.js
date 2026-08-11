@@ -134,7 +134,7 @@ const AGENTS = [
     ],
     feed: [
       'TraderClaw restored to the active roster',
-      'GPT-5.5 API route verified',
+      'GPT-5.5 OAuth route verified',
       'Paper-trading boundary confirmed',
       'Market Dashboard ownership assigned',
       'Real trades remain approval-gated',
@@ -254,10 +254,10 @@ const AGENTS = [
   },
   {
     id: 'newsreporter',
-    name: 'News Reporter',
+    name: 'ShareBot67',
     emoji: 'NR',
     color: '#f97316',
-    role: 'News and Trend Specialist',
+    role: 'News and Research Specialist',
     model: 'GPT-5.5',
     authority: 'specialist',
     memory: true,

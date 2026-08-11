@@ -71,7 +71,7 @@ agent-office-deploy/
     visitors.{js,css}          # Visitors dashboard
     visit-tracker.js           # The script you paste on a tracked site
     server.js                  # Node HTTP server
-    config-files/              # Per-agent config snapshots
+    config-files/              # Placeholder only; local agent files are not deployed
 YOUTUBE_PACKAGING.md          # The YouTube packaging playbook (read at runtime)
 SMOKE_TEST.md                 # How to smoke-test packaging
 scripts/
@@ -203,7 +203,7 @@ All endpoints return JSON.
 | POST   | `/api/calendar/schedule/plan`     | Preview a natural-language plan  |
 | POST   | `/api/calendar/schedule/commit`   | Create the previewed blocks      |
 | POST   | `/api/calendar/quick-add`         | Natural-language event entry     |
-| GET    | `/api/config-files/:agent`        | Read an agent's config snapshot  |
+| GET    | `/api/config-files/:agent`        | Read snapshots only from a private runtime CONFIG_FILES_DIR |
 
 ### The calendar as an agent control surface
 
@@ -604,8 +604,9 @@ title options, recommended title, thumbnail concepts, description, pinned commen
 cutdowns, longform chapters, and the review checklist. Deterministic and offline: no API
 keys, no network calls, no publishing.
 
-This is YouTube Claw's workflow, and YouTube Claw is an agent in this office, so it lives
-here alongside the agent's config in `agent-office-deploy/dist/config-files/youtubeclaw/`.
+This is YouTube Claw's workflow, and YouTube Claw is an agent in this office, so the
+offline packaging scripts live here. Local agent configuration stays on the OpenClaw host
+and is not copied into the deploy artifact.
 The separate **youtube-claw** repo is the Next.js Shorts workflow studio — a different
 codebase, and not where packaging runs.
 
