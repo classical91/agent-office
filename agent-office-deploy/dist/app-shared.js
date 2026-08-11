@@ -2389,9 +2389,11 @@ function handleDropboxRequestError(error, fallbackMessage) {
 // opened.
 const DROP_FOLDER_ALL = '__all__';
 const DROP_FOLDER_UNFILED = '__unfiled__';
-// Grid or list is a preference about the wall itself, so it outlives the visit
-// the way the theme and the sidebar do.
+// How the wall is laid out, and which folders are pinned to the front of it,
+// are preferences about the wall itself, so they outlive the visit the way the
+// theme and the sidebar do.
 const DROP_FOLDER_LAYOUT_KEY = 'ao-drop-folder-layout';
+const DROP_FOLDER_PINS_KEY = 'ao-drop-folder-pins';
 
 const dropboxState = {
   drops: [],
@@ -2399,6 +2401,7 @@ const dropboxState = {
   view: 'table',
   folder: null,
   folderLayout: 'grid',
+  pinnedFolders: new Set(),
   filters: {
     search: '',
     subject: '',
@@ -2413,7 +2416,11 @@ const dropboxState = {
 try {
   const saved = localStorage.getItem(DROP_FOLDER_LAYOUT_KEY);
   if (saved === 'grid' || saved === 'list') dropboxState.folderLayout = saved;
-} catch (error) { /* private browsing; the wall just opens as a grid */ }
+  const pins = JSON.parse(localStorage.getItem(DROP_FOLDER_PINS_KEY) || '[]');
+  // A pin for a folder that no longer exists is kept rather than pruned: file
+  // something under that subject again and it comes back already pinned.
+  if (Array.isArray(pins)) dropboxState.pinnedFolders = new Set(pins.filter(pin => typeof pin === 'string'));
+} catch (error) { /* private browsing; the wall just opens as an unpinned grid */ }
 
 // ─── Reminders ───────────────────────────────────────────────────────────────
 // A drop with a remind_at is something the user put down for later. The server
@@ -2575,7 +2582,11 @@ function dropboxFolders() {
     byKey.set(key, folder);
   });
   const folders = [...byKey.values()].sort((a, b) => {
-    // Unfiled is the leftovers drawer, so it sits at the end of the wall.
+    // Pinned folders come first — that is what pinning one is for.
+    const pinnedA = isDropFolderPinned(a.key);
+    const pinnedB = isDropFolderPinned(b.key);
+    if (pinnedA !== pinnedB) return pinnedA ? -1 : 1;
+    // Unfiled is the leftovers drawer, so it sits at the end of its group.
     if (a.key === DROP_FOLDER_UNFILED) return 1;
     if (b.key === DROP_FOLDER_UNFILED) return -1;
     return a.name.localeCompare(b.name);
@@ -2583,7 +2594,35 @@ function dropboxFolders() {
   return { folders, total: notes.length };
 }
 
+// ─── Pinned folders ──────────────────────────────────────────────────────────
+// A pin is a note about how you work, not about the note itself, so it lives in
+// this browser rather than on the drop. All Notes is not a folder anyone filed
+// anything into, and it already sits first, so it has no pin.
+
+function isDropFolderPinned(key) {
+  return dropboxState.pinnedFolders.has(key);
+}
+
+function toggleDropFolderPin(key) {
+  const pins = dropboxState.pinnedFolders;
+  if (pins.has(key)) pins.delete(key);
+  else pins.add(key);
+  try {
+    localStorage.setItem(DROP_FOLDER_PINS_KEY, JSON.stringify([...pins]));
+  } catch (error) { /* the pin just does not outlive the visit */ }
+  renderDropbox();
+}
+
+function dropFolderPinHtml(folder) {
+  if (folder.all) return '';
+  const pinned = isDropFolderPinned(folder.key);
+  const label = `${pinned ? 'Unpin' : 'Pin'} ${folder.name}`;
+  return `<button type="button" class="drop-folder-pin${pinned ? ' is-pinned' : ''}" data-pin="${escAttr(folder.key)}"
+    aria-pressed="${pinned}" aria-label="${escAttr(label)}" title="${escAttr(label)}">${DROP_PIN_ICON}</button>`;
+}
+
 const DROP_FOLDER_ICON = '<svg viewBox="0 0 24 20" aria-hidden="true"><path fill="currentColor" d="M2 4a2 2 0 0 1 2-2h5.2a2 2 0 0 1 1.5.7L12.2 4H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4Z"/></svg>';
+const DROP_PIN_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="m12 2.6 2.9 5.9 6.5.95-4.7 4.58 1.11 6.47L12 17.44l-5.81 3.06 1.11-6.47-4.7-4.58 6.5-.95L12 2.6Z"/></svg>';
 
 function renderDropFolders() {
   const wrap = document.getElementById('dropbox-folders-wrap');
@@ -2602,8 +2641,24 @@ function renderDropFolders() {
   const rows = [{ key: DROP_FOLDER_ALL, name: 'All Notes', count: total, updated: 0, all: true }].concat(folders);
   wrap.innerHTML = asList ? dropFolderListHtml(rows) : rows.map(dropFolderTileHtml).join('');
 
+  // The star sits inside the thing it pins, so its click has to stop there
+  // rather than carry on and open the folder underneath it.
+  wrap.querySelectorAll('[data-pin]').forEach(el => {
+    el.addEventListener('click', event => {
+      event.stopPropagation();
+      toggleDropFolderPin(el.dataset.pin);
+    });
+  });
+
+  // A folder is a box with a button in it, so it cannot be a button itself.
+  // That costs the keyboard handling a real button would have given it.
   wrap.querySelectorAll('[data-folder]').forEach(el => {
     el.addEventListener('click', () => openDropFolder(el.dataset.folder));
+    el.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      openDropFolder(el.dataset.folder);
+    });
   });
 }
 
@@ -2611,12 +2666,17 @@ function dropFolderTileHtml(folder) {
   const meta = folder.updated
     ? `${dropNoteCount(folder.count)} · ${dropFormatShortDate(folder.updated)}`
     : dropNoteCount(folder.count);
+  const classes = ['drop-folder'];
+  if (folder.all) classes.push('drop-folder--all');
+  if (isDropFolderPinned(folder.key)) classes.push('is-pinned');
   return `
-    <button type="button" class="drop-folder${folder.all ? ' drop-folder--all' : ''}" data-folder="${escAttr(folder.key)}">
+    <div class="${classes.join(' ')}" role="button" tabindex="0" data-folder="${escAttr(folder.key)}"
+      aria-label="Open ${escAttr(folder.name)}">
+      ${dropFolderPinHtml(folder)}
       <span class="drop-folder-icon">${DROP_FOLDER_ICON}</span>
       <span class="drop-folder-name">${escHTML(folder.name)}</span>
       <span class="drop-folder-meta">${escHTML(meta)}</span>
-    </button>`;
+    </div>`;
 }
 
 // The same folders as rows: one line each, with the counts and dates in
@@ -2624,17 +2684,24 @@ function dropFolderTileHtml(folder) {
 function dropFolderListHtml(rows) {
   return `
     <div class="drop-folder-list-head">
-      <span>Name</span><span>Notes</span><span>Updated</span>
+      <span>Name</span><span>Notes</span><span>Updated</span><span class="drop-folder-pin-col"></span>
     </div>
-    ${rows.map(folder => `
-      <button type="button" class="drop-folder-row${folder.all ? ' drop-folder-row--all' : ''}" data-folder="${escAttr(folder.key)}">
+    ${rows.map(folder => {
+      const classes = ['drop-folder-row'];
+      if (folder.all) classes.push('drop-folder-row--all');
+      if (isDropFolderPinned(folder.key)) classes.push('is-pinned');
+      return `
+      <div class="${classes.join(' ')}" role="button" tabindex="0" data-folder="${escAttr(folder.key)}"
+        aria-label="Open ${escAttr(folder.name)}">
         <span class="drop-folder-row-name">
           <span class="drop-folder-icon">${DROP_FOLDER_ICON}</span>
           <span class="drop-folder-row-label">${escHTML(folder.name)}</span>
         </span>
         <span class="drop-folder-row-count">${folder.count}</span>
         <span class="drop-folder-row-date">${folder.updated ? escHTML(dropFormatShortDate(folder.updated)) : '—'}</span>
-      </button>`).join('')}`;
+        <span class="drop-folder-pin-col">${dropFolderPinHtml(folder)}</span>
+      </div>`;
+    }).join('')}`;
 }
 
 function setDropFolderLayout(layout) {

@@ -2861,6 +2861,7 @@
     gap: 12px;
   }
   .drop-folder {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -2894,6 +2895,43 @@
     overflow-wrap: anywhere;
   }
   .drop-folder-meta { font-size: 11.5px; color: var(--muted); }
+  .drop-folder:focus-visible,
+  .drop-folder-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ─── Pinned folders ────────────────────────────────────────────────────── */
+  /* A pinned folder is warm where the rest of the wall is cool, and wears its
+     star in the corner. An unpinned star is nearly invisible until you go
+     looking for it — present on a touch screen, quiet everywhere else. */
+  .drop-folder.is-pinned {
+    background: color-mix(in srgb, #fbbf24 13%, transparent);
+    border-color: color-mix(in srgb, #fbbf24 42%, transparent);
+  }
+  .drop-folder.is-pinned:hover {
+    background: color-mix(in srgb, #fbbf24 19%, transparent);
+    border-color: color-mix(in srgb, #fbbf24 60%, transparent);
+  }
+  .drop-folder.is-pinned .drop-folder-icon { color: #fbbf24; }
+  .drop-folder-row.is-pinned { background: color-mix(in srgb, #fbbf24 10%, transparent); }
+  .drop-folder-row.is-pinned:hover { background: color-mix(in srgb, #fbbf24 16%, transparent); }
+  .drop-folder-row.is-pinned .drop-folder-icon { color: #fbbf24; }
+  .drop-folder-pin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    background: none;
+    border: none;
+    border-radius: 6px;
+    color: var(--muted);
+    opacity: 0.25;
+    cursor: pointer;
+    transition: opacity 0.12s, color 0.12s, background 0.12s;
+  }
+  .drop-folder .drop-folder-pin { position: absolute; top: 7px; right: 7px; }
+  .drop-folder-pin svg { width: 15px; height: 15px; }
+  .drop-folder-pin:hover { opacity: 1; background: rgba(255,255,255,0.08); }
+  .drop-folder-pin:focus-visible { opacity: 1; outline: 2px solid var(--accent); outline-offset: 1px; }
+  .drop-folder-pin.is-pinned { opacity: 1; color: #fbbf24; }
 
   /* The same folders as rows. Counts and dates line up in columns you can read
      straight down, which a wall of tiles cannot do. */
@@ -2907,7 +2945,7 @@
   .drop-folder-list-head,
   .drop-folder-row {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 72px 110px;
+    grid-template-columns: minmax(0, 1fr) 72px 110px 30px;
     align-items: center;
     gap: 10px;
     width: 100%;
@@ -3069,7 +3107,7 @@
     .dropbox-folders-wrap { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
     .drop-folder { padding: 13px; gap: 6px; }
     .drop-folder-list-head,
-    .drop-folder-row { grid-template-columns: minmax(0, 1fr) 44px 62px; gap: 8px; padding: 11px 12px; }
+    .drop-folder-row { grid-template-columns: minmax(0, 1fr) 40px 58px 26px; gap: 6px; padding: 11px 10px; }
   }
 
   /* The Countdown Timers page carried its own hero, inputs, buttons and card
