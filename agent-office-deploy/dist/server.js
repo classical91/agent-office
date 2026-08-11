@@ -39,6 +39,7 @@ const LEGACY_STATUS_MAP = new Map([
   ['building', 'coding'],
 ]);
 const ALLOWED_AGENT_STATUSES = new Set(['idle', 'running', 'blocked', 'failed', 'needs_input', 'offline']);
+const ORCHESTRATION_STATES = new Set(['queued', 'running', 'completed', 'failed']);
 const ALLOWED_APP_SETTING_KEYS = new Set(['ao-gateway-local', 'ao-gateway-lan']);
 const DEFAULT_AGENTS = [
   { id: 'codex', name: 'Codex', role: 'Coding Agent', model: 'GPT-5', status: 'idle', source: 'Codex', notes: 'Repo work, reviews, implementation, and local verification.' },
@@ -731,6 +732,13 @@ function toClientDrop(row) {
     remind_at: toIsoOrEmpty(row.remind_at),
     date: row.date || row.created_at || new Date().toISOString(),
     updated_at: row.updated_at || row.date || row.created_at || new Date().toISOString(),
+    orchestration_status: ORCHESTRATION_STATES.has(row.orchestration_status) ? row.orchestration_status : '',
+    orchestration_result: row.orchestration_result || '',
+    orchestration_error: row.orchestration_error || '',
+    orchestration_session_key: row.orchestration_session_key || '',
+    orchestration_claimed_at: toIsoOrEmpty(row.orchestration_claimed_at),
+    orchestration_completed_at: toIsoOrEmpty(row.orchestration_completed_at),
+    orchestration_attempts: Number(row.orchestration_attempts) || 0,
   };
 }
 
@@ -1120,6 +1128,38 @@ function createFileStorage() {
       drops.unshift(drop);
       await saveDropsToFile(drops);
       return toClientDrop(drop);
+    },
+    async claimOrchestrationGoal() {
+      const drops = await loadDropsFromFile();
+      const goal = drops
+        .filter(drop => {
+          const stale = drop.orchestration_status === 'running' &&
+            Date.now() - new Date(drop.orchestration_claimed_at || 0).getTime() > 20 * 60 * 1000;
+          return drop.agent === 'oss' && drop.subject === 'Mission Control' &&
+            (drop.orchestration_status === 'queued' || stale) && (Number(drop.orchestration_attempts) || 0) < 3;
+        })
+        .sort((a, b) => new Date(a.date || a.created_at) - new Date(b.date || b.created_at))[0];
+      if (!goal) return null;
+      goal.orchestration_status = 'running';
+      goal.orchestration_claimed_at = new Date().toISOString();
+      goal.orchestration_attempts = (Number(goal.orchestration_attempts) || 0) + 1;
+      goal.updated_at = new Date().toISOString();
+      await saveDropsToFile(drops);
+      return toClientDrop(goal);
+    },
+    async updateOrchestrationGoal(id, patch) {
+      const drops = await loadDropsFromFile();
+      const goal = drops.find(drop => drop.id === id && drop.agent === 'oss' && drop.subject === 'Mission Control');
+      if (!goal) return null;
+      Object.assign(goal, patch, { updated_at: new Date().toISOString() });
+      if (patch.orchestration_status === 'completed') {
+        goal.status = 'done';
+        goal.done = true;
+      } else if (patch.orchestration_status === 'failed') {
+        goal.status = 'reviewing';
+      }
+      await saveDropsToFile(drops);
+      return toClientDrop(goal);
     },
     async deleteDrop(id) {
       const drops = await loadDropsFromFile();
@@ -1519,6 +1559,13 @@ async function createPostgresStorage() {
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS links JSONB NOT NULL DEFAULT '[]'::jsonb`);
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS remind_at TIMESTAMPTZ`);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_status VARCHAR(24) NOT NULL DEFAULT ''`);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_result TEXT NOT NULL DEFAULT ''`);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_error TEXT NOT NULL DEFAULT ''`);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_session_key TEXT NOT NULL DEFAULT ''`);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_claimed_at TIMESTAMPTZ`);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_completed_at TIMESTAMPTZ`);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_attempts INTEGER NOT NULL DEFAULT 0`);
   // Pulling the due reminders is the hot path for the phone Shortcut.
   await pool.query(`CREATE INDEX IF NOT EXISTS drops_remind_at_idx ON drops (remind_at) WHERE remind_at IS NOT NULL`);
 
@@ -1779,7 +1826,10 @@ async function createPostgresStorage() {
     async listDrops() {
       const result = await pool.query(`
         SELECT id, title, subject, category, project, agent, status, tags, links,
-               content, priority, done, remind_at, created_at AS date, updated_at
+               content, priority, done, remind_at, created_at AS date, updated_at,
+               orchestration_status, orchestration_result, orchestration_error,
+               orchestration_session_key, orchestration_claimed_at,
+               orchestration_completed_at, orchestration_attempts
         FROM drops
         ORDER BY updated_at DESC, created_at DESC
       `);
@@ -1789,18 +1839,61 @@ async function createPostgresStorage() {
       const result = await pool.query(
         `
           INSERT INTO drops (id, title, subject, category, project, agent, status, tags, links,
-                             content, priority, done, remind_at, created_at, updated_at)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14)
+                             content, priority, done, remind_at, created_at, updated_at,
+                             orchestration_status, orchestration_session_key)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$15,$16)
           RETURNING id, title, subject, category, project, agent, status, tags, links,
-                    content, priority, done, remind_at, created_at AS date, updated_at
+                    content, priority, done, remind_at, created_at AS date, updated_at,
+                    orchestration_status, orchestration_result, orchestration_error,
+                    orchestration_session_key, orchestration_claimed_at,
+                    orchestration_completed_at, orchestration_attempts
         `,
         [
           drop.id, drop.title, drop.subject, drop.category, drop.project, drop.agent || '',
           normalizeStatus(drop.status, 'idea'), JSON.stringify(drop.tags || []), JSON.stringify(drop.links || []),
           drop.content, drop.priority, Boolean(drop.done), drop.remind_at || null, drop.date,
+          drop.orchestration_status || '', drop.orchestration_session_key || '',
         ]
       );
       return toClientDrop(result.rows[0]);
+    },
+    async claimOrchestrationGoal() {
+      const result = await pool.query(`
+        UPDATE drops
+        SET orchestration_status = 'running', orchestration_claimed_at = NOW(),
+            orchestration_attempts = orchestration_attempts + 1, updated_at = NOW()
+        WHERE id = (
+          SELECT id FROM drops
+          WHERE agent = 'oss' AND subject = 'Mission Control' AND orchestration_attempts < 3
+            AND (orchestration_status = 'queued' OR
+                 (orchestration_status = 'running' AND orchestration_claimed_at < NOW() - INTERVAL '20 minutes'))
+          ORDER BY created_at ASC
+          FOR UPDATE SKIP LOCKED
+          LIMIT 1
+        )
+        RETURNING id, title, subject, category, project, agent, status, tags, links,
+                  content, priority, done, remind_at, created_at AS date, updated_at,
+                  orchestration_status, orchestration_result, orchestration_error,
+                  orchestration_session_key, orchestration_claimed_at,
+                  orchestration_completed_at, orchestration_attempts
+      `);
+      return result.rows[0] ? toClientDrop(result.rows[0]) : null;
+    },
+    async updateOrchestrationGoal(id, patch) {
+      const result = await pool.query(`
+        UPDATE drops
+        SET orchestration_status = $2, orchestration_result = $3,
+            orchestration_error = $4, orchestration_completed_at = $5, updated_at = NOW(),
+            status = CASE WHEN $2 = 'completed' THEN 'done' WHEN $2 = 'failed' THEN 'reviewing' ELSE status END,
+            done = CASE WHEN $2 = 'completed' THEN TRUE ELSE done END
+        WHERE id = $1 AND agent = 'oss' AND subject = 'Mission Control'
+        RETURNING id, title, subject, category, project, agent, status, tags, links,
+                  content, priority, done, remind_at, created_at AS date, updated_at,
+                  orchestration_status, orchestration_result, orchestration_error,
+                  orchestration_session_key, orchestration_claimed_at,
+                  orchestration_completed_at, orchestration_attempts
+      `, [id, patch.orchestration_status, patch.orchestration_result || '', patch.orchestration_error || '', patch.orchestration_completed_at || null]);
+      return result.rows[0] ? toClientDrop(result.rows[0]) : null;
     },
     async deleteDrop(id) {
       const result = await pool.query('DELETE FROM drops WHERE id = $1', [id]);
@@ -4075,6 +4168,19 @@ const GATEWAY_HEARTBEAT_STALE_MS = 90 * 1000;
 const GATEWAY_MAX_PROBE_BYTES = 64 * 1024;
 const GATEWAY_TOKEN = String(process.env.GATEWAY_TOKEN || '').trim();
 const GATEWAY_TOKEN_MIN_LENGTH = 16;
+
+function requireGatewayToken(res, req) {
+  if (!GATEWAY_TOKEN || GATEWAY_TOKEN.length < GATEWAY_TOKEN_MIN_LENGTH) {
+    sendJson(res, 503, { error: `Set GATEWAY_TOKEN on the server to a random string of at least ${GATEWAY_TOKEN_MIN_LENGTH} characters.` });
+    return false;
+  }
+  const supplied = String(req.headers['x-gateway-token'] || '').trim();
+  if (!supplied || !safeCompareHash(supplied, sha256(GATEWAY_TOKEN))) {
+    sendJson(res, 401, { error: 'Invalid or missing gateway token.' });
+    return false;
+  }
+  return true;
+}
 const GATEWAY_LOCAL_SETTING_KEY = 'ao-gateway-local';
 const DEFAULT_GATEWAY_URL = 'http://localhost:18789';
 
@@ -4552,22 +4658,74 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // -- PENNY ORCHESTRATION BRIDGE -----------------------------
+
+    if (req.method === 'GET' && pathname === '/api/orchestration/goals') {
+      if (!requireDropsAuth(res, req)) return;
+      const goals = (await storage.listDrops()).filter(drop =>
+        drop.agent === 'oss' && drop.subject === 'Mission Control' && drop.orchestration_status
+      );
+      sendJson(res, 200, goals);
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/orchestration/goals') {
+      if (!requireDropsAuth(res, req)) return;
+      const input = await readJsonBody(req);
+      const goal = cleanText(input.goal || input.content, 10000);
+      if (!goal) {
+        sendJson(res, 400, { error: 'Goal is required.' });
+        return;
+      }
+      const id = `goal-${typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now()}`;
+      const title = await uniqueDropTitle(storage, deriveDropTitle({ title: input.title, content: goal }));
+      const created = await storage.createDrop({
+        id, date: new Date().toISOString(), done: false, title,
+        subject: 'Mission Control', category: 'Mission Control', project: cleanText(input.project, 100),
+        agent: 'oss', status: 'inbox', tags: ['penny', 'orchestration'], links: [],
+        content: goal, priority: 'normal', remind_at: null,
+        orchestration_status: 'queued',
+        orchestration_session_key: `agent:oss:mission-control-${id.replace(/[^a-zA-Z0-9_-]/g, '').slice(-80)}`,
+      });
+      sendJson(res, 201, created);
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/orchestration/goals/claim') {
+      if (!requireGatewayToken(res, req)) return;
+      const goal = await storage.claimOrchestrationGoal();
+      sendJson(res, 200, { goal });
+      return;
+    }
+
+    if (req.method === 'PATCH' && pathname.startsWith('/api/orchestration/goals/')) {
+      if (!requireGatewayToken(res, req)) return;
+      const id = pathname.slice('/api/orchestration/goals/'.length).trim();
+      const input = await readJsonBody(req);
+      const state = cleanText(input.status, 24).toLowerCase();
+      if (!['completed', 'failed'].includes(state)) {
+        sendJson(res, 400, { error: 'Status must be completed or failed.' });
+        return;
+      }
+      const goal = await storage.updateOrchestrationGoal(id, {
+        orchestration_status: state,
+        orchestration_result: cleanText(input.result, 40000),
+        orchestration_error: cleanText(input.error, 5000),
+        orchestration_completed_at: new Date().toISOString(),
+      });
+      if (!goal) {
+        sendJson(res, 404, { error: 'Goal not found.' });
+        return;
+      }
+      sendJson(res, 200, goal);
+      return;
+    }
+
     // The machine running OpenClaw reports in here when this server cannot
     // reach it. Token-authenticated rather than session-authenticated: it is a
     // script on a desktop, and it holds no cookie.
     if (req.method === 'POST' && pathname === '/api/gateway/heartbeat') {
-      if (!GATEWAY_TOKEN || GATEWAY_TOKEN.length < GATEWAY_TOKEN_MIN_LENGTH) {
-        sendJson(res, 503, {
-          error: `Set GATEWAY_TOKEN on the server to a random string of at least ${GATEWAY_TOKEN_MIN_LENGTH} characters.`,
-        });
-        return;
-      }
-
-      const supplied = String(req.headers['x-gateway-token'] || '').trim();
-      if (!supplied || !safeCompareHash(supplied, sha256(GATEWAY_TOKEN))) {
-        sendJson(res, 401, { error: 'Invalid or missing gateway token.' });
-        return;
-      }
+      if (!requireGatewayToken(res, req)) return;
 
       const body = await readJsonBody(req);
       const rawAgents = Array.isArray(body.agents) ? body.agents.slice(0, 100) : [];

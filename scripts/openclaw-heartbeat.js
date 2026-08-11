@@ -5,8 +5,9 @@
  * OpenClaw heartbeat.
  *
  * Run this on the machine OpenClaw runs on. It asks the local gateway what is
- * running and posts that to Agent Office every 30 seconds, so a deployed
- * office can show a real green light for a gateway it has no way of reaching.
+ * running and posts that to Agent Office every 30 seconds. The same outbound
+ * loop claims Mission Control goals, launches Penny through the local gateway,
+ * and writes Penny's result back to the Agent Office Outbox.
  *
  * You only need this when Agent Office is NOT on the same machine as OpenClaw.
  * When they share a machine the server probes the gateway directly and there is
@@ -20,12 +21,20 @@
  *   GATEWAY_URL       the local gateway (default http://localhost:18789)
  *   HEARTBEAT_SECONDS how often to report (default 30)
  *   HEARTBEAT_ONCE=1  send a single beat and exit, for testing
+ *   PENNY_TELEGRAM_TARGET  Telegram chat receiving acknowledgements/results
+ *   PENNY_TELEGRAM_ACCOUNT OpenClaw Telegram account id (default oss)
  *
  * A beat older than 90 seconds reads as offline in the office, so the default
  * interval leaves room for one to go missing without flapping the light.
  */
 
 const os = require('node:os');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const { execFile } = require('node:child_process');
+const { promisify } = require('node:util');
+
+const execFileAsync = promisify(execFile);
 
 const OFFICE_URL = String(process.env.OFFICE_URL || '').trim().replace(/\/+$/, '');
 const GATEWAY_URL = String(process.env.GATEWAY_URL || 'http://localhost:18789').trim().replace(/\/+$/, '');
@@ -34,6 +43,10 @@ const INTERVAL_MS = Math.max(5, Number(process.env.HEARTBEAT_SECONDS) || 30) * 1
 const ONCE = process.env.HEARTBEAT_ONCE === '1';
 const PROBE_PATHS = ['/agents', '/api/agents', '/status', '/api/status', '/health', '/api/health'];
 const REQUEST_TIMEOUT_MS = 5000;
+const TELEGRAM_TARGET = String(process.env.PENNY_TELEGRAM_TARGET || '5752282291').trim();
+const TELEGRAM_ACCOUNT = String(process.env.PENNY_TELEGRAM_ACCOUNT || 'oss').trim();
+const AGENT_TIMEOUT_MS = Math.max(60, Number(process.env.PENNY_GOAL_TIMEOUT_SECONDS) || 1800) * 1000;
+let cycleRunning = false;
 
 if (!OFFICE_URL || !TOKEN) {
   console.error('Set OFFICE_URL and GATEWAY_TOKEN. See the comment at the top of this file.');
@@ -105,9 +118,109 @@ async function beat() {
   }
 }
 
+async function officeRequest(route, options = {}) {
+  const response = await fetch(`${OFFICE_URL}${route}`, {
+    ...options,
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'X-Gateway-Token': TOKEN,
+      ...(options.headers || {}),
+    },
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error || `Agent Office replied ${response.status}`);
+  return payload;
+}
+
+function extractReply(stdout) {
+  const raw = String(stdout || '').trim();
+  if (!raw) return '';
+  try {
+    const parsed = JSON.parse(raw);
+    const candidates = [
+      parsed.reply, parsed.text, parsed.message, parsed.content,
+      parsed.result && parsed.result.text,
+      parsed.payloads && parsed.payloads.map(item => item && (item.text || item.content)).filter(Boolean).join('\n\n'),
+    ];
+    return String(candidates.find(Boolean) || raw).slice(0, 40000);
+  } catch {
+    return raw.slice(0, 40000);
+  }
+}
+
+async function runPennyGoal(goal) {
+  const prompt = [
+    'Mission Control goal from Jason in OpenClaw Agents Office.',
+    `Goal ID: ${goal.id}`,
+    '',
+    goal.content,
+    '',
+    'You are Penny, the sole orchestrator. Own this goal through completion.',
+    'Immediately acknowledge receipt to Jason in the current Telegram direct conversation using the message tool.',
+    'Delegate only to the appropriate specialist agents; specialists do not command one another.',
+    'Keep Agent Office approval boundaries: no public posting, payments, real trades, production deployment, or destructive action without explicit approval.',
+    'Return one coherent final result. Your final reply will also be delivered to Jason and saved to the Agent Office Outbox.',
+  ].join('\n');
+  const promptPath = path.join(os.tmpdir(), `agent-office-${goal.id.replace(/[^a-zA-Z0-9_-]/g, '')}.txt`);
+  await fs.writeFile(promptPath, prompt, 'utf8');
+  try {
+    const command = process.platform === 'win32' ? 'openclaw.cmd' : 'openclaw';
+    const args = [
+      'agent', '--agent', 'oss', '--session-key', goal.orchestration_session_key,
+      '--message-file', promptPath, '--thinking', 'medium', '--json', '--deliver',
+      '--reply-channel', 'telegram', '--reply-account', TELEGRAM_ACCOUNT, '--reply-to', TELEGRAM_TARGET,
+      '--timeout', String(Math.ceil(AGENT_TIMEOUT_MS / 1000)),
+    ];
+    const { stdout } = await execFileAsync(command, args, {
+      timeout: AGENT_TIMEOUT_MS + 30000,
+      maxBuffer: 2 * 1024 * 1024,
+      windowsHide: true,
+      shell: process.platform === 'win32',
+    });
+    return extractReply(stdout) || 'Penny completed the goal and delivered the result to Telegram.';
+  } finally {
+    await fs.unlink(promptPath).catch(() => {});
+  }
+}
+
+async function relayOneGoal() {
+  const claimed = await officeRequest('/api/orchestration/goals/claim', { method: 'POST', body: '{}' });
+  if (!claimed.goal) return false;
+  const goal = claimed.goal;
+  console.log(`${new Date().toISOString()} claimed Mission Control goal ${goal.id}`);
+  try {
+    const result = await runPennyGoal(goal);
+    await officeRequest(`/api/orchestration/goals/${encodeURIComponent(goal.id)}`, {
+      method: 'PATCH', body: JSON.stringify({ status: 'completed', result }),
+    });
+    console.log(`${new Date().toISOString()} completed Mission Control goal ${goal.id}`);
+  } catch (error) {
+    await officeRequest(`/api/orchestration/goals/${encodeURIComponent(goal.id)}`, {
+      method: 'PATCH', body: JSON.stringify({ status: 'failed', error: error.message }),
+    }).catch(reportError => console.error(`${new Date().toISOString()} could not report goal failure: ${reportError.message}`));
+    console.error(`${new Date().toISOString()} failed Mission Control goal ${goal.id}: ${error.message}`);
+  }
+  return true;
+}
+
+async function cycle() {
+  if (cycleRunning) return;
+  cycleRunning = true;
+  try {
+    const gatewayUp = await beat();
+    if (gatewayUp) await relayOneGoal();
+  } catch (error) {
+    console.error(`${new Date().toISOString()} relay cycle failed: ${error.message}`);
+  } finally {
+    cycleRunning = false;
+  }
+}
+
 (async () => {
   const ok = await beat();
   if (ONCE) process.exit(ok ? 0 : 1);
-  setInterval(beat, INTERVAL_MS);
-  console.log(`Reporting ${GATEWAY_URL} to ${OFFICE_URL} every ${INTERVAL_MS / 1000}s. Ctrl-C to stop.`);
+  setInterval(cycle, INTERVAL_MS);
+  console.log(`Reporting ${GATEWAY_URL} and relaying Penny goals from ${OFFICE_URL} every ${INTERVAL_MS / 1000}s. Ctrl-C to stop.`);
 })();

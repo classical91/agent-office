@@ -20,6 +20,7 @@ The 3D office is intended to be an operational view of that system, not a decora
 - **Visitors** — who is on your websites right now, what they are reading, and whether they have been before. One tracker script goes on any site you run; nothing is looked up against any outside service. See [Visitors](#visitors-1).
 - **Org chart** — a visual layout of the agent team.
 - **Office view** — a live operational room where clicking an agent opens its task, model, workspace, authority, state, and available controls. Penny opens Mission Control; appearance editing remains available from the inspector.
+- **Penny execution bridge** — Mission Control goals are claimed by the authenticated desktop relay, run in a dedicated Penny session through the local OpenClaw gateway, delivered to Jason in Telegram, and written back to the Agent Office Outbox. Stale claims recover after 20 minutes; cron is not required for normal execution.
 - **AI Landscape** — a tracker page for the AI model/tooling landscape.
 - **Project Rooms** — per-project overview with linked tasks, repo/deploy links, and next actions.
 - **Agent Registry** — a directory of configured agents.
@@ -210,6 +211,10 @@ All endpoints return JSON.
 | POST   | `/api/calendar/schedule/commit`   | Create the previewed blocks      |
 | POST   | `/api/calendar/quick-add`         | Natural-language event entry     |
 | GET    | `/api/config-files/:agent`        | Read snapshots only from a private runtime CONFIG_FILES_DIR |
+| GET    | `/api/orchestration/goals`        | List Penny goals and Outbox results (session-authenticated) |
+| POST   | `/api/orchestration/goals`        | Queue a goal for Penny (session-authenticated) |
+| POST   | `/api/orchestration/goals/claim`  | Atomically claim the next goal (gateway-token authenticated) |
+| PATCH  | `/api/orchestration/goals/:id`    | Complete/fail a claimed goal (gateway-token authenticated) |
 
 ### The calendar as an agent control surface
 
@@ -431,7 +436,9 @@ node scripts/openclaw-heartbeat.js
 
 Set `GATEWAY_TOKEN` on the server to the same random string (16+ characters).
 The script asks the local gateway what is running, posts it every 30 seconds,
-and stays quiet when the gateway is down — a beat older than 90 seconds reads as
+claims queued Mission Control goals, launches Penny through `openclaw agent`,
+delivers Penny's response to Jason's Telegram, and writes it to the Outbox. It
+stays quiet when the gateway is down — a beat older than 90 seconds reads as
 offline, so the light goes red on its own. `HEARTBEAT_ONCE=1` sends one and
 exits, which is the quickest way to prove the token works.
 

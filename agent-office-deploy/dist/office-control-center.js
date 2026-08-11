@@ -115,9 +115,38 @@
       <div class="workflow-lane" aria-label="Office workflow">
         ${Object.entries(counts).map(([name, count]) => `<div><span>${escape(name.replace(/^./, char => char.toUpperCase()))}</span><strong>${count}</strong></div>`).join('<i>→</i>')}
       </div>
+      <section class="mission-results" aria-live="polite">
+        <div class="mission-results-heading"><strong>Goals and Outbox</strong><span>Results are also delivered to Jason in Telegram.</span></div>
+        <div id="mission-results-list"><div class="control-unavailable">Loading goals…</div></div>
+      </section>
       <div class="control-actions"><a class="ao-btn" href="/mission-board.html">Open Mission Board</a><a class="ao-btn" href="/project-rooms.html">Project rooms</a><a class="ao-btn" href="/agent-registry.html">Agent registry</a></div>`;
     body.querySelector('#mission-goal-form').addEventListener('submit', submitGoal);
     openShell();
+    refreshMissionGoals();
+  }
+
+  async function refreshMissionGoals() {
+    const list = body.querySelector('#mission-results-list');
+    if (!list) return;
+    try {
+      const response = await fetch('/api/orchestration/goals', { credentials: 'same-origin' });
+      if (response.status === 401) throw new Error('Unlock the Dropbox to see goal status.');
+      if (!response.ok) throw new Error('Goal status is unavailable.');
+      const goals = await response.json();
+      if (!goals.length) {
+        list.innerHTML = '<div class="control-unavailable">No Mission Control goals yet.</div>';
+        return;
+      }
+      list.innerHTML = goals.slice(0, 10).map(goal => `
+        <article class="mission-result mission-result--${escape(goal.orchestration_status)}">
+          <div><strong>${escape(goal.title)}</strong><span class="control-state">${escape(goal.orchestration_status)}</span></div>
+          ${goal.orchestration_result ? `<p>${escape(goal.orchestration_result)}</p>` : ''}
+          ${goal.orchestration_error ? `<p class="mission-result-error">${escape(goal.orchestration_error)}</p>` : ''}
+          <small>${escape(new Date(goal.updated_at || goal.date).toLocaleString())}</small>
+        </article>`).join('');
+    } catch (error) {
+      list.innerHTML = `<div class="control-unavailable">${escape(error.message)}</div>`;
+    }
   }
 
   async function submitGoal(event) {
@@ -128,18 +157,15 @@
     if (!goal) return;
     status.textContent = 'Sending…';
     try {
-      const response = await fetch('/api/drops', {
+      const response = await fetch('/api/orchestration/goals', {
         method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: goal.split(/\n/)[0].slice(0, 120), content: goal, subject: 'Mission Control',
-          category: 'Mission Control', project: '', agent: 'oss', tags: 'penny,orchestration',
-          priority: 'normal', status: 'inbox'
-        })
+        body: JSON.stringify({ goal, title: goal.split(/\n/)[0].slice(0, 120) })
       });
       if (response.status === 401) throw new Error('Unlock the Dropbox first, then try again.');
       if (!response.ok) throw new Error('The goal could not be saved.');
       input.value = '';
       status.textContent = 'Goal received. Penny owns the next routing decision.';
+      refreshMissionGoals();
       const penny = configuredAgent('oss');
       if (penny && typeof addFeedItem === 'function') addFeedItem(penny, `Goal received: ${goal.slice(0, 90)}`);
       if (typeof refreshOpsQueue === 'function') refreshOpsQueue();

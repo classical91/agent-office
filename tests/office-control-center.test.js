@@ -26,9 +26,9 @@ test('the office exposes Mission Control and operational agent inspection', () =
 });
 
 test('Mission Control sends goals to Penny through the authenticated board', () => {
-  assert.match(control, /fetch\('\/api\/drops'/);
-  assert.match(control, /agent: 'oss'/);
-  assert.match(control, /subject: 'Mission Control'/);
+  assert.match(control, /fetch\('\/api\/orchestration\/goals'/);
+  assert.match(control, /refreshMissionGoals/);
+  assert.match(control, /Goals and Outbox/);
 });
 
 test('unsupported runtime controls are disclosed instead of simulated', () => {
