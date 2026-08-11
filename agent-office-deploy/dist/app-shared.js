@@ -2389,12 +2389,16 @@ function handleDropboxRequestError(error, fallbackMessage) {
 // opened.
 const DROP_FOLDER_ALL = '__all__';
 const DROP_FOLDER_UNFILED = '__unfiled__';
+// Grid or list is a preference about the wall itself, so it outlives the visit
+// the way the theme and the sidebar do.
+const DROP_FOLDER_LAYOUT_KEY = 'ao-drop-folder-layout';
 
 const dropboxState = {
   drops: [],
   selectedId: null,
   view: 'table',
   folder: null,
+  folderLayout: 'grid',
   filters: {
     search: '',
     subject: '',
@@ -2405,6 +2409,11 @@ const dropboxState = {
     sort: 'updated_desc',
   },
 };
+
+try {
+  const saved = localStorage.getItem(DROP_FOLDER_LAYOUT_KEY);
+  if (saved === 'grid' || saved === 'list') dropboxState.folderLayout = saved;
+} catch (error) { /* private browsing; the wall just opens as a grid */ }
 
 // ─── Reminders ───────────────────────────────────────────────────────────────
 // A drop with a remind_at is something the user put down for later. The server
@@ -2580,30 +2589,60 @@ function renderDropFolders() {
   const wrap = document.getElementById('dropbox-folders-wrap');
   if (!wrap) return;
   const { folders, total } = dropboxFolders();
+  const asList = dropboxState.folderLayout === 'list';
+  wrap.classList.toggle('is-list', asList);
 
   if (!total) {
     wrap.innerHTML = '<div class="drop-empty"><div class="drop-empty-title">Dropbox is clear.</div><div class="drop-empty-copy">New Note files your first one, and its subject becomes a folder.</div></div>';
     return;
   }
 
-  const tile = (key, name, meta, extraClass) => `
-    <button type="button" class="drop-folder${extraClass ? ' ' + extraClass : ''}" data-folder="${escAttr(key)}">
-      <span class="drop-folder-icon">${DROP_FOLDER_ICON}</span>
-      <span class="drop-folder-name">${escHTML(name)}</span>
-      <span class="drop-folder-meta">${escHTML(meta)}</span>
-    </button>`;
-
-  wrap.innerHTML =
-    tile(DROP_FOLDER_ALL, 'All Notes', dropNoteCount(total), 'drop-folder--all') +
-    folders.map(folder => tile(
-      folder.key,
-      folder.name,
-      folder.updated ? `${dropNoteCount(folder.count)} · ${dropFormatShortDate(folder.updated)}` : dropNoteCount(folder.count)
-    )).join('');
+  // All Notes is not a folder anyone filed anything into, so it has a count but
+  // no date of its own.
+  const rows = [{ key: DROP_FOLDER_ALL, name: 'All Notes', count: total, updated: 0, all: true }].concat(folders);
+  wrap.innerHTML = asList ? dropFolderListHtml(rows) : rows.map(dropFolderTileHtml).join('');
 
   wrap.querySelectorAll('[data-folder]').forEach(el => {
     el.addEventListener('click', () => openDropFolder(el.dataset.folder));
   });
+}
+
+function dropFolderTileHtml(folder) {
+  const meta = folder.updated
+    ? `${dropNoteCount(folder.count)} · ${dropFormatShortDate(folder.updated)}`
+    : dropNoteCount(folder.count);
+  return `
+    <button type="button" class="drop-folder${folder.all ? ' drop-folder--all' : ''}" data-folder="${escAttr(folder.key)}">
+      <span class="drop-folder-icon">${DROP_FOLDER_ICON}</span>
+      <span class="drop-folder-name">${escHTML(folder.name)}</span>
+      <span class="drop-folder-meta">${escHTML(meta)}</span>
+    </button>`;
+}
+
+// The same folders as rows: one line each, with the counts and dates in
+// columns you can read down instead of hunting across tiles.
+function dropFolderListHtml(rows) {
+  return `
+    <div class="drop-folder-list-head">
+      <span>Name</span><span>Notes</span><span>Updated</span>
+    </div>
+    ${rows.map(folder => `
+      <button type="button" class="drop-folder-row${folder.all ? ' drop-folder-row--all' : ''}" data-folder="${escAttr(folder.key)}">
+        <span class="drop-folder-row-name">
+          <span class="drop-folder-icon">${DROP_FOLDER_ICON}</span>
+          <span class="drop-folder-row-label">${escHTML(folder.name)}</span>
+        </span>
+        <span class="drop-folder-row-count">${folder.count}</span>
+        <span class="drop-folder-row-date">${folder.updated ? escHTML(dropFormatShortDate(folder.updated)) : '—'}</span>
+      </button>`).join('')}`;
+}
+
+function setDropFolderLayout(layout) {
+  dropboxState.folderLayout = layout === 'list' ? 'list' : 'grid';
+  try {
+    localStorage.setItem(DROP_FOLDER_LAYOUT_KEY, dropboxState.folderLayout);
+  } catch (error) { /* the choice just does not outlive the visit */ }
+  renderDropbox();
 }
 
 function dropNoteCount(count) {
@@ -2678,6 +2717,12 @@ function syncDropboxPanes(gridOpen = isDropboxGridOpen()) {
     ['dropbox-view-detail', 'cards'],
     ['dropbox-view-board',  'board'],
   ].forEach(([id, name]) => document.getElementById(id)?.classList.toggle('active', mode === name));
+
+  // The wall's own switch: how the folders are laid out, not which notes show.
+  [
+    ['dropbox-folders-grid', 'grid'],
+    ['dropbox-folders-list', 'list'],
+  ].forEach(([id, name]) => document.getElementById(id)?.classList.toggle('active', dropboxState.folderLayout === name));
 }
 
 function populateSubjectFilter() {
@@ -3120,6 +3165,9 @@ if (document.getElementById('save-drop-btn')) {
     e.currentTarget.setAttribute('aria-expanded', String(open));
     e.currentTarget.textContent = open ? 'Fewer filters' : 'More filters';
   });
+
+  document.getElementById('dropbox-folders-grid')?.addEventListener('click', () => setDropFolderLayout('grid'));
+  document.getElementById('dropbox-folders-list')?.addEventListener('click', () => setDropFolderLayout('list'));
 
   document.getElementById('dropbox-view-list').addEventListener('click', () => {
     dropboxState.view = 'table';

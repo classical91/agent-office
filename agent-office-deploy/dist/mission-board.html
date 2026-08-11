@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>Dropbox - Agent Office</title>
-<link rel="stylesheet" href="shared.css?v=dropbox-folders-20260811"/>
+<link rel="stylesheet" href="shared.css?v=folder-list-20260811"/>
 <!-- Restores the saved theme and sidebar state before first paint, so no page
      flashes the default accent or a full-width sidebar on its way in.
      ACCENTS mirrors THEMES in app-shared.js. -->
@@ -115,6 +115,10 @@
         <h2>Dropbox</h2>
         <div class="dropbox-actions">
           <button id="new-drop-btn" class="btn btn-primary">New Drop</button>
+          <!-- How the folder wall is laid out. Only on show while the wall is
+               up; Table/Cards/Board take over once a folder is open. -->
+          <button id="dropbox-folders-grid" class="btn btn-secondary active">Grid</button>
+          <button id="dropbox-folders-list" class="btn btn-secondary">List</button>
           <button id="dropbox-view-list" class="btn btn-secondary active">Table</button>
           <button id="dropbox-view-detail" class="btn btn-secondary">Cards</button>
         </div>
@@ -241,7 +245,7 @@
   </div>
 </div>
 
-<script src="app-shared.js?v=dropbox-folders-20260811"></script>
+<script src="app-shared.js?v=folder-list-20260811"></script>
 <script src="mission-board.js?v=dropbox-folders-20260811"></script>
 <script>
 switchView('dropbox', document.querySelector('.nav-item.active'));
