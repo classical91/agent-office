@@ -73,5 +73,5 @@ test('journal page and shared navigation are shipped', () => {
   const shell = fs.readFileSync(path.join(ROOT, 'scripts', 'shell', 'shell.html'), 'utf8');
   assert.match(page, /TraderClaw Journal - Agent Office/);
   assert.match(page, /traderclaw-journal\.js/);
-  assert.match(shell, /href="\/traderclaw-journal\.html"/);
+  assert.doesNotMatch(shell, /href="\/traderclaw-journal\.html"/);
 });
