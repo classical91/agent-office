@@ -39,6 +39,9 @@ test('the top bar exposes one general login backed by the Dropbox session', () =
   assert.match(shared, /fetch\('\/api\/session',\s*\{/);
   assert.match(shared, /JSON\.stringify\(\{ passphrase:/);
   assert.match(shared, /dropsAuthState = \{ configured: true, authenticated: true/);
+  assert.match(shared, /return requestOfficeLogin\(\)/);
+  assert.doesNotMatch(shared, /function showPassphraseModal/);
+  assert.doesNotMatch(fs.readFileSync(path.join(DIST, 'calendar-v3.html'), 'utf8'), /window\.prompt\('Enter the Agent Office passphrase/);
 });
 
 test('unsupported runtime controls are disclosed instead of simulated', () => {

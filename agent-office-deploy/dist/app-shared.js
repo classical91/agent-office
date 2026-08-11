@@ -2107,6 +2107,13 @@ function toggleNavCompact() {
 }
 
 let officeSessionAuthenticated = false;
+let officeLoginWaiters = [];
+
+function settleOfficeLogin(success) {
+  const waiters = officeLoginWaiters;
+  officeLoginWaiters = [];
+  waiters.forEach(resolve => resolve(Boolean(success)));
+}
 
 function setOfficeLoginState(authenticated) {
   officeSessionAuthenticated = Boolean(authenticated);
@@ -2136,11 +2143,18 @@ function openOfficeLogin() {
   setTimeout(() => password?.focus(), 0);
 }
 
+function requestOfficeLogin() {
+  if (officeSessionAuthenticated) return Promise.resolve(true);
+  openOfficeLogin();
+  return new Promise(resolve => officeLoginWaiters.push(resolve));
+}
+
 function closeOfficeLogin() {
   const modal = document.getElementById('ao-login-modal');
   const password = document.getElementById('ao-login-password');
   if (modal) modal.hidden = true;
   if (password) password.value = '';
+  settleOfficeLogin(false);
 }
 
 async function submitOfficeLogin(event) {
@@ -2159,6 +2173,7 @@ async function submitOfficeLogin(event) {
     if (!response.ok) throw new Error(response.status === 401 ? 'Incorrect password.' : 'Unable to log in.');
     setOfficeLoginState(true);
     if (typeof dropsAuthState !== 'undefined') dropsAuthState = { configured: true, authenticated: true, checked: true };
+    settleOfficeLogin(true);
     closeOfficeLogin();
   } catch (loginError) {
     if (error) error.textContent = loginError.message || 'Unable to log in.';
@@ -2324,55 +2339,6 @@ async function refreshDropboxAuthState() {
   return dropsAuthState;
 }
 
-function showPassphraseModal() {
-  return new Promise((resolve) => {
-    const modal = document.getElementById('passphrase-modal');
-    const input = document.getElementById('passphrase-input');
-    const errorEl = document.getElementById('passphrase-error');
-    const submitBtn = document.getElementById('passphrase-submit');
-    const cancelBtn = document.getElementById('passphrase-cancel');
-
-    errorEl.hidden = true;
-    errorEl.textContent = '';
-    input.value = '';
-    modal.hidden = false;
-    setTimeout(() => input.focus(), 100);
-
-    function cleanup() {
-      modal.hidden = true;
-      submitBtn.removeEventListener('click', onSubmit);
-      cancelBtn.removeEventListener('click', onCancel);
-      input.removeEventListener('keydown', onKeydown);
-    }
-    function onSubmit() {
-      const val = input.value;
-      if (!val) { input.focus(); return; }
-      cleanup();
-      resolve(val);
-    }
-    function onCancel() { cleanup(); resolve(null); }
-    function onKeydown(e) {
-      if (e.key === 'Enter') onSubmit();
-      if (e.key === 'Escape') onCancel();
-    }
-
-    submitBtn.addEventListener('click', onSubmit);
-    cancelBtn.addEventListener('click', onCancel);
-    input.addEventListener('keydown', onKeydown);
-  });
-}
-
-function showPassphraseError(message) {
-  const modal = document.getElementById('passphrase-modal');
-  const errorEl = document.getElementById('passphrase-error');
-  const input = document.getElementById('passphrase-input');
-  errorEl.textContent = message;
-  errorEl.hidden = false;
-  input.value = '';
-  modal.hidden = false;
-  setTimeout(() => input.focus(), 100);
-}
-
 async function ensureDropsSession(interactive = true) {
   let status;
   try {
@@ -2389,22 +2355,7 @@ async function ensureDropsSession(interactive = true) {
 
   if (status.authenticated) return true;
   if (!interactive) return false;
-
-  const passphrase = await showPassphraseModal();
-  if (passphrase == null) return false;
-
-  try {
-    await requestJson(DROPS_SESSION_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ passphrase }),
-    });
-    dropsAuthState = { configured: true, authenticated: true, checked: true };
-    return true;
-  } catch (error) {
-    showPassphraseError(error.message || 'Incorrect passphrase. Try again.');
-    return false;
-  }
+  return requestOfficeLogin();
 }
 
 async function toggleDropboxAccess() {
@@ -2418,6 +2369,7 @@ async function toggleDropboxAccess() {
 
   if (status.authenticated) {
     await requestJson(DROPS_SESSION_API, { method: 'DELETE' }).catch(() => null);
+    setOfficeLoginState(false);
     dropsAuthState = { configured: status.configured, authenticated: false, checked: true };
     _dropsCache = null;
     dropboxState.drops = [];

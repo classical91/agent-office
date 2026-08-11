@@ -639,14 +639,8 @@ switchView('calendar-v3', document.querySelector('.nav-item.active'));
   }
 
   async function unlockAgentOffice() {
-    var passphrase = window.prompt('Enter the Agent Office passphrase to change the Google Calendar connection.');
-    if (!passphrase) return false;
-    await apiJson('/api/session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ passphrase: passphrase })
-    });
-    return true;
+    if (typeof window.requestOfficeLogin !== 'function') return false;
+    return window.requestOfficeLogin();
   }
 
   async function loadConnectionStatus(refreshEvents) {
