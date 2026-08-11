@@ -103,32 +103,7 @@
         dropboxState.view = 'board';
         renderDropbox();
       });
-      // The built-in buttons set the view and redraw their own pane; this puts
-      // the rest of the switch back in step with them.
-      ['dropbox-view-list', 'dropbox-view-detail'].forEach(id => {
-        document.getElementById(id)?.addEventListener('click', () => renderDropbox());
-      });
     }
-  }
-
-  function syncViewSwitch() {
-    const view = dropboxState.view;
-    const panes = [
-      ['mission-pipeline', 'board'],
-      ['dropbox-table-wrap', 'table'],
-      ['dropbox-cards-wrap', 'cards'],
-    ];
-    panes.forEach(([id, name]) => {
-      document.getElementById(id)?.classList.toggle('hidden', view !== name);
-    });
-    const buttons = [
-      ['dropbox-view-list', 'table'],
-      ['dropbox-view-detail', 'cards'],
-      ['dropbox-view-board', 'board'],
-    ];
-    buttons.forEach(([id, name]) => {
-      document.getElementById(id)?.classList.toggle('active', view === name);
-    });
   }
 
   function replaceOptions(select, options, selected) {
@@ -159,6 +134,7 @@
     if (filters.project) items = items.filter(drop => (drop.project || '') === filters.project);
     else items = items.filter(drop => iosMode ? (drop.project || '') === 'iOS' : (drop.project || '') !== 'iOS');
     if (filters.agent) items = items.filter(drop => (drop.agent || '') === filters.agent);
+    items = applyDropboxFolderFilter(items);
     items = applyReminderFilter(items, filters.reminder);
     items.sort((a, b) => {
       if (filters.sort === 'remind_asc') return compareReminders(a, b);
@@ -306,8 +282,11 @@
       ensureMissionControls();
       populateSubjectFilter();
       populateProjectFilter();
-      syncViewSwitch();
-      if (dropboxState.view === 'board') renderPipeline();
+      syncDropboxChrome();
+      // The folder wall comes before any of the three note views: nothing is
+      // listed until a folder is open or a search has been typed.
+      if (isDropboxGridOpen()) renderDropFolders();
+      else if (dropboxState.view === 'board') renderPipeline();
       else if (dropboxState.view === 'cards') renderDropCards();
       else renderDropTable();
       renderMissionNoteView();

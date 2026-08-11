@@ -2773,13 +2773,17 @@
     outline: none;
     font-family: inherit;
   }
-  .dropbox-filters input[type="search"] { min-width: 180px; }
-  /* display:contents keeps the secondary filters in the same flex row as
-     search and subject on a wide screen — the wrapper only becomes a real box
-     on a phone, where it collapses behind the More filters button. */
-  .dropbox-filters-more { display: contents; }
+  .dropbox-filters input[type="search"] { flex: 1 1 240px; min-width: 180px; max-width: 420px; }
+  /* Search is the row. Status, project, agent, reminder and sort fold away
+     behind the More filters button on every screen size — with the notes filed
+     into folders, a wall of six dropdowns was doing work the folders do. */
+  .dropbox-filters-more { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+  .dropbox-filters-more.is-collapsed { display: none; }
+  /* The subject filter is the folder wall now; it stays in the page for the
+     code that reads it, but you navigate by opening a folder. */
+  .dropbox-view:not(.ios-mode) #drop-filter-subject { display: none; }
   .dropbox-filters-toggle {
-    display: none;
+    display: inline-flex;
     align-items: center;
     background: rgba(255,255,255,0.05);
     border: 1px solid rgba(255,255,255,0.12);
@@ -2826,6 +2830,7 @@
   .dropbox-view.ios-capture-mode .dropbox-actions,
   .dropbox-view.ios-capture-mode .dropbox-quick-capture,
   .dropbox-view.ios-capture-mode .mission-pipeline,
+  .dropbox-view.ios-capture-mode .dropbox-folders-wrap,
   .dropbox-view.ios-capture-mode .dropbox-table-wrap,
   .dropbox-view.ios-capture-mode .dropbox-cards-wrap { display: none !important; }
   .dropbox-view.ios-capture-mode .dropbox-reminder-capture { max-width: 560px; }
@@ -2847,10 +2852,76 @@
   }
   .dropbox-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .dropbox-row select { flex: 1; min-width: 120px; }
+  /* ─── Folder wall ───────────────────────────────────────────────────────── */
+  /* The front page. Subjects are folders, so the page opens on a wall of them
+     rather than on every note in the box at once. */
+  .dropbox-folders-wrap {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 12px;
+  }
+  .drop-folder {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 7px;
+    padding: 16px;
+    min-width: 0;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    color: var(--text);
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.15s;
+  }
+  .drop-folder:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+    transform: translateY(-1px);
+  }
+  .drop-folder-icon { display: flex; color: var(--accent); }
+  .drop-folder-icon svg { width: 26px; height: 22px; }
+  /* The everything drawer reads as a shelf rather than one more folder. */
+  .drop-folder--all { background: color-mix(in srgb, var(--accent) 9%, transparent); }
+  .drop-folder--all .drop-folder-icon { opacity: 0.75; }
+  .drop-folder-name {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.35;
+    width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .drop-folder-meta { font-size: 11.5px; color: var(--muted); }
+  /* Table/Cards/Board are ways to look at notes, and the wall has none on
+     screen; New Note stays, because a note can be filed from anywhere. */
+  .dropbox-view.is-folder-grid #dropbox-view-list,
+  .dropbox-view.is-folder-grid #dropbox-view-detail,
+  .dropbox-view.is-folder-grid #dropbox-view-board { display: none; }
+  .dropbox-folder-bar { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .drop-folder-back {
+    background: none;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    cursor: pointer;
+  }
+  .drop-folder-crumb { font-size: 15px; font-weight: 700; color: var(--text); }
+  .drop-folder-count { font-size: 12px; color: var(--muted); }
+
   .dropbox-table { width: 100%; border-collapse: collapse; font-size: 13px; }
   .dropbox-table th,
   .dropbox-table td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.06); text-align: left; vertical-align: top; }
   .dropbox-table th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+  /* The title gets whatever is left; the two side columns are as wide as they
+     need to be and no wider. */
+  .dropbox-table .col-subject { width: 200px; }
+  .dropbox-table .col-updated { width: 200px; white-space: nowrap; }
+  .dropbox-table .date-short { display: none; }
   .dropbox-table tr[data-drop-id] { cursor: pointer; }
   .dropbox-table tr[data-drop-id]:hover { background: rgba(255,255,255,0.03); }
   .dropbox-table tr.selected { background: rgba(124,92,255,0.12); }
@@ -2922,25 +2993,29 @@
   .hidden { display: none !important; }
   .drop-detail-back { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; font-size: 14px; color: var(--accent); cursor: pointer; background: none; border: none; padding: 0; font-family: inherit; font-weight: 500; }
   @media (max-width: 768px) {
-    .dropbox-filters-toggle { display: inline-flex; }
-    .dropbox-filters-more { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
-    .dropbox-filters-more.is-collapsed-mobile { display: none; }
+    .dropbox-filters input[type="search"] { max-width: none; }
     .dropbox-filters-more select { flex: 1 1 140px; min-width: 0; }
 
-    /* A phone gets the title and the subject it is filed under; project, tags
-       and the timestamp are a tap away in the note itself. */
+    /* A phone gets two columns. Inside a folder that is the title and when it
+       was touched; across folders the subject takes the second column, since
+       that is what tells two similarly named notes apart. */
     .dropbox-table { font-size: 12.5px; table-layout: fixed; }
     .dropbox-table th,
     .dropbox-table td { padding: 10px 6px; overflow-wrap: anywhere; }
-    .dropbox-table th:nth-child(n+3),
-    .dropbox-table td:nth-child(n+3) { display: none; }
+    .dropbox-table.has-secondary .col-updated { display: none; }
+    .dropbox-table .date-full { display: none; }
+    .dropbox-table .date-short { display: inline; }
     .dropbox-table th:nth-child(1) { width: 68%; }
     .dropbox-table th:nth-child(2) { width: 32%; }
+    .dropbox-table th.col-subject,
+    .dropbox-table th.col-updated { width: 32%; }
     .dbadge { padding: 2px 6px; font-size: 10px; }
   }
   @media (max-width: 600px) {
     .dropbox-view { padding: 12px; }
     .dropbox-filters { gap: 6px; }
+    .dropbox-folders-wrap { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+    .drop-folder { padding: 13px; gap: 6px; }
   }
 
   /* The Countdown Timers page carried its own hero, inputs, buttons and card
