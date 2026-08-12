@@ -739,6 +739,7 @@ function toClientDrop(row) {
     orchestration_claimed_at: toIsoOrEmpty(row.orchestration_claimed_at),
     orchestration_completed_at: toIsoOrEmpty(row.orchestration_completed_at),
     orchestration_attempts: Number(row.orchestration_attempts) || 0,
+    orchestration_rank: Math.min(5, Math.max(1, Number(row.orchestration_rank) || 3)),
     orchestration_build_approved: Boolean(row.orchestration_build_approved),
     orchestration_approved_at: toIsoOrEmpty(row.orchestration_approved_at),
   };
@@ -1141,7 +1142,8 @@ function createFileStorage() {
             drop.priority === 'urgent' &&
             (drop.orchestration_status === 'queued' || stale) && (Number(drop.orchestration_attempts) || 0) < 3;
         })
-        .sort((a, b) => new Date(a.date || a.created_at) - new Date(b.date || b.created_at))[0];
+        .sort((a, b) => (Number(b.orchestration_rank) || 3) - (Number(a.orchestration_rank) || 3) ||
+          new Date(a.date || a.created_at) - new Date(b.date || b.created_at))[0];
       if (!goal) return null;
       goal.orchestration_status = 'running';
       goal.orchestration_claimed_at = new Date().toISOString();
@@ -1580,6 +1582,7 @@ async function createPostgresStorage() {
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_claimed_at TIMESTAMPTZ`);
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_completed_at TIMESTAMPTZ`);
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_attempts INTEGER NOT NULL DEFAULT 0`);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_rank INTEGER NOT NULL DEFAULT 3`);
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_build_approved BOOLEAN NOT NULL DEFAULT FALSE`);
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_approved_at TIMESTAMPTZ`);
   // Pulling the due reminders is the hot path for the phone Shortcut.
@@ -1845,7 +1848,7 @@ async function createPostgresStorage() {
                content, priority, done, remind_at, created_at AS date, updated_at,
                orchestration_status, orchestration_result, orchestration_error,
                orchestration_session_key, orchestration_claimed_at,
-               orchestration_completed_at, orchestration_attempts,
+               orchestration_completed_at, orchestration_attempts, orchestration_rank,
                orchestration_build_approved, orchestration_approved_at
         FROM drops
         ORDER BY updated_at DESC, created_at DESC
@@ -1857,20 +1860,20 @@ async function createPostgresStorage() {
         `
           INSERT INTO drops (id, title, subject, category, project, agent, status, tags, links,
                              content, priority, done, remind_at, created_at, updated_at,
-                             orchestration_status, orchestration_session_key)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$15,$16)
+                             orchestration_status, orchestration_session_key, orchestration_rank)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$15,$16,$17)
           RETURNING id, title, subject, category, project, agent, status, tags, links,
                     content, priority, done, remind_at, created_at AS date, updated_at,
                     orchestration_status, orchestration_result, orchestration_error,
                     orchestration_session_key, orchestration_claimed_at,
-                    orchestration_completed_at, orchestration_attempts,
+                    orchestration_completed_at, orchestration_attempts, orchestration_rank,
                     orchestration_build_approved, orchestration_approved_at
         `,
         [
           drop.id, drop.title, drop.subject, drop.category, drop.project, drop.agent || '',
           normalizeStatus(drop.status, 'idea'), JSON.stringify(drop.tags || []), JSON.stringify(drop.links || []),
           drop.content, drop.priority, Boolean(drop.done), drop.remind_at || null, drop.date,
-          drop.orchestration_status || '', drop.orchestration_session_key || '',
+          drop.orchestration_status || '', drop.orchestration_session_key || '', drop.orchestration_rank || 3,
         ]
       );
       return toClientDrop(result.rows[0]);
@@ -1885,7 +1888,7 @@ async function createPostgresStorage() {
           WHERE agent = 'oss' AND subject = 'Mission Control' AND priority = 'urgent' AND orchestration_attempts < 3
             AND (orchestration_status = 'queued' OR
                  (orchestration_status = 'running' AND orchestration_claimed_at < NOW() - INTERVAL '20 minutes'))
-          ORDER BY created_at ASC
+          ORDER BY orchestration_rank DESC, created_at ASC
           FOR UPDATE SKIP LOCKED
           LIMIT 1
         )
@@ -1893,7 +1896,7 @@ async function createPostgresStorage() {
                   content, priority, done, remind_at, created_at AS date, updated_at,
                   orchestration_status, orchestration_result, orchestration_error,
                   orchestration_session_key, orchestration_claimed_at,
-                  orchestration_completed_at, orchestration_attempts,
+                  orchestration_completed_at, orchestration_attempts, orchestration_rank,
                   orchestration_build_approved, orchestration_approved_at
       `);
       return result.rows[0] ? toClientDrop(result.rows[0]) : null;
@@ -1909,7 +1912,7 @@ async function createPostgresStorage() {
                   content, priority, done, remind_at, created_at AS date, updated_at,
                   orchestration_status, orchestration_result, orchestration_error,
                   orchestration_session_key, orchestration_claimed_at,
-                  orchestration_completed_at, orchestration_attempts,
+                  orchestration_completed_at, orchestration_attempts, orchestration_rank,
                   orchestration_build_approved, orchestration_approved_at
       `, [id]);
       return result.rows[0] ? toClientDrop(result.rows[0]) : null;
@@ -1926,7 +1929,7 @@ async function createPostgresStorage() {
                   content, priority, done, remind_at, created_at AS date, updated_at,
                   orchestration_status, orchestration_result, orchestration_error,
                   orchestration_session_key, orchestration_claimed_at,
-                  orchestration_completed_at, orchestration_attempts,
+                  orchestration_completed_at, orchestration_attempts, orchestration_rank,
                   orchestration_build_approved, orchestration_approved_at
       `, [id, patch.orchestration_status, patch.orchestration_result || '', patch.orchestration_error || '', patch.orchestration_completed_at || null]);
       return result.rows[0] ? toClientDrop(result.rows[0]) : null;
@@ -4710,6 +4713,7 @@ const server = http.createServer(async (req, res) => {
       const input = await readJsonBody(req);
       const goal = cleanText(input.goal || input.content, 10000);
       const priority = cleanText(input.priority, 24).toLowerCase() === 'urgent' ? 'urgent' : 'normal';
+      const orchestrationRank = Math.min(5, Math.max(1, Number.parseInt(input.rank, 10) || 3));
       if (!goal) {
         sendJson(res, 400, { error: 'Goal is required.' });
         return;
@@ -4722,6 +4726,7 @@ const server = http.createServer(async (req, res) => {
         agent: 'oss', status: 'inbox', tags: ['penny', 'orchestration'], links: [],
         content: goal, priority, remind_at: null,
         orchestration_status: 'queued',
+        orchestration_rank: orchestrationRank,
         orchestration_session_key: `agent:oss:mission-control-${id.replace(/[^a-zA-Z0-9_-]/g, '').slice(-80)}`,
       });
       sendJson(res, 201, created);

@@ -2154,8 +2154,10 @@
   .mission-results-heading { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin-bottom: 9px; }
   .mission-results-heading span { color: var(--text-dim); font-size: 11px; }
   #mission-results-list { display: grid; gap: 8px; }
+  .mission-list-label { margin-top: 8px; color: var(--text-dim); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
   .mission-result { padding: 12px; border: 1px solid var(--border); border-left: 3px solid var(--state-idle); border-radius: 10px; background: var(--view-bg); }
-  .mission-result--running { border-left-color: var(--state-active); }
+  .mission-result--running { border-color: color-mix(in srgb, var(--cyan) 55%, var(--border)); border-left: 4px solid var(--cyan); background: color-mix(in srgb, var(--cyan) 10%, var(--view-bg)); }
+  .mission-result--running .control-state { color: var(--cyan); font-weight: 700; }
   .mission-result--needs_approval { border-left-color: #f59e0b; }
   .mission-result--completed { border-left-color: #22c55e; }
   .mission-result--failed { border-left-color: var(--state-blocked); }

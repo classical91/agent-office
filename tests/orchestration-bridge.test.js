@@ -44,13 +44,14 @@ test('a goal is queued, atomically claimed, completed, and exposed in the Outbox
   try {
     const createdResponse = await fetch(`${server.origin}/api/orchestration/goals`, {
       method: 'POST', headers: { Cookie: server.cookie, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ goal: 'Inspect Market Dashboard and recommend one improvement.', priority: 'urgent' }),
+      body: JSON.stringify({ goal: 'Inspect Market Dashboard and recommend one improvement.', priority: 'urgent', rank: 5 }),
     });
     assert.equal(createdResponse.status, 201);
     const created = await createdResponse.json();
     assert.equal(created.agent, 'oss');
     assert.equal(created.orchestration_status, 'queued');
     assert.equal(created.priority, 'urgent');
+    assert.equal(created.orchestration_rank, 5);
     assert.match(created.orchestration_session_key, /^agent:oss:mission-control-/);
 
     const claimResponse = await fetch(`${server.origin}/api/orchestration/goals/claim`, {
@@ -95,6 +96,27 @@ test('a goal is queued, atomically claimed, completed, and exposed in the Outbox
     const [finished] = await listResponse.json();
     assert.equal(finished.orchestration_status, 'completed');
     assert.match(finished.orchestration_result, /signal review panel/);
+  } finally {
+    stop(server);
+  }
+});
+
+test('urgent goals are claimed by highest importance rank first', async () => {
+  const server = await startServer();
+  try {
+    for (const [goal, rank] of [['Lower ranked goal', 2], ['Highest ranked goal', 5]]) {
+      const response = await fetch(`${server.origin}/api/orchestration/goals`, {
+        method: 'POST', headers: { Cookie: server.cookie, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal, priority: 'urgent', rank }),
+      });
+      assert.equal(response.status, 201);
+    }
+    const claim = await fetch(`${server.origin}/api/orchestration/goals/claim`, {
+      method: 'POST', headers: { 'X-Gateway-Token': GATEWAY_TOKEN },
+    });
+    const claimed = (await claim.json()).goal;
+    assert.equal(claimed.content, 'Highest ranked goal');
+    assert.equal(claimed.orchestration_rank, 5);
   } finally {
     stop(server);
   }
