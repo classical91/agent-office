@@ -2153,7 +2153,8 @@
   .workflow-lane strong { font-size: 20px; }
   .workflow-lane i { align-self: center; color: var(--text-dim); font-style: normal; }
   .mission-results { margin: 20px 0; }
-  .mission-results-heading { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin-bottom: 9px; }
+  .mission-results-heading { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 9px; }
+  .mission-results-heading > div { display: grid; gap: 3px; }
   .mission-results-heading span { color: var(--text-dim); font-size: 11px; }
   #mission-results-list { display: grid; gap: 8px; }
   .mission-list-label { margin-top: 8px; color: var(--text-dim); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
@@ -2168,6 +2169,12 @@
   .mission-result .mission-result-error { color: var(--state-blocked); }
   .mission-source-link { width: fit-content; color: var(--accent); font-size: 12px; text-decoration: none; }
   .mission-result small { color: var(--muted); }
+  .mission-drag-handle { display: none; color: var(--muted); font-weight: 900; letter-spacing: -4px; cursor: grab; }
+  .mission-result--moveable { cursor: grab; border-style: dashed; }
+  .mission-result--moveable .mission-drag-handle { display: inline-block; }
+  .mission-result--moveable.is-dragging { opacity: .5; transform: scale(.99); }
+  .mission-edit-actions { display: flex; gap: 6px; margin-top: 10px; }
+  .mission-edit-actions .mission-move { min-width: var(--tap-target); padding-inline: 10px; }
   .mission-approve { margin: 0 0 10px; }
   @media (max-width: 700px) {
     .control-center { grid-template-columns: 1fr; }

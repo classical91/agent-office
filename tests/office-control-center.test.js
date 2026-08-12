@@ -30,7 +30,7 @@ test('the office exposes Mission Control and operational agent inspection', () =
 test('Mission Control sends goals to Penny through the authenticated board', () => {
   assert.match(control, /fetch\('\/api\/orchestration\/goals'/);
   assert.match(control, /id="mission-goal-priority"/);
-  assert.match(control, /id="mission-goal-rank"/);
+  assert.doesNotMatch(control, /id="mission-goal-rank"/);
   assert.match(control, /id="mission-goal-source"/);
   assert.match(relay, /Saved ChatGPT conversation context/);
   assert.match(control, /Currently working/);
@@ -38,6 +38,11 @@ test('Mission Control sends goals to Penny through the authenticated board', () 
   assert.match(control, /priority === 'urgent'/);
   assert.match(control, /refreshMissionGoals/);
   assert.match(control, /Goals and Outbox/);
+  assert.match(control, /Edit order/);
+  assert.match(control, /draggable=/);
+  assert.match(control, /Move goal up/);
+  assert.match(control, /\/api\/orchestration\/goals\/order/);
+  assert.match(control, /\/edit/);
 });
 
 test('the top bar exposes one general login backed by the Dropbox session', () => {

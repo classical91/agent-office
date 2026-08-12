@@ -44,14 +44,14 @@ test('a goal is queued, atomically claimed, completed, and exposed in the Outbox
   try {
     const createdResponse = await fetch(`${server.origin}/api/orchestration/goals`, {
       method: 'POST', headers: { Cookie: server.cookie, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ goal: 'Inspect Market Dashboard and recommend one improvement.', priority: 'urgent', rank: 5, source_url: 'https://chatgpt.com/share/example' }),
+      body: JSON.stringify({ goal: 'Inspect Market Dashboard and recommend one improvement.', priority: 'urgent', source_url: 'https://chatgpt.com/share/example' }),
     });
     assert.equal(createdResponse.status, 201);
     const created = await createdResponse.json();
     assert.equal(created.agent, 'oss');
     assert.equal(created.orchestration_status, 'queued');
     assert.equal(created.priority, 'urgent');
-    assert.equal(created.orchestration_rank, 5);
+    assert.equal(created.orchestration_rank, 1);
     assert.deepEqual(created.links, ['https://chatgpt.com/share/example']);
     assert.match(created.orchestration_session_key, /^agent:oss:mission-control-/);
 
@@ -102,22 +102,51 @@ test('a goal is queued, atomically claimed, completed, and exposed in the Outbox
   }
 });
 
-test('urgent goals are claimed by highest importance rank first', async () => {
+test('urgent goals are claimed in the manually saved order', async () => {
   const server = await startServer();
   try {
-    for (const [goal, rank] of [['Lower ranked goal', 2], ['Highest ranked goal', 5]]) {
+    const createdIds = [];
+    for (const goal of ['First created goal', 'Second created goal']) {
       const response = await fetch(`${server.origin}/api/orchestration/goals`, {
         method: 'POST', headers: { Cookie: server.cookie, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ goal, priority: 'urgent', rank }),
+        body: JSON.stringify({ goal, priority: 'urgent' }),
       });
       assert.equal(response.status, 201);
+      createdIds.push((await response.json()).id);
     }
+    const reorder = await fetch(`${server.origin}/api/orchestration/goals/order`, {
+      method: 'PUT', headers: { Cookie: server.cookie, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: createdIds }),
+    });
+    assert.equal(reorder.status, 200);
     const claim = await fetch(`${server.origin}/api/orchestration/goals/claim`, {
       method: 'POST', headers: { 'X-Gateway-Token': GATEWAY_TOKEN },
     });
     const claimed = (await claim.json()).goal;
-    assert.equal(claimed.content, 'Highest ranked goal');
-    assert.equal(claimed.orchestration_rank, 5);
+    assert.equal(claimed.content, 'First created goal');
+    assert.equal(claimed.orchestration_rank, 2);
+  } finally {
+    stop(server);
+  }
+});
+
+test('saved queued mission goals can be edited by Jason', async () => {
+  const server = await startServer();
+  try {
+    const create = await fetch(`${server.origin}/api/orchestration/goals`, {
+      method: 'POST', headers: { Cookie: server.cookie, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ goal: 'Original saved goal', priority: 'normal' }),
+    });
+    const created = await create.json();
+    const edit = await fetch(`${server.origin}/api/orchestration/goals/${created.id}/edit`, {
+      method: 'PATCH', headers: { Cookie: server.cookie, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ goal: 'Updated saved goal', priority: 'urgent', source_url: 'https://chatgpt.com/share/updated' }),
+    });
+    assert.equal(edit.status, 200);
+    const updated = await edit.json();
+    assert.equal(updated.content, 'Updated saved goal');
+    assert.equal(updated.priority, 'urgent');
+    assert.deepEqual(updated.links, ['https://chatgpt.com/share/updated']);
   } finally {
     stop(server);
   }
