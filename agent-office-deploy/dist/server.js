@@ -750,7 +750,7 @@ function toClientDrop(row) {
     orchestration_claimed_at: toIsoOrEmpty(row.orchestration_claimed_at),
     orchestration_completed_at: toIsoOrEmpty(row.orchestration_completed_at),
     orchestration_attempts: Number(row.orchestration_attempts) || 0,
-    orchestration_rank: Math.min(5, Math.max(1, Number(row.orchestration_rank) || 3)),
+    orchestration_rank: Math.max(1, Number(row.orchestration_rank) || 1),
     orchestration_build_approved: Boolean(row.orchestration_build_approved),
     orchestration_approved_at: toIsoOrEmpty(row.orchestration_approved_at),
   };
@@ -1176,6 +1176,23 @@ function createFileStorage() {
       }
       await saveDropsToFile(drops);
       return toClientDrop(goal);
+    },
+    async editMissionGoal(id, patch) {
+      const drops = await loadDropsFromFile();
+      const goal = drops.find(drop => drop.id === id && drop.agent === 'oss' && drop.subject === 'Mission Control');
+      if (!goal || goal.orchestration_status === 'running' || goal.orchestration_status === 'completed') return null;
+      Object.assign(goal, patch, { updated_at: new Date().toISOString() });
+      await saveDropsToFile(drops);
+      return toClientDrop(goal);
+    },
+    async reorderMissionGoals(ids) {
+      const drops = await loadDropsFromFile();
+      ids.forEach((id, index) => {
+        const goal = drops.find(drop => drop.id === id && drop.agent === 'oss' && drop.subject === 'Mission Control');
+        if (goal && goal.orchestration_status !== 'completed') goal.orchestration_rank = ids.length - index;
+      });
+      await saveDropsToFile(drops);
+      return true;
     },
     async approveOrchestrationGoal(id) {
       const drops = await loadDropsFromFile();
@@ -1927,6 +1944,35 @@ async function createPostgresStorage() {
                   orchestration_build_approved, orchestration_approved_at
       `, [id]);
       return result.rows[0] ? toClientDrop(result.rows[0]) : null;
+    },
+    async editMissionGoal(id, patch) {
+      const result = await pool.query(`
+        UPDATE drops
+        SET title = $2, content = $3, links = $4, priority = $5, updated_at = NOW()
+        WHERE id = $1 AND agent = 'oss' AND subject = 'Mission Control'
+          AND orchestration_status NOT IN ('running', 'completed')
+        RETURNING id, title, subject, category, project, agent, status, tags, links,
+                  content, priority, done, remind_at, created_at AS date, updated_at,
+                  orchestration_status, orchestration_result, orchestration_error,
+                  orchestration_session_key, orchestration_claimed_at,
+                  orchestration_completed_at, orchestration_attempts, orchestration_rank,
+                  orchestration_build_approved, orchestration_approved_at
+      `, [id, patch.title, patch.content, JSON.stringify(patch.links || []), patch.priority]);
+      return result.rows[0] ? toClientDrop(result.rows[0]) : null;
+    },
+    async reorderMissionGoals(ids) {
+      if (!ids.length) return true;
+      await pool.query(`
+        UPDATE drops AS goal
+        SET orchestration_rank = ordering.rank
+        FROM (
+          SELECT id, $2::integer - ordinality::integer + 1 AS rank
+          FROM unnest($1::text[]) WITH ORDINALITY AS ordered(id, ordinality)
+        ) AS ordering
+        WHERE goal.id = ordering.id AND goal.agent = 'oss' AND goal.subject = 'Mission Control'
+          AND goal.orchestration_status <> 'completed'
+      `, [ids, ids.length]);
+      return true;
     },
     async updateOrchestrationGoal(id, patch) {
       const result = await pool.query(`
@@ -4714,7 +4760,13 @@ const server = http.createServer(async (req, res) => {
       if (!requireDropsAuth(res, req)) return;
       const goals = (await storage.listDrops()).filter(drop =>
         drop.agent === 'oss' && drop.subject === 'Mission Control' && drop.orchestration_status
-      );
+      ).sort((a, b) => {
+        const aCompleted = a.orchestration_status === 'completed';
+        const bCompleted = b.orchestration_status === 'completed';
+        if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
+        if (!aCompleted) return (Number(b.orchestration_rank) || 1) - (Number(a.orchestration_rank) || 1);
+        return new Date(b.updated_at || b.date) - new Date(a.updated_at || a.date);
+      });
       sendJson(res, 200, goals);
       return;
     }
@@ -4724,7 +4776,6 @@ const server = http.createServer(async (req, res) => {
       const input = await readJsonBody(req);
       const goal = cleanText(input.goal || input.content, 10000);
       const priority = cleanText(input.priority, 24).toLowerCase() === 'urgent' ? 'urgent' : 'normal';
-      const orchestrationRank = Math.min(5, Math.max(1, Number.parseInt(input.rank, 10) || 3));
       const sourceUrl = normalizeHttpUrl(input.source_url);
       if (input.source_url && !sourceUrl) {
         sendJson(res, 400, { error: 'Conversation link must be a valid http or https URL.' });
@@ -4736,6 +4787,10 @@ const server = http.createServer(async (req, res) => {
       }
       const id = `goal-${typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now()}`;
       const title = await uniqueDropTitle(storage, deriveDropTitle({ title: input.title, content: goal }));
+      const existingGoals = (await storage.listDrops()).filter(drop =>
+        drop.agent === 'oss' && drop.subject === 'Mission Control' && drop.orchestration_status !== 'completed'
+      );
+      const orchestrationRank = Math.max(0, ...existingGoals.map(drop => Number(drop.orchestration_rank) || 0)) + 1;
       const created = await storage.createDrop({
         id, date: new Date().toISOString(), done: false, title,
         subject: 'Mission Control', category: 'Mission Control', project: cleanText(input.project, 100),
@@ -4746,6 +4801,48 @@ const server = http.createServer(async (req, res) => {
         orchestration_session_key: `agent:oss:mission-control-${id.replace(/[^a-zA-Z0-9_-]/g, '').slice(-80)}`,
       });
       sendJson(res, 201, created);
+      return;
+    }
+
+    if (req.method === 'PUT' && pathname === '/api/orchestration/goals/order') {
+      if (!requireDropsAuth(res, req)) return;
+      const input = await readJsonBody(req);
+      const ids = Array.isArray(input.ids)
+        ? [...new Set(input.ids.map(id => cleanText(id, 160)).filter(Boolean))].slice(0, 100)
+        : [];
+      if (!ids.length) {
+        sendJson(res, 400, { error: 'At least one goal is required to save the order.' });
+        return;
+      }
+      await storage.reorderMissionGoals(ids);
+      sendJson(res, 200, { ok: true });
+      return;
+    }
+
+    if (req.method === 'PATCH' && pathname.startsWith('/api/orchestration/goals/') && pathname.endsWith('/edit')) {
+      if (!requireDropsAuth(res, req)) return;
+      const id = pathname.slice('/api/orchestration/goals/'.length, -'/edit'.length).trim();
+      const input = await readJsonBody(req);
+      const content = cleanText(input.goal || input.content, 10000);
+      const sourceUrl = normalizeHttpUrl(input.source_url);
+      if (!content) {
+        sendJson(res, 400, { error: 'Goal is required.' });
+        return;
+      }
+      if (input.source_url && !sourceUrl) {
+        sendJson(res, 400, { error: 'Conversation link must be a valid http or https URL.' });
+        return;
+      }
+      const updated = await storage.editMissionGoal(id, {
+        title: deriveDropTitle({ title: input.title, content }), content,
+        links: sourceUrl ? [sourceUrl] : [],
+        priority: cleanText(input.priority, 24).toLowerCase() === 'urgent' ? 'urgent' : 'normal',
+      });
+      if (!updated) {
+        sendJson(res, 409, { error: 'Running and completed goals cannot be edited.' });
+        return;
+      }
+      sendJson(res, 200, updated);
       return;
     }
 
