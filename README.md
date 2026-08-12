@@ -157,6 +157,37 @@ scripted fake Google: token reuse, delta merges, cancellations, pagination, an
 expired (410) token forcing a full resync, and a transient 5xx leaving a good
 token alone.
 
+### UI smoke tests
+
+Every test above talks to the server over HTTP. `tests/ui-smoke.test.js` is the
+only one that runs the pages, in a real Chromium, against a real server: it
+opens every page in `dist/` and fails on an uncaught exception or on any asset
+the page asked this server for and did not get, then walks the Dropbox — folder
+wall, opening a folder, search across folders, pinning, the list layout, saving
+a note, opening one, and the Reminders lane. On its first run it found a page
+that could never be unlocked — `memory.html` raised the passphrase gate without
+shipping the modal that asks for it, so the gate threw on a null. The
+consolidated Office login has since replaced that gate everywhere; the test
+that walks a login on a page which is not the Dropbox is what stays behind.
+
+They need a browser:
+
+```bash
+npx playwright-core install chromium   # once
+npm test
+```
+
+Without one they skip, so a checkout with no browser still gets a green suite —
+except under `CI=true`, where a missing browser means the install step regressed
+and the tests would otherwise vanish silently, so it fails instead. If your
+Chromium came from somewhere else — a distro package, a sandbox image — point
+`SMOKE_CHROMIUM_PATH` at it.
+
+Outbound requests are blocked during the run, so the suite is hermetic and
+offline-safe. That is worth knowing for another reason: `shared.css` opens with
+an `@import` of Google Fonts, which sits on the render path of every page. With
+the CDN unreachable, `DOMContentLoaded` measured 12.8s per page.
+
 ## API
 
 All endpoints return JSON.
