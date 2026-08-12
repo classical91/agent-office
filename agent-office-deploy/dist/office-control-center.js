@@ -110,6 +110,8 @@
       <form class="mission-goal" id="mission-goal-form">
         <label for="mission-goal-input">What should the office accomplish?</label>
         <textarea id="mission-goal-input" rows="4" placeholder="Example: Find the most useful improvement for Market Dashboard today." required></textarea>
+        <label for="mission-goal-source">ChatGPT conversation link <span class="mission-optional">optional</span></label>
+        <input id="mission-goal-source" type="url" inputmode="url" placeholder="https://chatgpt.com/share/...">
         <label for="mission-goal-priority">Priority</label>
         <select id="mission-goal-priority">
           <option value="normal">Normal — save only; Penny will not process it</option>
@@ -156,6 +158,7 @@
         <article class="mission-result mission-result--${escape(goal.orchestration_status)}">
           <div><strong>${escape(goal.title)}</strong><span class="control-state">${goal.orchestration_status === 'running' ? 'Currently working' : escape(goal.orchestration_status)} · rank ${escape(goal.orchestration_rank || 3)}</span></div>
           ${goal.orchestration_result ? `<p>${escape(goal.orchestration_result)}</p>` : ''}
+          ${goal.links && goal.links[0] ? `<a class="mission-source-link" href="${escape(goal.links[0])}" target="_blank" rel="noopener noreferrer">Open ChatGPT context ↗</a>` : ''}
           ${goal.orchestration_error ? `<p class="mission-result-error">${escape(goal.orchestration_error)}</p>` : ''}
           ${goal.orchestration_status === 'needs_approval' ? `<button class="ao-btn ao-btn--primary mission-approve" type="button" data-goal-id="${escape(goal.id)}">Approve build</button>` : ''}
           <small>${escape(new Date(goal.updated_at || goal.date).toLocaleString())}</small>
@@ -188,20 +191,23 @@
     const input = body.querySelector('#mission-goal-input');
     const priorityInput = body.querySelector('#mission-goal-priority');
     const rankInput = body.querySelector('#mission-goal-rank');
+    const sourceInput = body.querySelector('#mission-goal-source');
     const status = body.querySelector('#mission-goal-status');
     const goal = input.value.trim();
     const priority = priorityInput.value === 'urgent' ? 'urgent' : 'normal';
     const rank = Number(rankInput.value) || 3;
+    const sourceUrl = sourceInput.value.trim();
     if (!goal) return;
     status.textContent = 'Sending…';
     try {
       const response = await fetch('/api/orchestration/goals', {
         method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ goal, priority, rank, title: goal.split(/\n/)[0].slice(0, 120) })
+        body: JSON.stringify({ goal, priority, rank, source_url: sourceUrl, title: goal.split(/\n/)[0].slice(0, 120) })
       });
       if (response.status === 401) throw new Error('Unlock the Dropbox first, then try again.');
       if (!response.ok) throw new Error('The goal could not be saved.');
       input.value = '';
+      sourceInput.value = '';
       status.textContent = priority === 'urgent'
         ? 'Urgent goal received. Penny will process it.'
         : 'Goal saved. Penny will ignore it unless it is marked urgent.';

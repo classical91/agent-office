@@ -273,6 +273,17 @@ function cleanText(value, max = 500) {
   return typeof value === 'string' ? value.trim().slice(0, max) : '';
 }
 
+function normalizeHttpUrl(value) {
+  const candidate = cleanText(value, 2000);
+  if (!candidate) return '';
+  try {
+    const parsed = new URL(candidate);
+    return ['http:', 'https:'].includes(parsed.protocol) ? parsed.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
 function deriveDropTitle(input) {
   const title = typeof input.title === 'string' ? input.title.trim() : '';
   if (title) return title.slice(0, 200);
@@ -4714,6 +4725,11 @@ const server = http.createServer(async (req, res) => {
       const goal = cleanText(input.goal || input.content, 10000);
       const priority = cleanText(input.priority, 24).toLowerCase() === 'urgent' ? 'urgent' : 'normal';
       const orchestrationRank = Math.min(5, Math.max(1, Number.parseInt(input.rank, 10) || 3));
+      const sourceUrl = normalizeHttpUrl(input.source_url);
+      if (input.source_url && !sourceUrl) {
+        sendJson(res, 400, { error: 'Conversation link must be a valid http or https URL.' });
+        return;
+      }
       if (!goal) {
         sendJson(res, 400, { error: 'Goal is required.' });
         return;
@@ -4723,7 +4739,7 @@ const server = http.createServer(async (req, res) => {
       const created = await storage.createDrop({
         id, date: new Date().toISOString(), done: false, title,
         subject: 'Mission Control', category: 'Mission Control', project: cleanText(input.project, 100),
-        agent: 'oss', status: 'inbox', tags: ['penny', 'orchestration'], links: [],
+        agent: 'oss', status: 'inbox', tags: ['penny', 'orchestration'], links: sourceUrl ? [sourceUrl] : [],
         content: goal, priority, remind_at: null,
         orchestration_status: 'queued',
         orchestration_rank: orchestrationRank,

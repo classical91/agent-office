@@ -44,7 +44,7 @@ test('a goal is queued, atomically claimed, completed, and exposed in the Outbox
   try {
     const createdResponse = await fetch(`${server.origin}/api/orchestration/goals`, {
       method: 'POST', headers: { Cookie: server.cookie, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ goal: 'Inspect Market Dashboard and recommend one improvement.', priority: 'urgent', rank: 5 }),
+      body: JSON.stringify({ goal: 'Inspect Market Dashboard and recommend one improvement.', priority: 'urgent', rank: 5, source_url: 'https://chatgpt.com/share/example' }),
     });
     assert.equal(createdResponse.status, 201);
     const created = await createdResponse.json();
@@ -52,6 +52,7 @@ test('a goal is queued, atomically claimed, completed, and exposed in the Outbox
     assert.equal(created.orchestration_status, 'queued');
     assert.equal(created.priority, 'urgent');
     assert.equal(created.orchestration_rank, 5);
+    assert.deepEqual(created.links, ['https://chatgpt.com/share/example']);
     assert.match(created.orchestration_session_key, /^agent:oss:mission-control-/);
 
     const claimResponse = await fetch(`${server.origin}/api/orchestration/goals/claim`, {
