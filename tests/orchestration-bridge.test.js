@@ -44,12 +44,13 @@ test('a goal is queued, atomically claimed, completed, and exposed in the Outbox
   try {
     const createdResponse = await fetch(`${server.origin}/api/orchestration/goals`, {
       method: 'POST', headers: { Cookie: server.cookie, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ goal: 'Inspect Market Dashboard and recommend one improvement.' }),
+      body: JSON.stringify({ goal: 'Inspect Market Dashboard and recommend one improvement.', priority: 'urgent' }),
     });
     assert.equal(createdResponse.status, 201);
     const created = await createdResponse.json();
     assert.equal(created.agent, 'oss');
     assert.equal(created.orchestration_status, 'queued');
+    assert.equal(created.priority, 'urgent');
     assert.match(created.orchestration_session_key, /^agent:oss:mission-control-/);
 
     const claimResponse = await fetch(`${server.origin}/api/orchestration/goals/claim`, {
@@ -94,6 +95,27 @@ test('a goal is queued, atomically claimed, completed, and exposed in the Outbox
     const [finished] = await listResponse.json();
     assert.equal(finished.orchestration_status, 'completed');
     assert.match(finished.orchestration_result, /signal review panel/);
+  } finally {
+    stop(server);
+  }
+});
+
+test('Penny claims only urgent Mission Control goals', async () => {
+  const server = await startServer();
+  try {
+    const createdResponse = await fetch(`${server.origin}/api/orchestration/goals`, {
+      method: 'POST', headers: { Cookie: server.cookie, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ goal: 'Keep this idea for later.', priority: 'normal' }),
+    });
+    assert.equal(createdResponse.status, 201);
+    const created = await createdResponse.json();
+    assert.equal(created.priority, 'normal');
+    assert.equal(created.orchestration_status, 'queued');
+
+    const claimResponse = await fetch(`${server.origin}/api/orchestration/goals/claim`, {
+      method: 'POST', headers: { 'X-Gateway-Token': GATEWAY_TOKEN },
+    });
+    assert.equal((await claimResponse.json()).goal, null);
   } finally {
     stop(server);
   }

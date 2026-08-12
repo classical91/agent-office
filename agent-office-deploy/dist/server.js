@@ -1138,6 +1138,7 @@ function createFileStorage() {
           const stale = drop.orchestration_status === 'running' &&
             Date.now() - new Date(drop.orchestration_claimed_at || 0).getTime() > 20 * 60 * 1000;
           return drop.agent === 'oss' && drop.subject === 'Mission Control' &&
+            drop.priority === 'urgent' &&
             (drop.orchestration_status === 'queued' || stale) && (Number(drop.orchestration_attempts) || 0) < 3;
         })
         .sort((a, b) => new Date(a.date || a.created_at) - new Date(b.date || b.created_at))[0];
@@ -1881,7 +1882,7 @@ async function createPostgresStorage() {
             orchestration_attempts = orchestration_attempts + 1, updated_at = NOW()
         WHERE id = (
           SELECT id FROM drops
-          WHERE agent = 'oss' AND subject = 'Mission Control' AND orchestration_attempts < 3
+          WHERE agent = 'oss' AND subject = 'Mission Control' AND priority = 'urgent' AND orchestration_attempts < 3
             AND (orchestration_status = 'queued' OR
                  (orchestration_status = 'running' AND orchestration_claimed_at < NOW() - INTERVAL '20 minutes'))
           ORDER BY created_at ASC
@@ -4708,6 +4709,7 @@ const server = http.createServer(async (req, res) => {
       if (!requireDropsAuth(res, req)) return;
       const input = await readJsonBody(req);
       const goal = cleanText(input.goal || input.content, 10000);
+      const priority = cleanText(input.priority, 24).toLowerCase() === 'urgent' ? 'urgent' : 'normal';
       if (!goal) {
         sendJson(res, 400, { error: 'Goal is required.' });
         return;
@@ -4718,7 +4720,7 @@ const server = http.createServer(async (req, res) => {
         id, date: new Date().toISOString(), done: false, title,
         subject: 'Mission Control', category: 'Mission Control', project: cleanText(input.project, 100),
         agent: 'oss', status: 'inbox', tags: ['penny', 'orchestration'], links: [],
-        content: goal, priority: 'normal', remind_at: null,
+        content: goal, priority, remind_at: null,
         orchestration_status: 'queued',
         orchestration_session_key: `agent:oss:mission-control-${id.replace(/[^a-zA-Z0-9_-]/g, '').slice(-80)}`,
       });

@@ -110,6 +110,11 @@
       <form class="mission-goal" id="mission-goal-form">
         <label for="mission-goal-input">What should the office accomplish?</label>
         <textarea id="mission-goal-input" rows="4" placeholder="Example: Find the most useful improvement for Market Dashboard today." required></textarea>
+        <label for="mission-goal-priority">Priority</label>
+        <select id="mission-goal-priority">
+          <option value="normal">Normal — save only; Penny will not process it</option>
+          <option value="urgent">Urgent — send to Penny for orchestration</option>
+        </select>
         <div class="mission-goal-actions"><button class="ao-btn ao-btn--primary" type="submit">Send goal to Penny</button><span id="mission-goal-status">Saved to the Mission Board for orchestration.</span></div>
       </form>
       <div class="workflow-lane" aria-label="Office workflow">
@@ -139,7 +144,7 @@
       }
       list.innerHTML = goals.slice(0, 10).map(goal => `
         <article class="mission-result mission-result--${escape(goal.orchestration_status)}">
-          <div><strong>${escape(goal.title)}</strong><span class="control-state">${escape(goal.orchestration_status)}</span></div>
+          <div><strong>${escape(goal.title)}</strong><span class="control-state">${escape(goal.priority || 'normal')} · ${escape(goal.orchestration_status)}</span></div>
           ${goal.orchestration_result ? `<p>${escape(goal.orchestration_result)}</p>` : ''}
           ${goal.orchestration_error ? `<p class="mission-result-error">${escape(goal.orchestration_error)}</p>` : ''}
           ${goal.orchestration_status === 'needs_approval' ? `<button class="ao-btn ao-btn--primary mission-approve" type="button" data-goal-id="${escape(goal.id)}">Approve build</button>` : ''}
@@ -170,19 +175,23 @@
   async function submitGoal(event) {
     event.preventDefault();
     const input = body.querySelector('#mission-goal-input');
+    const priorityInput = body.querySelector('#mission-goal-priority');
     const status = body.querySelector('#mission-goal-status');
     const goal = input.value.trim();
+    const priority = priorityInput.value === 'urgent' ? 'urgent' : 'normal';
     if (!goal) return;
     status.textContent = 'Sending…';
     try {
       const response = await fetch('/api/orchestration/goals', {
         method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ goal, title: goal.split(/\n/)[0].slice(0, 120) })
+        body: JSON.stringify({ goal, priority, title: goal.split(/\n/)[0].slice(0, 120) })
       });
       if (response.status === 401) throw new Error('Unlock the Dropbox first, then try again.');
       if (!response.ok) throw new Error('The goal could not be saved.');
       input.value = '';
-      status.textContent = 'Goal received. Penny owns the next routing decision.';
+      status.textContent = priority === 'urgent'
+        ? 'Urgent goal received. Penny will process it.'
+        : 'Goal saved. Penny will ignore it unless it is marked urgent.';
       refreshMissionGoals();
       const penny = configuredAgent('oss');
       if (penny && typeof addFeedItem === 'function') addFeedItem(penny, `Goal received: ${goal.slice(0, 90)}`);
