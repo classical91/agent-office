@@ -8,11 +8,40 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      # tests/ui-smoke.test.js skips itself when no browser is around, which is
+      # the right answer on a laptop and the wrong one here — a broken install
+      # step would take the UI tests out of CI without turning it red. CI=true
+      # makes a missing browser a failure instead. Actions sets this already;
+      # it is named here so the link between the two is visible.
+      CI: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      # No lockfile at the repo root, so `npm ci` is not an option here.
-      - run: npm install --no-audit --no-fund
+          cache: npm
+      - run: npm ci
+
+      # Chromium for the UI smoke tests. The browser is versioned with
+      # playwright-core, so the cache key is its resolved version: a bump to the
+      # dependency fetches a matching browser instead of reusing a stale one.
+      - name: Resolve playwright version
+        id: pw
+        run: echo "version=$(node -p "require('playwright-core/package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Cache Chromium
+        id: chromium-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: chromium-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      - name: Install Chromium
+        if: steps.chromium-cache.outputs.cache-hit != 'true'
+        run: npx playwright-core install --with-deps chromium
+      # A cache hit restores the browser but not the system libraries it links
+      # against, which live outside the cached directory.
+      - name: Install Chromium system dependencies
+        if: steps.chromium-cache.outputs.cache-hit == 'true'
+        run: npx playwright-core install-deps chromium
+
       - run: npm test

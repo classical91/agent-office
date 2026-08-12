@@ -1,3 +1,7 @@
+# Root install: `pg` for the server, `playwright-core` for the UI smoke tests.
+# agent-office-deploy/dist/.gitignore already covers the one down there.
+node_modules/
+
 agent-office-deploy/dist/.app-settings.json
 # The file-storage fallback for visits holds visitor IP addresses. Postgres is
 # what production uses; this file is a local artefact and never belongs in git.
