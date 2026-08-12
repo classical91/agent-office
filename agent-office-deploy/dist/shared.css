@@ -2168,7 +2168,10 @@
     .control-center-backdrop { display: none; }
     .control-center-panel { border-left: 0; padding: 18px; }
     .control-stats { grid-template-columns: 1fr; }
-    .office-command-btn { display: none; }
+    /* Keep the primary command surface reachable on phones. The room badge is
+       secondary context and yields its space to the Mission Control action. */
+    .office-bar-meta .ao-badge { display: none; }
+    .office-command-btn { display: inline-flex; }
   }
 
   /* BOTTOM STATUS BAR */

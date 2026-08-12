@@ -10,6 +10,7 @@ const DIST = path.join(ROOT, 'agent-office-deploy', 'dist');
 const index = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8');
 const control = fs.readFileSync(path.join(DIST, 'office-control-center.js'), 'utf8');
 const shared = fs.readFileSync(path.join(DIST, 'app-shared.js'), 'utf8');
+const sharedCss = fs.readFileSync(path.join(DIST, 'shared.css'), 'utf8');
 const readme = fs.readFileSync(path.join(ROOT, 'README.md'), 'utf8');
 const relay = fs.readFileSync(path.join(ROOT, 'scripts', 'openclaw-heartbeat.js'), 'utf8');
 
@@ -25,6 +26,11 @@ test('the office exposes Mission Control and operational agent inspection', () =
   assert.match(control, /office\.addEventListener\('click', interceptAgentClick, true\)/);
   assert.match(control, /fetch\('\/api\/agents'/);
   assert.match(control, /current_task_title/);
+});
+
+test('Mission Control remains available in the mobile office header', () => {
+  assert.doesNotMatch(sharedCss, /@media \(max-width: 700px\)[\s\S]*?\.office-command-btn\s*\{\s*display:\s*none;/);
+  assert.match(sharedCss, /@media \(max-width: 700px\)[\s\S]*?\.office-command-btn\s*\{\s*display:\s*inline-flex;/);
 });
 
 test('Mission Control sends goals to Penny through the authenticated board', () => {
