@@ -131,3 +131,9 @@ test('a real page is served as itself', async () => {
     stop(server);
   }
 });
+
+test('Dev Links includes the Dropbox Developer Console', () => {
+  const page = fs.readFileSync(path.join(DIST, 'dev.html'), 'utf8');
+  assert.match(page, /https:\/\/www\.dropbox\.com\/developers\/apps/);
+  assert.match(page, />Dropbox Developer Console</);
+});
