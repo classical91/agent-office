@@ -90,8 +90,20 @@ test('Google Calendar OAuth start exposes a signed offline authorization URL', a
   assert.match(authorizationUrl.searchParams.get('scope'), /calendar\.events/);
   assert.ok(authorizationUrl.searchParams.get('state'));
 
+  // Tamper with the payload, not the tail of the signature. The signature is a
+  // 32-byte HMAC in base64url: 43 characters, of which the last one carries
+  // only four significant bits, and verifyGcalOAuthState() compares decoded
+  // bytes — so the two padding bits are dropped before the comparison. Flipping
+  // the last character between 'a' and 'b' changes only a padding bit, and the
+  // "tampered" state verifies cleanly; the request then failed at the token
+  // exchange instead, and this test went red. Any signature ending in Y, Z, a
+  // or b hit it, which is 6.3% of runs.
+  //
+  // The HMAC is taken over the encoded payload as a string, so changing any
+  // character there fails verification every time.
   const state = authorizationUrl.searchParams.get('state');
-  const tamperedState = `${state.slice(0, -1)}${state.endsWith('a') ? 'b' : 'a'}`;
+  const [encoded, signature] = state.split('.');
+  const tamperedState = `${encoded.startsWith('e') ? 'f' : 'e'}${encoded.slice(1)}.${signature}`;
   const callback = await fetch(
     `${server.origin}/api/calendar/oauth/callback?code=fake&state=${encodeURIComponent(tamperedState)}`
   );
