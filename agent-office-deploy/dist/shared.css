@@ -2181,7 +2181,8 @@
     .control-center-backdrop { display: none; }
     .control-center-panel { border-left: 0; padding: 18px; }
     .control-stats { grid-template-columns: 1fr; }
-    .office-command-btn { display: none; }
+    .office-bar-meta { flex-shrink: 0; }
+    .office-command-btn { display: inline-flex; white-space: nowrap; }
   }
 
   /* BOTTOM STATUS BAR */
