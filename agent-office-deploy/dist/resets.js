@@ -349,6 +349,8 @@ window.AOResets = (() => {
       status,
       fired: Boolean(raw.fired),
       message: String(raw.message || ''),
+      source: raw.source === 'office' ? 'office' : 'browser',
+      notes: String(raw.notes || ''),
       createdAt: Number(raw.createdAt) || 0,
       order: index,
     };
@@ -412,9 +414,38 @@ window.AOResets = (() => {
 
   function saveCards() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.cards));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.cards.filter(card => card.source !== 'office')));
     } catch (err) {
       /* A full or blocked localStorage should not take the page down. */
+    }
+  }
+
+  async function loadOfficeCards() {
+    try {
+      const response = await fetch('/api/countdowns?events=0', { credentials: 'same-origin' });
+      if (!response.ok) throw new Error('Shared countdowns are unavailable.');
+      const payload = await response.json();
+      const items = ['today', 'week', 'later', 'past']
+        .flatMap(group => (payload.groups && payload.groups[group]) || [])
+        .filter(item => item.kind === 'countdown');
+      const repeatDays = { daily: 1, weekday: 1, weekly: 7, biweekly: 14, monthly: 30 };
+      const shared = items.map((item, index) => normalizeCard({
+        id: item.id,
+        title: item.title,
+        resetAt: item.occurs_at || item.target_at,
+        repeatDays: repeatDays[item.repeat] || 0,
+        status: item.archived ? 'completed' : 'active',
+        message: item.next_action || 'Managed in Agent Office.',
+        notes: item.notes || '',
+        source: 'office',
+        createdAt: new Date(item.created_at || 0).getTime(),
+      }, index)).filter(Boolean);
+      const browserCards = state.cards.filter(card => card.source !== 'office');
+      state.cards = [...shared, ...browserCards];
+      render();
+    } catch (error) {
+      const count = el('rst-count');
+      if (count) count.textContent = error.message;
     }
   }
 
@@ -477,6 +508,16 @@ window.AOResets = (() => {
     const icon = iconFor(card.title);
     const open = state.openId === card.id;
     const bodyId = `rst-body-${escHtml(card.id)}`;
+
+    if (card.source === 'office') return `
+      <article class="rst-card${open ? ' is-open' : ''}" data-id="${escHtml(card.id)}" data-state="${view.state}" style="--rst-color: ${icon.color}">
+        <button type="button" class="rst-head" data-action="toggle" aria-expanded="${open}" aria-controls="${bodyId}">
+          <span class="rst-icon" aria-hidden="true">${icon.glyph}</span>
+          <span class="rst-head-main"><span class="rst-head-top"><span class="rst-title">${escHtml(card.title)}</span><span class="ao-status ao-status--info rst-state">Shared</span></span><span class="rst-time" data-role="time">${escHtml(timeLabel(view))}</span><span class="rst-when" data-role="when">${escHtml(whenLabel(view))}</span></span>
+          <span class="rst-chevron" aria-hidden="true">â–¾</span>
+        </button>
+        <div class="rst-body" id="${bodyId}"><div class="rst-body-inner"><div class="rst-message">${escHtml(card.message)}</div>${card.notes ? `<p>${escHtml(card.notes)}</p>` : ''}<div class="rst-footnote">Shared Agent Office countdown · managed by Penny</div></div></div>
+      </article>`;
 
     return `
       <article class="rst-card${open ? ' is-open' : ''}${state.savedId === card.id ? ' is-saved' : ''}"
@@ -910,6 +951,7 @@ window.AOResets = (() => {
       document.addEventListener('click', onDocumentClick);
       document.addEventListener('keydown', onKeyDown);
       state.initialized = true;
+      loadOfficeCards();
     }
 
     fillToolbar();
