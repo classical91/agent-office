@@ -159,6 +159,11 @@ async function runPennyGoal(goal) {
     `Goal ID: ${goal.id}`,
     '',
     goal.content,
+    ...(Array.isArray(goal.links) && goal.links[0] ? [
+      '',
+      `Saved ChatGPT conversation context: ${goal.links[0]}`,
+      'Read the saved conversation before acting when it is accessible. Use it to understand Jason’s reasoning and ask only targeted follow-up questions that remain unresolved.',
+    ] : []),
     '',
     'You are Penny, the sole orchestrator. Own this goal through completion.',
     'Immediately acknowledge receipt to Jason in the current Telegram direct conversation using the message tool.',

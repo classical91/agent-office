@@ -110,6 +110,21 @@
       <form class="mission-goal" id="mission-goal-form">
         <label for="mission-goal-input">What should the office accomplish?</label>
         <textarea id="mission-goal-input" rows="4" placeholder="Example: Find the most useful improvement for Market Dashboard today." required></textarea>
+        <label for="mission-goal-source">ChatGPT conversation link <span class="mission-optional">optional</span></label>
+        <input id="mission-goal-source" type="url" inputmode="url" placeholder="https://chatgpt.com/share/...">
+        <label for="mission-goal-priority">Priority</label>
+        <select id="mission-goal-priority">
+          <option value="normal">Normal — save only; Penny will not process it</option>
+          <option value="urgent">Urgent — send to Penny for orchestration</option>
+        </select>
+        <label for="mission-goal-rank">Importance rank</label>
+        <select id="mission-goal-rank">
+          <option value="5">5 — Highest</option>
+          <option value="4">4 — High</option>
+          <option value="3" selected>3 — Medium</option>
+          <option value="2">2 — Low</option>
+          <option value="1">1 — Lowest</option>
+        </select>
         <div class="mission-goal-actions"><button class="ao-btn ao-btn--primary" type="submit">Send goal to Penny</button><span id="mission-goal-status">Saved to the Mission Board for orchestration.</span></div>
       </form>
       <div class="workflow-lane" aria-label="Office workflow">
@@ -137,14 +152,18 @@
         list.innerHTML = '<div class="control-unavailable">No Mission Control goals yet.</div>';
         return;
       }
-      list.innerHTML = goals.slice(0, 10).map(goal => `
+      const active = goals.filter(goal => goal.orchestration_status !== 'completed');
+      const history = goals.filter(goal => goal.orchestration_status === 'completed');
+      const renderGoal = goal => `
         <article class="mission-result mission-result--${escape(goal.orchestration_status)}">
-          <div><strong>${escape(goal.title)}</strong><span class="control-state">${escape(goal.orchestration_status)}</span></div>
+          <div><strong>${escape(goal.title)}</strong><span class="control-state">${goal.orchestration_status === 'running' ? 'Currently working' : escape(goal.orchestration_status)} · rank ${escape(goal.orchestration_rank || 3)}</span></div>
           ${goal.orchestration_result ? `<p>${escape(goal.orchestration_result)}</p>` : ''}
+          ${goal.links && goal.links[0] ? `<a class="mission-source-link" href="${escape(goal.links[0])}" target="_blank" rel="noopener noreferrer">Open ChatGPT context ↗</a>` : ''}
           ${goal.orchestration_error ? `<p class="mission-result-error">${escape(goal.orchestration_error)}</p>` : ''}
           ${goal.orchestration_status === 'needs_approval' ? `<button class="ao-btn ao-btn--primary mission-approve" type="button" data-goal-id="${escape(goal.id)}">Approve build</button>` : ''}
           <small>${escape(new Date(goal.updated_at || goal.date).toLocaleString())}</small>
-        </article>`).join('');
+        </article>`;
+      list.innerHTML = `${active.length ? '<div class="mission-list-label">Active goals</div>' + active.slice(0, 10).map(renderGoal).join('') : '<div class="control-unavailable">No active goals.</div>'}${history.length ? '<div class="mission-list-label">Completed history</div>' + history.slice(0, 10).map(renderGoal).join('') : ''}`;
       list.querySelectorAll('.mission-approve').forEach(button => {
         button.addEventListener('click', () => approveGoal(button.dataset.goalId));
       });
@@ -170,19 +189,28 @@
   async function submitGoal(event) {
     event.preventDefault();
     const input = body.querySelector('#mission-goal-input');
+    const priorityInput = body.querySelector('#mission-goal-priority');
+    const rankInput = body.querySelector('#mission-goal-rank');
+    const sourceInput = body.querySelector('#mission-goal-source');
     const status = body.querySelector('#mission-goal-status');
     const goal = input.value.trim();
+    const priority = priorityInput.value === 'urgent' ? 'urgent' : 'normal';
+    const rank = Number(rankInput.value) || 3;
+    const sourceUrl = sourceInput.value.trim();
     if (!goal) return;
     status.textContent = 'Sending…';
     try {
       const response = await fetch('/api/orchestration/goals', {
         method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ goal, title: goal.split(/\n/)[0].slice(0, 120) })
+        body: JSON.stringify({ goal, priority, rank, source_url: sourceUrl, title: goal.split(/\n/)[0].slice(0, 120) })
       });
       if (response.status === 401) throw new Error('Unlock the Dropbox first, then try again.');
       if (!response.ok) throw new Error('The goal could not be saved.');
       input.value = '';
-      status.textContent = 'Goal received. Penny owns the next routing decision.';
+      sourceInput.value = '';
+      status.textContent = priority === 'urgent'
+        ? 'Urgent goal received. Penny will process it.'
+        : 'Goal saved. Penny will ignore it unless it is marked urgent.';
       refreshMissionGoals();
       const penny = configuredAgent('oss');
       if (penny && typeof addFeedItem === 'function') addFeedItem(penny, `Goal received: ${goal.slice(0, 90)}`);

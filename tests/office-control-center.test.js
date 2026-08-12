@@ -29,6 +29,13 @@ test('the office exposes Mission Control and operational agent inspection', () =
 
 test('Mission Control sends goals to Penny through the authenticated board', () => {
   assert.match(control, /fetch\('\/api\/orchestration\/goals'/);
+  assert.match(control, /id="mission-goal-priority"/);
+  assert.match(control, /id="mission-goal-rank"/);
+  assert.match(control, /id="mission-goal-source"/);
+  assert.match(relay, /Saved ChatGPT conversation context/);
+  assert.match(control, /Currently working/);
+  assert.match(control, /Completed history/);
+  assert.match(control, /priority === 'urgent'/);
   assert.match(control, /refreshMissionGoals/);
   assert.match(control, /Goals and Outbox/);
 });

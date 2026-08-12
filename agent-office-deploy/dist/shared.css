@@ -2142,6 +2142,9 @@
   .mission-goal { display: grid; gap: 10px; margin: 18px 0; }
   .mission-goal label { font-weight: 700; }
   .mission-goal textarea { width: 100%; resize: vertical; color: var(--text); background: var(--view-bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; font: inherit; }
+  .mission-goal input { width: 100%; min-height: var(--tap-target); color: var(--text); background: var(--surface-raised); border: 1px solid var(--border); border-radius: 10px; padding: 0 12px; font: inherit; }
+  .mission-optional { color: var(--text-dim); font-size: 11px; font-weight: 400; }
+  .mission-goal select { width: 100%; min-height: var(--tap-target); color: var(--text); background: var(--surface-raised); border: 1px solid var(--border); border-radius: 10px; padding: 0 12px; font: inherit; }
   .mission-goal-actions { display: flex; align-items: center; gap: 12px; }
   .mission-goal-actions span { color: var(--text-dim); font-size: 12px; }
   .workflow-lane { display: flex; align-items: stretch; overflow-x: auto; gap: 6px; padding: 12px 0; }
@@ -2153,14 +2156,17 @@
   .mission-results-heading { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; margin-bottom: 9px; }
   .mission-results-heading span { color: var(--text-dim); font-size: 11px; }
   #mission-results-list { display: grid; gap: 8px; }
+  .mission-list-label { margin-top: 8px; color: var(--text-dim); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
   .mission-result { padding: 12px; border: 1px solid var(--border); border-left: 3px solid var(--state-idle); border-radius: 10px; background: var(--view-bg); }
-  .mission-result--running { border-left-color: var(--state-active); }
+  .mission-result--running { border-color: color-mix(in srgb, var(--cyan) 55%, var(--border)); border-left: 4px solid var(--cyan); background: color-mix(in srgb, var(--cyan) 10%, var(--view-bg)); }
+  .mission-result--running .control-state { color: var(--cyan); font-weight: 700; }
   .mission-result--needs_approval { border-left-color: #f59e0b; }
   .mission-result--completed { border-left-color: #22c55e; }
   .mission-result--failed { border-left-color: var(--state-blocked); }
   .mission-result > div { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
   .mission-result p { white-space: pre-wrap; max-height: 180px; overflow: auto; color: var(--text-dim); line-height: 1.45; }
   .mission-result .mission-result-error { color: var(--state-blocked); }
+  .mission-source-link { width: fit-content; color: var(--accent); font-size: 12px; text-decoration: none; }
   .mission-result small { color: var(--muted); }
   .mission-approve { margin: 0 0 10px; }
   @media (max-width: 700px) {
