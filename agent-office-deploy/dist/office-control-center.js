@@ -319,4 +319,10 @@
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && !shell.hidden) close(); });
 
   window.AOControlCenter = { openAgent, openMissionControl, close, customize };
+
+  // The sidebar's Mission Control row lives on every page, so it links back to
+  // the office with ?panel=mission-control and the panel opens itself here.
+  if (new URLSearchParams(location.search).get('panel') === 'mission-control') {
+    openMissionControl();
+  }
 })();
