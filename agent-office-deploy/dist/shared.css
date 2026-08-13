@@ -777,9 +777,13 @@
     width: 18px;
     flex-shrink: 0;
     text-align: center;
-    font-size: var(--fs-md);
+    font-family: Inter, system-ui, sans-serif;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
     line-height: 1;
-    opacity: 0.85;
+    color: var(--text-dim);
+    opacity: 0.9;
   }
   .nav-item:not([data-icon])::before { content: none; }
 
@@ -840,7 +844,7 @@
     font-size: var(--fs-xs);
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
   }
-  .nav-sub .nav-item::before { width: 15px; font-size: var(--fs-sm); }
+  .nav-sub .nav-item::before { width: 15px; font-size: 8px; }
   .nav-sub .nav-item.active::after { left: -1px; }
   .nav-sub .nav-item .icon { font-size: var(--fs-sm); }
 
@@ -912,7 +916,16 @@
     margin: 0 var(--space-2);
     gap: 0;
   }
-  html.nav-compact .nav-item::before { width: auto; font-size: var(--fs-lg); }
+  html.nav-compact .nav-item::before {
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-raised);
+    font-size: 9px;
+  }
   html.nav-compact .nav-item.active::after { left: calc(var(--space-2) * -1); }
   /* Rows with no icon would collapse to an empty strip, so they keep a
      monogram taken from their label. */
