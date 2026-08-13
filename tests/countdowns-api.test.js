@@ -113,6 +113,47 @@ test('reading countdowns is open, writing needs the passphrase', async () => {
   }
 });
 
+test('legacy reset timers are persisted behind the passphrase', async () => {
+  const server = await startServer();
+  try {
+    const locked = await fetch(`${server.origin}/api/reset-timers`);
+    assert.equal(locked.status, 401);
+
+    const items = [{ id: 'usage-reset', title: 'Usage reset', resetAt: inHours(12), webhookUrl: '' }];
+    const saved = await call(server, '/api/reset-timers', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    });
+    assert.equal(saved.status, 200);
+
+    const loaded = await call(server, '/api/reset-timers');
+    assert.equal(loaded.status, 200);
+    assert.deepEqual((await loaded.json()).items, items);
+  } finally {
+    stop(server);
+  }
+});
+
+test('ShareBot countdowns are seeded once as persisted every-two-day records', async () => {
+  const server = await startServer();
+  try {
+    const first = await listCountdowns(server, '?sharebot=1&events=0');
+    const firstItems = Object.values(first.groups).flat().filter(item => item.id.startsWith('sharebot-report-'));
+    assert.equal(firstItems.length, 3);
+    assert.ok(firstItems.every(item => item.repeat === 'every2days'));
+
+    const second = await listCountdowns(server, '?sharebot=1&events=0');
+    const secondItems = Object.values(second.groups).flat().filter(item => item.id.startsWith('sharebot-report-'));
+    assert.deepEqual(secondItems.map(item => item.target_at), firstItems.map(item => item.target_at));
+
+    const stored = JSON.parse(fs.readFileSync(path.join(server.scratch, 'countdowns.json'), 'utf8'));
+    assert.equal(stored.filter(item => item.id.startsWith('sharebot-report-')).length, 3);
+  } finally {
+    stop(server);
+  }
+});
+
 test('a countdown keeps its category, repeat rule and next action', async () => {
   const server = await startServer();
   try {

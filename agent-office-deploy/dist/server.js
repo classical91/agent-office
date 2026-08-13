@@ -2545,10 +2545,18 @@ async function createPostgresStorage() {
 }
 
 async function createStorage() {
+  const isProduction = process.env.NODE_ENV === 'production'
+    || Boolean(process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_ENVIRONMENT_NAME);
+  if (isProduction && !process.env.DATABASE_URL) {
+    throw new Error('Persistent PostgreSQL storage is required in production; DATABASE_URL is not set.');
+  }
   try {
     return (await createPostgresStorage()) || createFileStorage();
   } catch (error) {
-    console.error('Failed to initialize PostgreSQL storage. Falling back to file storage.', error);
+    if (isProduction) {
+      throw new Error(`Persistent PostgreSQL storage is required in production: ${error.message}`);
+    }
+    console.error('Failed to initialize PostgreSQL storage. Falling back to file storage outside production.', error);
     return createFileStorage();
   }
 }
@@ -3060,39 +3068,24 @@ async function currentCalendarEvents() {
   return source.map(toSchedulingEvent).filter(event => event.start && event.end);
 }
 
-function nextShareBotCycle(now = new Date()) {
-  const base = new Date(2026, 7, 9, 8, 0, 0, 0);
-  const candidate = new Date(now);
-  candidate.setHours(8, 0, 0, 0);
+async function ensureShareBotCountdowns(storage, now = new Date()) {
+  const migrationKey = 'countdowns.sharebot.persisted.v1';
+  if (await storage.getAppSetting(migrationKey)) return;
 
-  for (let offset = 0; offset < 14; offset += 1) {
-    const dayIndex = Math.floor((startOfLocalDay(candidate) - startOfLocalDay(base)) / DAY_MS);
-    if (dayIndex < 0 || dayIndex % 2 !== 0) continue;
-    if (candidate.getTime() > now.getTime()) return candidate;
-    candidate.setDate(candidate.getDate() + 1);
-    candidate.setHours(8, 0, 0, 0);
-  }
-
-  const fallback = new Date(now);
-  fallback.setDate(fallback.getDate() + 2);
-  fallback.setHours(8, 0, 0, 0);
-  return fallback;
-}
-
-function startOfLocalDay(date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-}
-
-function shareBotReportCountdowns(now = new Date()) {
-  const cycle = nextShareBotCycle(now);
+  // Seed once, then let the normal persisted repeat rule own the schedule.
+  // This deliberately has no calendar anchor hidden in source code.
+  const cycle = new Date(now);
+  cycle.setDate(cycle.getDate() + 1);
+  cycle.setHours(8, 0, 0, 0);
   const offset = minutes => new Date(cycle.getTime() + minutes * 60 * 1000).toISOString();
-  return [
+  const createdAt = now.toISOString();
+  const seeds = [
     {
       id: 'sharebot-report-crypto-economics',
       title: 'ShareBot Report 1 - Crypto, Stocks, Economics',
       target_at: offset(0),
       category: 'routine',
-      repeat: 'none',
+      repeat: 'every2days',
       next_action: 'Generate and post the crypto, stock, and economics report.',
       notes: 'Runs from the ShareBot news cycle at 8:00 AM Vancouver time every two days.',
       pinned: true,
@@ -3103,7 +3096,7 @@ function shareBotReportCountdowns(now = new Date()) {
       title: 'ShareBot Report 2 - Geopolitics',
       target_at: offset(20),
       category: 'routine',
-      repeat: 'none',
+      repeat: 'every2days',
       next_action: 'Generate and post the geopolitics report after Report 1 is done.',
       notes: 'Estimated start is about 20 minutes after the cycle begins.',
       pinned: true,
@@ -3114,13 +3107,19 @@ function shareBotReportCountdowns(now = new Date()) {
       title: 'ShareBot Full Cycle - Estimated Complete',
       target_at: offset(40),
       category: 'routine',
-      repeat: 'none',
+      repeat: 'every2days',
       next_action: 'Confirm both reports posted or surface the failed target.',
       notes: 'Estimated completion window for both ShareBot reports.',
       pinned: true,
       archived: false,
     },
   ];
+  const existing = new Set((await storage.listCountdowns()).map(item => item.id));
+  for (const seed of seeds) {
+    if (existing.has(seed.id)) continue;
+    await storage.createCountdown({ ...seed, created_at: createdAt, updated_at: createdAt });
+  }
+  await storage.setAppSetting(migrationKey, createdAt);
 }
 
 /**
@@ -3133,11 +3132,8 @@ function shareBotReportCountdowns(now = new Date()) {
 async function buildCountdownsPayload(options = {}) {
   const storage = await storageReady;
   const now = options.now instanceof Date ? options.now : new Date();
+  if (options.includeShareBotReports) await ensureShareBotCountdowns(storage, now);
   const stored = await storage.listCountdowns();
-  const storedIds = new Set(stored.map(item => item.id));
-  const reportCountdowns = options.includeShareBotReports
-    ? shareBotReportCountdowns(now).filter(item => !storedIds.has(item.id))
-    : [];
 
   let events = [];
   let calendarState = 'disconnected';
@@ -3155,7 +3151,7 @@ async function buildCountdownsPayload(options = {}) {
 
   return {
     ...countdowns.buildUpcoming({
-      countdowns: reportCountdowns.concat(stored),
+      countdowns: stored,
       events,
       now,
       includeArchived: Boolean(options.includeArchived),
@@ -5365,6 +5361,32 @@ const server = http.createServer(async (req, res) => {
     // Reading is open, the same as the calendar this page shows alongside the
     // cards; writing sits behind the Dropbox passphrase like every other
     // personal record in here.
+    if (req.method === 'GET' && pathname === '/api/reset-timers') {
+      if (!requireDropsAuth(res, req)) return;
+      const raw = await storage.getAppSetting('reset-timers.v1');
+      let items = [];
+      try { items = raw ? JSON.parse(raw) : []; } catch { items = []; }
+      sendJson(res, 200, { items: Array.isArray(items) ? items : [] });
+      return;
+    }
+
+    if (req.method === 'PUT' && pathname === '/api/reset-timers') {
+      if (!requireDropsAuth(res, req)) return;
+      const body = await readJsonBody(req);
+      if (!body || !Array.isArray(body.items) || body.items.length > 200) {
+        sendJson(res, 400, { error: 'items must be an array with no more than 200 timers.' });
+        return;
+      }
+      const encoded = JSON.stringify(body.items);
+      if (encoded.length > 250000) {
+        sendJson(res, 413, { error: 'Reset timer data is too large.' });
+        return;
+      }
+      await storage.setAppSetting('reset-timers.v1', encoded);
+      sendJson(res, 200, { ok: true });
+      return;
+    }
+
     if (req.method === 'GET' && pathname === '/api/countdowns/rollup') {
       const payload = await buildCountdownsPayload();
       const limit = Number.parseInt(parsedUrl.searchParams.get('limit') || '', 10);
@@ -5946,7 +5968,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
+storageReady.then(storage => server.listen(PORT, () => {
   console.log(`Agent Office running on port ${PORT}`);
   if (process.env.DATABASE_URL) {
     console.log('Dropbox storage: PostgreSQL');
@@ -5954,11 +5976,9 @@ server.listen(PORT, () => {
     console.log('Dropbox storage: JSON file fallback');
   }
   console.log(`Visitors: keeping ${VISIT_RETENTION_DAYS} days of page views`);
-  storageReady.then(storage => {
-    pruneOldVisits(storage);
-    // unref'd so an idle prune timer is never the reason the process stays up.
-    setInterval(() => pruneOldVisits(storage), VISIT_PRUNE_INTERVAL_MS).unref();
-  }).catch(error => console.error('Visitors: could not schedule pruning.', error));
+  pruneOldVisits(storage);
+  // unref'd so an idle prune timer is never the reason the process stays up.
+  setInterval(() => pruneOldVisits(storage), VISIT_PRUNE_INTERVAL_MS).unref();
 
   if (!SHORTCUTS_TOKEN) {
     console.log('Phone inbox: off (set SHORTCUTS_TOKEN to use /api/shortcuts/*)');
@@ -5967,4 +5987,7 @@ server.listen(PORT, () => {
   } else {
     console.log('Phone inbox: on at /api/shortcuts/*');
   }
+})).catch(error => {
+  console.error('Agent Office startup failed:', error.message);
+  process.exitCode = 1;
 });

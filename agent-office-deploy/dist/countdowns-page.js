@@ -22,6 +22,7 @@ window.AOCountdowns = (() => {
   const REPEAT_LABELS = {
     none: 'One-off',
     daily: 'Daily',
+    every2days: 'Every 2 days',
     weekday: 'Weekdays',
     weekly: 'Weekly',
     biweekly: 'Every 2 weeks',
