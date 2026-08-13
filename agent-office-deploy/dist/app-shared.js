@@ -2057,6 +2057,12 @@ function markActiveNav() {
     const target = navItemPath(href);
     let active = target.path === here;
     // Dropbox and Reminders are the same page told apart by ?view=ios.
+    // Mission Control is the office page with its panel open, so the two rows
+    // pointing at "/" are told apart by ?panel=mission-control.
+    if (active && target.path === '/') {
+      const herePanel = new URLSearchParams(location.search).get('panel') || '';
+      active = (target.params.get('panel') || '') === herePanel;
+    }
     if (active && target.path === '/mission-board.html') {
       active = (target.params.get('view') === 'ios') === isIosView;
     }
