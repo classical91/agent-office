@@ -70,6 +70,14 @@ test('a biweekly routine rolls forward in 14-day steps', () => {
   assert.equal(occurrence.toISOString(), at(new Date(2026, 7, 26), 16));
 });
 
+test('an every-two-days routine advances without rewriting its stored target', () => {
+  const target = at(new Date(2026, 7, 10), 8);
+  const routine = make({ repeat: 'every2days', category: 'routine', target_at: target });
+  const occurrence = countdowns.nextOccurrence(routine, new Date(2026, 7, 12, 9, 0, 0));
+  assert.equal(occurrence.toISOString(), at(new Date(2026, 7, 14), 8));
+  assert.equal(routine.target_at, target);
+});
+
 test('monthly repeats clamp to the last day of a short month', () => {
   const monthly = make({ repeat: 'monthly', target_at: at(new Date(2026, 0, 31), 9) });
   const occurrence = countdowns.nextOccurrence(monthly, new Date(2026, 1, 10, 9, 0, 0));

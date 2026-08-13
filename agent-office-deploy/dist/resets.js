@@ -257,82 +257,7 @@ window.AOResets = (() => {
   // first visit, and never re-applied: the old page rebuilt them on every load,
   // which quietly undid every rename, re-time and delete the user made.
   function seedCards() {
-    const cycle = nextShareBotCycle();
-    const offset = (date, minutes) => new Date(date.getTime() + minutes * 60000).toISOString();
-    return [
-      {
-        id: HAPPY_HOUR_ID,
-        title: 'Happy Hour',
-        resetAt: new Date().toISOString(),
-        repeatDays: 0,
-        message: '',
-      },
-      {
-        id: 'sharebot-report-crypto-economics',
-        title: 'ShareBot Report 1 - Crypto, Stocks, Economics',
-        resetAt: cycle.toISOString(),
-        repeatDays: 2,
-        message: 'Starts at the next 8:00 AM ShareBot cycle.',
-      },
-      {
-        id: 'sharebot-report-geopolitics',
-        title: 'ShareBot Report 2 - Geopolitics',
-        resetAt: offset(cycle, 20),
-        repeatDays: 2,
-        message: 'Estimated start after Report 1 posts.',
-      },
-      {
-        id: 'sharebot-report-cycle-complete',
-        title: 'ShareBot Full Cycle - Estimated Complete',
-        resetAt: offset(cycle, 40),
-        repeatDays: 2,
-        message: 'Estimated completion window for both reports.',
-      },
-      {
-        id: 'routine-beard-mustache-face-7d',
-        title: 'Trim Beard + Mustache + Face',
-        resetAt: daysFromNow(7),
-        repeatDays: 7,
-        message: 'Repeats every 7 days.',
-      },
-      {
-        id: 'routine-haircut-14d',
-        title: 'Haircut',
-        resetAt: daysFromNow(14),
-        repeatDays: 14,
-        message: 'Repeats every 2 weeks.',
-      },
-      {
-        id: 'routine-bedsheets-carpet-14d',
-        title: 'Clean Bedsheets + Carpet',
-        resetAt: daysFromNow(14),
-        repeatDays: 14,
-        message: 'Repeats every 2 weeks.',
-      },
-      {
-        id: 'codex-usage-reset-2026-08-15-1328',
-        title: 'Codex Usage Reset',
-        resetAt: new Date(2026, 7, 15, 13, 28, 0, 0).toISOString(),
-        repeatDays: 0,
-        message: 'Resets Aug 15, 2026 at 1:28 PM.',
-      },
-      {
-        id: 'claude-usage-reset-2026-08-14-1459',
-        title: 'Claude Usage Reset',
-        resetAt: new Date(2026, 7, 14, 14, 59, 0, 0).toISOString(),
-        repeatDays: 0,
-        message: 'Resets Friday, Aug 14, 2026 at 2:59 PM.',
-      },
-    ];
-  }
-
-  // ShareBot runs every second day at 8:00, counting from the Aug 2026 cycle.
-  function nextShareBotCycle() {
-    const now = Date.now();
-    const base = new Date(2026, 7, 9, 8, 0, 0, 0);
-    const cycle = new Date(base);
-    while (cycle.getTime() <= now) cycle.setDate(cycle.getDate() + 2);
-    return cycle;
+    return [];
   }
 
   function normalizeCard(raw, index) {
@@ -384,30 +309,6 @@ window.AOResets = (() => {
     // that stays deleted.
     const source = stored || seedCards().map(seed => ({ ...seed, createdAt: Date.now(), status: 'active' }));
     const cards = source.map(normalizeCard).filter(Boolean);
-    try {
-      if (!localStorage.getItem(IPHONE_UPDATE_MIGRATION_KEY)) {
-        if (!cards.some(card => card.id === 'routine-iphone-app-updates-7d')) {
-          cards.unshift(normalizeCard({
-            id: 'routine-iphone-app-updates-7d',
-            title: 'Check iPhone App Updates',
-            resetAt: nextWeekdayAt(0, 19),
-            repeatDays: 7,
-            message: 'Check the App Store for available updates every Sunday.',
-            createdAt: Date.now(),
-            status: 'active',
-          }, 0));
-        }
-        localStorage.setItem(IPHONE_UPDATE_MIGRATION_KEY, '1');
-      }
-    } catch (err) {
-      /* Storage may be blocked; the rest of the countdown page still works. */
-    }
-    let happyHour = cards.find(card => card.id === HAPPY_HOUR_ID);
-    if (!happyHour) {
-      happyHour = normalizeCard({ id: HAPPY_HOUR_ID, title: 'Happy Hour', resetAt: new Date().toISOString() }, cards.length);
-      cards.push(happyHour);
-    }
-    syncHappyHourCard(happyHour);
     cards.forEach(rollForward);
     return cards;
   }
@@ -417,6 +318,51 @@ window.AOResets = (() => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state.cards.filter(card => card.source !== 'office')));
     } catch (err) {
       /* A full or blocked localStorage should not take the page down. */
+    }
+    if (state.initialized) persistServerCards(false);
+  }
+
+  function browserCards() {
+    return state.cards.filter(card => card.source !== 'office');
+  }
+
+  async function syncServerCards(interactive) {
+    if (typeof ensureDropsSession !== 'function' || !(await ensureDropsSession(Boolean(interactive)))) return false;
+    try {
+      const response = await fetch('/api/reset-timers', { credentials: 'same-origin' });
+      if (!response.ok) throw new Error('Could not load shared timer storage.');
+      const payload = await response.json();
+      const remote = Array.isArray(payload.items) ? payload.items.map(normalizeCard).filter(Boolean) : [];
+      const local = browserCards();
+      if (!remote.length && local.length) {
+        const saved = await fetch('/api/reset-timers', {
+          method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: local }),
+        });
+        if (!saved.ok) throw new Error('Could not migrate browser timers to persistent storage.');
+      } else if (remote.length) {
+        state.cards = [...state.cards.filter(card => card.source === 'office'), ...remote];
+        saveCards();
+        render();
+      }
+      return true;
+    } catch (error) {
+      const count = el('rst-count');
+      if (count) count.textContent = error.message;
+      return false;
+    }
+  }
+
+  async function persistServerCards(interactive) {
+    if (typeof ensureDropsSession !== 'function' || !(await ensureDropsSession(Boolean(interactive)))) return false;
+    try {
+      const response = await fetch('/api/reset-timers', {
+        method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: browserCards() }),
+      });
+      return response.ok;
+    } catch {
+      return false;
     }
   }
 
@@ -428,7 +374,7 @@ window.AOResets = (() => {
       const items = ['today', 'week', 'later', 'past']
         .flatMap(group => (payload.groups && payload.groups[group]) || [])
         .filter(item => item.kind === 'countdown');
-      const repeatDays = { daily: 1, weekday: 1, weekly: 7, biweekly: 14, monthly: 30 };
+      const repeatDays = { daily: 1, every2days: 2, weekday: 1, weekly: 7, biweekly: 14, monthly: 30 };
       const shared = items.map((item, index) => normalizeCard({
         id: item.id,
         title: item.title,
@@ -845,7 +791,7 @@ window.AOResets = (() => {
     box.hidden = !text;
   }
 
-  function addFromForm() {
+  async function addFromForm() {
     const title = el('rst-new-title').value.trim();
     const resetAt = fromDateTime(el('rst-new-date').value, el('rst-new-time').value);
     if (!title) return showFormError('Give the countdown a name.');
@@ -867,6 +813,7 @@ window.AOResets = (() => {
     closeForm();
     state.savedId = card.id;
     render();
+    await persistServerCards(true);
   }
 
   // ─── Toolbar ───────────────────────────────────────────────────────────
@@ -952,6 +899,7 @@ window.AOResets = (() => {
       document.addEventListener('keydown', onKeyDown);
       state.initialized = true;
       loadOfficeCards();
+      syncServerCards(false);
     }
 
     fillToolbar();
