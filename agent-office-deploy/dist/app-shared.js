@@ -279,6 +279,34 @@ const AGENTS = [
       'Publishing remains approval-gated',
       'Studio Director handoff ready',
     ]
+  },
+  {
+    id: 'routercoder',
+    name: 'RouterCoder',
+    emoji: 'RC',
+    color: '#ec4899',
+    role: 'OpenRouter Coding Specialist',
+    model: 'OpenRouter Code Models',
+    authority: 'specialist',
+    memory: true,
+    workspace: 'workspace-routercoder',
+    repo: 'Cross-project coding support',
+    desc: 'Second coding specialist for scoped implementation, debugging, tests, repo inspection, and small refactors through OpenRouter with explicit model fallbacks. Penny owns routing and final verification.',
+    tasks: [
+      'Implementing scoped code changes',
+      'Inspecting repositories',
+      'Debugging routine failures',
+      'Writing targeted tests',
+      'Handling small refactors',
+      'Returning diffs for Penny review',
+    ],
+    feed: [
+      'RouterCoder added as the OpenRouter coding lane',
+      'Routine implementation scope assigned',
+      'Explicit model fallbacks required',
+      'Production deploys remain approval-gated',
+      'Penny retains final review and verification',
+    ]
   }
 ];
 
@@ -319,12 +347,19 @@ let SVG_HH = 18;    // half tile height (viewBox)
 // In *front* of the desk, because agents are DOM nodes layered over the room
 // SVG and would otherwise paint straight over the desk they sit at.
 let AGENT_STATIONS = {
-  oss:        { gx:  5, gy: 1, facing: 'N' },
-  webclaw:    { gx:  1, gy: 4, facing: 'W' },
-  nutrimind:  { gx:  8, gy: 5, facing: 'N' },
-  pc:         { gx: 10, gy: 5, facing: 'N' },
-  traderclaw: { gx:  0, gy: 3, facing: 'W' },
-  studioclaw: { gx:  7, gy: 1, facing: 'N' },
+  devin:       { gx:  0, gy: 1, facing: 'N' },
+  fatherclaw:  { gx:  1, gy: 1, facing: 'N' },
+  command:     { gx:  2, gy: 1, facing: 'N' },
+  forge:       { gx:  3, gy: 1, facing: 'N' },
+  swarm:       { gx:  4, gy: 1, facing: 'N' },
+  penny:       { gx:  5, gy: 1, facing: 'N' },
+  traderclaw:  { gx:  1, gy: 3, facing: 'W' },
+  webclaw:     { gx:  1, gy: 4, facing: 'W' },
+  lyra:        { gx:  1, gy: 5, facing: 'W' },
+  reaper:      { gx:  1, gy: 6, facing: 'W' },
+  xhunter:     { gx:  8, gy: 5, facing: 'N' },
+  routercoder: { gx:  9, gy: 5, facing: 'N' },
+  guardian:    { gx: 10, gy: 5, facing: 'N' },
 };
 // <<<END GENERATED ROOM GEOMETRY>>>
 
@@ -544,6 +579,7 @@ const SPRITE_ALIASES = {
   youtubeclaw: 'devin',
   commentfarm: 'swarm',
   newsreporter: 'fatherclaw',
+  routercoder: 'xbot',
   forge: 'rig',
   command: 'jason',
 };

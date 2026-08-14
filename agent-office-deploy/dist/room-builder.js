@@ -82,7 +82,7 @@ function buildRoom(options = {}) {
     { agent: 'reaper', tile: [0, 6], orient: 'side', screen: '#78716c' },
     // Right island (agents end up on row gy = 5)
     { agent: 'xhunter', tile: [8, 4], orient: 'front', screen: '#06b6d4' },
-    { agent: 'xbot', tile: [9, 4], orient: 'front', screen: '#ec4899' },
+    { agent: 'routercoder', tile: [9, 4], orient: 'front', screen: '#ec4899' },
     { agent: 'guardian', tile: [10, 4], orient: 'front', screen: '#ef4444' },
   ];
 

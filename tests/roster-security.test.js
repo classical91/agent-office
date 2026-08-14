@@ -24,8 +24,11 @@ test('the Agent Office roster matches the current OpenClaw agents', () => {
     'youtubeclaw',
     'commentfarm',
     'newsreporter',
+    'routercoder',
   ]);
   assert.match(block, /name:\s*'ShareBot67'/);
+  assert.match(block, /name:\s*'RouterCoder'/);
+  assert.match(block, /role:\s*'OpenRouter Coding Specialist'/);
   assert.match(block, /GPT-5\.5 OAuth route verified/);
   for (const obsoleteId of ['coder', 'xbot', 'farmbot', 'security']) {
     assert.doesNotMatch(block, new RegExp(`\\bid:\\s*['\"]${obsoleteId}['\"]`, 'i'));

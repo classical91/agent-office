@@ -132,6 +132,11 @@
       station: { gx: 11, gy: 5 },
       defaults: { face: 'stoic', skin: '#8b5036', hair: 'bald', hairColor: '#151518', outfit: 'director', outfitColor: '#d9d8d2', accessory: 'glasses' },
     },
+    {
+      id: 'routercoder', name: 'RouterCoder', shortRole: 'OpenRouter code', role: 'OpenRouter coding specialist', color: '#ec4899',
+      station: { gx: 9, gy: 5 },
+      defaults: { face: 'focused', skin: '#573222', hair: 'swept', hairColor: '#72519b', outfit: 'utility', outfitColor: '#172554', accessory: 'glasses' },
+    },
   ];
 
   const DEFAULT_LOOKS = Object.fromEntries(ROSTER.map((agent) => [agent.id, agent.defaults]));
