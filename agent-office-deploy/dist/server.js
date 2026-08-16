@@ -170,6 +170,38 @@ function destroySession(token) {
   if (token) sessions.delete(token);
 }
 
+// The passphrase is the one credential that opens the whole Office - notes,
+// memories, projects, agents, the calendar - so an internet-facing login form
+// cannot answer an unlimited number of guesses. The phone inbox already works
+// this way; this is the same idea with a smaller budget, because there is only
+// ever one person typing this one and a wrong passphrase is rare.
+//
+// The window is not extended by attempts made while already locked out: a
+// script that keeps hammering serves out the same five minutes as one that
+// stops, instead of holding itself in a lockout it can never leave.
+const LOGIN_FAILURE_LIMIT = 5;
+const LOGIN_FAILURE_WINDOW_MS = 5 * 60 * 1000;
+const loginFailures = new Map();
+
+function loginThrottled(key) {
+  const entry = loginFailures.get(key);
+  if (!entry) return false;
+  if (Date.now() - entry.first > LOGIN_FAILURE_WINDOW_MS) {
+    loginFailures.delete(key);
+    return false;
+  }
+  return entry.count >= LOGIN_FAILURE_LIMIT;
+}
+
+function recordLoginFailure(key) {
+  const entry = loginFailures.get(key);
+  if (!entry || Date.now() - entry.first > LOGIN_FAILURE_WINDOW_MS) {
+    loginFailures.set(key, { count: 1, first: Date.now() });
+    return;
+  }
+  entry.count += 1;
+}
+
 function clearSessionCookie(res) {
   res.setHeader(
     'Set-Cookie',
@@ -1582,6 +1614,66 @@ function createFileStorage() {
   };
 }
 
+function postgresHost(connectionString) {
+  try {
+    return new URL(connectionString).hostname.toLowerCase();
+  } catch {
+    return '';
+  }
+}
+
+// Railway's own network. A connection to it never reaches the public internet,
+// and its certificate is self-signed by design - there is no public CA that
+// could vouch for it, so demanding one would only mean refusing to start.
+function isRailwayInternalHost(host) {
+  return host === 'railway.internal' || host.endsWith('.railway.internal');
+}
+
+function isLoopbackHost(host) {
+  return host === 'localhost' || host === '127.0.0.1' || host === '::1';
+}
+
+// Encryption without identity is only half of TLS: it stops a passive listener
+// but not something that answers in the database's place. Verification is
+// therefore the default, and every case that skips it is a named one.
+async function resolvePostgresSsl(connectionString) {
+  if (process.env.PGSSLMODE === 'disable') {
+    return { ssl: false, sslDescription: 'off (PGSSLMODE=disable)' };
+  }
+
+  const host = postgresHost(connectionString);
+
+  if (isRailwayInternalHost(host)) {
+    return {
+      ssl: { rejectUnauthorized: false },
+      sslDescription: `encrypted, unverified (${host} is on Railway's private network)`,
+    };
+  }
+
+  // A local database over loopback, as before: no TLS to negotiate, and most
+  // local installs are not listening for it.
+  if (isLoopbackHost(host)) {
+    return { ssl: undefined, sslDescription: `off (${host} is loopback)` };
+  }
+
+  const caPath = process.env.PGSSLROOTCERT || '';
+  if (caPath) {
+    return {
+      ssl: { ca: await fs.readFile(caPath, 'utf8'), rejectUnauthorized: true },
+      sslDescription: `verified against ${caPath}`,
+    };
+  }
+
+  if (process.env.PGSSL_ALLOW_SELF_SIGNED === 'true') {
+    return {
+      ssl: { rejectUnauthorized: false },
+      sslDescription: 'encrypted, UNVERIFIED (PGSSL_ALLOW_SELF_SIGNED=true)',
+    };
+  }
+
+  return { ssl: { rejectUnauthorized: true }, sslDescription: 'verified' };
+}
+
 async function createPostgresStorage() {
   if (!process.env.DATABASE_URL) return null;
 
@@ -1593,12 +1685,8 @@ async function createPostgresStorage() {
     return null;
   }
 
-  const ssl =
-    process.env.PGSSLMODE === 'disable'
-      ? false
-      : process.env.NODE_ENV === 'production'
-        ? { rejectUnauthorized: false }
-        : undefined;
+  const { ssl, sslDescription } = await resolvePostgresSsl(process.env.DATABASE_URL);
+  console.log(`Dropbox storage TLS: ${sslDescription}`);
 
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -5005,13 +5093,21 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
+      const loginKey = clientIp(req);
+      if (loginThrottled(loginKey)) {
+        sendJson(res, 429, { error: 'Too many attempts. Try again in a few minutes.' });
+        return;
+      }
+
       const body = await readJsonBody(req);
       const passphrase = typeof body.passphrase === 'string' ? body.passphrase : '';
       if (!passphrase || !safeCompareHash(passphrase, PASSPHRASE_HASH)) {
+        recordLoginFailure(loginKey);
         sendJson(res, 401, { error: 'Incorrect passphrase.' });
         return;
       }
 
+      loginFailures.delete(loginKey);
       issueSession(res);
       sendJson(res, 200, { authenticated: true });
       return;
@@ -5980,7 +6076,12 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ── Config files (per-agent workspace markdown) ────────────────
+    // Today CONFIG_FILES_DIR holds a placeholder README and nothing else, which
+    // is what makes this the right moment to gate it: point it at a real
+    // OpenClaw workspace later and the same handler starts serving SOUL.md,
+    // USER.md and MEMORY.md - the agent's instructions and the owner's context.
     if (req.method === 'GET' && pathname.startsWith('/api/config-files')) {
+      if (!requireOfficeAuth(req, res, 'Unlock Agent Office to read config files.')) return;
       const CONFIG_DIR = process.env.CONFIG_FILES_DIR || path.join(__dirname, 'config-files');
       const FILE_NAMES = ['SOUL.md','IDENTITY.md','USER.md','AGENTS.md','TOOLS.md','HEARTBEAT.md','MEMORY.md'];
       const agentParam = pathname.slice('/api/config-files'.length).replace(/^\//, '').split('/')[0];

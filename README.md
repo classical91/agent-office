@@ -242,7 +242,7 @@ All endpoints return JSON.
 | POST   | `/api/calendar/schedule/plan`     | Preview a natural-language plan (session-authenticated) |
 | POST   | `/api/calendar/schedule/commit`   | Create the previewed blocks (session-authenticated) |
 | POST   | `/api/calendar/quick-add`         | Natural-language event entry (session-authenticated) |
-| GET    | `/api/config-files/:agent`        | Read snapshots only from a private runtime CONFIG_FILES_DIR |
+| GET    | `/api/config-files/:agent`        | Read snapshots only from a private runtime CONFIG_FILES_DIR (session-authenticated) |
 | GET    | `/api/orchestration/goals`        | List Penny goals and Outbox results (session-authenticated) |
 | POST   | `/api/orchestration/goals`        | Queue a goal for Penny (session-authenticated) |
 | POST   | `/api/orchestration/goals/claim`  | Atomically claim the next goal (gateway-token authenticated) |
@@ -709,13 +709,36 @@ Dropbox-related variables:
   in (defaults to `America/Vancouver`)
 
 **The passphrase is not optional in a deployment.** Every route holding personal
-data — the whole calendar included — goes through one default-deny guard. With
-no passphrase configured it answers `503`, rather than serving the data, on any
-host that looks deployed: `NODE_ENV=production`, or any `RAILWAY_*` marker. Only
-an undeployed developer machine may run without one, and it says so at startup
-(`Agent Office auth: off`). A deployed host with the passphrase missing logs
-`Agent Office auth: NOT CONFIGURED` — look for that line first if the app comes
-up answering `503` to everything.
+data — the whole calendar and the config-file reader included — goes through one
+default-deny guard. With no passphrase configured it answers `503`, rather than
+serving the data, on any host that looks deployed: `NODE_ENV=production`, or any
+`RAILWAY_*` marker. Only an undeployed developer machine may run without one,
+and it says so at startup (`Agent Office auth: off`). A deployed host with the
+passphrase missing logs `Agent Office auth: NOT CONFIGURED` — look for that line
+first if the app comes up answering `503` to everything.
+
+**Guessing the passphrase is rate-limited.** Five wrong attempts from one
+address buy a five-minute timeout, during which even the correct passphrase is
+refused. A successful login clears the count. This is the same treatment the
+phone inbox gives a bad token.
+
+### Database TLS
+
+The connection's TLS policy is decided per host and announced at startup as
+`Dropbox storage TLS: …`:
+
+- `*.railway.internal` — encrypted but not verified. The connection never leaves
+  Railway's private network and the certificate is self-signed by design, so
+  there is no public CA that could vouch for it.
+- anything else — **verified**. A database reachable from the open internet has
+  to prove who it is; encryption alone stops a listener but not an impostor.
+- `localhost` / `127.0.0.1` — no TLS, as before.
+
+Two escape hatches for a public host that cannot be verified as-is:
+
+- `PGSSLROOTCERT` — path to the CA certificate to verify against. Prefer this.
+- `PGSSL_ALLOW_SELF_SIGNED=true` — skip verification. The startup line then says
+  `UNVERIFIED`, on purpose.
 
 ### Google Calendar OAuth
 
