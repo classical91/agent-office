@@ -226,22 +226,22 @@ All endpoints return JSON.
 | POST   | `/api/visits/track`               | Record a page view or a still-here ping (public) |
 | GET    | `/api/visits/summary`             | Live visitors, totals, top pages and referrers |
 | DELETE | `/api/visits`                     | Delete every recorded page view  |
-| GET    | `/api/calendar/status`            | Check Google Calendar connection |
-| GET    | `/api/calendar/oauth/start`        | Start Google OAuth authorization |
-| GET    | `/api/calendar/oauth/callback`     | Complete Google OAuth             |
-| DELETE | `/api/calendar/oauth/connection`   | Disconnect the stored account     |
-| GET    | `/api/calendar/events`            | List calendar events             |
-| POST   | `/api/calendar/events`            | Create an event                  |
-| PATCH  | `/api/calendar/events/:id`        | Update an event                  |
-| DELETE | `/api/calendar/events/:id`        | Delete an event                  |
-| POST   | `/api/calendar/events/:id/run`    | Drive a block's agent run        |
-| GET    | `/api/calendar/agent-timeline`    | Agent work grouped by agent      |
-| GET    | `/api/calendar/preferences`       | Read scheduling preferences      |
-| PUT    | `/api/calendar/preferences`       | Update scheduling preferences    |
-| POST   | `/api/calendar/schedule/suggest`  | Scored candidate slots           |
-| POST   | `/api/calendar/schedule/plan`     | Preview a natural-language plan  |
-| POST   | `/api/calendar/schedule/commit`   | Create the previewed blocks      |
-| POST   | `/api/calendar/quick-add`         | Natural-language event entry     |
+| GET    | `/api/calendar/status`            | Check Google Calendar connection (public: lock state only) |
+| GET    | `/api/calendar/oauth/start`        | Start Google OAuth authorization (session-authenticated) |
+| GET    | `/api/calendar/oauth/callback`     | Complete Google OAuth (public: Google redirects here) |
+| DELETE | `/api/calendar/oauth/connection`   | Disconnect the stored account (session-authenticated) |
+| GET    | `/api/calendar/events`            | List calendar events (session-authenticated) |
+| POST   | `/api/calendar/events`            | Create an event (session-authenticated) |
+| PATCH  | `/api/calendar/events/:id`        | Update an event (session-authenticated) |
+| DELETE | `/api/calendar/events/:id`        | Delete an event (session-authenticated) |
+| POST   | `/api/calendar/events/:id/run`    | Drive a block's agent run (session-authenticated) |
+| GET    | `/api/calendar/agent-timeline`    | Agent work grouped by agent (session-authenticated) |
+| GET    | `/api/calendar/preferences`       | Read scheduling preferences (session-authenticated) |
+| PUT    | `/api/calendar/preferences`       | Update scheduling preferences (session-authenticated) |
+| POST   | `/api/calendar/schedule/suggest`  | Scored candidate slots (session-authenticated) |
+| POST   | `/api/calendar/schedule/plan`     | Preview a natural-language plan (session-authenticated) |
+| POST   | `/api/calendar/schedule/commit`   | Create the previewed blocks (session-authenticated) |
+| POST   | `/api/calendar/quick-add`         | Natural-language event entry (session-authenticated) |
 | GET    | `/api/config-files/:agent`        | Read snapshots only from a private runtime CONFIG_FILES_DIR |
 | GET    | `/api/orchestration/goals`        | List Penny goals and Outbox results (session-authenticated) |
 | POST   | `/api/orchestration/goals`        | Queue a goal for Penny (session-authenticated) |
@@ -701,11 +701,21 @@ Railway runs `node agent-office-deploy/dist/server.js` (see `railway.json`). The
 
 Dropbox-related variables:
 
-- `DROPS_PASSPHRASE` / `DROPS_PASSPHRASE_HASH` — gates the web Dropbox
+- `DROPS_PASSPHRASE` / `DROPS_PASSPHRASE_HASH` — gates the web Dropbox and the
+  calendar; **required on any deployed host** (see below)
 - `SHORTCUTS_TOKEN` — enables the phone inbox; 16 characters minimum, and the
   server logs `Phone inbox: on` at startup once it is set
 - `APP_TIMEZONE` — the timezone reminder phrases like "tomorrow 9am" are read
   in (defaults to `America/Vancouver`)
+
+**The passphrase is not optional in a deployment.** Every route holding personal
+data — the whole calendar included — goes through one default-deny guard. With
+no passphrase configured it answers `503`, rather than serving the data, on any
+host that looks deployed: `NODE_ENV=production`, or any `RAILWAY_*` marker. Only
+an undeployed developer machine may run without one, and it says so at startup
+(`Agent Office auth: off`). A deployed host with the passphrase missing logs
+`Agent Office auth: NOT CONFIGURED` — look for that line first if the app comes
+up answering `503` to everything.
 
 ### Google Calendar OAuth
 

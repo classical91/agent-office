@@ -62,6 +62,7 @@ const DEFAULT_AGENTS = [
 ];
 const ALLOWED_ORIGIN = process.env.APP_ORIGIN || process.env.PUBLIC_APP_URL || '';
 const PASSPHRASE_HASH = resolvePassphraseHash();
+const IS_DEPLOYED = isDeployedEnvironment();
 const sessions = new Map();
 // Nothing is hardcoded here any more: the calendar reflects Google only.
 const RECURRING_CALENDAR_EVENTS = [];
@@ -76,6 +77,25 @@ function resolvePassphraseHash() {
 
   const configuredPassphrase = process.env.DROPS_PASSPHRASE || '';
   return configuredPassphrase ? sha256(configuredPassphrase) : '';
+}
+
+// "Is this a real deployment?" cannot rest on NODE_ENV alone: a host that never
+// sets it would otherwise be treated as a developer laptop and allowed to serve
+// personal data with no passphrase at all. Railway's own deployment markers are
+// checked too, so forgetting NODE_ENV locks the app down instead of opening it.
+//
+// This is deliberately broader than the storage check in createStorage(): over-
+// detecting a deployment costs a passphrase prompt, while under-detecting one
+// serves the owner's calendar to anybody who asks. Real Railway sets all of
+// these together, so the two never disagree in production.
+function isDeployedEnvironment() {
+  if (process.env.NODE_ENV === 'production') return true;
+  return Boolean(
+    process.env.RAILWAY_ENVIRONMENT
+    || process.env.RAILWAY_ENVIRONMENT_NAME
+    || process.env.RAILWAY_PROJECT_ID
+    || process.env.RAILWAY_SERVICE_ID
+  );
 }
 
 function normalizeHash(value) {
@@ -2645,11 +2665,27 @@ function hasGcalClientCredentials() {
   return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
 }
 
-function requireCalendarSetupAuth(req, res) {
-  if (!PASSPHRASE_HASH) return true;
+// The single gate for anything holding personal Office data. It is default-deny:
+// an unconfigured passphrase is a misconfiguration on a deployed host, not an
+// invitation, so it answers 503 there rather than waving the request through.
+// Only an undeployed developer machine may run without a passphrase.
+function requireOfficeAuth(req, res, message = 'Unlock Agent Office to use the calendar.') {
+  if (!PASSPHRASE_HASH) {
+    if (IS_DEPLOYED) {
+      sendJson(res, 503, {
+        error: 'Agent Office auth is not configured. Set DROPS_PASSPHRASE_HASH or DROPS_PASSPHRASE.',
+      });
+      return false;
+    }
+    return true;
+  }
   if (getSession(req)) return true;
-  sendJson(res, 401, { error: 'Unlock Agent Office before changing the Google Calendar connection.' });
+  sendJson(res, 401, { error: message });
   return false;
+}
+
+function requireCalendarSetupAuth(req, res) {
+  return requireOfficeAuth(req, res, 'Unlock Agent Office before changing the Google Calendar connection.');
 }
 
 function gcalEncryptionKey() {
@@ -5730,6 +5766,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'GET' && pathname === '/api/calendar/events') {
+      if (!requireOfficeAuth(req, res)) return;
       // The client needs to tell "nothing is scheduled" apart from "the sync
       // broke" apart from "you never connected". One explicit state does that;
       // an empty array on its own never could.
@@ -5775,6 +5812,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'GET' && pathname === '/api/calendar/preferences') {
+      if (!requireOfficeAuth(req, res)) return;
       sendJson(res, 200, { preferences: await getSchedulingPreferences() });
       return;
     }
@@ -5788,12 +5826,14 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'POST' && pathname === '/api/calendar/schedule/suggest') {
+      if (!requireOfficeAuth(req, res)) return;
       const body = await readJsonBody(req);
       sendJson(res, 200, await suggestScheduleSlots(body));
       return;
     }
 
     if (req.method === 'POST' && pathname === '/api/calendar/schedule/plan') {
+      if (!requireOfficeAuth(req, res)) return;
       const body = await readJsonBody(req);
       const plan = await buildSchedulePlan(typeof body.text === 'string' ? body.text : '');
       if (!plan.ok) {
@@ -5826,11 +5866,13 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'GET' && pathname === '/api/calendar/agent-timeline') {
+      if (!requireOfficeAuth(req, res)) return;
       sendJson(res, 200, await buildAgentTimeline());
       return;
     }
 
     if (req.method === 'POST' && pathname === '/api/calendar/events') {
+      if (!requireOfficeAuth(req, res)) return;
       const body = await readJsonBody(req);
       if (!body.title || !body.start || !body.end) { sendJson(res, 400, { error: 'title, start, end required' }); return; }
       if (await isGcalConnected()) {
@@ -5848,6 +5890,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'DELETE' && pathname.startsWith('/api/calendar/series/')) {
+      if (!requireOfficeAuth(req, res)) return;
       const seriesId = pathname.slice('/api/calendar/series/'.length).trim();
       if (!seriesId || !isValidRecurringSeriesId(seriesId)) {
         sendJson(res, 400, { error: 'Recurring series id is required.' });
@@ -5863,6 +5906,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'PATCH' && pathname.startsWith('/api/calendar/series/')) {
+      if (!requireOfficeAuth(req, res)) return;
       const seriesId = pathname.slice('/api/calendar/series/'.length).trim();
       if (!seriesId || !isValidRecurringSeriesId(seriesId)) {
         sendJson(res, 400, { error: 'Recurring series id is required.' });
@@ -5879,6 +5923,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'DELETE' && pathname.startsWith('/api/calendar/events/')) {
+      if (!requireOfficeAuth(req, res)) return;
       const id = decodeURIComponent(pathname.slice('/api/calendar/events/'.length));
       const googleEventId = gcalEventIdFromRoute(id);
       if (googleEventId) {
@@ -5893,6 +5938,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'PATCH' && pathname.startsWith('/api/calendar/events/')) {
+      if (!requireOfficeAuth(req, res)) return;
       const id = decodeURIComponent(pathname.slice('/api/calendar/events/'.length));
       const body = await readJsonBody(req);
       const googleEventId = gcalEventIdFromRoute(id);
@@ -5911,6 +5957,7 @@ const server = http.createServer(async (req, res) => {
 
 
     if (req.method === 'POST' && pathname === '/api/calendar/quick-add') {
+      if (!requireOfficeAuth(req, res)) return;
       if (!await isGcalConnected()) {
         sendJson(res, 503, { error: 'Google Calendar is not connected.' });
         return;
@@ -5980,6 +6027,17 @@ storageReady.then(storage => server.listen(PORT, () => {
   pruneOldVisits(storage);
   // unref'd so an idle prune timer is never the reason the process stays up.
   setInterval(() => pruneOldVisits(storage), VISIT_PRUNE_INTERVAL_MS).unref();
+
+  if (!PASSPHRASE_HASH && IS_DEPLOYED) {
+    console.error(
+      'Agent Office auth: NOT CONFIGURED on a deployed host — every route holding personal data '
+      + 'answers 503 until DROPS_PASSPHRASE_HASH or DROPS_PASSPHRASE is set.'
+    );
+  } else if (!PASSPHRASE_HASH) {
+    console.warn('Agent Office auth: off (development only — set DROPS_PASSPHRASE before deploying)');
+  } else {
+    console.log('Agent Office auth: on');
+  }
 
   if (!SHORTCUTS_TOKEN) {
     console.log('Phone inbox: off (set SHORTCUTS_TOKEN to use /api/shortcuts/*)');
