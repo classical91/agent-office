@@ -11,6 +11,8 @@ const AGENTS = [
     memory: true,
     workspace: 'workspace-oss',
     repo: 'OpenClaw orchestration',
+    website: 'Agents Office',
+    websiteLogin: true,
     desc: "Jason's command agent. Owns delegation, cron governance, routing, delivery, failure handling, and operator communication.",
     tasks: [
       'Routing Jason requests',
@@ -39,6 +41,7 @@ const AGENTS = [
     memory: true,
     workspace: 'workspace-webclaw',
     repo: 'WebClaw agency work',
+    website: 'WebClaw Service Hub',
     desc: 'Primary specialist for local WebClaw prospects, demos, follow-ups, and service-hub implementation.',
     tasks: [
       'Building local business demos',
@@ -58,16 +61,17 @@ const AGENTS = [
   },
   {
     id: 'nutrimind',
-    name: 'NutriMind',
+    name: 'CoachClaw',
     emoji: 'N',
     color: '#22c55e',
-    role: 'Nutrition App Specialist',
+    role: 'Life, Nutrition and Workout Coach',
     model: 'GPT-5.5',
     authority: 'specialist',
     memory: true,
     workspace: 'workspace-nutrimind',
-    repo: 'diet-plan',
-    desc: 'Diet-plan repo specialist for the NutriMind nutrition app, content, search index, planner tests, keto planning profile, and repo maintenance.',
+    repo: 'diet-plan and workout-tracker',
+    website: 'NutriMind + Workout Tracker',
+    desc: 'Life, nutrition, workout, recovery, habits, and progress coach. Owns both apps and their bounded Railway health and log reviews.',
     tasks: [
       'Maintaining diet-plan repo',
       'Planning keto grocery meals',
@@ -123,6 +127,7 @@ const AGENTS = [
     memory: true,
     workspace: 'workspace-trader',
     repo: 'Market Dashboard and paper-trading pipeline',
+    website: 'Market Dashboard',
     desc: 'Market monitoring and paper-trading specialist for TradingView and Hyperliquid pipeline work, signal review, trade logs, and risk checks. Real trades require Jason approval.',
     tasks: [
       'Monitoring market conditions',
@@ -179,6 +184,7 @@ const AGENTS = [
     memory: true,
     workspace: 'music-maker',
     repo: 'Nightwave music-maker',
+    website: 'Nightwave Audio',
     desc: 'Nightwave music/audio production and app specialist for prompts, sound-bed concepts, sonic direction, track workflows, and music-maker maintenance.',
     tasks: [
       'Drafting music prompts',
@@ -207,6 +213,7 @@ const AGENTS = [
     memory: true,
     workspace: 'youtube-claw',
     repo: 'YouTube Claw',
+    website: 'YouTube Workflow Studio',
     desc: 'Turns video ideas and assets into ready-to-review YouTube packages with titles, thumbnail direction, descriptions, tags, chapters, scripts, and publishing prep.',
     tasks: [
       'Writing title sets',
@@ -235,6 +242,7 @@ const AGENTS = [
     memory: true,
     workspace: 'commentfarm',
     repo: 'CommentFarm',
+    website: 'Farmbot',
     desc: 'Drafts concise, platform-aware engagement comments, replies, hooks, and review queues for Jason studio workflows.',
     tasks: [
       'Drafting comments',
@@ -263,6 +271,7 @@ const AGENTS = [
     memory: true,
     workspace: 'market-dashboard',
     repo: 'Market dashboard reporter',
+    website: 'ShareBot Reporter',
     desc: 'Turns market and news topics into sourced, claim-safe briefs, trend picks, content angles, and reporter-page workflow improvements without publishing or making market calls.',
     tasks: [
       'Capturing source links',
@@ -1977,6 +1986,7 @@ function renderOrgChart() {
             <span class="org-tag org-tag-blue">${escHTML(agent.workspace || 'workspace')}</span>
           </div>
           ${agent.repo ? `<div class="org-repo">${escHTML(agent.repo)}</div>` : ''}
+          ${agent.website ? `<div class="org-website"><span class="org-website-label">Website:</span> ${escHTML(agent.website)}${agent.websiteLogin ? ' <span class="org-login-lock" title="Login required" aria-label="Login required">&#128274;</span>' : ''}</div>` : ''}
         </div>
       </div>
     </div>`;
@@ -1986,6 +1996,7 @@ function renderOrgChart() {
       <div class="org-row-center">${orgCard(command, true)}</div>
       <div class="org-connector-v"></div><div class="org-connector-fork"></div>
       <div class="org-section-label"><div class="line"></div><div class="text">SPECIALIST AGENTS</div><div class="line"></div></div>
+      <div class="org-login-legend"><span aria-hidden="true">&#128274;</span> Login required</div>
       <div class="org-row-2 org-row-2--wide">${specialists.map(agent => orgCard(agent)).join('')}</div>
       <div class="org-flow-divider"><div class="line"></div><div class="org-flow-label">shared registry feeds office, chart, and memory</div><div class="line"></div></div>
       <div class="org-section-label"><div class="line"></div><div class="text">MEMORY LINKS</div><div class="line"></div></div>
