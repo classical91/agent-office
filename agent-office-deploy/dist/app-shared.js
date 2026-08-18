@@ -243,6 +243,7 @@ const AGENTS = [
     workspace: 'commentfarm',
     repo: 'CommentFarm',
     website: 'Farmbot',
+    websiteLoginPending: true,
     desc: 'Drafts concise, platform-aware engagement comments, replies, hooks, and review queues for Jason studio workflows.',
     tasks: [
       'Drafting comments',
@@ -1986,7 +1987,7 @@ function renderOrgChart() {
             <span class="org-tag org-tag-blue">${escHTML(agent.workspace || 'workspace')}</span>
           </div>
           ${agent.repo ? `<div class="org-repo">${escHTML(agent.repo)}</div>` : ''}
-          ${agent.website ? `<div class="org-website"><span class="org-website-label">Website:</span> ${escHTML(agent.website)}${agent.websiteLogin ? ' <span class="org-login-lock" title="Login required" aria-label="Login required">&#128274;</span>' : ''}</div>` : ''}
+          ${agent.website ? `<div class="org-website"><span class="org-website-label">Website:</span> ${escHTML(agent.website)}${agent.websiteLogin ? ' <span class="org-login-lock" title="Login required" aria-label="Login required">&#128274;</span>' : agent.websiteLoginPending ? ' <span class="org-login-lock org-login-lock--pending" title="Login being added" aria-label="Login being added">&#128274;</span> <span class="org-login-status">Login being added</span>' : ''}</div>` : ''}
         </div>
       </div>
     </div>`;

@@ -20,3 +20,8 @@ test('org chart uses the current CoachClaw display name and app ownership', () =
   assert.match(appShared, /id: 'nutrimind',[\s\S]*name: 'CoachClaw'/);
   assert.match(appShared, /website: 'NutriMind \+ Workout Tracker'/);
 });
+
+test('Farmbot shows that its login is still being added', () => {
+  assert.match(appShared, /website: 'Farmbot',[\s\S]*websiteLoginPending: true/);
+  assert.match(appShared, /Login being added/);
+});
