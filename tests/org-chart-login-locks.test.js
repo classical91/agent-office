@@ -10,18 +10,12 @@ const appShared = fs.readFileSync(
   'utf8'
 );
 
-test('org chart marks websites that require login with a lock', () => {
-  assert.match(appShared, /website: 'Agents Office',[\s\S]*websiteLogin: true/);
-  assert.match(appShared, /org-login-lock[\s\S]*&#128274;/);
-  assert.match(appShared, /org-login-legend[\s\S]*Login required/);
-});
-
 test('org chart uses the current CoachClaw display name and app ownership', () => {
   assert.match(appShared, /id: 'nutrimind',[\s\S]*name: 'CoachClaw'/);
-  assert.match(appShared, /website: 'NutriMind \+ Workout Tracker'/);
+  assert.match(appShared, /repo: 'diet-plan and workout-tracker'/);
 });
 
-test('Farmbot shows that its login is still being added', () => {
-  assert.match(appShared, /website: 'Farmbot',[\s\S]*websiteLoginPending: true/);
-  assert.match(appShared, /Login being added/);
+test('org chart uses the current FarmClaw identity and ownership', () => {
+  assert.match(appShared, /id: 'commentfarm',[\s\S]*name: 'FarmClaw'/);
+  assert.match(appShared, /repo: 'farm-bot and CommentFarm workflows'/);
 });

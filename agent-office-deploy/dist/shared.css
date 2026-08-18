@@ -1094,24 +1094,6 @@
     box-shadow: 0 0 5px color-mix(in srgb, var(--green) 60%, transparent);
   }
 
-  .org-website {
-    margin-top: var(--space-2);
-    color: var(--text-dim);
-    font-size: var(--fs-xs);
-  }
-  .org-website-label { color: var(--text); font-weight: 700; }
-  .org-login-lock { display: inline-block; margin-left: 2px; font-size: 1rem; vertical-align: -1px; }
-  .org-login-lock--pending { opacity: 0.68; }
-  .org-login-status { color: var(--muted); font-size: var(--fs-2xs); font-style: italic; }
-  .org-login-legend {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    margin: calc(var(--space-2) * -1) 0 var(--space-4);
-    color: var(--text-dim);
-    font-size: var(--fs-xs);
-  }
 
   .org-row-center { display: flex; justify-content: center; width: 100%; }
   .org-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; max-width: 680px; }
