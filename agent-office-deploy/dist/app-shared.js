@@ -1393,6 +1393,42 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 1000);
 
+function formatDeploymentAge(updatedAt) {
+  const elapsed = Math.max(0, Date.now() - new Date(updatedAt).getTime());
+  const minutes = Math.floor(elapsed / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+async function renderDeploymentUpdate() {
+  const topbar = document.querySelector('.topbar-meta');
+  const clock = document.getElementById('clock');
+  if (!topbar || !clock) return;
+  try {
+    const response = await fetch('/api/deployment-info', { cache: 'no-store' });
+    if (!response.ok) return;
+    const info = await response.json();
+    const updatedAt = new Date(info.updatedAt);
+    if (Number.isNaN(updatedAt.getTime())) return;
+    let indicator = document.getElementById('railway-updated');
+    if (!indicator) {
+      indicator = document.createElement('span');
+      indicator.id = 'railway-updated';
+      indicator.className = 'topbar-stat railway-updated';
+      topbar.insertBefore(indicator, clock);
+    }
+    const label = info.source === 'railway' ? 'Railway updated' : 'App started';
+    indicator.textContent = `${label} ${formatDeploymentAge(info.updatedAt)}`;
+    indicator.title = `${label}: ${updatedAt.toLocaleString('en-CA', { timeZone: 'America/Vancouver', dateStyle: 'medium', timeStyle: 'medium' })}${info.deploymentId ? `\nDeployment: ${info.deploymentId}` : ''}`;
+  } catch {}
+}
+
+renderDeploymentUpdate();
+setInterval(renderDeploymentUpdate, 60000);
+
 // ─── VIEW SWITCHER ────────────────────────────────────────────
 const VIEW_HANDLERS = {
   office: { enter: () => { resizeCanvas(); renderAgents(); centerOfficeView(); } },

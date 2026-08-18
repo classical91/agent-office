@@ -11,6 +11,8 @@ const countdowns = require('./countdowns.js');
 
 process.env.TZ = process.env.APP_TIMEZONE || 'America/Vancouver';
 
+const PROCESS_STARTED_AT = new Date().toISOString();
+
 const PORT = process.env.PORT || 3000;
 const DROPS_FILE = path.resolve(__dirname, process.env.DROPS_FILE || 'drops.json');
 const MEMORIES_FILE = path.resolve(__dirname, process.env.MEMORIES_FILE || 'memories.json');
@@ -4766,6 +4768,15 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
     res.end();
+    return;
+  }
+
+  if (req.method === 'GET' && pathname === '/api/deployment-info') {
+    sendJson(res, 200, {
+      updatedAt: PROCESS_STARTED_AT,
+      deploymentId: String(process.env.RAILWAY_DEPLOYMENT_ID || ''),
+      source: process.env.RAILWAY_DEPLOYMENT_ID ? 'railway' : 'process',
+    });
     return;
   }
 

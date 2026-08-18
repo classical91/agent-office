@@ -1080,6 +1080,20 @@
     white-space: nowrap;
   }
 
+  .railway-updated {
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .railway-updated::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 5px color-mix(in srgb, var(--green) 60%, transparent);
+  }
+
   .org-website {
     margin-top: var(--space-2);
     color: var(--text-dim);
