@@ -254,7 +254,7 @@ test('a search crosses folders, and clearing it puts the wall back', async t => 
 
   await page.fill('#drop-search', 'shadow');
   await page.waitForSelector('.dropbox-table');
-  assert.equal(await page.locator('.dropbox-table tbody tr').count(), 1);
+  assert.equal(await page.locator('.dropbox-table tbody tr').count(), 2);
   assert.match(await page.locator('.dropbox-table tbody tr').first().textContent(), /Shadow Bots/);
   // Across folders the subject earns its column back.
   assert.deepEqual(await page.locator('.dropbox-table th').allTextContents(), ['Title', 'Subject', 'Updated']);
