@@ -2549,11 +2549,12 @@ async function enterDropboxView() {
       const select = document.getElementById('drop-filter-reminder');
       if (select) select.value = reminder;
     }
-    // Reminders is the iOS project lane. A capture URL can still open the
-    // phone-friendly reminder form, but the normal view shows the iOS list.
+    // Reminders is the iOS project lane. Keep its create form visible above
+    // the list so a normal visit can add a reminder without a hidden URL flag.
     if (params.get('view') === 'ios') {
       dropboxState.filters.project = 'iOS';
       document.getElementById('dropbox-view')?.classList.add('ios-mode');
+      document.getElementById('dropbox-reminder-capture')?.classList.remove('is-collapsed');
     }
     if (params.get('capture') === 'reminder') {
       document.getElementById('dropbox-view')?.classList.add('ios-capture-mode');
