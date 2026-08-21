@@ -375,6 +375,7 @@ test('the Reminders lane skips the folder wall', async t => {
   await logIn(page);
   await page.waitForSelector('.dropbox-table');
 
+  assert.equal(await onScreen(page, '#dropbox-reminder-capture'), true, 'the new reminder form is hidden');
   assert.equal(await page.locator('.drop-folder').count(), 0, 'Reminders grew a folder wall');
   assert.deepEqual(await page.locator('.dropbox-table th').allTextContents(), ['Title', 'Reminder', 'Updated']);
   assert.equal(await page.locator('.dropbox-table tbody tr').count(), 1);
