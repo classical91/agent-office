@@ -375,7 +375,14 @@ test('the Reminders lane skips the folder wall', async t => {
   await logIn(page);
   await page.waitForSelector('.dropbox-table');
 
-  assert.equal(await onScreen(page, '#dropbox-reminder-capture'), true, 'the new reminder form is hidden');
+  assert.equal(await page.locator('#new-drop-btn').textContent(), 'New Reminder');
+  assert.equal(await onScreen(page, '#dropbox-reminder-capture'), false, 'the reminder form duplicated the button');
+  await page.click('#new-drop-btn');
+  assert.equal(await onScreen(page, '#dropbox-reminder-capture'), true, 'New Reminder did not open the form');
+  await page.fill('#reminder-content', 'A note reminder without a time');
+  await page.click('#save-reminder-btn');
+  await page.waitForSelector('.dropbox-table tbody tr:nth-child(2)');
+  assert.match(await page.locator('.dropbox-table').textContent(), /A note reminder without a time/);
   assert.equal(await page.locator('.drop-folder').count(), 0, 'Reminders grew a folder wall');
   assert.deepEqual(await page.locator('.dropbox-table th').allTextContents(), ['Title', 'Reminder', 'Updated']);
   assert.equal(await page.locator('.dropbox-table tbody tr').count(), 1);

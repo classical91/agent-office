@@ -2549,12 +2549,13 @@ async function enterDropboxView() {
       const select = document.getElementById('drop-filter-reminder');
       if (select) select.value = reminder;
     }
-    // Reminders is the iOS project lane. Keep its create form visible above
-    // the list so a normal visit can add a reminder without a hidden URL flag.
+    // Reminders is the iOS project lane. Its toolbar button opens the reminder
+    // form instead of the general Dropbox note form.
     if (params.get('view') === 'ios') {
       dropboxState.filters.project = 'iOS';
       document.getElementById('dropbox-view')?.classList.add('ios-mode');
-      document.getElementById('dropbox-reminder-capture')?.classList.remove('is-collapsed');
+      const newButton = document.getElementById('new-drop-btn');
+      if (newButton) newButton.textContent = 'New Reminder';
     }
     if (params.get('capture') === 'reminder') {
       document.getElementById('dropbox-view')?.classList.add('ios-capture-mode');
@@ -3174,28 +3175,23 @@ async function saveReminder() {
     contentEl?.focus();
     return;
   }
-  if (!when) {
-    alert('When should this come back? Try "tomorrow 9am", "in 2h", or "friday".');
-    whenEl?.focus();
-    return;
-  }
-
   try {
+    const payload = {
+      content,
+      // Without a title the server falls back to the subject, and every
+      // reminder would be called "Reminder".
+      title: (content.split('\n').find(Boolean) || content).slice(0, 120),
+      subject: '',
+      category: 'Reminder',
+      project: 'iOS',
+      status: 'inbox',
+      priority: 'normal',
+    };
+    if (when) payload.remind_at = when;
     const saved = await requestJson(DROPS_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        content,
-        // Without a title the server falls back to the subject, and every
-        // reminder would be called "Reminder".
-        title: (content.split('\n').find(Boolean) || content).slice(0, 120),
-        subject: '',
-        category: 'Reminder',
-        project: 'iOS',
-        status: 'inbox',
-        priority: 'normal',
-        remind_at: when,
-      }),
+      body: JSON.stringify(payload),
     });
     contentEl.value = '';
     whenEl.value = '';
@@ -3255,7 +3251,8 @@ if (document.getElementById('save-drop-btn')) {
   // so the page opens on the notes rather than on a column of empty fields.
   document.getElementById('new-drop-btn').addEventListener('click', async () => {
     if (!await ensureDropsSession(true)) return;
-    toggleCapture('dropbox-quick-capture', 'is-collapsed', 'drop-title');
+    if (isIosCaptureView()) toggleCapture('dropbox-reminder-capture', 'is-collapsed', 'reminder-content');
+    else toggleCapture('dropbox-quick-capture', 'is-collapsed', 'drop-title');
   });
 
   document.getElementById('save-reminder-btn')?.addEventListener('click', () => {
@@ -3265,8 +3262,7 @@ if (document.getElementById('save-drop-btn')) {
   document.getElementById('cancel-reminder-btn')?.addEventListener('click', () => {
     document.getElementById('reminder-content').value = '';
     document.getElementById('reminder-when').value = '';
-    // On the Reminders screen the panel is the page, so Cancel only clears.
-    if (!isIosCaptureView()) collapseCapture('dropbox-reminder-capture', 'is-collapsed');
+    collapseCapture('dropbox-reminder-capture', 'is-collapsed');
   });
 
   document.getElementById('reminder-when')?.addEventListener('keydown', e => {
