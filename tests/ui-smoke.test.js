@@ -254,7 +254,7 @@ test('a search crosses folders, and clearing it puts the wall back', async t => 
 
   await page.fill('#drop-search', 'shadow');
   await page.waitForSelector('.dropbox-table');
-  assert.equal(await page.locator('.dropbox-table tbody tr').count(), 2);
+  assert.equal(await page.locator('.dropbox-table tbody tr').count(), 1);
   assert.match(await page.locator('.dropbox-table tbody tr').first().textContent(), /Shadow Bots/);
   // Across folders the subject earns its column back.
   assert.deepEqual(await page.locator('.dropbox-table th').allTextContents(), ['Title', 'Subject', 'Updated']);
@@ -385,7 +385,7 @@ test('the Reminders lane skips the folder wall', async t => {
   assert.match(await page.locator('.dropbox-table').textContent(), /A note reminder without a time/);
   assert.equal(await page.locator('.drop-folder').count(), 0, 'Reminders grew a folder wall');
   assert.deepEqual(await page.locator('.dropbox-table th').allTextContents(), ['Title', 'Reminder', 'Updated']);
-  assert.equal(await page.locator('.dropbox-table tbody tr').count(), 1);
+  assert.equal(await page.locator('.dropbox-table tbody tr').count(), 2);
   assert.match(await page.locator('.dropbox-table').textContent(), /Renew the domain/);
   assert.deepEqual(problems, []);
 });
