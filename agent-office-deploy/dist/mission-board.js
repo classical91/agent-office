@@ -40,7 +40,7 @@
     const save = document.getElementById('save-drop-btn');
     if (save) save.textContent = 'Save Note';
     const newBtn = document.getElementById('new-drop-btn');
-    if (newBtn) newBtn.textContent = 'New Note';
+    if (newBtn) newBtn.textContent = view && view.classList.contains('ios-mode') ? 'New Reminder' : 'New Note';
     const content = document.getElementById('drop-content');
     if (content) content.placeholder = 'Capture the note, links, details, or next action.';
 
