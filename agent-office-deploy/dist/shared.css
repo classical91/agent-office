@@ -3694,7 +3694,16 @@
     grid-template-columns: 1fr;
   }
 }
-/* General Agents Office login. Uses the existing Dropbox session endpoint. */
+/* General Agent Office login and full-site authentication gate. */
+.ao-site-locked body { overflow: hidden; }
+.ao-site-locked body > :not(.ao-login-modal) {
+  visibility: hidden;
+  pointer-events: none;
+}
+.ao-site-locked .ao-login-modal {
+  visibility: visible;
+  pointer-events: auto;
+}
 .ao-login-trigger {
   appearance: none;
   min-height: 30px;
@@ -3724,7 +3733,7 @@
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(4, 7, 16, .72);
+  background: #060914;
   backdrop-filter: blur(9px);
 }
 .ao-login-panel {

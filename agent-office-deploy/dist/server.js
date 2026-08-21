@@ -6110,6 +6110,17 @@ const server = http.createServer(async (req, res) => {
 
     // ------------------------------------------------------------
 
+    const isWebsitePage = req.method === 'GET' && (pathname === '/' || pathname.endsWith('.html'));
+    if (isWebsitePage && pathname !== '/login.html' && PASSPHRASE_HASH && !getSession(req)) {
+      const next = `${pathname}${parsedUrl.search || ''}`;
+      res.writeHead(302, {
+        Location: `/login.html?next=${encodeURIComponent(next)}`,
+        'Cache-Control': 'no-store',
+      });
+      res.end();
+      return;
+    }
+
     await handleStatic(req, res, pathname);
   } catch (error) {
     const statusCode = error.statusCode || 500;

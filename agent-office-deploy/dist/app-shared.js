@@ -1187,7 +1187,7 @@ function opsNextAction() {
     return { text: 'Reconnect the OpenClaw gateway', meta: 'Every agent is blocked until it answers', tone: 'alert' };
   }
   if (!opsQueue.loaded) return { text: 'Checking the board…', meta: '', tone: '' };
-  if (!opsQueue.available) return { text: 'Unlock the Dropbox to see what is next', meta: 'Session locked', tone: '' };
+  if (!opsQueue.available) return { text: 'Log in to Agent Office to see what is next', meta: 'Session locked', tone: '' };
   if (opsQueue.next) {
     const { drop, reminder } = opsQueue.next;
     return {
@@ -1655,8 +1655,8 @@ window.SETTINGS = (() => {
         const query = typed ? `?url=${encodeURIComponent(typed)}` : '';
         const response = await fetch(`/api/gateway/status${query}`, { credentials: 'same-origin' });
         if (response.status === 401) {
-          setGatewayStatus('checking', 'Unlock the Dropbox to check the gateway.', typed || gatewayBaseUrl('local'));
-          renderGatewayAgents([], 'Unlock the Dropbox to see the gateway agents.');
+          setGatewayStatus('checking', 'Log in to Agent Office to check the gateway.', typed || gatewayBaseUrl('local'));
+          renderGatewayAgents([], 'Log in to Agent Office to see the gateway agents.');
           return false;
         }
         if (!response.ok) throw new Error(`status ${response.status}`);
@@ -1736,7 +1736,7 @@ window.SETTINGS = (() => {
     try {
       const response = await fetch('/api/shortcuts/setup', { headers: { Accept: 'application/json' } });
       if (response.status === 401) {
-        set('settings-shortcuts-state', 'Unlock the Dropbox first, then reload this page.');
+        set('settings-shortcuts-state', 'Log in to Agent Office, then reload this page.');
         return;
       }
       const setup = await response.json();
@@ -1779,7 +1779,7 @@ window.SETTINGS = (() => {
     try {
       const response = await fetch('/api/visits/summary?days=7', { headers: { Accept: 'application/json' } });
       if (response.status === 401) {
-        set('settings-visitors-state', 'Unlock the Dropbox first, then reload this page.');
+        set('settings-visitors-state', 'Log in to Agent Office, then reload this page.');
         set('settings-visitors-snapshot', '');
         set('settings-visitors-sites', '—');
         return;
@@ -1829,7 +1829,7 @@ window.SETTINGS = (() => {
     try {
       const response = await fetch('/api/visits', { method: 'DELETE' });
       if (response.status === 401) {
-        alert('Unlock the Dropbox first, then try again.');
+        alert('Log in to Agent Office, then try again.');
         return;
       }
       if (!response.ok) throw new Error('request failed');
@@ -2151,6 +2151,12 @@ function toggleNavCompact() {
 let officeSessionAuthenticated = false;
 let officeLoginWaiters = [];
 
+function setOfficeGateState(authenticated) {
+  document.documentElement.classList.toggle('ao-site-locked', !authenticated);
+  const modal = document.getElementById('ao-login-modal');
+  if (modal) modal.hidden = Boolean(authenticated);
+}
+
 function settleOfficeLogin(success) {
   const waiters = officeLoginWaiters;
   officeLoginWaiters = [];
@@ -2159,6 +2165,7 @@ function settleOfficeLogin(success) {
 
 function setOfficeLoginState(authenticated) {
   officeSessionAuthenticated = Boolean(authenticated);
+  setOfficeGateState(officeSessionAuthenticated);
   const trigger = document.getElementById('ao-login-trigger');
   if (!trigger) return;
   trigger.textContent = officeSessionAuthenticated ? 'Logged in' : 'Login';
@@ -2192,6 +2199,7 @@ function requestOfficeLogin() {
 }
 
 function closeOfficeLogin() {
+  if (!officeSessionAuthenticated) return;
   const modal = document.getElementById('ao-login-modal');
   const password = document.getElementById('ao-login-password');
   if (modal) modal.hidden = true;
@@ -2230,8 +2238,7 @@ function initOfficeLogin() {
   const modal = document.getElementById('ao-login-modal');
   if (!form || !modal) return;
   form.addEventListener('submit', submitOfficeLogin);
-  modal.addEventListener('click', event => { if (event.target === modal) closeOfficeLogin(); });
-  document.addEventListener('keydown', event => { if (event.key === 'Escape' && !modal.hidden) closeOfficeLogin(); });
+  setOfficeGateState(false);
   fetch('/api/session', { cache: 'no-store' })
     .then(response => response.ok ? response.json() : { authenticated: false })
     .then(state => setOfficeLoginState(state.authenticated))
@@ -2386,12 +2393,12 @@ async function ensureDropsSession(interactive = true) {
   try {
     status = dropsAuthState.checked ? dropsAuthState : await refreshDropboxAuthState();
   } catch (error) {
-    if (interactive) alert(error.message || 'Could not reach the Dropbox auth endpoint.');
+    if (interactive) alert(error.message || 'Could not reach the Agent Office login endpoint.');
     return false;
   }
 
   if (!status.configured) {
-    if (interactive) alert('Dropbox auth is not configured on the server. Set DROPS_PASSPHRASE_HASH or DROPS_PASSPHRASE.');
+    if (interactive) alert('Agent Office login is not configured on the server.');
     return false;
   }
 
@@ -2405,7 +2412,7 @@ async function toggleDropboxAccess() {
   try {
     status = dropsAuthState.checked ? dropsAuthState : await refreshDropboxAuthState();
   } catch (error) {
-    alert(error.message || 'Could not reach the Dropbox auth endpoint.');
+    alert(error.message || 'Could not reach the Agent Office login endpoint.');
     return;
   }
 
@@ -2446,7 +2453,8 @@ function handleDropboxRequestError(error, fallbackMessage) {
     _dropsCache = null;
     dropboxState.drops = [];
     renderDropbox();
-    alert('Dropbox session expired. Unlock it again to continue.');
+    setOfficeLoginState(false);
+    alert('Your Agent Office session expired. Log in again to continue.');
     return;
   }
   alert(error.message || fallbackMessage);
