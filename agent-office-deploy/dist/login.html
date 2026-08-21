@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Agent Office Login</title>
+  <style>
+    :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 22px; background: #060914; color: #eef2ff; }
+    main { width: min(100%, 390px); padding: 30px; border: 1px solid #334155; border-radius: 20px; background: #0f172a; box-shadow: 0 28px 80px rgba(0,0,0,.55); }
+    .kicker { color: #818cf8; font-size: 11px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+    h1 { margin: 8px 0 0; font-size: 25px; }
+    p { margin: 9px 0 22px; color: #94a3b8; line-height: 1.55; }
+    input, button { width: 100%; height: 46px; border-radius: 11px; font: inherit; }
+    input { padding: 0 14px; border: 1px solid #334155; outline: none; background: #020617; color: #f8fafc; }
+    input:focus { border-color: #818cf8; box-shadow: 0 0 0 3px rgba(129,140,248,.16); }
+    button { margin-top: 12px; border: 0; background: #818cf8; color: #090d1a; font-weight: 800; cursor: pointer; }
+    button:disabled { opacity: .65; cursor: wait; }
+    #error { min-height: 19px; margin-top: 10px; color: #fb7185; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="kicker">Secure access</div>
+    <h1>Agent Office Login</h1>
+    <p>Enter your password to access the entire Agent Office website.</p>
+    <form id="login-form">
+      <input id="password" type="password" autocomplete="current-password" placeholder="Password" required autofocus />
+      <button id="submit" type="submit">Log in</button>
+      <div id="error" role="alert"></div>
+    </form>
+  </main>
+  <script>
+    'use strict';
+    const params = new URLSearchParams(location.search);
+    const requested = params.get('next') || '/';
+    const next = requested.startsWith('/') && !requested.startsWith('//') ? requested : '/';
+    fetch('/api/session', { cache: 'no-store' })
+      .then(response => response.ok ? response.json() : null)
+      .then(state => { if (state && state.authenticated) location.replace(next); })
+      .catch(() => {});
+    document.getElementById('login-form').addEventListener('submit', async event => {
+      event.preventDefault();
+      const password = document.getElementById('password');
+      const submit = document.getElementById('submit');
+      const error = document.getElementById('error');
+      submit.disabled = true;
+      error.textContent = '';
+      try {
+        const response = await fetch('/api/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ passphrase: password.value }),
+        });
+        if (!response.ok) throw new Error(response.status === 401 ? 'Incorrect password.' : 'Unable to log in.');
+        location.replace(next);
+      } catch (loginError) {
+        error.textContent = loginError.message || 'Unable to log in.';
+        password.select();
+      } finally {
+        submit.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

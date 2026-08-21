@@ -140,7 +140,7 @@
     if (!list) return;
     try {
       const response = await fetch('/api/orchestration/goals', { credentials: 'same-origin' });
-      if (response.status === 401) throw new Error('Unlock the Dropbox to see goal status.');
+      if (response.status === 401) throw new Error('Log in to Agent Office to see goal status.');
       if (!response.ok) throw new Error('Goal status is unavailable.');
       const goals = await response.json();
       missionGoals = goals;
@@ -279,7 +279,7 @@
         method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ goal, priority, source_url: sourceUrl, title: goal.split(/\n/)[0].slice(0, 120) })
       });
-      if (response.status === 401) throw new Error('Unlock the Dropbox first, then try again.');
+      if (response.status === 401) throw new Error('Log in to Agent Office, then try again.');
       if (!response.ok) throw new Error('The goal could not be saved.');
       input.value = '';
       sourceInput.value = '';

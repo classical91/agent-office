@@ -47,13 +47,21 @@ test('Mission Control sends goals to Penny through the authenticated board', () 
   assert.match(control, /\/edit/);
 });
 
-test('the top bar exposes one general login backed by the Dropbox session', () => {
+test('one general login gates the entire Agent Office site', () => {
   assert.match(index, /id="ao-login-trigger"[^>]*>Login</);
   assert.match(index, /id="ao-login-password"[^>]*type="password"/);
   assert.match(shared, /fetch\('\/api\/session',\s*\{/);
   assert.match(shared, /JSON\.stringify\(\{ passphrase:/);
   assert.match(shared, /dropsAuthState = \{ configured: true, authenticated: true/);
   assert.match(shared, /return requestOfficeLogin\(\)/);
+  assert.match(shared, /setOfficeGateState\(false\)/);
+  assert.match(shared, /classList\.toggle\('ao-site-locked', !authenticated\)/);
+  assert.match(sharedCss, /\.ao-site-locked body > :not\(\.ao-login-modal\)/);
+  const server = fs.readFileSync(path.join(DIST, 'server.js'), 'utf8');
+  const login = fs.readFileSync(path.join(DIST, 'login.html'), 'utf8');
+  assert.match(server, /pathname !== '\/login\.html'.*!getSession\(req\)/s);
+  assert.match(server, /Location: `\/login\.html\?next=/);
+  assert.match(login, /Enter your password to access the entire Agent Office website/);
   assert.doesNotMatch(shared, /function showPassphraseModal/);
   assert.doesNotMatch(fs.readFileSync(path.join(DIST, 'calendar-v3.html'), 'utf8'), /window\.prompt\('Enter the Agent Office passphrase/);
 });

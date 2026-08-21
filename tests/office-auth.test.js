@@ -132,6 +132,27 @@ test('a successful login clears the failure count', async t => {
   }
 });
 
+test('website pages redirect to the general login until authenticated', async t => {
+  const server = await startServer({ env: { DROPS_PASSPHRASE: PASSPHRASE } });
+  t.after(() => server.child.kill());
+
+  const locked = await fetch(`${server.origin}/mission-board.html?view=ios`, { redirect: 'manual' });
+  assert.equal(locked.status, 302);
+  assert.match(locked.headers.get('location'), /^\/login\.html\?next=/);
+
+  const loginPage = await fetch(`${server.origin}/login.html`);
+  assert.equal(loginPage.status, 200);
+  assert.match(await loginPage.text(), /Agent Office Login/);
+
+  const session = await login(server.origin, PASSPHRASE, '203.0.113.35');
+  const cookie = session.headers.get('set-cookie').split(';')[0];
+  const unlocked = await fetch(`${server.origin}/mission-board.html?view=ios`, {
+    headers: { Cookie: cookie },
+    redirect: 'manual',
+  });
+  assert.equal(unlocked.status, 200);
+});
+
 // -- Config files --------------------------------------------------
 
 test('config files are not readable without a session', async t => {

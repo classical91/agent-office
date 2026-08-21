@@ -129,7 +129,7 @@ window.AOStreaks = (() => {
       if (error.status === 401) {
         state.locked = true;
         render();
-        alert('The session expired. Unlock the Dropbox again to keep your streaks.');
+        alert('Your Agent Office session expired. Log in again to keep your streaks.');
         return;
       }
       alert(error.message || fallback);
