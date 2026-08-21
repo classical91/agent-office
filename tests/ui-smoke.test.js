@@ -116,7 +116,7 @@ after(async () => {
 
 // Every page is opened in a fresh context so one page's localStorage — a theme,
 // a folder layout, a pin — cannot decide how the next one renders.
-async function openPage(t) {
+async function openPage(t, { authenticated = true } = {}) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
 
   // Nothing leaves the machine. These tests are about this app, not about
@@ -129,6 +129,13 @@ async function openPage(t) {
     const sameOrigin = new URL(route.request().url()).origin === server.origin;
     return sameOrigin ? route.continue() : route.abort();
   });
+
+  if (authenticated) {
+    const response = await context.request.post(`${server.origin}/api/session`, {
+      data: { passphrase: PASSPHRASE },
+    });
+    assert.equal(response.status(), 200, 'the smoke-test session could not log in');
+  }
 
   const page = await context.newPage();
   t.after(() => context.close());
@@ -171,6 +178,12 @@ async function onScreen(page, selector) {
 // wait on it. It opens by itself when a page asks for something gated, so this
 // gives it a moment to appear before deciding there is nothing to unlock.
 async function logIn(page) {
+  if (new URL(page.url()).pathname === '/login.html') {
+    await page.fill('#password', PASSPHRASE);
+    await page.click('#submit');
+    await page.waitForURL(url => url.pathname !== '/login.html');
+    return true;
+  }
   const modal = page.locator('#ao-login-modal:not([hidden])');
   await modal.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
   if (!await modal.count()) return false;
@@ -340,7 +353,7 @@ test('a note saved into an open folder lands in that folder', async t => {
 test('a gated page can actually be logged into', async t => {
   if (skipReason) return t.skip(skipReason);
 
-  const { page, problems } = await openPage(t);
+  const { page, problems } = await openPage(t, { authenticated: false });
   await page.goto(`${server.origin}/memory.html`, { waitUntil: 'domcontentloaded' });
   assert.equal(await logIn(page), true, 'the memory page never asked for a login');
 
