@@ -12,7 +12,12 @@ const source = fs.readFileSync(
 );
 const context = { window: {}, Date, console, setInterval, clearInterval };
 vm.runInNewContext(source, context);
-const { colorForView, happyHourDetails, isDueSoon } = context.window.AOResets;
+const { colorForView, happyHourDetails, happyHourMeal, isDueSoon } = context.window.AOResets;
+
+test('happy hour keeps only the meal name in the compact card', () => {
+  assert.equal(happyHourMeal('50% off Fresh Appetizers'), 'Fresh Appetizers');
+  assert.equal(happyHourMeal('50\u00a2 each Marinated Split Chicken Wings'), 'Marinated Split Chicken Wings');
+});
 
 test('happy hour shows the correct Sunday deal before the heads-up', () => {
   const details = happyHourDetails(new Date(2026, 7, 9, 12, 0));

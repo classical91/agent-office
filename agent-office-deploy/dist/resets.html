@@ -8,7 +8,7 @@
 <meta http-equiv="Expires" content="0"/>
 <title>Countdown Timers - Agent Office</title>
 <link rel="stylesheet" href="shared.css?v=folder-pins-20260811"/>
-<link rel="stylesheet" href="resets.css?v=resets-redesign-20260809"/>
+<link rel="stylesheet" href="resets.css?v=happy-hour-compact-20260828"/>
 <!-- Restores the saved theme and sidebar state before first paint, so no page
      flashes the default accent or a full-width sidebar on its way in.
      ACCENTS mirrors THEMES in app-shared.js. -->
@@ -180,6 +180,35 @@
 
 </div>
 
+<!-- HAPPY HOUR DETAILS -->
+<div id="rst-happy-modal" class="ao-modal rst-happy-modal" hidden
+     onclick="if (event.target === this) AOResets.closeHappyHour()">
+  <div class="ao-modal-sheet rst-happy-modal-sheet" role="dialog" aria-modal="true"
+       aria-labelledby="rst-happy-modal-title">
+    <div class="rst-happy-modal-head">
+      <span class="rst-icon" aria-hidden="true">&#127869;&#65039;</span>
+      <div class="rst-happy-modal-heading">
+        <div class="rst-happy-kicker" data-role="happy-day">Happy Hour Today</div>
+        <div class="rst-happy-offer" id="rst-happy-modal-title" data-role="happy-offer"></div>
+      </div>
+    </div>
+    <div class="rst-happy-modal-time" data-role="happy-modal-time"></div>
+
+    <dl class="rst-happy-facts">
+      <div class="rst-happy-fact"><dt>Day</dt><dd data-role="happy-weekday"></dd></div>
+      <div class="rst-happy-fact"><dt>Hours</dt><dd>3:00&ndash;6:00 PM</dd></div>
+      <div class="rst-happy-fact"><dt>Heads-up</dt><dd>Begins at 2:30 PM</dd></div>
+      <div class="rst-happy-fact"><dt>Required</dt><dd>More Rewards card</dd></div>
+      <div class="rst-happy-fact"><dt>Availability</dt><dd>While quantities last</dd></div>
+    </dl>
+
+    <div class="ao-modal-actions rst-happy-modal-actions">
+      <button class="ao-btn ao-btn--primary" data-action="close-happy-hour"
+              onclick="AOResets.closeHappyHour()">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- ADD COUNTDOWN -->
 <div id="rst-modal" class="ao-modal" hidden onclick="if (event.target === this) AOResets.closeForm()">
   <div class="ao-modal-sheet rst-modal-sheet" role="dialog" aria-modal="true" aria-labelledby="rst-modal-title">
@@ -225,7 +254,7 @@
 <div class="statusbar" id="statusbar"></div>
 
 <script src="app-shared.js?v=routercoder-20260814"></script>
-<script src="resets.js?v=unified-countdowns-20260812"></script>
+<script src="resets.js?v=happy-hour-compact-20260828"></script>
 <script>
 switchView('resets', document.querySelector('.nav-item.active'));
 </script>

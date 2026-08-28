@@ -89,6 +89,7 @@ window.AOResets = (() => {
     savedId: '',
     tickTimer: null,
     order: '',
+    happyHourTrigger: null,
   };
 
   // ─── Helpers ───────────────────────────────────────────────────────────
@@ -153,12 +154,22 @@ window.AOResets = (() => {
     }
 
     const dayName = dealDate.toLocaleDateString([], { weekday: 'long' });
+    const deal = HAPPY_HOUR_DEALS[dealDate.getDay()];
     return {
       phase,
       target,
-      title: `Happy Hour ${phase === 'tomorrow' ? 'Tomorrow' : 'Today'} \u2014 ${HAPPY_HOUR_DEALS[dealDate.getDay()]}`,
-      message: `${dayName}: ${HAPPY_HOUR_DEALS[dealDate.getDay()]}. Happy Hour is 3:00\u20136:00 PM; the countdown starts at 2:30 PM. More Rewards card required; while quantities last.`,
+      dayName,
+      deal,
+      meal: happyHourMeal(deal),
+      title: `Happy Hour ${phase === 'tomorrow' ? 'Tomorrow' : 'Today'} \u2014 ${deal}`,
+      message: `${dayName}: ${deal}. Happy Hour is 3:00\u20136:00 PM; the countdown starts at 2:30 PM. More Rewards card required; while quantities last.`,
     };
+  }
+
+  function happyHourMeal(deal) {
+    return String(deal || '')
+      .replace(/^50% off\s+/i, '')
+      .replace(/^50\u00a2 each\s+/i, '');
   }
 
   function syncHappyHourCard(card, now = new Date()) {
@@ -170,6 +181,9 @@ window.AOResets = (() => {
     card.status = 'active';
     card.fired = false;
     card.happyHourPhase = details.phase;
+    card.happyHourDeal = details.deal;
+    card.happyHourMeal = details.meal;
+    card.happyHourDay = details.dayName;
     return details;
   }
 
@@ -318,7 +332,10 @@ window.AOResets = (() => {
     // that stays deleted.
     const source = stored || seedCards().map(seed => ({ ...seed, createdAt: Date.now(), status: 'active' }));
     const cards = source.map(normalizeCard).filter(Boolean);
-    cards.forEach(rollForward);
+    cards.forEach(card => {
+      if (card.id === HAPPY_HOUR_ID) syncHappyHourCard(card);
+      else rollForward(card);
+    });
     return cards;
   }
 
@@ -465,6 +482,21 @@ window.AOResets = (() => {
     const open = state.openId === card.id;
     const bodyId = `rst-body-${escHtml(card.id)}`;
 
+    if (card.id === HAPPY_HOUR_ID) return `
+      <article class="rst-card rst-card--happy${isDueSoon(view) ? ' is-due-soon' : ''}"
+               data-id="${escHtml(card.id)}" data-state="${view.state}" style="--rst-color: ${color}">
+        <button type="button" class="rst-head rst-happy-head" data-action="happy-details"
+                aria-haspopup="dialog" aria-controls="rst-happy-modal"
+                aria-label="${escHtml(card.happyHourMeal)}, ${timeLabel(view)}. Open Happy Hour details">
+          <span class="rst-icon" aria-hidden="true">${icon.glyph}</span>
+          <span class="rst-happy-main">
+            <span class="rst-happy-meal" data-role="happy-meal">${escHtml(card.happyHourMeal)}</span>
+            <span class="rst-time rst-happy-time" data-role="time">${escHtml(timeLabel(view))}</span>
+          </span>
+          <span class="rst-happy-info" aria-hidden="true">i</span>
+        </button>
+      </article>`;
+
     if (card.source === 'office') return `
       <article class="rst-card${open ? ' is-open' : ''}${isDueSoon(view) ? ' is-due-soon' : ''}" data-id="${escHtml(card.id)}" data-state="${view.state}" style="--rst-color: ${color}">
         <button type="button" class="rst-head" data-action="toggle" aria-expanded="${open}" aria-controls="${bodyId}">
@@ -609,13 +641,24 @@ window.AOResets = (() => {
 
       const title = node.querySelector('[data-role="title"]');
       if (title) title.textContent = card.title;
+      const meal = node.querySelector('[data-role="happy-meal"]');
+      if (meal) meal.textContent = card.happyHourMeal;
       node.style.setProperty('--rst-color', colorForView(view));
       node.classList.toggle('is-due-soon', isDueSoon(view));
 
       const time = node.querySelector('[data-role="time"]');
       if (time) time.textContent = timeLabel(view);
+      const happyTrigger = node.querySelector('.rst-happy-head');
+      if (happyTrigger) {
+        happyTrigger.setAttribute(
+          'aria-label',
+          `${card.happyHourMeal}, ${timeLabel(view)}. Open Happy Hour details`
+        );
+      }
       const when = node.querySelector('[data-role="when"]');
       if (when) when.textContent = whenLabel(view);
+
+      if (card.id === HAPPY_HOUR_ID && isHappyHourOpen()) updateHappyHourModal(view);
 
       if (node.dataset.state !== view.state) {
         node.dataset.state = view.state;
@@ -633,7 +676,7 @@ window.AOResets = (() => {
     if (orderChanged) saveCards();
     // Re-sorting under a finger that is mid-edit is worse than a stale order,
     // so the list only re-flows once nothing is open.
-    if (!state.openId && !isFormOpen()) {
+    if (!state.openId && !isFormOpen() && !isHappyHourOpen()) {
       const next = sortedViews().map(view => view.card.id).join('|');
       if (next !== state.order) render();
     }
@@ -653,6 +696,47 @@ window.AOResets = (() => {
     if (!state.openId) return;
     state.openId = '';
     render();
+  }
+
+  function isHappyHourOpen() {
+    const modal = el('rst-happy-modal');
+    return Boolean(modal) && !modal.hidden;
+  }
+
+  function updateHappyHourModal(view) {
+    if (!view) return;
+    const card = view.card;
+    const tomorrow = card.happyHourPhase === 'tomorrow';
+    const setText = (role, value) => {
+      const node = document.querySelector(`#rst-happy-modal [data-role="${role}"]`);
+      if (node) node.textContent = value;
+    };
+    setText('happy-day', `Happy Hour ${tomorrow ? 'Tomorrow' : 'Today'}`);
+    setText('happy-offer', card.happyHourDeal);
+    setText('happy-modal-time', timeLabel(view));
+    setText('happy-weekday', card.happyHourDay);
+  }
+
+  function openHappyHour(trigger) {
+    const modal = el('rst-happy-modal');
+    const card = state.cards.find(item => item.id === HAPPY_HOUR_ID);
+    if (!modal || !card) return;
+    state.openId = '';
+    state.happyHourTrigger = trigger || null;
+    updateHappyHourModal(viewOf(card));
+    modal.hidden = false;
+    const close = modal.querySelector('[data-action="close-happy-hour"]');
+    if (close) close.focus();
+  }
+
+  function closeHappyHour() {
+    const modal = el('rst-happy-modal');
+    if (!modal || modal.hidden) return;
+    modal.hidden = true;
+    if (state.happyHourTrigger && document.contains(state.happyHourTrigger)) {
+      state.happyHourTrigger.focus();
+    }
+    state.happyHourTrigger = null;
   }
 
   function draftFrom(node) {
@@ -870,6 +954,7 @@ window.AOResets = (() => {
     const id = node.dataset.id;
 
     switch (trigger.dataset.action) {
+      case 'happy-details': return openHappyHour(trigger);
       case 'toggle': return openCard(id);
       case 'save': return saveCard(id, node);
       case 'delete': return deleteCard(id);
@@ -894,6 +979,7 @@ window.AOResets = (() => {
 
   function onKeyDown(event) {
     if (event.key !== 'Escape') return;
+    if (isHappyHourOpen()) return closeHappyHour();
     if (isFormOpen()) return closeForm();
     closeCard();
   }
@@ -919,5 +1005,17 @@ window.AOResets = (() => {
     if (!state.tickTimer) state.tickTimer = setInterval(tick, TICK_MS);
   }
 
-  return { init, setSort, setFilter, openForm, closeForm, addFromForm, happyHourDetails, isDueSoon, colorForView };
+  return {
+    init,
+    setSort,
+    setFilter,
+    openForm,
+    closeForm,
+    addFromForm,
+    closeHappyHour,
+    happyHourDetails,
+    happyHourMeal,
+    isDueSoon,
+    colorForView,
+  };
 })();

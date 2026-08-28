@@ -47,6 +47,42 @@
   background: color-mix(in srgb, var(--green) 7%, var(--surface));
 }
 
+/* Happy Hour is intentionally denser than editable countdowns. Its one job is
+   to answer "what food, and how long?"; the rest belongs in the details sheet. */
+.rst-card--happy .rst-happy-head { min-height: 72px; }
+.rst-happy-main {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+.rst-happy-meal {
+  color: var(--text-strong);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  overflow-wrap: anywhere;
+}
+.rst-happy-time {
+  font-size: var(--fs-lg);
+  letter-spacing: 0;
+}
+.rst-happy-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}
+.rst-happy-head:hover .rst-happy-info { color: var(--text-strong); border-color: var(--rst-color); }
+
 /* ─── Collapsed head ──────────────────────────────────────────────────── */
 
 /* The whole head is the tap target, so it is a real <button>: keyboard and
@@ -228,6 +264,45 @@
 
 .rst-modal-sheet { max-width: 420px; gap: var(--space-3); }
 
+.rst-happy-modal-sheet { max-width: 420px; gap: var(--space-3); }
+.rst-happy-modal:not([hidden]) .rst-happy-modal-sheet {
+  animation: rst-happy-reveal var(--duration) ease-out;
+}
+.rst-happy-modal-head { display: flex; align-items: center; gap: var(--space-3); }
+.rst-happy-modal-head .rst-icon { width: 48px; height: 48px; font-size: var(--fs-xl); }
+.rst-happy-modal-heading { min-width: 0; }
+.rst-happy-kicker { color: var(--text-dim); font-size: var(--fs-sm); }
+.rst-happy-offer {
+  color: var(--text-strong);
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  overflow-wrap: anywhere;
+}
+.rst-happy-modal-time {
+  color: var(--yellow);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.rst-happy-facts { margin: var(--space-2) 0 0; }
+.rst-happy-fact {
+  display: grid;
+  grid-template-columns: minmax(88px, 0.8fr) minmax(0, 1.4fr);
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-sm);
+}
+.rst-happy-fact dt { color: var(--text-dim); }
+.rst-happy-fact dd { margin: 0; color: var(--text-strong); text-align: right; }
+.rst-happy-modal-actions { margin-top: var(--space-2); }
+
+@keyframes rst-happy-reveal {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 /* ─── Phones ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 700px) {
@@ -245,4 +320,11 @@
      keeps its one short word. */
   .rst-title { font-size: var(--fs-base); }
   .rst-head-top { gap: var(--space-2); }
+  .rst-card--happy .rst-happy-head { min-height: 68px; }
+  .rst-happy-meal { font-size: var(--fs-base); }
+  .rst-happy-time { font-size: var(--fs-md); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rst-happy-modal:not([hidden]) .rst-happy-modal-sheet { animation: none; }
 }
