@@ -12,7 +12,7 @@ const source = fs.readFileSync(
 );
 const context = { window: {}, Date, console, setInterval, clearInterval };
 vm.runInNewContext(source, context);
-const { happyHourDetails } = context.window.AOResets;
+const { colorForView, happyHourDetails, isDueSoon } = context.window.AOResets;
 
 test('happy hour shows the correct Sunday deal before the heads-up', () => {
   const details = happyHourDetails(new Date(2026, 7, 9, 12, 0));
@@ -41,4 +41,22 @@ test('after closing, happy hour advances to tomorrow\'s deal and heads-up', () =
   assert.equal(details.target.getDate(), 15);
   assert.equal(details.target.getHours(), 14);
   assert.equal(details.target.getMinutes(), 30);
+});
+
+test('active reset timers due within 24 hours share the same color', () => {
+  const soon = { state: 'active', remaining: 23 * 3600000, card: { title: 'Claude reset' } };
+  const boundary = { state: 'active', remaining: 24 * 3600000, card: { title: 'OpenAI reset' } };
+  const later = { state: 'active', remaining: 25 * 3600000, card: { title: 'Claude reset' } };
+  const paused = { state: 'paused', remaining: 23 * 3600000, card: { title: 'OpenAI reset' } };
+  const expired = { state: 'expired', remaining: -1, card: { title: 'Gemini reset' } };
+
+  assert.equal(isDueSoon(soon), true);
+  assert.equal(isDueSoon(boundary), true);
+  assert.equal(colorForView(soon), 'var(--yellow)');
+  assert.equal(colorForView(boundary), 'var(--yellow)');
+  assert.equal(isDueSoon(later), false);
+  assert.equal(isDueSoon(paused), false);
+  assert.equal(isDueSoon(expired), false);
+  assert.notEqual(colorForView(later), 'var(--yellow)');
+  assert.notEqual(colorForView(paused), 'var(--yellow)');
 });

@@ -23,6 +23,7 @@ const CATEGORIES = [
 const CATEGORY_IDS = CATEGORIES.map(item => item.id);
 const DEFAULT_CATEGORY = 'deadline';
 const FALLBACK_COLOR = '#94a3b8';
+const DUE_SOON_COLOR = '#f59e0b';
 
 // `weekday` is daily with the weekend cut out — the shape a Mon–Fri routine
 // actually has. `none` is a one-off: it goes overdue and stays there until it
@@ -237,6 +238,10 @@ function describeRemaining(ms) {
   };
 }
 
+function isDueSoon(remaining) {
+  return Boolean(remaining && !remaining.overdue && remaining.ms <= DAY_MS);
+}
+
 /**
  * Which of the three sections an instant belongs in.
  *
@@ -264,6 +269,7 @@ function decorateCountdown(countdown, now = new Date()) {
   const occurrence = nextOccurrence(countdown, now);
   const remaining = occurrence ? describeRemaining(occurrence.getTime() - now.getTime()) : null;
   const bucket = occurrence ? bucketFor(occurrence, now) : 'later';
+  const dueSoon = isDueSoon(remaining);
 
   // "No weekend active-trade pressure": a trading card goes quiet both on the
   // weekend itself and when its next occurrence lands on one. Quiet cards are
@@ -276,7 +282,7 @@ function decorateCountdown(countdown, now = new Date()) {
     title: countdown.title || '',
     category,
     categoryLabel: categoryLabel(category),
-    color: categoryColor(category),
+    color: dueSoon ? DUE_SOON_COLOR : categoryColor(category),
     repeat,
     next_action: countdown.next_action || '',
     notes: countdown.notes || '',
@@ -289,8 +295,9 @@ function decorateCountdown(countdown, now = new Date()) {
     remaining,
     bucket,
     overdue: Boolean(remaining && remaining.overdue),
+    dueSoon,
     weekendQuiet,
-    urgent: Boolean(remaining && !weekendQuiet && (remaining.overdue || bucket === 'today')),
+    urgent: Boolean(remaining && !weekendQuiet && (remaining.overdue || dueSoon)),
   };
 }
 
@@ -306,6 +313,7 @@ function decorateEvent(event, now = new Date()) {
   const end = toDate(event.end);
   const remaining = describeRemaining(start.getTime() - now.getTime());
   const bucket = bucketFor(start, now);
+  const dueSoon = isDueSoon(remaining);
 
   return {
     id: `event:${event.id}`,
@@ -313,7 +321,7 @@ function decorateEvent(event, now = new Date()) {
     title: event.title || '(untitled event)',
     category: 'calendar',
     categoryLabel: 'Calendar',
-    color: '#38bdf8',
+    color: dueSoon ? DUE_SOON_COLOR : '#38bdf8',
     repeat: 'none',
     next_action: '',
     notes: '',
@@ -328,8 +336,9 @@ function decorateEvent(event, now = new Date()) {
     remaining,
     bucket,
     overdue: false,
+    dueSoon,
     weekendQuiet: false,
-    urgent: bucket === 'today' && !remaining.overdue,
+    urgent: dueSoon,
   };
 }
 
@@ -444,6 +453,7 @@ function formatRollupText(payload, limit = 5) {
 
 module.exports = {
   CATEGORIES,
+  DUE_SOON_COLOR,
   REPEATS,
   addDays,
   addMonths,

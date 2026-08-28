@@ -119,6 +119,55 @@ test('remaining time shrinks its unit as the gap closes', () => {
   assert.equal(countdowns.describeRemaining(-90 * 60000).label, '1 hr 30 mins ago');
 });
 
+test('cards due within 24 hours share the same due-soon color', () => {
+  const now = WEDNESDAY;
+  const goal = countdowns.decorateCountdown(make({
+    category: 'goal',
+    target_at: new Date(now.getTime() + 23 * 3600000).toISOString(),
+  }), now);
+  const personal = countdowns.decorateCountdown(make({
+    category: 'personal',
+    target_at: new Date(now.getTime() + 24 * 3600000).toISOString(),
+  }), now);
+  const later = countdowns.decorateCountdown(make({
+    category: 'personal',
+    target_at: new Date(now.getTime() + 25 * 3600000).toISOString(),
+  }), now);
+  const overdue = countdowns.decorateCountdown(make({
+    category: 'goal',
+    target_at: new Date(now.getTime() - 1).toISOString(),
+  }), now);
+
+  assert.equal(goal.dueSoon, true);
+  assert.equal(personal.dueSoon, true);
+  assert.equal(goal.color, countdowns.DUE_SOON_COLOR);
+  assert.equal(personal.color, countdowns.DUE_SOON_COLOR);
+  assert.equal(later.dueSoon, false);
+  assert.notEqual(later.color, countdowns.DUE_SOON_COLOR);
+  assert.equal(overdue.dueSoon, false);
+  assert.equal(overdue.overdue, true);
+});
+
+test('events due within 24 hours use the same due-soon color as countdowns', () => {
+  const soon = countdowns.decorateEvent({
+    id: 'evt-soon',
+    title: 'Tomorrow morning',
+    start: new Date(WEDNESDAY.getTime() + 23 * 3600000).toISOString(),
+    end: new Date(WEDNESDAY.getTime() + 24 * 3600000).toISOString(),
+  }, WEDNESDAY);
+  const later = countdowns.decorateEvent({
+    id: 'evt-later',
+    title: 'Tomorrow afternoon',
+    start: new Date(WEDNESDAY.getTime() + 25 * 3600000).toISOString(),
+    end: new Date(WEDNESDAY.getTime() + 26 * 3600000).toISOString(),
+  }, WEDNESDAY);
+
+  assert.equal(soon.dueSoon, true);
+  assert.equal(soon.color, countdowns.DUE_SOON_COLOR);
+  assert.equal(later.dueSoon, false);
+  assert.notEqual(later.color, countdowns.DUE_SOON_COLOR);
+});
+
 test('buckets split into today, this week and later', () => {
   assert.equal(countdowns.bucketFor(new Date(2026, 7, 12, 23, 30), WEDNESDAY), 'today');
   assert.equal(countdowns.bucketFor(new Date(2026, 7, 14, 9, 0), WEDNESDAY), 'week');

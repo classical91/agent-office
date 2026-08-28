@@ -31,6 +31,10 @@
 }
 .rst-card:hover { border-color: var(--border-strong); }
 .rst-card.is-open { border-color: color-mix(in srgb, var(--rst-color, var(--accent)) 45%, var(--border)); }
+.rst-card.is-due-soon {
+  border-color: color-mix(in srgb, var(--rst-color, var(--accent)) 48%, var(--border));
+  background: color-mix(in srgb, var(--rst-color, var(--accent)) 7%, var(--surface));
+}
 /* A finished timer is information, not a thing to act on, so it is turned down
    rather than hidden. */
 .rst-card[data-state="expired"],

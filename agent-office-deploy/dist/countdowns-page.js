@@ -225,6 +225,7 @@ window.AOCountdowns = (() => {
     const classes = ['cd-card'];
     if (item.kind === 'event') classes.push('event');
     if (item.overdue) classes.push('overdue');
+    else if (item.dueSoon) classes.push('due-soon');
     else if (item.urgent) classes.push('urgent');
     if (item.weekendQuiet) classes.push('quiet');
 

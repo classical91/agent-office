@@ -70,6 +70,10 @@
   min-width: 0;
 }
 .cd-card.urgent { border-color: color-mix(in srgb, var(--cd-color, var(--accent)) 60%, transparent); }
+.cd-card.due-soon {
+  border-color: color-mix(in srgb, var(--cd-color, var(--accent)) 60%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--cd-color, var(--accent)) 10%, transparent), var(--panel));
+}
 .cd-card.overdue {
   border-color: rgba(239, 68, 68, 0.7);
   background: linear-gradient(180deg, rgba(239, 68, 68, 0.1), var(--panel));

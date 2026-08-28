@@ -17,6 +17,7 @@ window.AOResets = (() => {
   const FILTER_KEY = 'ao-resets-filter';
   const TICK_MS = 1000;
   const DAY_MS = 86400000;
+  const DUE_SOON_COLOR = 'var(--yellow)';
   const HAPPY_HOUR_ID = 'routine-happy-hour-daily';
   const HAPPY_HOUR_DEALS = [
     '50% off Burger Patties',
@@ -175,6 +176,14 @@ window.AOResets = (() => {
   function iconFor(title) {
     const match = ICONS.find(rule => rule[0].test(title || ''));
     return match ? { glyph: match[1], color: match[2] } : { glyph: '⏳', color: 'var(--accent)' };
+  }
+
+  function isDueSoon(view) {
+    return Boolean(view && view.state === 'active' && view.remaining >= 0 && view.remaining <= DAY_MS);
+  }
+
+  function colorForView(view) {
+    return isDueSoon(view) ? DUE_SOON_COLOR : iconFor(view.card.title).color;
   }
 
   // "1 Day & 21h" while there are still days on the clock, then progressively
@@ -452,11 +461,12 @@ window.AOResets = (() => {
     const card = view.card;
     const meta = STATES[view.state];
     const icon = iconFor(card.title);
+    const color = colorForView(view);
     const open = state.openId === card.id;
     const bodyId = `rst-body-${escHtml(card.id)}`;
 
     if (card.source === 'office') return `
-      <article class="rst-card${open ? ' is-open' : ''}" data-id="${escHtml(card.id)}" data-state="${view.state}" style="--rst-color: ${icon.color}">
+      <article class="rst-card${open ? ' is-open' : ''}${isDueSoon(view) ? ' is-due-soon' : ''}" data-id="${escHtml(card.id)}" data-state="${view.state}" style="--rst-color: ${color}">
         <button type="button" class="rst-head" data-action="toggle" aria-expanded="${open}" aria-controls="${bodyId}">
           <span class="rst-icon" aria-hidden="true">${icon.glyph}</span>
           <span class="rst-head-main"><span class="rst-head-top"><span class="rst-title">${escHtml(card.title)}</span><span class="ao-status ao-status--info rst-state">Shared</span></span><span class="rst-time" data-role="time">${escHtml(timeLabel(view))}</span><span class="rst-when" data-role="when">${escHtml(whenLabel(view))}</span></span>
@@ -466,8 +476,8 @@ window.AOResets = (() => {
       </article>`;
 
     return `
-      <article class="rst-card${open ? ' is-open' : ''}${state.savedId === card.id ? ' is-saved' : ''}"
-               data-id="${escHtml(card.id)}" data-state="${view.state}" style="--rst-color: ${icon.color}">
+      <article class="rst-card${open ? ' is-open' : ''}${state.savedId === card.id ? ' is-saved' : ''}${isDueSoon(view) ? ' is-due-soon' : ''}"
+               data-id="${escHtml(card.id)}" data-state="${view.state}" style="--rst-color: ${color}">
         <button type="button" class="rst-head" data-action="toggle" aria-expanded="${open}" aria-controls="${bodyId}">
           <span class="rst-icon" aria-hidden="true">${icon.glyph}</span>
           <span class="rst-head-main">
@@ -599,6 +609,8 @@ window.AOResets = (() => {
 
       const title = node.querySelector('[data-role="title"]');
       if (title) title.textContent = card.title;
+      node.style.setProperty('--rst-color', colorForView(view));
+      node.classList.toggle('is-due-soon', isDueSoon(view));
 
       const time = node.querySelector('[data-role="time"]');
       if (time) time.textContent = timeLabel(view);
@@ -907,5 +919,5 @@ window.AOResets = (() => {
     if (!state.tickTimer) state.tickTimer = setInterval(tick, TICK_MS);
   }
 
-  return { init, setSort, setFilter, openForm, closeForm, addFromForm, happyHourDetails };
+  return { init, setSort, setFilter, openForm, closeForm, addFromForm, happyHourDetails, isDueSoon, colorForView };
 })();
