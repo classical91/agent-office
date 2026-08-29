@@ -3794,3 +3794,284 @@
 @media (max-width: 760px) {
   .ao-login-trigger { min-height: 28px; padding: 0 10px; }
 }
+
+/* Agent roster selector ----------------------------------------------------- */
+/* Who stands in the 3D office. The pixel-slab grid is deliberately the same
+   family as the in-office character editor above: same sheet, same backdrop,
+   same close affordance. Cards are drawn by office-roster-selector.js from the
+   live AGENTS roster, so nothing here assumes a cast size. */
+.roster-selector-open { overflow: hidden; }
+
+.office-roster-selector {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.office-roster-selector[hidden] { display: none; }
+
+.roster-selector-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: rgba(3, 5, 12, 0.78);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.roster-selector-sheet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(940px, 100%);
+  max-height: min(760px, calc(100svh - 36px));
+  color: var(--text);
+  background: color-mix(in srgb, var(--panel) 94%, #070913);
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border));
+  border-radius: 18px;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.56);
+  opacity: 0;
+  transform: translateY(14px) scale(0.985);
+  transition: opacity 160ms ease, transform 180ms cubic-bezier(.2,.8,.2,1);
+}
+
+.office-roster-selector.open .roster-selector-backdrop { opacity: 1; }
+.office-roster-selector.open .roster-selector-sheet { opacity: 1; transform: none; }
+
+.roster-selector-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.roster-selector-heading { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.roster-selector-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
+  font-size: 16px;
+}
+.roster-selector-heading h2 {
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.roster-selector-heading p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.roster-selector-count {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  margin-left: auto;
+  padding: 7px 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 34%, var(--border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  text-align: right;
+}
+.roster-selector-count strong {
+  color: var(--accent);
+  font-size: 13px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.roster-selector-count span {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.roster-selector-close {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.roster-selector-close:hover { color: var(--text); border-color: var(--accent); }
+
+.roster-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 12px;
+  padding: 18px 20px;
+  overflow-y: auto;
+}
+
+.roster-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 12px 8px 11px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--panel) 70%, #05070f);
+  color: var(--text);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+.roster-card:hover { transform: translateY(-2px); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.roster-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* In the room but not explicitly chosen — the state before any selection has
+   been made, where the whole roster is present. */
+.roster-card.in-room { background: color-mix(in srgb, var(--panel) 84%, #05070f); }
+.roster-card.selected {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 13%, var(--panel));
+}
+.roster-card.locked { opacity: .42; }
+.roster-card.locked:hover { transform: none; border-color: var(--border); }
+
+.roster-card-figure {
+  position: relative;
+  display: grid;
+  place-items: end center;
+  width: 100%;
+  height: 112px;
+}
+.roster-card-pixel {
+  position: relative;
+  width: 78px;
+  height: 108px;
+  image-rendering: pixelated;
+}
+.roster-card-shadow {
+  position: absolute;
+  bottom: 4px;
+  width: 52px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  filter: blur(3px);
+}
+
+.roster-card-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  font-size: 13px;
+  font-weight: 800;
+  overflow-wrap: break-word;
+}
+.roster-card-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--dot, var(--accent));
+}
+.roster-card-role {
+  color: color-mix(in srgb, var(--role, var(--muted)) 78%, var(--text));
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  line-height: 1.35;
+  overflow-wrap: break-word;
+}
+
+.roster-card-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #07101b;
+  font-size: 12px;
+  font-weight: 900;
+  opacity: 0;
+  transform: scale(.8);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+.roster-card.selected .roster-card-check { opacity: 1; transform: none; }
+
+.roster-selector-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+}
+.roster-selector-footer p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.roster-selector-actions { display: flex; flex-shrink: 0; gap: 8px; }
+.roster-selector-actions button {
+  min-height: 33px;
+  padding: 0 13px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.roster-selector-actions button:hover { border-color: var(--accent); }
+.roster-selector-actions .roster-selector-done {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #07101b;
+}
+
+@media (max-width: 640px) {
+  .office-roster-selector { align-items: end; padding: 0; }
+  .roster-selector-sheet { width: 100%; max-height: 92svh; border-radius: 18px 18px 0 0; transform: translateY(28px); }
+  .roster-selector-header { gap: 10px; padding: 13px 15px; }
+  .roster-selector-heading p { display: none; }
+  /* One line for the title and one for the counters: at 390px the two of them
+     wrapping cost a third of the sheet before the first agent appeared. */
+  .roster-selector-heading h2 { font-size: 14px; letter-spacing: .04em; }
+  .roster-selector-count { padding: 5px 9px; }
+  .roster-selector-count strong { font-size: 11px; }
+  .roster-selector-grid { grid-template-columns: repeat(auto-fill, minmax(102px, 1fr)); gap: 9px; padding: 13px 15px; }
+  .roster-card { padding: 9px 5px; }
+  .roster-card-figure { height: 92px; }
+  .roster-card-pixel { width: 64px; height: 89px; }
+  /* A name is one word and cannot be broken across lines without reading as a
+     different name — "CommentFarm" was arriving as "CommentFar / m". */
+  .roster-card-name { gap: 5px; font-size: 11px; }
+  .roster-card-role { font-size: 9px; }
+  .roster-selector-footer { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 15px; }
+  .roster-selector-actions button { flex: 1; min-height: var(--tap-target, 44px); }
+}

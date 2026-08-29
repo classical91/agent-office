@@ -990,13 +990,28 @@ function toggleBuildPanel() {
 // chips are dropped rather than left to pile up on top of each other.
 const COMPACT_ROOM_SCALE = 0.62;
 
+// Who actually stands in the room. The roster selector (office-roster-
+// selector.js) owns the choice and keeps it in this browser; everything else —
+// agentState, the ops summary, the status cards, saved character looks — still
+// covers the whole roster, so leaving an agent out of the room takes nothing
+// away from them. No selector on the page, or no selection made in it, means
+// the whole roster is in the room, which is what the office did before the
+// selector existed.
+function roomAgents() {
+  const selector = window.AORoomRoster;
+  const selected = selector && typeof selector.selectedIds === 'function' ? selector.selectedIds() : null;
+  if (!Array.isArray(selected)) return agentState;
+  const inRoom = new Set(selected);
+  return agentState.filter(agent => inRoom.has(agent.id));
+}
+
 function renderAgents() {
   document.querySelectorAll('.agent-char').forEach(el => el.remove());
 
   const metrics = getOfficeMetrics(officeArea.clientWidth, officeArea.clientHeight);
   officeArea.classList.toggle('room-compact', metrics.scale < COMPACT_ROOM_SCALE);
 
-  agentState.forEach(agent => {
+  roomAgents().forEach(agent => {
     const el = document.createElement('div');
     el.className = 'agent-char';
     el.id = 'agent-' + agent.id;

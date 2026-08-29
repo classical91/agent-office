@@ -77,63 +77,72 @@
   // hot-desk assignment in app-shared.js, so the studio's office preview stands
   // everyone exactly where the real room does.
   //
+  // `name` and `role` are copies of the AGENTS entry with the same id, and are
+  // the studio's only reason to hold either: the studio page does not load
+  // app-shared.js, so it cannot read AGENTS directly. They drifted once —
+  // studioclaw read "StudioClaw" and newsreporter read "News Reporter" while
+  // the office called them Studio Director and ShareBot67 — so
+  // tests/character-customizer.test.js now fails when the two disagree.
+  // Anything that can reach AGENTS (the office, the roster selector) reads the
+  // name and role from there instead of from here.
+  //
   // The first five carry the studio's approved defaults unchanged. The last
   // four had no character at all — they were the coloured boxes in the room —
   // and are dressed from the existing outfit, hair and accessory sets rather
   // than any new art, so the whole cast stays one visual family.
   const ROSTER = [
     {
-      id: 'oss', name: 'Penny', shortRole: 'Team lead', role: 'Orchestrator / team lead', color: '#f59e0b',
+      id: 'oss', name: 'Penny', shortRole: 'Team lead', role: 'Sole Orchestrator', color: '#f59e0b',
       station: { gx: 5, gy: 1 },
       defaults: { face: 'friendly', skin: '#dca276', hair: 'bald', hairColor: '#36231c', outfit: 'lead', outfitColor: '#172554', accessory: 'earpiece' },
     },
     {
-      id: 'webclaw', name: 'WebClaw', shortRole: 'Web agency', role: 'Web agency specialist', color: '#3b82f6',
+      id: 'webclaw', name: 'WebClaw', shortRole: 'Web agency', role: 'Web Agency Specialist', color: '#3b82f6',
       station: { gx: 1, gy: 4 },
       defaults: { face: 'focused', skin: '#f2c49b', hair: 'spiked', hairColor: '#151518', outfit: 'hoodie', outfitColor: '#2563eb', accessory: 'glasses' },
     },
     {
-      id: 'nutrimind', name: 'NutriMind', shortRole: 'Nutrition app', role: 'Nutrition app specialist', color: '#22c55e',
+      id: 'nutrimind', name: 'NutriMind', shortRole: 'Nutrition app', role: 'Nutrition App Specialist', color: '#22c55e',
       station: { gx: 8, gy: 5 },
       defaults: { face: 'bright', skin: '#ba7651', hair: 'tousled', hairColor: '#36231c', outfit: 'overshirt', outfitColor: '#16803a', accessory: 'none' },
     },
     {
-      id: 'pc', name: 'PC', shortRole: 'Windows', role: 'Windows workstation specialist', color: '#10b981',
+      id: 'pc', name: 'PC', shortRole: 'Windows', role: 'Windows Workstation Specialist', color: '#10b981',
       station: { gx: 10, gy: 5 },
       defaults: { face: 'stoic', skin: '#dca276', hair: 'swept', hairColor: '#151518', outfit: 'utility', outfitColor: '#0f766e', accessory: 'headset' },
     },
     {
-      id: 'traderclaw', name: 'TraderClaw', shortRole: 'Markets', role: 'Trading and market specialist', color: '#14b8a6',
+      id: 'traderclaw', name: 'TraderClaw', shortRole: 'Markets', role: 'Trading and Market Specialist', color: '#14b8a6',
       station: { gx: 0, gy: 3 },
       defaults: { face: 'focused', skin: '#8b5036', hair: 'spiked', hairColor: '#151518', outfit: 'utility', outfitColor: '#115e59', accessory: 'earpiece' },
     },
     {
-      id: 'studioclaw', name: 'StudioClaw', shortRole: 'Studio director', role: 'Studio director', color: '#8b5cf6',
+      id: 'studioclaw', name: 'Studio Director', shortRole: 'Studio routing', role: 'Studio Routing Lead', color: '#8b5cf6',
       station: { gx: 7, gy: 1 },
       defaults: { face: 'friendly', skin: '#f2c49b', hair: 'swept', hairColor: '#151518', outfit: 'director', outfitColor: '#7c3aed', accessory: 'chain' },
     },
     {
-      id: 'nightwaveaudio', name: 'Nightwave Audio', shortRole: 'Audio', role: 'Audio specialist', color: '#06b6d4',
+      id: 'nightwaveaudio', name: 'Nightwave Audio', shortRole: 'Audio', role: 'Audio Specialist', color: '#06b6d4',
       station: { gx: 8, gy: 1 },
       defaults: { face: 'focused', skin: '#573222', hair: 'tousled', hairColor: '#151518', outfit: 'hoodie', outfitColor: '#0f766e', accessory: 'headset' },
     },
     {
-      id: 'youtubeclaw', name: 'YouTube Claw', shortRole: 'Packaging', role: 'YouTube packaging specialist', color: '#ef4444',
+      id: 'youtubeclaw', name: 'YouTube Claw', shortRole: 'Packaging', role: 'YouTube Packaging Specialist', color: '#ef4444',
       station: { gx: 2, gy: 4 },
       defaults: { face: 'bright', skin: '#f2c49b', hair: 'spiked', hairColor: '#704127', outfit: 'lead', outfitColor: '#be185d', accessory: 'none' },
     },
     {
-      id: 'commentfarm', name: 'CommentFarm', shortRole: 'Engagement', role: 'Engagement specialist', color: '#84cc16',
+      id: 'commentfarm', name: 'CommentFarm', shortRole: 'Engagement', role: 'Engagement Specialist', color: '#84cc16',
       station: { gx: 2, gy: 6 },
       defaults: { face: 'friendly', skin: '#ba7651', hair: 'swept', hairColor: '#b96c32', outfit: 'overshirt', outfitColor: '#343948', accessory: 'earpiece' },
     },
     {
-      id: 'newsreporter', name: 'News Reporter', shortRole: 'News & trends', role: 'News and trend specialist', color: '#f97316',
+      id: 'newsreporter', name: 'ShareBot67', shortRole: 'News & research', role: 'News and Research Specialist', color: '#f97316',
       station: { gx: 11, gy: 5 },
       defaults: { face: 'stoic', skin: '#8b5036', hair: 'bald', hairColor: '#151518', outfit: 'director', outfitColor: '#d9d8d2', accessory: 'glasses' },
     },
     {
-      id: 'routercoder', name: 'RouterCoder', shortRole: 'OpenRouter code', role: 'OpenRouter coding specialist', color: '#ec4899',
+      id: 'routercoder', name: 'RouterCoder', shortRole: 'OpenRouter code', role: 'OpenRouter Coding Specialist', color: '#ec4899',
       station: { gx: 9, gy: 5 },
       defaults: { face: 'focused', skin: '#573222', hair: 'swept', hairColor: '#72519b', outfit: 'utility', outfitColor: '#172554', accessory: 'glasses' },
     },
