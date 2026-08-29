@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>OpenClaw Agents Office - Jason's AI Team</title>
-<link rel="stylesheet" href="shared.css?v=folder-pins-20260811"/>
+<link rel="stylesheet" href="shared.css?v=roster-selector-20260829"/>
 <!-- Restores the saved theme and sidebar state before first paint, so no page
      flashes the default accent or a full-width sidebar on its way in.
      ACCENTS mirrors THEMES in app-shared.js. -->
@@ -132,6 +132,7 @@
         <span class="office-crumb-loc">HQ · Floor 1</span>
       </div>
       <div class="office-bar-meta">
+        <button class="ao-btn ao-btn--sm office-roster-btn" type="button" onclick="window.AORoomRoster &amp;&amp; window.AORoomRoster.open()">Agent Roster</button>
         <button class="ao-btn ao-btn--sm office-command-btn" type="button" onclick="AOControlCenter.openMissionControl()">Mission Control</button>
         <span class="ao-badge">Main room</span>
       </div>
@@ -831,8 +832,9 @@
 <!-- The room generator, so build mode can rebuild the room when it is resized.
      Same file the build step runs under Node. -->
 <script src="room-builder.js?v=room-resize-20260802"></script>
-<script src="agent-avatars.js?v=avatar-studio-20260805"></script>
-<script src="app-shared.js?v=routercoder-20260814"></script>
+<script src="agent-avatars.js?v=roster-names-20260829"></script>
+<script src="app-shared.js?v=roster-selector-20260829"></script>
+<script src="office-roster-selector.js?v=roster-selector-20260829"></script>
 <script src="office-avatar-customizer.js?v=avatar-editor-20260805"></script>
 <script src="office-control-center.js?v=penny-control-center-20260811"></script>
 
