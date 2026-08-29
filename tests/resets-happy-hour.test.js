@@ -12,11 +12,31 @@ const source = fs.readFileSync(
 );
 const context = { window: {}, Date, console, setInterval, clearInterval };
 vm.runInNewContext(source, context);
-const { colorForView, happyHourDetails, happyHourMeal, isDueSoon } = context.window.AOResets;
+const {
+  colorForView,
+  happyHourDetails,
+  happyHourMeal,
+  happyHourShortcutTime,
+  isDueSoon,
+  isListView,
+} = context.window.AOResets;
 
-test('happy hour keeps only the meal name in the compact card', () => {
+test('happy hour keeps only the meal name in the header shortcut', () => {
   assert.equal(happyHourMeal('50% off Fresh Appetizers'), 'Fresh Appetizers');
   assert.equal(happyHourMeal('50\u00a2 each Marinated Split Chicken Wings'), 'Marinated Split Chicken Wings');
+});
+
+test('happy hour lives in the header instead of the countdown list', () => {
+  assert.equal(isListView({ card: { id: 'routine-happy-hour-daily' } }), false);
+  assert.equal(isListView({ card: { id: 'ordinary-countdown' } }), true);
+});
+
+test('happy hour header uses a shorter timer label', () => {
+  const view = {
+    remaining: 60 * 60 * 1000,
+    card: { happyHourPhase: 'open' },
+  };
+  assert.match(happyHourShortcutTime(view), /^Ends in /);
 });
 
 test('happy hour shows the correct Sunday deal before the heads-up', () => {

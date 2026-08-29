@@ -8,7 +8,7 @@
 <meta http-equiv="Expires" content="0"/>
 <title>Countdown Timers - Agent Office</title>
 <link rel="stylesheet" href="shared.css?v=folder-pins-20260811"/>
-<link rel="stylesheet" href="resets.css?v=happy-hour-compact-20260828"/>
+<link rel="stylesheet" href="resets.css?v=happy-hour-header-20260828"/>
 <!-- Restores the saved theme and sidebar state before first paint, so no page
      flashes the default accent or a full-width sidebar on its way in.
      ACCENTS mirrors THEMES in app-shared.js. -->
@@ -128,7 +128,18 @@
 
       <div class="ao-page-head">
         <div class="ao-page-heading">
-          <div class="ao-eyebrow">&#9203; COUNTDOWN TIMERS</div>
+          <div class="rst-eyebrow-row">
+            <div class="ao-eyebrow">&#9203; COUNTDOWN TIMERS</div>
+            <button type="button" class="rst-happy-shortcut" id="rst-happy-shortcut" hidden
+                    aria-haspopup="dialog" aria-controls="rst-happy-modal"
+                    onclick="AOResets.openHappyHour(this)">
+              <span class="rst-happy-shortcut-icon" aria-hidden="true">&#127869;&#65039;</span>
+              <span class="rst-happy-shortcut-copy">
+                <span class="rst-happy-shortcut-meal" data-role="happy-shortcut-meal"></span>
+                <span class="rst-happy-shortcut-time" data-role="happy-shortcut-time"></span>
+              </span>
+            </button>
+          </div>
           <div class="ao-page-title">Countdown Timers</div>
           <div class="ao-page-sub">
             All countdowns in one place: shared Agent Office deadlines plus usage windows, backups and
@@ -254,7 +265,7 @@
 <div class="statusbar" id="statusbar"></div>
 
 <script src="app-shared.js?v=routercoder-20260814"></script>
-<script src="resets.js?v=happy-hour-compact-20260828"></script>
+<script src="resets.js?v=happy-hour-header-20260828"></script>
 <script>
 switchView('resets', document.querySelector('.nav-item.active'));
 </script>

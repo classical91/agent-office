@@ -466,6 +466,14 @@ window.AOResets = (() => {
       });
   }
 
+  function isListView(view) {
+    return Boolean(view && view.card && view.card.id !== HAPPY_HOUR_ID);
+  }
+
+  function listedViews() {
+    return sortedViews().filter(isListView);
+  }
+
   // ─── Rendering ─────────────────────────────────────────────────────────
 
   function optionsHtml(options, selected) {
@@ -481,21 +489,6 @@ window.AOResets = (() => {
     const color = colorForView(view);
     const open = state.openId === card.id;
     const bodyId = `rst-body-${escHtml(card.id)}`;
-
-    if (card.id === HAPPY_HOUR_ID) return `
-      <article class="rst-card rst-card--happy${isDueSoon(view) ? ' is-due-soon' : ''}"
-               data-id="${escHtml(card.id)}" data-state="${view.state}" style="--rst-color: ${color}">
-        <button type="button" class="rst-head rst-happy-head" data-action="happy-details"
-                aria-haspopup="dialog" aria-controls="rst-happy-modal"
-                aria-label="${escHtml(card.happyHourMeal)}, ${timeLabel(view)}. Open Happy Hour details">
-          <span class="rst-icon" aria-hidden="true">${icon.glyph}</span>
-          <span class="rst-happy-main">
-            <span class="rst-happy-meal" data-role="happy-meal">${escHtml(card.happyHourMeal)}</span>
-            <span class="rst-time rst-happy-time" data-role="time">${escHtml(timeLabel(view))}</span>
-          </span>
-          <span class="rst-happy-info" aria-hidden="true">i</span>
-        </button>
-      </article>`;
 
     if (card.source === 'office') return `
       <article class="rst-card${open ? ' is-open' : ''}${isDueSoon(view) ? ' is-due-soon' : ''}" data-id="${escHtml(card.id)}" data-state="${view.state}" style="--rst-color: ${color}">
@@ -577,17 +570,43 @@ window.AOResets = (() => {
     `;
   }
 
+  function happyHourShortcutTime(view) {
+    const remaining = formatRemaining(view.remaining);
+    if (view.card.happyHourPhase === 'open') return `Ends in ${remaining}`;
+    if (view.card.happyHourPhase === 'starting') return `Starts in ${remaining}`;
+    return `Heads-up in ${remaining}`;
+  }
+
+  function renderHappyHourShortcut() {
+    const shortcut = el('rst-happy-shortcut');
+    if (!shortcut) return;
+    const card = state.cards.find(item => item.id === HAPPY_HOUR_ID);
+    shortcut.hidden = !card;
+    if (!card) return;
+
+    const view = viewOf(card);
+    const compactTime = happyHourShortcutTime(view);
+    shortcut.style.setProperty('--rst-color', colorForView(view));
+    shortcut.querySelector('[data-role="happy-shortcut-meal"]').textContent = card.happyHourMeal;
+    shortcut.querySelector('[data-role="happy-shortcut-time"]').textContent = compactTime;
+    shortcut.setAttribute(
+      'aria-label',
+      `${card.happyHourMeal}, ${timeLabel(view)}. Open Happy Hour details`
+    );
+  }
+
   function render() {
     const list = el('reset-cards');
     if (!list) return;
 
-    const views = sortedViews();
+    renderHappyHourShortcut();
+    const views = listedViews();
     state.order = views.map(view => view.card.id).join('|');
     list.innerHTML = views.map(cardHtml).join('');
 
     const empty = el('rst-empty');
     if (empty) {
-      const nothingAtAll = !state.cards.length;
+      const nothingAtAll = !state.cards.some(card => card.id !== HAPPY_HOUR_ID);
       empty.hidden = views.length > 0;
       empty.querySelector('[data-role="empty-title"]').textContent =
         nothingAtAll ? 'No countdowns yet' : 'Nothing matches this filter';
@@ -600,8 +619,8 @@ window.AOResets = (() => {
 
     const count = el('rst-count');
     if (count) {
-      const live = state.cards.map(viewOf).filter(view => view.state === 'active').length;
-      count.textContent = state.cards.length
+      const live = state.cards.map(viewOf).filter(view => isListView(view) && view.state === 'active').length;
+      count.textContent = state.cards.some(card => card.id !== HAPPY_HOUR_ID)
         ? `${views.length} shown · ${live} counting down`
         : '';
     }
@@ -633,6 +652,10 @@ window.AOResets = (() => {
       } else if (rollForward(card)) orderChanged = true;
     });
 
+    renderHappyHourShortcut();
+    const happyHourCard = state.cards.find(card => card.id === HAPPY_HOUR_ID);
+    if (happyHourCard && isHappyHourOpen()) updateHappyHourModal(viewOf(happyHourCard));
+
     list.querySelectorAll('.rst-card').forEach(node => {
       const card = state.cards.find(item => item.id === node.dataset.id);
       if (!card) return;
@@ -641,24 +664,13 @@ window.AOResets = (() => {
 
       const title = node.querySelector('[data-role="title"]');
       if (title) title.textContent = card.title;
-      const meal = node.querySelector('[data-role="happy-meal"]');
-      if (meal) meal.textContent = card.happyHourMeal;
       node.style.setProperty('--rst-color', colorForView(view));
       node.classList.toggle('is-due-soon', isDueSoon(view));
 
       const time = node.querySelector('[data-role="time"]');
       if (time) time.textContent = timeLabel(view);
-      const happyTrigger = node.querySelector('.rst-happy-head');
-      if (happyTrigger) {
-        happyTrigger.setAttribute(
-          'aria-label',
-          `${card.happyHourMeal}, ${timeLabel(view)}. Open Happy Hour details`
-        );
-      }
       const when = node.querySelector('[data-role="when"]');
       if (when) when.textContent = whenLabel(view);
-
-      if (card.id === HAPPY_HOUR_ID && isHappyHourOpen()) updateHappyHourModal(view);
 
       if (node.dataset.state !== view.state) {
         node.dataset.state = view.state;
@@ -677,7 +689,7 @@ window.AOResets = (() => {
     // Re-sorting under a finger that is mid-edit is worse than a stale order,
     // so the list only re-flows once nothing is open.
     if (!state.openId && !isFormOpen() && !isHappyHourOpen()) {
-      const next = sortedViews().map(view => view.card.id).join('|');
+      const next = listedViews().map(view => view.card.id).join('|');
       if (next !== state.order) render();
     }
   }
@@ -954,7 +966,6 @@ window.AOResets = (() => {
     const id = node.dataset.id;
 
     switch (trigger.dataset.action) {
-      case 'happy-details': return openHappyHour(trigger);
       case 'toggle': return openCard(id);
       case 'save': return saveCard(id, node);
       case 'delete': return deleteCard(id);
@@ -1012,9 +1023,12 @@ window.AOResets = (() => {
     openForm,
     closeForm,
     addFromForm,
+    openHappyHour,
     closeHappyHour,
     happyHourDetails,
     happyHourMeal,
+    happyHourShortcutTime,
+    isListView,
     isDueSoon,
     colorForView,
   };
