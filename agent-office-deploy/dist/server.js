@@ -3633,6 +3633,26 @@ async function commitScheduleBlocks(blocks) {
 // waits for a person, which is the honest outcome.
 const CALENDAR_DUE_GRACE_MS = 15 * 60 * 1000;
 
+/**
+ * Dispatch runs one at a time, process-wide.
+ *
+ * PostgreSQL settles a concurrent dispatch inside the statement itself. File
+ * storage cannot: it read-modify-writes one JSON file, so two overlapping
+ * dispatches can both read "no live goal for this block" and both create one -
+ * and a read that lands mid-write sees truncated JSON and throws outright.
+ * Serialising the whole critical section makes the file-storage guarantee as
+ * real as the index-backed one, and costs nothing: dispatch is a handful of
+ * calls per relay cycle, not a hot path.
+ */
+let dispatchQueue = Promise.resolve();
+
+function serializeDispatch(work) {
+  const next = dispatchQueue.then(work, work);
+  // A rejected dispatch must not poison the queue for everyone behind it.
+  dispatchQueue = next.then(() => {}, () => {});
+  return next;
+}
+
 // A dispatched-but-unclaimed block is holding a slot just as much as a running
 // one, so both count against the cap.
 async function agentRunCapacity(exceptEventId = '') {
@@ -3716,7 +3736,11 @@ function buildCalendarExecutionRequest(event, meta) {
  * relay actually claims the goal, which is the difference between "we asked" and
  * "an agent is working".
  */
-async function dispatchCalendarEventRun(eventId, options = {}) {
+function dispatchCalendarEventRun(eventId, options = {}) {
+  return serializeDispatch(() => dispatchOneCalendarRun(eventId, options));
+}
+
+async function dispatchOneCalendarRun(eventId, options) {
   const storage = await storageReady;
   const events = await currentCalendarEvents();
   const event = events.find(item => item.id === eventId);
@@ -3842,7 +3866,13 @@ async function dispatchCalendarEventRun(eventId, options = {}) {
 // Cancelling before Penny claims the goal is safe and reversible. Once it is
 // claimed the work is running on another machine, and this system has no way to
 // stop it, so it says so rather than pretending.
-async function cancelCalendarEventRun(eventId) {
+function cancelCalendarEventRun(eventId) {
+  // Same queue as dispatch: a cancel and a dispatch touch the same two records,
+  // and a delete can arrive while the sweep is mid-dispatch.
+  return serializeDispatch(() => cancelOneCalendarRun(eventId));
+}
+
+async function cancelOneCalendarRun(eventId) {
   const storage = await storageReady;
   const meta = await getEventMeta(eventId);
   if (!meta.executionId) {
@@ -4134,8 +4164,12 @@ async function advanceEventRun(eventId, body = {}, options = {}) {
       await storage.createMemory({
         id: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
         agent: transition.agentId,
+        // `date` is what createMemory reads on both backends. This wrote
+        // `created_at` instead, which file storage kept verbatim and PostgreSQL
+        // rejected as a null - so on the deployment the completion summary was
+        // quietly lost every time, inside the catch below.
+        date: new Date().toISOString(),
         content: summary.slice(0, 1000),
-        created_at: new Date().toISOString(),
       });
     } catch (error) {
       console.error('Could not record the run summary in agent memory.', error.message);
@@ -6696,7 +6730,7 @@ const server = http.createServer(async (req, res) => {
       // Deleting the block cancels work that has not started. Work Penny has
       // already claimed is running on another machine and is left alone - the
       // goal stays in Mission Control rather than disappearing silently.
-      const pendingExecution = await storage.cancelCalendarExecutionGoal(id);
+      const pendingExecution = await serializeDispatch(() => storage.cancelCalendarExecutionGoal(id));
       const googleEventId = gcalEventIdFromRoute(id);
       const cancelledExecution = pendingExecution ? pendingExecution.id : '';
       if (googleEventId) {

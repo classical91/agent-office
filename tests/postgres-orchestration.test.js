@@ -164,6 +164,13 @@ test('the calendar execution bridge round-trips through PostgreSQL', { skip }, a
   const block = events.events.find(item => item.id === eventId);
   assert.equal(block.meta.resultUrl, 'https://github.com/classical91/agent-office/pull/9');
   assert.match(block.meta.runSummary, /Repo health is fine/);
+
+  // The memory write is inside a try/catch, so a backend that rejects it loses
+  // the completion summary silently. It did: the caller sent `created_at` where
+  // createMemory reads `date`, and PostgreSQL refused the null.
+  const memories = await (await api.as('GET', '/api/memories')).json();
+  const recorded = memories.find(item => item.agent === 'codex' && /Repo health is fine/.test(item.content));
+  assert.ok(recorded, 'a completed run leaves a completion summary in agent memory');
 });
 
 test('the partial unique index stops a duplicate execution on PostgreSQL', { skip }, async t => {
