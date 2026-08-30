@@ -3,9 +3,14 @@
 //
 // A card is compact by default: icon, name, time left, when it lands, status.
 // Tapping it expands the same card into its own editor, so the list stays
-// readable on a phone and editing never leaves the page. Everything is held in
-// localStorage — no card, and no webhook URL, leaves the browser except to the
-// webhook the card itself names.
+// readable on a phone and editing never leaves the page.
+//
+// The page is a client of the timer service, not the thing keeping it alive.
+// Cards live in localStorage and in the owner's own storage behind
+// /api/reset-timers, and the notification when a countdown lands is sent by the
+// server — it has to arrive whether or not this page is open, and only the
+// server can read Pushcut's answer. What is left here is the list, the editor,
+// and the manual "Test webhook" button.
 //
 // This module used to live inside app-shared.js, which every page loads. It is
 // only ever needed here, so it moved out alongside countdowns-page.js.
@@ -16,6 +21,10 @@ window.AOResets = (() => {
   const SORT_KEY = 'ao-resets-sort';
   const FILTER_KEY = 'ao-resets-filter';
   const TICK_MS = 1000;
+  // The server advances repeating timers and records Pushcut deliveries, so the
+  // page pulls those back periodically instead of only on load.
+  const SYNC_MS = 60000;
+  const TOMBSTONE_TTL_MS = 30 * 86400000;
   const DAY_MS = 86400000;
   const DUE_SOON_COLOR = 'var(--yellow)';
   const HAPPY_HOUR_ID = 'routine-happy-hour-daily';
@@ -88,6 +97,7 @@ window.AOResets = (() => {
     openId: '',
     savedId: '',
     tickTimer: null,
+    syncTimer: null,
     order: '',
     happyHourTrigger: null,
   };
@@ -283,6 +293,12 @@ window.AOResets = (() => {
     return [];
   }
 
+  function toIso(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '' : date.toISOString();
+  }
+
   function normalizeCard(raw, index) {
     if (!raw || typeof raw !== 'object') return null;
     const target = new Date(raw.resetAt);
@@ -300,20 +316,105 @@ window.AOResets = (() => {
       source: raw.source === 'office' ? 'office' : 'browser',
       notes: String(raw.notes || ''),
       createdAt: Number(raw.createdAt) || 0,
+      // A deleted card is kept as a tombstone rather than dropped, so the
+      // deletion can win a merge instead of the other side handing the card
+      // back. loadCards() sweeps them once they are old enough to be safe.
+      deleted: Boolean(raw.deleted),
+      // When this record was last materially changed. Merges are decided on it,
+      // so anything that edits a card must call touch().
+      updatedAt: toIso(raw.updatedAt),
+      // Written by the server's notification processor, read by nobody here
+      // except the merge. Carried through untouched: this is the record of what
+      // has already been sent to Pushcut, and dropping it sends it again.
+      firedAt: toIso(raw.firedAt),
+      firedForResetAt: toIso(raw.firedForResetAt),
+      lastNotificationAttemptAt: toIso(raw.lastNotificationAttemptAt),
+      lastNotificationError: String(raw.lastNotificationError || ''),
+      notificationAttempts: Number(raw.notificationAttempts) || 0,
+      notificationOccurrence: toIso(raw.notificationOccurrence),
       order: index,
     };
+  }
+
+  // Every material edit stamps the card. Without this the merge below has
+  // nothing to compare and the newest version is whichever side saved last.
+  function touch(card) {
+    if (card) card.updatedAt = new Date().toISOString();
+    return card;
+  }
+
+  // Cards that still exist. Tombstones are stored and synced but are not part
+  // of the list, the counts or the clock.
+  function liveCards() {
+    return state.cards.filter(card => !card.deleted);
+  }
+
+  /**
+   * Merge the browser's timers with the server's, by id and then by updatedAt.
+   *
+   * The old sync replaced the local array with the remote one wholesale, which
+   * threw away anything edited while offline and resurrected anything deleted
+   * on another device. This keeps the newer of the two versions of each card
+   * and keeps cards that only one side has ever seen.
+   *
+   * A record with no updatedAt is pre-merge data, and loses to one that has it:
+   * the stamped side is the only one that can be reasoned about.
+   */
+  function mergeCardLists(local, remote) {
+    const merged = new Map();
+    const stamp = card => (card.updatedAt ? Date.parse(card.updatedAt) || 0 : 0);
+
+    local.forEach(card => merged.set(card.id, card));
+    remote.forEach(card => {
+      const mine = merged.get(card.id);
+      if (!mine) return merged.set(card.id, card);
+      const winner = stamp(card) > stamp(mine) ? card : mine;
+      const loser = winner === card ? mine : card;
+      // Whichever version wins, a send that has already happened for the
+      // occurrence it still points at must survive: a stale local copy that
+      // has been renamed offline should not re-arm a notification the server
+      // has already delivered.
+      if (winner.resetAt === loser.resetAt
+        && loser.firedForResetAt === loser.resetAt
+        && winner.firedForResetAt !== winner.resetAt) {
+        winner.fired = loser.fired;
+        winner.firedAt = loser.firedAt;
+        winner.firedForResetAt = loser.firedForResetAt;
+      }
+      merged.set(card.id, winner);
+    });
+
+    return [...merged.values()].map((card, index) => ({ ...card, order: index }));
+  }
+
+  // Two lists hold the same timers when they hold the same records, whatever
+  // order they are in. `order` is a rendering detail and `message` is the
+  // one-line status under an open card, so neither counts as a difference.
+  function cardsSignature(cards) {
+    return JSON.stringify(
+      cards.slice()
+        .sort((a, b) => a.id.localeCompare(b.id))
+        .map(({ order, message, ...rest }) => rest)
+    );
   }
 
   // A repeating card that has gone past its time rolls forward to its next
   // occurrence rather than sitting there expired, keeping the hour it was set
   // to. One-off cards are left alone: "Expired" is the right answer for those.
+  //
+  // A card with a webhook waits. Its occurrence belongs to the server's
+  // notification processor now, and rolling it forward in the browser would
+  // hide the very moment the processor is looking for - the notification would
+  // simply never be sent. The server advances it once Pushcut has taken it.
   function rollForward(card) {
-    if (!card.repeatDays || card.status === 'completed') return false;
+    if (card.deleted || !card.repeatDays || card.status === 'completed') return false;
     const next = new Date(card.resetAt);
     if (Number.isNaN(next.getTime()) || next.getTime() > Date.now()) return false;
+    if (card.webhookUrl && card.firedForResetAt !== card.resetAt) return false;
     while (next.getTime() <= Date.now()) next.setDate(next.getDate() + card.repeatDays);
     card.resetAt = next.toISOString();
     card.fired = false;
+    touch(card);
     return true;
   }
 
@@ -331,7 +432,11 @@ window.AOResets = (() => {
     // the starter set. An empty store is a user who deleted everything, and
     // that stays deleted.
     const source = stored || seedCards().map(seed => ({ ...seed, createdAt: Date.now(), status: 'active' }));
-    const cards = source.map(normalizeCard).filter(Boolean);
+    const cutoff = Date.now() - TOMBSTONE_TTL_MS;
+    const cards = source.map(normalizeCard).filter(Boolean)
+      // A tombstone only has to outlive the other copies of the card. Keeping
+      // them forever would grow the record without bound.
+      .filter(card => !card.deleted || (Date.parse(card.updatedAt) || 0) > cutoff);
     cards.forEach(card => {
       if (card.id === HAPPY_HOUR_ID) syncHappyHourCard(card);
       else rollForward(card);
@@ -339,12 +444,16 @@ window.AOResets = (() => {
     return cards;
   }
 
-  function saveCards() {
+  function writeLocalCards() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.cards.filter(card => card.source !== 'office')));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(browserCards()));
     } catch (err) {
       /* A full or blocked localStorage should not take the page down. */
     }
+  }
+
+  function saveCards() {
+    writeLocalCards();
     if (state.initialized) persistServerCards(false);
   }
 
@@ -367,8 +476,16 @@ window.AOResets = (() => {
         });
         if (!saved.ok) throw new Error('Could not migrate browser timers to persistent storage.');
       } else if (remote.length) {
-        state.cards = [...state.cards.filter(card => card.source === 'office'), ...remote];
-        saveCards();
+        const merged = mergeCardLists(local, remote);
+        state.cards = [...state.cards.filter(card => card.source === 'office'), ...merged];
+        // saveCards() writes both sides, so a merge that took anything from
+        // this browser reaches the server too - a deletion included. It is
+        // skipped only when all three copies already agree, so an open tab is
+        // not writing to storage once a minute for nothing.
+        if (cardsSignature(merged) !== cardsSignature(local)
+          || cardsSignature(merged) !== cardsSignature(remote)) {
+          saveCards();
+        }
         render();
       }
       return true;
@@ -379,12 +496,33 @@ window.AOResets = (() => {
     }
   }
 
+  /**
+   * Write this browser's timers to the shared store.
+   *
+   * The store is read again first. The server's notification processor edits
+   * these same records — it marks an occurrence sent and rolls a repeating
+   * timer on to the next one — and a page that has been open a while would
+   * otherwise overwrite that with its own older copy, which does not just lose
+   * the edit: the occurrence would read as unsent and go out to Pushcut twice.
+   */
   async function persistServerCards(interactive) {
     if (typeof ensureDropsSession !== 'function' || !(await ensureDropsSession(Boolean(interactive)))) return false;
     try {
+      let items = browserCards();
+      const current = await fetch('/api/reset-timers', { credentials: 'same-origin' });
+      if (current.ok) {
+        const payload = await current.json();
+        const remote = Array.isArray(payload.items) ? payload.items.map(normalizeCard).filter(Boolean) : [];
+        if (remote.length) {
+          items = mergeCardLists(items, remote);
+          state.cards = [...state.cards.filter(card => card.source === 'office'), ...items];
+          writeLocalCards();
+        }
+      }
+
       const response = await fetch('/api/reset-timers', {
         method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: browserCards() }),
+        body: JSON.stringify({ items }),
       });
       return response.ok;
     } catch {
@@ -453,7 +591,7 @@ window.AOResets = (() => {
   function sortedViews() {
     const sort = SORTS[state.sort] || SORTS.soonest;
     const filter = FILTERS[state.filter] || FILTERS.all;
-    return state.cards
+    return liveCards()
       .map(viewOf)
       .filter(filter.keep)
       .sort((a, b) => {
@@ -606,7 +744,7 @@ window.AOResets = (() => {
 
     const empty = el('rst-empty');
     if (empty) {
-      const nothingAtAll = !state.cards.some(card => card.id !== HAPPY_HOUR_ID);
+      const nothingAtAll = !liveCards().some(card => card.id !== HAPPY_HOUR_ID);
       empty.hidden = views.length > 0;
       empty.querySelector('[data-role="empty-title"]').textContent =
         nothingAtAll ? 'No countdowns yet' : 'Nothing matches this filter';
@@ -619,8 +757,8 @@ window.AOResets = (() => {
 
     const count = el('rst-count');
     if (count) {
-      const live = state.cards.map(viewOf).filter(view => isListView(view) && view.state === 'active').length;
-      count.textContent = state.cards.some(card => card.id !== HAPPY_HOUR_ID)
+      const live = liveCards().map(viewOf).filter(view => isListView(view) && view.state === 'active').length;
+      count.textContent = liveCards().some(card => card.id !== HAPPY_HOUR_ID)
         ? `${views.length} shown · ${live} counting down`
         : '';
     }
@@ -681,8 +819,6 @@ window.AOResets = (() => {
         }
         orderChanged = true;
       }
-
-      if (view.state === 'expired' && !card.fired && card.webhookUrl) fireWebhook(card.id, true);
     });
 
     if (orderChanged) saveCards();
@@ -785,8 +921,17 @@ window.AOResets = (() => {
     card.resetAt = draft.resetAt;
     card.repeatDays = draft.repeatDays;
     card.webhookUrl = draft.webhookUrl;
-    if (retimed) card.fired = false;
+    if (retimed) {
+      // A new time is a new occurrence, so the server's record of the last one
+      // must not read as "already sent" against it.
+      card.fired = false;
+      card.firedForResetAt = '';
+      card.notificationAttempts = 0;
+      card.notificationOccurrence = '';
+      card.lastNotificationError = '';
+    }
     card.message = retimed ? 'Saved. Webhook firing re-armed for the new time.' : 'Saved.';
+    touch(card);
 
     saveCards();
     state.savedId = id;
@@ -794,11 +939,18 @@ window.AOResets = (() => {
     render();
   }
 
+  // Deleting leaves a tombstone rather than removing the record. The card is
+  // gone from the page immediately, but the deletion has to be able to travel:
+  // dropping it outright would let the next sync hand the card straight back
+  // from the server's copy.
   function deleteCard(id) {
     const card = state.cards.find(item => item.id === id);
     if (!card) return;
     if (!window.confirm(`Delete "${card.title}"?`)) return;
-    state.cards = state.cards.filter(item => item.id !== id);
+    card.deleted = true;
+    card.status = 'completed';
+    card.webhookUrl = '';
+    touch(card);
     saveCards();
     if (state.openId === id) state.openId = '';
     render();
@@ -811,6 +963,7 @@ window.AOResets = (() => {
     card.message = card.status === 'paused'
       ? 'Paused. The clock still runs; the webhook will not fire.'
       : 'Running again.';
+    touch(card);
     saveCards();
     render();
   }
@@ -820,6 +973,7 @@ window.AOResets = (() => {
     if (!card) return;
     card.status = card.status === 'completed' ? 'active' : 'completed';
     card.message = card.status === 'completed' ? 'Marked done.' : 'Reopened.';
+    touch(card);
     saveCards();
     render();
   }
@@ -830,23 +984,25 @@ window.AOResets = (() => {
     const card = state.cards.find(item => item.id === id);
     if (card) {
       card.webhookUrl = '';
+      touch(card);
       saveCards();
     }
     setMessage(id, 'Webhook cleared.');
   }
 
-  // Pushcut is fire-and-forget: no-cors means the response is opaque, so a
-  // resolved fetch is the most this can honestly claim.
-  async function fireWebhook(id, auto, override) {
+  // The manual test, and only the manual test.
+  //
+  // Automatic delivery when a countdown lands belongs to the server now: it
+  // runs whether or not this page is open, and it can read Pushcut's status
+  // code instead of guessing. This still uses `no-cors`, so all it can honestly
+  // report is that the request left the browser.
+  async function fireWebhook(id, override) {
     const card = state.cards.find(item => item.id === id);
     if (!card) return;
     const url = (override == null ? card.webhookUrl : override).trim();
     if (!url) return setMessage(id, 'No Pushcut webhook URL on this card yet.');
-    // Fired is set before the request so a slow network cannot queue up a
-    // second send on the next tick.
-    if (auto) card.fired = true;
 
-    setMessage(id, auto ? 'Countdown landed — sending to Pushcut...' : 'Sending a test to Pushcut...');
+    setMessage(id, 'Sending a test to Pushcut...');
     try {
       await fetch(url, {
         method: 'POST',
@@ -854,15 +1010,13 @@ window.AOResets = (() => {
         body: JSON.stringify({
           title: card.title,
           resetAt: card.resetAt,
-          event: auto ? 'countdown_reached_zero' : 'manual_test',
+          event: 'manual_test',
         }),
       });
-      setMessage(id, auto ? 'Sent to Pushcut when the countdown landed.' : 'Test sent to Pushcut.');
+      setMessage(id, 'Test sent to Pushcut.');
     } catch (err) {
-      if (auto) card.fired = false;
       setMessage(id, 'Could not reach the webhook. Check the URL and try again.');
     }
-    saveCards();
   }
 
   // ─── The add form ──────────────────────────────────────────────────────
@@ -913,6 +1067,7 @@ window.AOResets = (() => {
       webhookUrl: el('rst-new-webhook').value.trim(),
       status: 'active',
       createdAt: Date.now(),
+      updatedAt: new Date().toISOString(),
       message: 'Added.',
     }, state.cards.length);
 
@@ -974,7 +1129,7 @@ window.AOResets = (() => {
       case 'clear-hook': return clearWebhook(id, node);
       case 'test': {
         const input = node.querySelector('[data-field="webhookUrl"]');
-        return fireWebhook(id, false, input ? input.value : undefined);
+        return fireWebhook(id, input ? input.value : undefined);
       }
       default: return undefined;
     }
@@ -1014,10 +1169,16 @@ window.AOResets = (() => {
     fillToolbar();
     render();
     if (!state.tickTimer) state.tickTimer = setInterval(tick, TICK_MS);
+    // Repeating timers are advanced by the server once Pushcut has taken the
+    // notification, so the page has to come back and look rather than assume
+    // its own copy is the current one.
+    if (!state.syncTimer) state.syncTimer = setInterval(() => syncServerCards(false), SYNC_MS);
   }
 
   return {
     init,
+    mergeCardLists,
+    normalizeCard,
     setSort,
     setFilter,
     openForm,

@@ -208,6 +208,9 @@ All endpoints return JSON.
 | POST   | `/api/shortcuts/drops/:id/snooze` | Push a reminder out              |
 | GET    | `/api/shortcuts/status`           | Due/upcoming counts and the next reminder |
 | GET    | `/api/shortcuts/countdowns`       | The top countdowns as text, for the evening roll-up |
+| GET    | `/api/shortcuts/reset-timers`     | The Countdown Timers on `/resets.html`, as text or JSON |
+| GET    | `/api/reset-timers`               | The stored Countdown Timers (session-authed) |
+| PUT    | `/api/reset-timers`               | Replace the stored Countdown Timers (session-authed) |
 | GET    | `/api/memories`                   | List memory entries              |
 | POST   | `/api/memories`                   | Create a memory entry            |
 | PATCH  | `/api/memories/:id`               | Update a memory entry            |
@@ -356,6 +359,46 @@ left, the section, whether a card is urgent — is worked out on the server in
 **Access.** Reading is open, like the calendar the page shows alongside the
 cards. Adding, editing and deleting sit behind the same `DROPS_PASSPHRASE` as
 the Dropbox and share its session cookie.
+
+### Countdown Timers and Pushcut
+
+`/resets.html` is the other half of the page: personal reset timers — usage
+windows, backups, a haircut — each with an optional Pushcut webhook that fires
+when it lands. They are separate records from the countdowns above and follow a
+separate workflow; the two share the screen and nothing else.
+
+```
+resets.html  →  /api/reset-timers  →  ┬─ /api/shortcuts/reset-timers  →  iPhone Shortcut
+                (persistent store)    └─ server-side timer processor   →  Pushcut  →  iPhone
+```
+
+**The notification is the server's job.** It used to be the browser's: the page
+fired the webhook itself, which meant nothing arrived unless the page happened
+to be open, and `no-cors` meant even then nothing could tell whether Pushcut had
+taken it. The server now walks the stored timers every 45 seconds
+(`RESET_TIMER_INTERVAL_MS`) and sends what has landed, over an ordinary HTTPS
+request whose status code it can read. The page is a client of that service —
+it draws the list and keeps the **Test webhook** button, which is still a
+browser-side one-off.
+
+**A notification is sent once.** "Sent" is recorded against the reset time it
+was sent for (`firedForResetAt`), not as a boolean, so a Railway restart
+re-reads the same record and stays quiet. Nothing is marked delivered until
+Pushcut answers 2xx: a failure leaves the occurrence armed, records what went
+wrong, and is retried on a backoff that starts at five minutes and doubles up
+to two hours. A repeating timer advances to its next occurrence only after a
+successful send, and is re-armed for it; a one-off stays expired with the send
+on its record.
+
+**The webhook URL is a credential.** Its query string is the Pushcut secret, so
+it is never in a Shortcuts response, never in a log line — failures are logged
+by timer name and webhook host — and never in a stored error message. It lives
+in the timer record behind the passphrase, which is where the page needs it.
+
+**Two devices, one list.** Timers carry an `updatedAt`, and the page merges by
+id, newest version per record, rather than taking the server's array wholesale.
+Both sides keep timers only they have seen, and a deletion is a tombstone that
+travels with the record instead of an absence the other side would undo.
 
 ## Streaks
 
@@ -610,6 +653,26 @@ the same token and returns the top countdowns as text, so an evening automation
 can append them to whatever roll-up it already builds. `format=json` returns the
 same selection as objects. See [Countdowns](#countdowns-1).
 
+**Shortcut: the Countdown Timers.**
+`GET /api/shortcuts/reset-timers?limit=5&format=text` returns the timers from
+`/resets.html` behind the same token, soonest first:
+
+```
+3 active timers
+• Claude Usage Reset — 2h 14m
+• Codex Usage Reset — 1 Day & 3h
+• Haircut — 5 Days
+```
+
+`state=` picks which timers (`active`, the default, then `paused`, `expired`,
+`completed`, `all`), `limit=` how many. Drop `format=text` for JSON: each item
+carries `id`, `title`, `reset_at`, `remaining_ms`, `remaining`, `repeat_days`
+and `status`. The Pushcut webhook URL is never among them.
+
+Set the URL up in Shortcuts as **Get Contents of URL** → Method `GET`, one
+header `X-Shortcuts-Token` = your token → **Show Result**. The exact URL is on
+**Settings → Phone Inbox** as `reset_timers_url`.
+
 There is also a no-Shortcut version: bookmark
 `/mission-board.html?reminder=due` on the phone's Home Screen and the Dropbox
 opens filtered to what has come due. The same filter is a dropdown on the
@@ -707,6 +770,10 @@ Dropbox-related variables:
   server logs `Phone inbox: on` at startup once it is set
 - `APP_TIMEZONE` — the timezone reminder phrases like "tomorrow 9am" are read
   in (defaults to `America/Vancouver`)
+- `RESET_TIMER_INTERVAL_MS` — how often the server checks whether a Countdown
+  Timer has landed and needs its Pushcut webhook sent (defaults to `45000`;
+  `0` turns server-side delivery off). Nothing else is needed to switch this
+  on: the webhook URLs already live on the timers.
 
 **The passphrase is not optional in a deployment.** Every route holding personal
 data — the whole calendar and the config-file reader included — goes through one

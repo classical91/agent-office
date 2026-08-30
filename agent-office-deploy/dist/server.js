@@ -8,6 +8,7 @@ const scheduling = require('./calendar-scheduling.js');
 const googleSync = require('./calendar-google-sync.js');
 const reminderTime = require('./reminder-time.js');
 const countdowns = require('./countdowns.js');
+const resetTimers = require('./reset-timers.js');
 
 process.env.TZ = process.env.APP_TIMEZONE || 'America/Vancouver';
 
@@ -4613,6 +4614,36 @@ async function handleShortcutsRequest(req, res, url, storage) {
     return true;
   }
 
+  // The Countdown Timers page behind the same token. This is the personal
+  // reset-timer list from /resets.html, not the Agent Office countdowns above:
+  // different records, different workflow, one phone.
+  //
+  // Nothing in here carries a webhook URL. selectShortcutTimers() is the only
+  // way a timer reaches this response, and it hands back a projection that has
+  // no field to put one in.
+  if (req.method === 'GET' && pathname === '/api/shortcuts/reset-timers') {
+    const stored = await loadResetTimers(storage);
+    const state = resetTimers.normalizeStateFilter(url.searchParams.get('state') || 'active');
+    const requestedLimit = Number.parseInt(url.searchParams.get('limit') || '', 10);
+    const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
+      ? Math.min(requestedLimit, SHORTCUTS_MAX_LIMIT)
+      : SHORTCUTS_DEFAULT_LIMIT;
+    const items = resetTimers.selectShortcutTimers(stored, { state, limit, now });
+
+    if (String(url.searchParams.get('format') || 'json').toLowerCase() === 'text') {
+      sendText(res, 200, resetTimers.formatShortcutText(items, state));
+      return true;
+    }
+
+    sendJson(res, 200, {
+      generated_at: now.toISOString(),
+      state,
+      count: items.length,
+      items,
+    });
+    return true;
+  }
+
   if (req.method === 'POST' && pathname === '/api/shortcuts/drops') {
     const input = await readShortcutsInput(req, url);
     const built = buildShortcutDropPayload(input);
@@ -4725,6 +4756,95 @@ async function handleShortcutsRequest(req, res, url, storage) {
   }
 
   return false;
+}
+
+// -- RESET TIMER NOTIFICATIONS ----------------------------------
+//
+// The Countdown Timers page used to fire its own Pushcut webhooks from the
+// browser, which meant a notification only arrived if the page happened to be
+// open, and `no-cors` meant even then nothing could tell whether it had landed.
+// This is that job moved to where the timers already live.
+//
+// The loop is deliberately dull: every RESET_TIMER_INTERVAL_MS it reads the
+// stored timers, sends whatever is due, and writes back what happened. All of
+// the decisions - due, already sent, retryable yet - are in reset-timers.js.
+
+const RESET_TIMER_INTERVAL_MS = (() => {
+  const configured = Number(process.env.RESET_TIMER_INTERVAL_MS);
+  if (!Number.isFinite(configured) || configured < 0) return 45 * 1000;
+  // 0 turns the processor off. Anything else gets a floor, so a mistyped value
+  // is a fast loop rather than a spin.
+  return configured === 0 ? 0 : Math.max(100, Math.round(configured));
+})();
+
+// One cycle at a time. A slow Pushcut must not let the next tick start a second
+// send of the same occurrence before the first one has been written down.
+let resetTimerCycleRunning = false;
+
+async function loadResetTimers(storage) {
+  return resetTimers.parseStoredTimers(await storage.getAppSetting(resetTimers.STORAGE_KEY));
+}
+
+/**
+ * One pass of the reset-timer processor.
+ *
+ * The stored list is read again after delivery so the write only touches the
+ * notification fields of timers that have not moved underneath it - the page
+ * writes the same key, and a full-array overwrite here would undo an edit made
+ * while a webhook was in flight.
+ *
+ * @returns {Promise<{results: Array, applied: number, timers: Array}>}
+ */
+async function runResetTimerCycle(storage, options = {}) {
+  const stored = await loadResetTimers(storage);
+  const outcome = await resetTimers.processDueTimers({ timers: stored, ...options });
+  if (!outcome.changed) return { results: outcome.results, applied: 0, timers: stored };
+
+  const current = await loadResetTimers(storage);
+  const merged = resetTimers.applyTimerUpdates(current, outcome.updates);
+  if (merged.applied) await storage.setAppSetting(resetTimers.STORAGE_KEY, JSON.stringify(merged.items));
+  return { results: outcome.results, applied: merged.applied, timers: stored };
+}
+
+// Failures are logged one line per timer, by title and webhook host. The URL
+// itself is never written anywhere: its query string is the Pushcut secret.
+function logResetTimerResults(stored, results) {
+  const byId = new Map(resetTimers.normalizeTimers(stored).map(timer => [timer.id, timer]));
+  for (const result of results) {
+    if (result.outcome !== 'delivered' && result.outcome !== 'failed') continue;
+    const timer = byId.get(result.id);
+    const name = timer ? timer.title : result.id;
+    const target = timer ? resetTimers.describeWebhook(timer.webhookUrl) : 'the webhook';
+    if (result.outcome === 'delivered') {
+      console.log(`Reset timer: sent "${name}" to ${target} (${result.status}).`);
+    } else {
+      console.warn(`Reset timer: "${name}" could not be sent to ${target} — ${result.reason}`);
+    }
+  }
+}
+
+async function tickResetTimers(storage) {
+  if (resetTimerCycleRunning) return;
+  resetTimerCycleRunning = true;
+  try {
+    const { results, timers } = await runResetTimerCycle(storage);
+    logResetTimerResults(timers, results);
+  } catch (error) {
+    console.error('Reset timer processor failed:', resetTimers.redactWebhook(error && error.message, ''));
+  } finally {
+    resetTimerCycleRunning = false;
+  }
+}
+
+function startResetTimerProcessor(storage) {
+  if (RESET_TIMER_INTERVAL_MS === 0) {
+    console.log('Reset timers: notification processor off (RESET_TIMER_INTERVAL_MS=0)');
+    return null;
+  }
+  console.log(`Reset timers: notification processor on, every ${Math.round(RESET_TIMER_INTERVAL_MS / 1000)}s`);
+  // unref'd for the same reason the visit prune is: an idle timer should never
+  // be the thing keeping the process alive.
+  return setInterval(() => { tickResetTimers(storage); }, RESET_TIMER_INTERVAL_MS).unref();
 }
 
 // -- WEBSITE VISITORS -------------------------------------------
@@ -5717,6 +5837,7 @@ const server = http.createServer(async (req, res) => {
         pull_text_url: `${origin}/api/shortcuts/drops?due=now&format=text`,
         status_url: `${origin}/api/shortcuts/status`,
         countdowns_url: `${origin}/api/shortcuts/countdowns?limit=5&format=text`,
+        reset_timers_url: `${origin}/api/shortcuts/reset-timers?limit=5&format=text`,
         header: 'X-Shortcuts-Token',
       });
       return;
@@ -6140,26 +6261,22 @@ const server = http.createServer(async (req, res) => {
     // personal record in here.
     if (req.method === 'GET' && pathname === '/api/reset-timers') {
       if (!requireDropsAuth(res, req)) return;
-      const raw = await storage.getAppSetting('reset-timers.v1');
-      let items = [];
-      try { items = raw ? JSON.parse(raw) : []; } catch { items = []; }
-      sendJson(res, 200, { items: Array.isArray(items) ? items : [] });
+      sendJson(res, 200, { items: await loadResetTimers(storage) });
       return;
     }
 
     if (req.method === 'PUT' && pathname === '/api/reset-timers') {
       if (!requireDropsAuth(res, req)) return;
       const body = await readJsonBody(req);
-      if (!body || !Array.isArray(body.items) || body.items.length > 200) {
-        sendJson(res, 400, { error: 'items must be an array with no more than 200 timers.' });
+      // Records are stored exactly as the page wrote them - webhook URL and
+      // notification history included - because this is the one place they
+      // live. Only the shape and the size are the server's business.
+      const checked = resetTimers.validateStoredItems(body && body.items);
+      if (!checked.ok) {
+        sendJson(res, checked.status, { error: checked.error });
         return;
       }
-      const encoded = JSON.stringify(body.items);
-      if (encoded.length > 250000) {
-        sendJson(res, 413, { error: 'Reset timer data is too large.' });
-        return;
-      }
-      await storage.setAppSetting('reset-timers.v1', encoded);
+      await storage.setAppSetting(resetTimers.STORAGE_KEY, checked.encoded);
       sendJson(res, 200, { ok: true });
       return;
     }
@@ -6851,6 +6968,8 @@ storageReady.then(storage => server.listen(PORT, () => {
   pruneOldVisits(storage);
   // unref'd so an idle prune timer is never the reason the process stays up.
   setInterval(() => pruneOldVisits(storage), VISIT_PRUNE_INTERVAL_MS).unref();
+
+  startResetTimerProcessor(storage);
 
   if (!PASSPHRASE_HASH && IS_DEPLOYED) {
     console.error(
