@@ -8,6 +8,28 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    # The deployment runs on PostgreSQL, but every other test in the suite runs
+    # on file storage, so the Postgres storage layer used to ship with none of
+    # its SQL ever executed. That is how an uncast parameter in the Mission
+    # Control result write-back reached production and failed there while CI
+    # stayed green. tests/postgres-orchestration.test.js exercises it, and skips
+    # itself without DATABASE_URL so a laptop `npm test` is unaffected.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: office
+          POSTGRES_PASSWORD: office
+          POSTGRES_DB: office
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
       # tests/ui-smoke.test.js skips itself when no browser is around, which is
       # the right answer on a laptop and the wrong one here — a broken install
@@ -45,3 +67,8 @@ jobs:
         run: npx playwright-core install-deps chromium
 
       - run: npm test
+        env:
+          DATABASE_URL: postgresql://office:office@localhost:5432/office
+          # The service container speaks plain TCP on localhost; TLS is verified
+          # separately in tests/postgres-tls.test.js.
+          PGSSLMODE: disable

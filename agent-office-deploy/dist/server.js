@@ -806,8 +806,14 @@ function toClientDrop(row) {
     orchestration_rank: Math.max(1, Number(row.orchestration_rank) || 1),
     orchestration_build_approved: Boolean(row.orchestration_build_approved),
     orchestration_approved_at: toIsoOrEmpty(row.orchestration_approved_at),
+    orchestration_calendar_event_id: row.orchestration_calendar_event_id || '',
   };
 }
+
+// A goal is still Penny's to finish while it is in one of these states, which is
+// what makes "this calendar block already has an execution" answerable without
+// asking OpenClaw. A completed or failed goal releases the block for a retry.
+const LIVE_ORCHESTRATION_STATES = ['queued', 'running', 'needs_approval'];
 
 async function loadDropsFromFile() {
   try {
@@ -1195,6 +1201,47 @@ function createFileStorage() {
       drops.unshift(drop);
       await saveDropsToFile(drops);
       return toClientDrop(drop);
+    },
+    // Dispatching a calendar block is "create this goal unless this block
+    // already has a live one". Doing the check and the insert in one call is
+    // what stops a duplicate poll, a retry, or a restart launching the work
+    // twice - the caller never gets to decide.
+    async createCalendarExecutionGoal(goal) {
+      const eventId = goal.orchestration_calendar_event_id;
+      const drops = await loadDropsFromFile();
+      const live = drops.find(drop =>
+        drop.orchestration_calendar_event_id === eventId &&
+        LIVE_ORCHESTRATION_STATES.includes(drop.orchestration_status)
+      );
+      if (live) return { created: false, goal: toClientDrop(live) };
+      drops.unshift(goal);
+      await saveDropsToFile(drops);
+      return { created: true, goal: toClientDrop(goal) };
+    },
+    async findCalendarExecutionGoal(eventId) {
+      const drops = await loadDropsFromFile();
+      const matches = drops
+        .filter(drop => drop.orchestration_calendar_event_id === eventId)
+        .sort((a, b) => new Date(b.updated_at || b.date || 0) - new Date(a.updated_at || a.date || 0));
+      const live = matches.find(drop => LIVE_ORCHESTRATION_STATES.includes(drop.orchestration_status));
+      const goal = live || matches[0];
+      return goal ? toClientDrop(goal) : null;
+    },
+    async cancelCalendarExecutionGoal(eventId) {
+      const drops = await loadDropsFromFile();
+      const goal = drops.find(drop =>
+        drop.orchestration_calendar_event_id === eventId && drop.orchestration_status === 'queued'
+      );
+      if (!goal) return null;
+      Object.assign(goal, {
+        orchestration_status: 'failed',
+        orchestration_error: 'Cancelled from the calendar before Penny claimed it.',
+        orchestration_completed_at: new Date().toISOString(),
+        status: 'reviewing',
+        updated_at: new Date().toISOString(),
+      });
+      await saveDropsToFile(drops);
+      return toClientDrop(goal);
     },
     async claimOrchestrationGoal() {
       const drops = await loadDropsFromFile();
@@ -1722,6 +1769,18 @@ async function createPostgresStorage() {
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_rank INTEGER NOT NULL DEFAULT 3`);
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_build_approved BOOLEAN NOT NULL DEFAULT FALSE`);
   await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_approved_at TIMESTAMPTZ`);
+  await pool.query(`ALTER TABLE drops ADD COLUMN IF NOT EXISTS orchestration_calendar_event_id TEXT NOT NULL DEFAULT ''`);
+  // The idempotency key for calendar dispatch, enforced by the database rather
+  // than by whoever happens to be polling: two relays, a retry and a restart all
+  // race for the same block, and only one of them may create a goal for it.
+  // Partial on purpose - a completed or failed goal leaves the index, so the
+  // same block can be run again later.
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS drops_calendar_execution_idx
+    ON drops (orchestration_calendar_event_id)
+    WHERE orchestration_calendar_event_id <> ''
+      AND orchestration_status IN ('queued', 'running', 'needs_approval')
+  `);
   // Pulling the due reminders is the hot path for the phone Shortcut.
   await pool.query(`CREATE INDEX IF NOT EXISTS drops_remind_at_idx ON drops (remind_at) WHERE remind_at IS NOT NULL`);
 
@@ -1986,7 +2045,7 @@ async function createPostgresStorage() {
                orchestration_status, orchestration_result, orchestration_error,
                orchestration_session_key, orchestration_claimed_at,
                orchestration_completed_at, orchestration_attempts, orchestration_rank,
-               orchestration_build_approved, orchestration_approved_at
+               orchestration_build_approved, orchestration_approved_at, orchestration_calendar_event_id
         FROM drops
         ORDER BY updated_at DESC, created_at DESC
       `);
@@ -2004,7 +2063,7 @@ async function createPostgresStorage() {
                     orchestration_status, orchestration_result, orchestration_error,
                     orchestration_session_key, orchestration_claimed_at,
                     orchestration_completed_at, orchestration_attempts, orchestration_rank,
-                    orchestration_build_approved, orchestration_approved_at
+                    orchestration_build_approved, orchestration_approved_at, orchestration_calendar_event_id
         `,
         [
           drop.id, drop.title, drop.subject, drop.category, drop.project, drop.agent || '',
@@ -2014,6 +2073,82 @@ async function createPostgresStorage() {
         ]
       );
       return toClientDrop(result.rows[0]);
+    },
+    // See the file-storage note: the guard and the insert are one statement so a
+    // duplicate poll cannot slip between them. The partial unique index behind
+    // it is the backstop for two writers that reach the INSERT together.
+    async createCalendarExecutionGoal(goal) {
+      const values = [
+        goal.id, goal.title, goal.subject, goal.category, goal.project, goal.agent || '',
+        normalizeStatus(goal.status, 'idea'), JSON.stringify(goal.tags || []), JSON.stringify(goal.links || []),
+        goal.content, goal.priority, goal.date,
+        goal.orchestration_status || '', goal.orchestration_session_key || '', goal.orchestration_rank || 3,
+        goal.orchestration_calendar_event_id,
+      ];
+      try {
+        const result = await pool.query(`
+          INSERT INTO drops (id, title, subject, category, project, agent, status, tags, links,
+                             content, priority, done, remind_at, created_at, updated_at,
+                             orchestration_status, orchestration_session_key, orchestration_rank,
+                             orchestration_calendar_event_id)
+          -- Every parameter is cast explicitly: unlike INSERT ... VALUES, the
+          -- SELECT list is typed on its own and cannot borrow the target
+          -- columns' types.
+          SELECT $1::text, $2::varchar, $3::varchar, $4::varchar, $5::varchar, $6::varchar,
+                 $7::varchar, $8::jsonb, $9::jsonb, $10::text, $11::varchar,
+                 FALSE, NULL::timestamptz, $12::timestamptz, $12::timestamptz,
+                 $13::varchar, $14::text, $15::integer, $16::text
+          WHERE NOT EXISTS (
+            SELECT 1 FROM drops
+            WHERE orchestration_calendar_event_id = $16
+              AND orchestration_status IN ('queued', 'running', 'needs_approval')
+          )
+          RETURNING id, title, subject, category, project, agent, status, tags, links,
+                    content, priority, done, remind_at, created_at AS date, updated_at,
+                    orchestration_status, orchestration_result, orchestration_error,
+                    orchestration_session_key, orchestration_claimed_at,
+                    orchestration_completed_at, orchestration_attempts, orchestration_rank,
+                    orchestration_build_approved, orchestration_approved_at, orchestration_calendar_event_id
+        `, values);
+        if (result.rows[0]) return { created: true, goal: toClientDrop(result.rows[0]) };
+      } catch (error) {
+        // 23505: the index caught a writer that got there first. That is the
+        // guard doing its job, not a failure to report upwards.
+        if (error.code !== '23505') throw error;
+      }
+      return { created: false, goal: await this.findCalendarExecutionGoal(goal.orchestration_calendar_event_id) };
+    },
+    async findCalendarExecutionGoal(eventId) {
+      const result = await pool.query(`
+        SELECT id, title, subject, category, project, agent, status, tags, links,
+               content, priority, done, remind_at, created_at AS date, updated_at,
+               orchestration_status, orchestration_result, orchestration_error,
+               orchestration_session_key, orchestration_claimed_at,
+               orchestration_completed_at, orchestration_attempts, orchestration_rank,
+               orchestration_build_approved, orchestration_approved_at, orchestration_calendar_event_id
+        FROM drops
+        WHERE orchestration_calendar_event_id = $1
+        ORDER BY (orchestration_status IN ('queued', 'running', 'needs_approval')) DESC,
+                 updated_at DESC
+        LIMIT 1
+      `, [eventId]);
+      return result.rows[0] ? toClientDrop(result.rows[0]) : null;
+    },
+    async cancelCalendarExecutionGoal(eventId) {
+      const result = await pool.query(`
+        UPDATE drops
+        SET orchestration_status = 'failed', status = 'reviewing',
+            orchestration_error = 'Cancelled from the calendar before Penny claimed it.',
+            orchestration_completed_at = NOW(), updated_at = NOW()
+        WHERE orchestration_calendar_event_id = $1 AND orchestration_status = 'queued'
+        RETURNING id, title, subject, category, project, agent, status, tags, links,
+                  content, priority, done, remind_at, created_at AS date, updated_at,
+                  orchestration_status, orchestration_result, orchestration_error,
+                  orchestration_session_key, orchestration_claimed_at,
+                  orchestration_completed_at, orchestration_attempts, orchestration_rank,
+                  orchestration_build_approved, orchestration_approved_at, orchestration_calendar_event_id
+      `, [eventId]);
+      return result.rows[0] ? toClientDrop(result.rows[0]) : null;
     },
     async claimOrchestrationGoal() {
       const result = await pool.query(`
@@ -2034,7 +2169,7 @@ async function createPostgresStorage() {
                   orchestration_status, orchestration_result, orchestration_error,
                   orchestration_session_key, orchestration_claimed_at,
                   orchestration_completed_at, orchestration_attempts, orchestration_rank,
-                  orchestration_build_approved, orchestration_approved_at
+                  orchestration_build_approved, orchestration_approved_at, orchestration_calendar_event_id
       `);
       return result.rows[0] ? toClientDrop(result.rows[0]) : null;
     },
@@ -2050,7 +2185,7 @@ async function createPostgresStorage() {
                   orchestration_status, orchestration_result, orchestration_error,
                   orchestration_session_key, orchestration_claimed_at,
                   orchestration_completed_at, orchestration_attempts, orchestration_rank,
-                  orchestration_build_approved, orchestration_approved_at
+                  orchestration_build_approved, orchestration_approved_at, orchestration_calendar_event_id
       `, [id]);
       return result.rows[0] ? toClientDrop(result.rows[0]) : null;
     },
@@ -2065,7 +2200,7 @@ async function createPostgresStorage() {
                   orchestration_status, orchestration_result, orchestration_error,
                   orchestration_session_key, orchestration_claimed_at,
                   orchestration_completed_at, orchestration_attempts, orchestration_rank,
-                  orchestration_build_approved, orchestration_approved_at
+                  orchestration_build_approved, orchestration_approved_at, orchestration_calendar_event_id
       `, [id, patch.title, patch.content, JSON.stringify(patch.links || []), patch.priority]);
       return result.rows[0] ? toClientDrop(result.rows[0]) : null;
     },
@@ -2086,17 +2221,24 @@ async function createPostgresStorage() {
     async updateOrchestrationGoal(id, patch) {
       const result = await pool.query(`
         UPDATE drops
-        SET orchestration_status = $2, orchestration_result = $3,
+        -- $2 is cast on every use. Assigned to a varchar column and compared to
+        -- a string literal in the same statement, an uncast parameter makes
+        -- PostgreSQL deduce two different types for it and reject the whole
+        -- statement ("inconsistent types deduced for parameter $2") - which took
+        -- every result write-back with it.
+        SET orchestration_status = $2::varchar, orchestration_result = $3,
             orchestration_error = $4, orchestration_completed_at = $5, updated_at = NOW(),
-            status = CASE WHEN $2 = 'completed' THEN 'done' WHEN $2 = 'failed' THEN 'reviewing' ELSE status END,
-            done = CASE WHEN $2 = 'completed' THEN TRUE ELSE done END
+            status = CASE WHEN $2::varchar = 'completed' THEN 'done'
+                          WHEN $2::varchar = 'failed' THEN 'reviewing'
+                          ELSE status END,
+            done = CASE WHEN $2::varchar = 'completed' THEN TRUE ELSE done END
         WHERE id = $1 AND agent = 'oss' AND subject = 'Mission Control'
         RETURNING id, title, subject, category, project, agent, status, tags, links,
                   content, priority, done, remind_at, created_at AS date, updated_at,
                   orchestration_status, orchestration_result, orchestration_error,
                   orchestration_session_key, orchestration_claimed_at,
                   orchestration_completed_at, orchestration_attempts, orchestration_rank,
-                  orchestration_build_approved, orchestration_approved_at
+                  orchestration_build_approved, orchestration_approved_at, orchestration_calendar_event_id
       `, [id, patch.orchestration_status, patch.orchestration_result || '', patch.orchestration_error || '', patch.orchestration_completed_at || null]);
       return result.rows[0] ? toClientDrop(result.rows[0]) : null;
     },
@@ -3181,6 +3323,9 @@ function toSchedulingEvent(event) {
     title: event.summary || event.title || '',
     start: pick('start'),
     end: pick('end'),
+    // Carried for the execution bridge: what someone typed into a block is often
+    // the only statement of what the agent is actually meant to do.
+    notes: event.description || event.notes || '',
     meta: agentMeta.normalizeMeta(event.meta),
   };
 }
@@ -3471,27 +3616,508 @@ async function commitScheduleBlocks(blocks) {
   return created;
 }
 
-// Drive one calendar block through its run lifecycle and keep the agent roster,
-// the block, and the agent's memory in step.
-async function advanceEventRun(eventId, body = {}) {
+// ── Calendar → Penny execution bridge ──────────────────────────────────────
+//
+// A calendar block never orchestrates anything. When one comes due it submits a
+// Mission Control goal - the same row, the same claim, the same relay, the same
+// approval gate Mission Control already uses - and from then on the block only
+// mirrors what that goal reports. Penny stays the single orchestrator, and the
+// calendar can only ever show execution state that actually happened.
+//
+//   block → goal (queued)  →  relay claims  →  block running
+//                          →  Penny finishes →  block completed / failed
+//                          →  approval asked →  block needs_input
+
+// How late a block may still be picked up. A block whose window closed while the
+// relay was down is not silently started hours later - it stays scheduled and
+// waits for a person, which is the honest outcome.
+const CALENDAR_DUE_GRACE_MS = 15 * 60 * 1000;
+
+/**
+ * Dispatch runs one at a time, process-wide.
+ *
+ * PostgreSQL settles a concurrent dispatch inside the statement itself. File
+ * storage cannot: it read-modify-writes one JSON file, so two overlapping
+ * dispatches can both read "no live goal for this block" and both create one -
+ * and a read that lands mid-write sees truncated JSON and throws outright.
+ * Serialising the whole critical section makes the file-storage guarantee as
+ * real as the index-backed one, and costs nothing: dispatch is a handful of
+ * calls per relay cycle, not a hot path.
+ */
+let dispatchQueue = Promise.resolve();
+
+function serializeDispatch(work) {
+  const next = dispatchQueue.then(work, work);
+  // A rejected dispatch must not poison the queue for everyone behind it.
+  dispatchQueue = next.then(() => {}, () => {});
+  return next;
+}
+
+// A dispatched-but-unclaimed block is holding a slot just as much as a running
+// one, so both count against the cap.
+async function agentRunCapacity(exceptEventId = '') {
+  const preferences = await getSchedulingPreferences();
+  const map = await loadEventMetaMap();
+  const inFlight = Object.keys(map).filter(key => {
+    if (key === exceptEventId) return false;
+    const meta = agentMeta.normalizeMeta(map[key]);
+    if (meta.runStatus === 'running') return true;
+    return Boolean(meta.executionId) && meta.runStatus === 'scheduled';
+  }).length;
+  if (inFlight >= preferences.maxConcurrentAgentRuns) {
+    return {
+      ok: false,
+      inFlight,
+      error: `Already at the ${preferences.maxConcurrentAgentRuns} concurrent agent run limit.`,
+    };
+  }
+  return { ok: true, inFlight, remaining: preferences.maxConcurrentAgentRuns - inFlight };
+}
+
+/**
+ * Is the machine that runs Penny actually there?
+ *
+ * Fail closed: no answer means no dispatch. Marking a block running against a
+ * gateway that is not listening would invent an execution, which is the one
+ * thing this bridge must never do.
+ */
+async function pennyAvailability(options = {}) {
+  // The relay only sweeps after its own heartbeat succeeded, so a request that
+  // carries the gateway token is itself the evidence.
+  if (options.trustCaller) return { available: true, reason: '' };
+
+  const heartbeat = describeGatewayHeartbeat();
+  if (heartbeat.fresh) return { available: true, reason: '' };
+
   const storage = await storageReady;
+  const saved = await storage.getAppSetting(GATEWAY_LOCAL_SETTING_KEY);
+  const probe = await probeGateway(normalizeGatewayUrl(saved) || DEFAULT_GATEWAY_URL);
+  if (probe.reachable) return { available: true, reason: '' };
+
+  return {
+    available: false,
+    reason: heartbeat.received
+      ? `Penny is currently unavailable - the last OpenClaw heartbeat was ${heartbeat.age_seconds}s ago.`
+      : 'Penny is currently unavailable - OpenClaw has not reported in.',
+  };
+}
+
+// What Penny is being asked to do, assembled from the block itself. The relay
+// wraps this in the standing orchestrator prompt (sole orchestrator, delegate to
+// specialists, [BUILD_APPROVAL_REQUIRED] for build work), so the approval model
+// is inherited rather than re-stated - and cannot be weakened from here.
+function buildCalendarExecutionRequest(event, meta) {
+  const lines = [
+    'Scheduled Agent Office calendar block.',
+    '',
+    `Block: ${event.title || 'Untitled block'}`,
+    `Scheduled window: ${event.start} to ${event.end}`,
+    `Requested specialist: ${meta.agentId}`,
+  ];
+  if (meta.projectId) lines.push(`Project: ${meta.projectId}`);
+  if (meta.taskId) lines.push(`Task: ${meta.taskId}`);
+  if (meta.expectedOutput) lines.push(`Expected output: ${meta.expectedOutput}`);
+  if (Array.isArray(meta.requiredInputs) && meta.requiredInputs.length) {
+    lines.push(`Required inputs: ${meta.requiredInputs.join(', ')}`);
+  }
+  if (event.notes) lines.push('', 'Block notes:', String(event.notes).slice(0, 2000));
+  lines.push(
+    '',
+    `Delegate the work to ${meta.agentId} and have that specialist do it.`,
+    'Report back one result: what was done, what you found, and a link to the output if there is one.'
+  );
+  return lines.join('\n');
+}
+
+/**
+ * Submit one calendar block to Penny.
+ *
+ * The block stays `scheduled` on the way out. It becomes `running` only when the
+ * relay actually claims the goal, which is the difference between "we asked" and
+ * "an agent is working".
+ */
+function dispatchCalendarEventRun(eventId, options = {}) {
+  return serializeDispatch(() => dispatchOneCalendarRun(eventId, options));
+}
+
+async function dispatchOneCalendarRun(eventId, options) {
+  const storage = await storageReady;
+  const events = await currentCalendarEvents();
+  const event = events.find(item => item.id === eventId);
+  if (!event) return { ok: false, statusCode: 404, error: 'Calendar event not found.' };
+
+  // A Google-born block can carry its Agent Office fields in Google's own
+  // properties, so the resolved view is what decides whether it is executable;
+  // the local map still wins wherever both have an opinion.
+  const meta = agentMeta.mergeMeta(event.meta, await getEventMeta(eventId));
+  if (!agentMeta.isExecutable(meta)) {
+    return {
+      ok: false,
+      statusCode: 400,
+      error: 'This block is not an agent run. Set an agent and executionMode "agent-run" first.',
+    };
+  }
+
+  const agent = (await storage.listAgents()).find(item => item.id === meta.agentId);
+  if (!agent) {
+    return { ok: false, statusCode: 400, error: `No agent named "${meta.agentId}" is in the registry.` };
+  }
+
+  const runStatus = meta.runStatus || 'scheduled';
+  if (runStatus === 'running' || runStatus === 'needs_input') {
+    return { ok: false, statusCode: 409, error: 'This block is already running.' };
+  }
+  if (runStatus === 'completed') {
+    return { ok: false, statusCode: 409, error: 'This block already completed. Retry it to run it again.' };
+  }
+  if (meta.executionId) {
+    return { ok: false, statusCode: 409, error: 'This block has already been sent to Penny.', executionId: meta.executionId };
+  }
+
+  const capacity = await agentRunCapacity(eventId);
+  if (!capacity.ok) return { ok: false, statusCode: 409, error: capacity.error };
+
+  const penny = await pennyAvailability(options);
+  if (!penny.available) return { ok: false, statusCode: 503, error: penny.reason, pennyUnavailable: true };
+
+  const existingGoals = (await storage.listDrops()).filter(drop =>
+    drop.agent === 'oss' && drop.subject === 'Mission Control' && drop.orchestration_status !== 'completed'
+  );
+  const orchestrationRank = Math.max(0, ...existingGoals.map(drop => Number(drop.orchestration_rank) || 0)) + 1;
+
+  // One session per goal, exactly as Mission Control does it. An approval pause
+  // keeps the same goal and so resumes the same session; a retry is a new goal
+  // and starts clean, rather than continuing a conversation that already failed.
+  const goalId = `goal-${typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now()}`;
+  const sessionKey = `agent:oss:calendar-${goalId.replace(/[^a-zA-Z0-9_-]/g, '').slice(-80)}`;
+
+  const submitted = await storage.createCalendarExecutionGoal({
+    id: goalId,
+    date: new Date().toISOString(),
+    done: false,
+    // A recurring block runs under the same title every day, and the Outbox is
+    // easier to read when those do not all collide.
+    title: await uniqueDropTitle(storage, deriveDropTitle({
+      title: event.title,
+      content: event.title || 'Calendar agent run',
+    })),
+    subject: 'Mission Control',
+    category: 'Mission Control',
+    project: meta.projectId || '',
+    agent: 'oss',
+    status: 'inbox',
+    tags: ['penny', 'orchestration', 'calendar'],
+    links: [],
+    content: buildCalendarExecutionRequest(event, meta),
+    // Only urgent goals are claimable by the relay, and a block whose start time
+    // has arrived is by definition due now.
+    priority: 'urgent',
+    remind_at: null,
+    orchestration_status: 'queued',
+    orchestration_rank: orchestrationRank,
+    orchestration_session_key: sessionKey,
+    orchestration_calendar_event_id: eventId,
+  });
+
+  // Losing the race is the guard working: the block already has an execution and
+  // the caller is told which one, not handed a second job.
+  if (!submitted.created) {
+    if (submitted.goal) {
+      await patchEventMeta(eventId, {
+        executionId: submitted.goal.id,
+        pennySessionId: submitted.goal.orchestration_session_key,
+      });
+    }
+    return {
+      ok: false,
+      statusCode: 409,
+      error: 'This block already has a Penny execution in flight.',
+      executionId: submitted.goal ? submitted.goal.id : '',
+    };
+  }
+
+  const updated = await patchEventMeta(eventId, {
+    // Pin the resolved identity locally at dispatch. From here on the run is
+    // driven by goal updates, and those must not depend on a Google round trip
+    // to know which agent and project the block belongs to.
+    agentId: meta.agentId,
+    projectId: meta.projectId || null,
+    taskId: meta.taskId || null,
+    executionMode: 'agent-run',
+    executionId: submitted.goal.id,
+    pennySessionId: submitted.goal.orchestration_session_key,
+    runStatus: 'scheduled',
+    runProgress: 'Submitted to Penny - waiting to be claimed.',
+  });
+
+  return {
+    ok: true,
+    value: {
+      eventId,
+      executionId: submitted.goal.id,
+      pennySessionId: submitted.goal.orchestration_session_key,
+      runStatus: updated.runStatus || 'scheduled',
+      meta: updated,
+      status: agentMeta.describeRun(updated),
+    },
+  };
+}
+
+// Cancelling before Penny claims the goal is safe and reversible. Once it is
+// claimed the work is running on another machine, and this system has no way to
+// stop it, so it says so rather than pretending.
+function cancelCalendarEventRun(eventId) {
+  // Same queue as dispatch: a cancel and a dispatch touch the same two records,
+  // and a delete can arrive while the sweep is mid-dispatch.
+  return serializeDispatch(() => cancelOneCalendarRun(eventId));
+}
+
+async function cancelOneCalendarRun(eventId) {
+  const storage = await storageReady;
+  const meta = await getEventMeta(eventId);
+  if (!meta.executionId) {
+    return { ok: false, statusCode: 409, error: 'This block has no pending Penny execution.' };
+  }
+  const cancelled = await storage.cancelCalendarExecutionGoal(eventId);
+  if (!cancelled) {
+    return {
+      ok: false,
+      statusCode: 409,
+      error: 'Penny has already claimed this execution; it cannot be cancelled from here.',
+    };
+  }
+  const updated = await patchEventMeta(eventId, {
+    executionId: null,
+    pennySessionId: null,
+    approvalId: null,
+    runProgress: null,
+    runStatus: 'scheduled',
+  });
+  return { ok: true, value: { eventId, cancelled: cancelled.id, meta: updated } };
+}
+
+// The first http(s) link Penny reported, if any - a PR, a commit, a report, a
+// deployment she actually made. Never synthesised: a run whose result contains
+// no link gets no result URL, because there is nothing to link to.
+function resultUrlFromGoal(goal) {
+  const matches = String(goal.orchestration_result || '').match(/https?:\/\/[^\s<>()[\]"']+/g) || [];
+  for (const candidate of matches) {
+    // Trailing punctuation belongs to the sentence, not the URL.
+    const normalized = normalizeHttpUrl(candidate.replace(/[.,;:]+$/, ''));
+    if (normalized) return normalized;
+  }
+  return '';
+}
+
+function summariseGoalResult(goal) {
+  const text = cleanText(goal.orchestration_result || goal.orchestration_error || '', 4000);
+  if (!text) return '';
+  // The first paragraph is Penny's own summary line often enough to be the right
+  // thing to put on a calendar block; the whole result stays on the goal.
+  const paragraph = text.split(/\n\s*\n/)[0].replace(/\s+/g, ' ').trim();
+  return (paragraph || text).slice(0, 500);
+}
+
+/**
+ * Bring one calendar block into line with the goal Penny is actually working.
+ *
+ * Everything the calendar knows about a run arrives through here, which is why
+ * there is no path that writes `running` or `completed` from anything other than
+ * a real goal state.
+ */
+async function mirrorGoalOntoCalendar(goal) {
+  const eventId = goal && goal.orchestration_calendar_event_id;
+  if (!eventId) return null;
+
+  const meta = await getEventMeta(eventId);
+  const from = meta.runStatus || 'scheduled';
+  const state = goal.orchestration_status;
+
+  let action = '';
+  const payload = {};
+  const metaPatch = {};
+
+  if (state === 'running' && from !== 'running') {
+    action = 'start';
+    payload.progress = 'Penny claimed this run.';
+  } else if (state === 'needs_approval' && from !== 'needs_input') {
+    action = 'needs_input';
+    payload.progress = 'Penny proposed a build and is waiting for your approval.';
+    payload.summary = summariseGoalResult(goal);
+    metaPatch.approvalId = goal.id;
+  } else if (state === 'completed' && from !== 'completed') {
+    action = 'complete';
+    payload.summary = summariseGoalResult(goal);
+    const resultUrl = resultUrlFromGoal(goal);
+    if (resultUrl) payload.resultUrl = resultUrl;
+    payload.progress = '';
+  } else if (state === 'failed' && from !== 'failed') {
+    action = 'fail';
+    payload.summary = cleanText(goal.orchestration_error, 500) || summariseGoalResult(goal);
+    payload.progress = '';
+  } else if (state === 'queued' && from === 'needs_input') {
+    // Approved and re-queued: still not running until the relay claims it again.
+    return { eventId, action: '', from, to: from };
+  }
+
+  if (!action) return { eventId, action: '', from, to: from };
+
+  let result = await advanceEventRun(eventId, { action, ...payload }, { fromPenny: true, metaPatch });
+
+  // The block can be behind its goal - a crash between the two writes, or a
+  // result that arrived while the calendar was mid-update. The goal was claimed,
+  // so the run genuinely started; walk the block through `start` and finish the
+  // move rather than leaving it stuck on a stale state.
+  if (!result.ok && action !== 'start' && goal.orchestration_claimed_at && from !== 'running') {
+    const caughtUp = await advanceEventRun(eventId, { action: 'start' }, { fromPenny: true });
+    if (caughtUp.ok) {
+      result = await advanceEventRun(eventId, { action, ...payload }, { fromPenny: true, metaPatch });
+    }
+  }
+
+  if (!result.ok) {
+    console.error(`Could not mirror goal ${goal.id} onto calendar event ${eventId}: ${result.error}`);
+    return { eventId, action, from, to: from, error: result.error };
+  }
+  return { eventId, action, from: result.value.from, to: result.value.to };
+}
+
+function isCalendarEventDue(event, now) {
+  const start = new Date(event.start).getTime();
+  const end = new Date(event.end).getTime();
+  if (Number.isNaN(start)) return false;
+  const closes = Math.max(Number.isNaN(end) ? start : end, start + CALENDAR_DUE_GRACE_MS);
+  const at = now.getTime();
+  return at >= start && at <= closes;
+}
+
+/**
+ * Which blocks are due to run right now.
+ *
+ * A block with required inputs is deliberately not swept up: nobody has
+ * confirmed those inputs exist, so it waits for a person to start it rather than
+ * being handed to an agent that will immediately get stuck.
+ */
+async function dueCalendarRuns(now = new Date()) {
+  const events = await currentCalendarEvents();
+  const due = [];
+  for (const event of events) {
+    const meta = agentMeta.mergeMeta(event.meta, await getEventMeta(event.id));
+    if (!agentMeta.isExecutable(meta)) continue;
+    if ((meta.runStatus || 'scheduled') !== 'scheduled') continue;
+    if (meta.executionId) continue;
+    if (Array.isArray(meta.requiredInputs) && meta.requiredInputs.length) continue;
+    if (!isCalendarEventDue(event, now)) continue;
+    due.push({ event, meta });
+  }
+  return due.sort((a, b) => new Date(a.event.start) - new Date(b.event.start));
+}
+
+/**
+ * Re-derive calendar state from the goals themselves.
+ *
+ * This is what makes a restart safe. Nothing is re-launched: every block that
+ * carries an execution id is compared against the goal it points at, and the
+ * block moves to match. A block whose goal has vanished is not quietly completed
+ * - it is released for a retry, or failed with the reason.
+ */
+async function reconcileCalendarExecutions() {
+  const storage = await storageReady;
+  const map = await loadEventMetaMap();
+  const reconciled = [];
+
+  for (const eventId of Object.keys(map)) {
+    const meta = agentMeta.normalizeMeta(map[eventId]);
+    if (!meta.executionId) continue;
+    if (meta.runStatus === 'completed' || meta.runStatus === 'failed') continue;
+
+    const goal = await storage.findCalendarExecutionGoal(eventId);
+    if (!goal || goal.id !== meta.executionId) {
+      // The goal this block points at is gone. Say so; do not guess an outcome.
+      if (meta.runStatus === 'running' || meta.runStatus === 'needs_input') {
+        const failed = await advanceEventRun(eventId, {
+          action: 'fail',
+          summary: 'The Penny execution record for this block is missing.',
+        }, { fromPenny: true, metaPatch: { executionId: null, pennySessionId: null } });
+        reconciled.push({ eventId, action: 'fail', ok: failed.ok });
+      } else {
+        await patchEventMeta(eventId, { executionId: null, pennySessionId: null, runProgress: null });
+        reconciled.push({ eventId, action: 'release', ok: true });
+      }
+      continue;
+    }
+
+    const mirrored = await mirrorGoalOntoCalendar(goal);
+    if (mirrored && mirrored.action) reconciled.push({ eventId, action: mirrored.action, ok: !mirrored.error });
+  }
+
+  return reconciled;
+}
+
+/**
+ * One pass of the due sweep, run inside the relay's existing poll cycle.
+ *
+ * Reconcile first: a restart that left blocks pointing at finished goals should
+ * settle before anything new is dispatched, so the concurrency count is real.
+ */
+async function sweepDueCalendarRuns(now = new Date(), options = {}) {
+  const reconciled = await reconcileCalendarExecutions();
+  const due = await dueCalendarRuns(now);
+  const dispatched = [];
+  const skipped = [];
+
+  for (const item of due) {
+    const capacity = await agentRunCapacity(item.event.id);
+    if (!capacity.ok) {
+      skipped.push({ eventId: item.event.id, reason: capacity.error });
+      continue;
+    }
+    const result = await dispatchCalendarEventRun(item.event.id, options);
+    if (result.ok) {
+      dispatched.push({ eventId: item.event.id, executionId: result.value.executionId });
+      continue;
+    }
+    skipped.push({ eventId: item.event.id, reason: result.error });
+    // Penny being down is not this block's problem and not the next one's
+    // either; the whole sweep waits for the next cycle.
+    if (result.pennyUnavailable) break;
+  }
+
+  return { checked: due.length, dispatched, skipped, reconciled };
+}
+
+/**
+ * Drive one calendar block through its run lifecycle and keep the agent roster,
+ * the block, and the agent's memory in step.
+ *
+ * Two callers, one path. A person clicking through `/run` gets the guards; the
+ * Penny bridge passes `fromPenny` because the state it is writing *is* the real
+ * execution state, so refusing it would be refusing the truth.
+ */
+async function advanceEventRun(eventId, body = {}, options = {}) {
+  const storage = await storageReady;
+  const fromPenny = Boolean(options.fromPenny);
   const action = String(body.action || '').trim().toLowerCase();
   if (!agentMeta.RUN_ACTIONS.includes(action)) {
     return { ok: false, statusCode: 400, error: `action must be one of: ${agentMeta.RUN_ACTIONS.join(', ')}.` };
   }
 
   const current = await getEventMeta(eventId);
-  if (action === 'start' && current.executionMode === 'agent-run') {
-    const preferences = await getSchedulingPreferences();
-    const map = await loadEventMetaMap();
-    const running = Object.keys(map).filter(key => key !== eventId && map[key] && map[key].runStatus === 'running').length;
-    if (running >= preferences.maxConcurrentAgentRuns) {
-      return {
-        ok: false,
-        statusCode: 409,
-        error: `Already at the ${preferences.maxConcurrentAgentRuns} concurrent agent run limit.`,
-      };
-    }
+
+  // A block Penny is working has exactly one source of truth, and it is not this
+  // endpoint. Letting a click mark it running or completed is how a calendar
+  // starts lying about what an agent did.
+  if (!fromPenny && current.executionId && action !== 'reset') {
+    return {
+      ok: false,
+      statusCode: 409,
+      error: 'This block is running through Penny; its status follows the real execution.',
+    };
+  }
+
+  if (!fromPenny && action === 'start' && current.executionMode === 'agent-run') {
+    const capacity = await agentRunCapacity(eventId);
+    if (!capacity.ok) return { ok: false, statusCode: 409, error: capacity.error };
   }
 
   const transition = agentMeta.runTransition(current, action, {
@@ -3502,7 +4128,10 @@ async function advanceEventRun(eventId, body = {}) {
   });
   if (!transition.ok) return { ok: false, statusCode: 409, error: transition.error };
 
-  const meta = await patchEventMeta(eventId, transition.meta);
+  const meta = await patchEventMeta(eventId, {
+    ...transition.patch,
+    ...(options.metaPatch || {}),
+  });
 
   // Mirror the new run state onto the Google event when there is one, so the
   // status survives outside Agent Office. Best effort by design.
@@ -3535,8 +4164,12 @@ async function advanceEventRun(eventId, body = {}) {
       await storage.createMemory({
         id: `mem_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
         agent: transition.agentId,
+        // `date` is what createMemory reads on both backends. This wrote
+        // `created_at` instead, which file storage kept verbatim and PostgreSQL
+        // rejected as a null - so on the deployment the completion summary was
+        // quietly lost every time, inside the catch below.
+        date: new Date().toISOString(),
         content: summary.slice(0, 1000),
-        created_at: new Date().toISOString(),
       });
     } catch (error) {
       console.error('Could not record the run summary in agent memory.', error.message);
@@ -4970,6 +5603,12 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && pathname === '/api/orchestration/goals/claim') {
       if (!requireGatewayToken(res, req)) return;
       const goal = await storage.claimOrchestrationGoal();
+      // A calendar block turns `running` here and nowhere else: the moment Penny
+      // takes the goal is the moment an agent is genuinely working on it.
+      if (goal && goal.orchestration_calendar_event_id) {
+        await mirrorGoalOntoCalendar(goal).catch(error =>
+          console.error('Could not mark the calendar block running.', error.message));
+      }
       sendJson(res, 200, { goal });
       return;
     }
@@ -5004,6 +5643,11 @@ const server = http.createServer(async (req, res) => {
       if (!goal) {
         sendJson(res, 404, { error: 'Goal not found.' });
         return;
+      }
+      // Penny's own report is the only thing that finishes a calendar block.
+      if (goal.orchestration_calendar_event_id) {
+        await mirrorGoalOntoCalendar(goal).catch(error =>
+          console.error('Could not write the run result back to the calendar.', error.message));
       }
       sendJson(res, 200, goal);
       return;
@@ -5961,6 +6605,68 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // "Start now" - hand this block to Penny. It stays scheduled until Penny
+    // claims it; nothing here marks it running.
+    if (req.method === 'POST' && /^\/api\/calendar\/events\/.+\/dispatch$/.test(pathname)) {
+      if (!requireCalendarSetupAuth(req, res)) return;
+      const id = decodeURIComponent(pathname.slice('/api/calendar/events/'.length, -'/dispatch'.length));
+      const result = await dispatchCalendarEventRun(id);
+      sendJson(
+        res,
+        result.ok ? 202 : (result.statusCode || 409),
+        result.ok ? result.value : { error: result.error, executionId: result.executionId || '' }
+      );
+      return;
+    }
+
+    // Cancel a submitted run that Penny has not claimed yet.
+    if (req.method === 'DELETE' && /^\/api\/calendar\/events\/.+\/dispatch$/.test(pathname)) {
+      if (!requireCalendarSetupAuth(req, res)) return;
+      const id = decodeURIComponent(pathname.slice('/api/calendar/events/'.length, -'/dispatch'.length));
+      const result = await cancelCalendarEventRun(id);
+      sendJson(res, result.ok ? 200 : (result.statusCode || 409), result.ok ? result.value : { error: result.error });
+      return;
+    }
+
+    // What the calendar knows about one block's execution, straight from the
+    // goal rather than from the block's own copy of it.
+    if (req.method === 'GET' && /^\/api\/calendar\/events\/.+\/execution$/.test(pathname)) {
+      if (!requireOfficeAuth(req, res)) return;
+      const id = decodeURIComponent(pathname.slice('/api/calendar/events/'.length, -'/execution'.length));
+      const meta = await getEventMeta(id);
+      const goal = meta.executionId ? await storage.findCalendarExecutionGoal(id) : null;
+      sendJson(res, 200, {
+        eventId: id,
+        executionId: meta.executionId || '',
+        pennySessionId: meta.pennySessionId || '',
+        approvalId: meta.approvalId || '',
+        runStatus: meta.runStatus || '',
+        status: agentMeta.describeRun(meta),
+        stale: agentMeta.isRunStale(meta),
+        execution: goal
+          ? {
+            id: goal.id,
+            state: goal.orchestration_status,
+            attempts: goal.orchestration_attempts,
+            claimedAt: goal.orchestration_claimed_at,
+            completedAt: goal.orchestration_completed_at,
+            buildApproved: goal.orchestration_build_approved,
+            result: goal.orchestration_result,
+            error: goal.orchestration_error,
+          }
+          : null,
+      });
+      return;
+    }
+
+    // The due sweep. Driven by the OpenClaw relay's existing poll cycle, which is
+    // why this is gateway-token authenticated and there is no second scheduler.
+    if (req.method === 'POST' && pathname === '/api/calendar/runs/due') {
+      if (!requireGatewayToken(res, req)) return;
+      sendJson(res, 200, await sweepDueCalendarRuns(new Date(), { trustCaller: true }));
+      return;
+    }
+
     if (req.method === 'GET' && pathname === '/api/calendar/agent-timeline') {
       if (!requireOfficeAuth(req, res)) return;
       sendJson(res, 200, await buildAgentTimeline());
@@ -6021,15 +6727,21 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'DELETE' && pathname.startsWith('/api/calendar/events/')) {
       if (!requireOfficeAuth(req, res)) return;
       const id = decodeURIComponent(pathname.slice('/api/calendar/events/'.length));
+      // Deleting the block cancels work that has not started. Work Penny has
+      // already claimed is running on another machine and is left alone - the
+      // goal stays in Mission Control rather than disappearing silently.
+      const pendingExecution = await serializeDispatch(() => storage.cancelCalendarExecutionGoal(id));
       const googleEventId = gcalEventIdFromRoute(id);
+      const cancelledExecution = pendingExecution ? pendingExecution.id : '';
       if (googleEventId) {
         await deleteGoogleCalendarEvent(googleEventId);
-        sendJson(res, 200, { ok: true, source: 'google' });
+        await deleteEventMeta(id);
+        sendJson(res, 200, { ok: true, source: 'google', cancelledExecution });
         return;
       }
       await storage.deleteCalendarEvent(id);
       await deleteEventMeta(id);
-      sendJson(res, 200, { ok: true, source: 'local' });
+      sendJson(res, 200, { ok: true, source: 'local', cancelledExecution });
       return;
     }
 

@@ -58,6 +58,15 @@ const FIELDS = {
   runFindings: { kind: 'int', min: 0, max: 9999 },
   dependsOn: { kind: 'list' },
   energy: { kind: 'enum', values: ['low', 'medium', 'high'], fallback: '' },
+  // Orchestration identifiers. A block never runs anything itself - it submits a
+  // Mission Control goal to Penny and then mirrors that goal's state, so these
+  // three point at the real execution rather than duplicating it.
+  //   executionId    the Mission Control goal id Penny is working
+  //   pennySessionId the OpenClaw session key, stable across an approval pause
+  //   approvalId     the goal waiting on Jason, set only while that is true
+  executionId: { kind: 'text' },
+  pennySessionId: { kind: 'text' },
+  approvalId: { kind: 'text' },
 };
 
 const FIELD_NAMES = Object.keys(FIELDS);
@@ -259,12 +268,19 @@ function runTransition(meta, action, payload = {}, now = new Date()) {
       patch.runStartedAt = null;
       patch.runEndedAt = null;
       patch.runProgress = null;
+      // Re-scheduling a finished block means the next run is a new execution.
+      patch.executionId = null;
+      patch.pennySessionId = null;
+      patch.approvalId = null;
       break;
     case 'start':
       runStatus = 'running';
-      patch.runStartedAt = stamp;
+      // Resuming after an approval or an answer continues the same execution, so
+      // the elapsed time on the block stays the elapsed time of the whole run.
+      patch.runStartedAt = from === 'needs_input' && current.runStartedAt ? current.runStartedAt : stamp;
       patch.runHeartbeatAt = stamp;
       patch.runEndedAt = null;
+      patch.approvalId = null;
       break;
     case 'progress':
       runStatus = 'running';
@@ -278,11 +294,13 @@ function runTransition(meta, action, payload = {}, now = new Date()) {
       runStatus = 'completed';
       patch.runEndedAt = stamp;
       patch.runHeartbeatAt = stamp;
+      patch.approvalId = null;
       break;
     case 'fail':
       runStatus = 'failed';
       patch.runEndedAt = stamp;
       patch.runHeartbeatAt = stamp;
+      patch.approvalId = null;
       break;
     case 'reset':
       runStatus = 'scheduled';
@@ -293,6 +311,9 @@ function runTransition(meta, action, payload = {}, now = new Date()) {
       patch.runSummary = null;
       patch.runFindings = null;
       patch.resultUrl = null;
+      patch.executionId = null;
+      patch.pennySessionId = null;
+      patch.approvalId = null;
       break;
     default:
       break;
@@ -311,7 +332,32 @@ function runTransition(meta, action, payload = {}, now = new Date()) {
     current_project_id: runStatus === 'running' || runStatus === 'needs_input' ? (nextMeta.projectId || '') : '',
   };
 
-  return { ok: true, from, to: runStatus, meta: nextMeta, agentPatch, agentId: nextMeta.agentId || '' };
+  // `patch` carries the explicit nulls that clear a field; `meta` is what the
+  // block looks like afterwards. A caller that persists `meta` alone would merge
+  // it over the stored record and silently keep the values this run cleared, so
+  // anything writing to storage wants `patch`.
+  return { ok: true, from, to: runStatus, patch, meta: nextMeta, agentPatch, agentId: nextMeta.agentId || '' };
+}
+
+// A block only becomes a Penny execution when it says so itself. Anything else
+// on the calendar - a meeting, a manual task, a review someone does by hand - is
+// never dispatched, however much agent metadata it happens to carry.
+function isExecutable(meta) {
+  const normalized = normalizeMeta(meta);
+  return normalized.executionMode === 'agent-run' && Boolean(normalized.agentId);
+}
+
+// A run whose heartbeat has aged out has not failed - nobody knows what it did.
+// Matches the 20 minutes after which Mission Control lets a goal be re-claimed.
+const RUN_STALE_MS = 20 * 60 * 1000;
+
+function isRunStale(meta, now = new Date()) {
+  const normalized = normalizeMeta(meta);
+  if (normalized.runStatus !== 'running' || !normalized.runHeartbeatAt) return false;
+  const beat = new Date(normalized.runHeartbeatAt);
+  if (Number.isNaN(beat.getTime())) return false;
+  const reference = now instanceof Date ? now : new Date(now);
+  return reference.getTime() - beat.getTime() > RUN_STALE_MS;
 }
 
 // "Running · 18 minutes elapsed · 3 findings" - the line a block shows without
@@ -324,8 +370,10 @@ function describeRun(meta, now = new Date()) {
   const label = {
     unscheduled: 'Not scheduled',
     scheduled: 'Scheduled',
-    running: 'Running',
-    needs_input: 'Needs input',
+    running: isRunStale(normalized, now) ? 'Execution status unknown' : 'Running',
+    // An approval and an answered question both park the run on Jason, but they
+    // ask for different things, so they do not read the same.
+    needs_input: normalized.approvalId ? 'Needs approval' : 'Needs input',
     completed: 'Completed',
     failed: 'Failed',
   }[status] || status;
@@ -352,6 +400,7 @@ module.exports = {
   EXECUTION_MODES,
   RUN_STATUSES,
   RUN_ACTIONS,
+  RUN_STALE_MS,
   FIELD_NAMES,
   normalizeMeta,
   mergeMeta,
@@ -360,6 +409,8 @@ module.exports = {
   metaFromGooglePrivate,
   resolveMeta,
   isAgentOwned,
+  isExecutable,
+  isRunStale,
   runTransition,
   describeRun,
 };
