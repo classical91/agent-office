@@ -1419,6 +1419,24 @@
 .calendar-event-block.run-needs_input { box-shadow: inset 3px 0 0 #f87171; }
 .calendar-event-block.run-completed { box-shadow: inset 3px 0 0 #4ade80; }
 
+/* The execution strip inside the selected-event card. Compact on purpose: it
+   sits above the notes, not beside them, and adds one row of buttons at most. */
+.calendar-run-panel {
+  margin: 8px 0 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: 8px;
+  background: rgba(148, 163, 184, 0.08);
+}
+.calendar-run-panel.run-running { border-left-color: #fbbf24; }
+.calendar-run-panel.run-needs_input { border-left-color: #f87171; }
+.calendar-run-panel.run-completed { border-left-color: #4ade80; }
+.calendar-run-panel.run-failed { border-left-color: #f87171; }
+.calendar-run-headline { font-size: 12px; font-weight: 700; }
+.calendar-run-detail { margin-top: 3px; font-size: 11px; color: var(--muted); }
+.calendar-run-panel .calendar-action-row { margin-top: 8px; }
+
 @media (max-width: 760px) {
   .calendar-lane-bar { padding: 6px 10px; }
   .calendar-state-notice { margin: 6px 10px; padding: 8px 10px; }

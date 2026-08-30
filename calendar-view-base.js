@@ -393,12 +393,31 @@
     failed: 'Failed'
   };
 
+  // A run whose heartbeat aged out has not failed - nobody knows what it did.
+  // Matches RUN_STALE_MS on the server.
+  const RUN_STALE_MS = 20 * 60 * 1000;
+
+  function isRunStale(meta) {
+    if (!meta || meta.runStatus !== 'running' || !meta.runHeartbeatAt) return false;
+    const beat = new Date(meta.runHeartbeatAt);
+    if (Number.isNaN(beat.getTime())) return false;
+    return Date.now() - beat.getTime() > RUN_STALE_MS;
+  }
+
+  function runLabel(meta) {
+    if (meta.runStatus === 'running' && isRunStale(meta)) return 'Execution status unknown';
+    // Waiting on an approval and waiting on an answer both park the run on
+    // Jason, but they ask for different things.
+    if (meta.runStatus === 'needs_input' && meta.approvalId) return 'Needs approval';
+    return RUN_LABELS[meta.runStatus] || meta.runStatus;
+  }
+
   // The single line that turns a calendar block into a status readout:
   // "Running · 18 minutes elapsed · 3 findings".
   function runStatusLine(event) {
     const meta = eventMeta(event);
     if (!meta.runStatus) return '';
-    const parts = [RUN_LABELS[meta.runStatus] || meta.runStatus];
+    const parts = [runLabel(meta)];
     if (meta.runStartedAt) {
       const started = new Date(meta.runStartedAt);
       if (!Number.isNaN(started.getTime())) {
@@ -1501,6 +1520,49 @@
       + '</div>';
   }
 
+  // The execution strip for an agent-run block. Deliberately one line of status
+  // plus the actions the server will actually honour in this state - a button
+  // that cannot work is worse than no button.
+  function renderAgentRunPanel(event) {
+    const meta = eventMeta(event);
+    if (meta.executionMode !== 'agent-run' && meta.eventKind !== 'agent-run') return '';
+
+    const status = meta.runStatus || 'scheduled';
+    const stale = isRunStale(meta);
+    const headline = [meta.agentId, meta.projectId, runLabel(meta) || 'Scheduled'].filter(Boolean).join(' · ');
+    const detail = [];
+    if (status === 'scheduled' && meta.executionId) detail.push('Sent to Penny - waiting to be claimed.');
+    if (stale) detail.push('No heartbeat for over 20 minutes.');
+    if (meta.runProgress && !stale) detail.push(meta.runProgress);
+    if (meta.runSummary) detail.push(meta.runSummary);
+
+    const actions = [];
+    if (status === 'scheduled' && !meta.executionId) {
+      actions.push('<button class="calendar-btn primary tiny" onclick="CAL.dispatchRun(\'' + event.id + '\')">Start now</button>');
+    }
+    if (status === 'scheduled' && meta.executionId) {
+      actions.push('<button class="calendar-btn tiny ghost" onclick="CAL.cancelDispatch(\'' + event.id + '\')">Cancel before start</button>');
+    }
+    if (status === 'needs_input' && meta.approvalId) {
+      actions.push('<button class="calendar-btn primary tiny" onclick="CAL.approveBuild(\'' + event.id + '\')">Approve build</button>');
+    }
+    if (meta.executionId || meta.pennySessionId) {
+      actions.push('<a class="calendar-btn tiny ghost" href="/mission-board.html" target="_blank" rel="noopener noreferrer">View Penny execution</a>');
+    }
+    if (meta.resultUrl) {
+      actions.push('<a class="calendar-btn tiny" href="' + escapeHtml(meta.resultUrl) + '" target="_blank" rel="noopener noreferrer">View result</a>');
+    }
+    if (status === 'failed') {
+      actions.push('<button class="calendar-btn tiny" onclick="CAL.retryRun(\'' + event.id + '\')">Retry failed run</button>');
+    }
+
+    return '<div class="calendar-run-panel run-' + escapeHtml(status) + '">'
+      + '<div class="calendar-run-headline">' + escapeHtml(headline) + '</div>'
+      + (detail.length ? '<div class="calendar-run-detail">' + escapeHtml(detail.join(' · ')) + '</div>' : '')
+      + (actions.length ? '<div class="calendar-action-row">' + actions.join('') + '</div>' : '')
+      + '</div>';
+  }
+
   function renderDetailCard() {
     if (state.creatingEvent) return renderNewEventForm();
     const event = selectedEvent();
@@ -1517,6 +1579,7 @@
       + '<div><div class="calendar-detail-title">' + escapeHtml(event.title) + '</div><div class="calendar-detail-meta">' + escapeHtml(formatLongDate(start) + ' / ' + formatRange(start, end)) + (event.location ? ' / ' + escapeHtml(event.location) : '') + '</div></div>'
       + '<span class="calendar-status-chip"><span class="calendar-chip-swatch" style="background:' + meta.dot + '"></span>' + meta.label + '</span>'
       + '</div>'
+      + renderAgentRunPanel(event)
       + (editing
         ? renderEventEditor(event)
         : '<textarea class="calendar-note-input" placeholder="Add notes for this meeting or reminder..." oninput="CAL.updateNotes(\'' + event.id + '\', this.value)">' + escapeHtml(event.notes || '') + '</textarea>')
@@ -2302,6 +2365,99 @@
     }
   }
 
+  // Hand a block to Penny. The block does not become "running" here - the server
+  // only writes that when Penny actually claims the work, so the flash says what
+  // happened rather than what we hope will happen.
+  async function dispatchRun(eventId) {
+    const event = findEvent(eventId);
+    const serverId = (event && event.serverId) || eventId;
+    try {
+      const resp = await fetch('/api/calendar/events/' + encodeURIComponent(serverId) + '/dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: '{}'
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        setFlash(data.error || 'Could not send this block to Penny.', 'warn');
+        render();
+        return null;
+      }
+      if (event) event.meta = data.meta || {};
+      setFlash('Sent to Penny. It starts when Penny claims it.', 'info');
+      render();
+      return data;
+    } catch (error) {
+      setFlash('Network error - the block was not sent to Penny.', 'warn');
+      render();
+      return null;
+    }
+  }
+
+  async function cancelDispatch(eventId) {
+    const event = findEvent(eventId);
+    const serverId = (event && event.serverId) || eventId;
+    try {
+      const resp = await fetch('/api/calendar/events/' + encodeURIComponent(serverId) + '/dispatch', {
+        method: 'DELETE',
+        credentials: 'same-origin'
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        setFlash(data.error || 'Could not cancel this run.', 'warn');
+        render();
+        return null;
+      }
+      if (event) event.meta = data.meta || {};
+      setFlash('Cancelled before it started.', 'info');
+      render();
+      return data;
+    } catch (error) {
+      setFlash('Network error - the run was not cancelled.', 'warn');
+      render();
+      return null;
+    }
+  }
+
+  // Approval goes through Mission Control's own gate, not a calendar-only one,
+  // so the same Penny session resumes with the approved scope.
+  async function approveBuild(eventId) {
+    const event = findEvent(eventId);
+    const meta = event ? eventMeta(event) : {};
+    if (!meta.approvalId) {
+      setFlash('This block is not waiting for a build approval.', 'warn');
+      return null;
+    }
+    try {
+      const resp = await fetch('/api/orchestration/goals/' + encodeURIComponent(meta.approvalId) + '/approve', {
+        method: 'POST',
+        credentials: 'same-origin'
+      });
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        setFlash(data.error || 'Could not approve this build.', 'warn');
+        render();
+        return null;
+      }
+      setFlash('Approved. Penny resumes this run on its next cycle.', 'info');
+      render();
+      return true;
+    } catch (error) {
+      setFlash('Network error - the build was not approved.', 'warn');
+      render();
+      return null;
+    }
+  }
+
+  // Retry is a fresh execution: clear the finished run first, then dispatch, so
+  // the block never carries a stale execution id into a new job.
+  async function retryRun(eventId) {
+    const reset = await runAction(eventId, 'reset');
+    if (!reset) return null;
+    return dispatchRun(eventId);
+  }
+
   // --------------------------------------------------------------
 
 
@@ -2382,6 +2538,10 @@
     clearAgentFilters,
     openSyncPanel,
     runAction,
+    dispatchRun,
+    cancelDispatch,
+    approveBuild,
+    retryRun,
     freeWindows,
     getState: () => state,
     getEvents: () => state.events.slice(),

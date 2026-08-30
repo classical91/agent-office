@@ -6,8 +6,9 @@
  *
  * Run this on the machine OpenClaw runs on. It asks the local gateway what is
  * running and posts that to Agent Office every 30 seconds. The same outbound
- * loop claims Mission Control goals, launches Penny through the local gateway,
- * and writes Penny's result back to the Agent Office Outbox.
+ * loop turns due calendar blocks into Mission Control goals, claims Mission
+ * Control goals, launches Penny through the local gateway, and writes Penny's
+ * result back to the Agent Office Outbox and to the calendar block it came from.
  *
  * You only need this when Agent Office is NOT on the same machine as OpenClaw.
  * When they share a machine the server probes the gateway directly and there is
@@ -218,12 +219,30 @@ async function relayOneGoal() {
   return true;
 }
 
+// Calendar blocks that are due become Mission Control goals through this call,
+// so they are claimed by the same loop below. The office decides what is due -
+// this only tells it that Penny is up and it is safe to ask.
+async function sweepDueCalendarRuns() {
+  try {
+    const swept = await officeRequest('/api/calendar/runs/due', { method: 'POST', body: '{}' });
+    const dispatched = Array.isArray(swept.dispatched) ? swept.dispatched : [];
+    if (dispatched.length) {
+      console.log(`${new Date().toISOString()} dispatched ${dispatched.length} due calendar block(s) to Penny`);
+    }
+  } catch (error) {
+    // A failed sweep costs this cycle and nothing else; the next one retries.
+    console.error(`${new Date().toISOString()} calendar due sweep failed: ${error.message}`);
+  }
+}
+
 async function cycle() {
   if (cycleRunning) return;
   cycleRunning = true;
   try {
     const gatewayUp = await beat();
-    if (gatewayUp) await relayOneGoal();
+    if (!gatewayUp) return;
+    await sweepDueCalendarRuns();
+    await relayOneGoal();
   } catch (error) {
     console.error(`${new Date().toISOString()} relay cycle failed: ${error.message}`);
   } finally {

@@ -88,6 +88,11 @@ const PROTECTED_ROUTES = [
   { method: 'PATCH', path: '/api/calendar/events/some-event-id', body: { title: 'Renamed' } },
   { method: 'DELETE', path: '/api/calendar/events/some-event-id' },
   { method: 'POST', path: '/api/calendar/events/some-event-id/run', body: { action: 'start' } },
+  // The execution bridge. These submit work to Penny and read back what she did,
+  // so they are exactly as sensitive as the rest of the calendar.
+  { method: 'POST', path: '/api/calendar/events/some-event-id/dispatch', body: {} },
+  { method: 'DELETE', path: '/api/calendar/events/some-event-id/dispatch' },
+  { method: 'GET', path: '/api/calendar/events/some-event-id/execution' },
   { method: 'PATCH', path: '/api/calendar/series/standup', body: { title: 'Renamed' } },
   { method: 'DELETE', path: '/api/calendar/series/standup' },
   { method: 'POST', path: '/api/calendar/quick-add', body: { text: 'Coffee tomorrow at 9am' } },
@@ -161,6 +166,29 @@ test('an unlocked session still reaches every calendar route', async t => {
       `${route.method} ${route.path} rejected an unlocked session`
     );
   }
+});
+
+test('the due-run sweep answers only to the relay token, never to a browser', async t => {
+  // This one is not session-authenticated: it is the OpenClaw relay's own call.
+  // That makes it the easiest route to leave open by accident, so both an
+  // anonymous caller and an unlocked Jason session are checked here.
+  const server = await startServer({
+    env: { DROPS_PASSPHRASE: PASSPHRASE, GATEWAY_TOKEN: 'calendar-auth-gateway-token' },
+  });
+  t.after(() => server.child.kill());
+
+  const anonymous = await fetch(`${server.origin}/api/calendar/runs/due`, { method: 'POST' });
+  assert.equal(anonymous.status, 401, 'an anonymous caller must not run the sweep');
+
+  const cookie = await unlock(server.origin);
+  const asJason = await fetch(`${server.origin}/api/calendar/runs/due`, { method: 'POST', headers: { Cookie: cookie } });
+  assert.equal(asJason.status, 401, 'a browser session is not the relay and must not run the sweep');
+
+  const relay = await fetch(`${server.origin}/api/calendar/runs/due`, {
+    method: 'POST',
+    headers: { 'X-Gateway-Token': 'calendar-auth-gateway-token' },
+  });
+  assert.equal(relay.status, 200, 'the relay itself must be able to run the sweep');
 });
 
 test('calendar status stays public so a locked client knows to ask for the passphrase', async t => {
