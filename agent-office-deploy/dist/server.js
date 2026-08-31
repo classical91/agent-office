@@ -4777,6 +4777,24 @@ const RESET_TIMER_INTERVAL_MS = (() => {
   return configured === 0 ? 0 : Math.max(100, Math.round(configured));
 })();
 
+// Delivery goes to Pushcut and nowhere else - reset-timers.js decides that, and
+// a timer whose webhook points anywhere else fails without a request being made.
+//
+// The test suite runs its own stand-in server on loopback, so there is exactly
+// one way to widen that, and resolveWebhookAllowance() is built to make it
+// useless in production: RESET_TIMER_ALLOW_LOOPBACK_WEBHOOKS must carry the
+// acknowledgement verbatim, it only ever admits loopback, and a deployment
+// refuses it. Set on Railway by accident it logs a line and changes nothing.
+const resetTimerAllowTarget = (() => {
+  const allowance = resetTimers.resolveWebhookAllowance({ env: process.env, deployed: IS_DEPLOYED });
+  if (allowance) {
+    console.warn('Reset timers: loopback webhook destinations allowed for local testing.');
+  } else if (process.env.RESET_TIMER_ALLOW_LOOPBACK_WEBHOOKS) {
+    console.warn('Reset timers: RESET_TIMER_ALLOW_LOOPBACK_WEBHOOKS is not in effect; delivery stays Pushcut-only.');
+  }
+  return allowance;
+})();
+
 // One cycle at a time. A slow Pushcut must not let the next tick start a second
 // send of the same occurrence before the first one has been written down.
 let resetTimerCycleRunning = false;
@@ -4827,7 +4845,7 @@ async function tickResetTimers(storage) {
   if (resetTimerCycleRunning) return;
   resetTimerCycleRunning = true;
   try {
-    const { results, timers } = await runResetTimerCycle(storage);
+    const { results, timers } = await runResetTimerCycle(storage, { allowTarget: resetTimerAllowTarget });
     logResetTimerResults(timers, results);
   } catch (error) {
     console.error('Reset timer processor failed:', resetTimers.redactWebhook(error && error.message, ''));

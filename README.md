@@ -395,6 +395,20 @@ it is never in a Shortcuts response, never in a log line — failures are logged
 by timer name and webhook host — and never in a stored error message. It lives
 in the timer record behind the passphrase, which is where the page needs it.
 
+**Delivery goes to Pushcut and nowhere else.** The webhook URL also decides
+where the server makes an outbound request to, so it is checked against an
+allowlist of one host — `https://api.pushcut.io` — before a socket is opened.
+Anything else (loopback, a private address, a `*.railway.internal` service,
+another site, plain `http://`, a non-HTTP scheme) fails with
+`Webhook destination is not allowed.` without a request being made: the
+occurrence stays armed, the card keeps its URL, and the message names no
+destination. The page applies the same rule while the URL is still on screen,
+so a webhook the server would refuse cannot be saved. Tests run their own
+stand-in server on loopback and have to ask for it —
+`RESET_TIMER_ALLOW_LOOPBACK_WEBHOOKS` must carry the acknowledgement verbatim,
+it widens delivery to loopback and nothing more, and any deployed host ignores
+it and logs that it did.
+
 **Two devices, one list.** Timers carry an `updatedAt`, and the page merges by
 id, newest version per record, rather than taking the server's array wholesale.
 Both sides keep timers only they have seen, and a deletion is a tombstone that
@@ -774,6 +788,12 @@ Dropbox-related variables:
   Timer has landed and needs its Pushcut webhook sent (defaults to `45000`;
   `0` turns server-side delivery off). Nothing else is needed to switch this
   on: the webhook URLs already live on the timers.
+- `RESET_TIMER_ALLOW_LOOPBACK_WEBHOOKS` — **local testing only.** Set to
+  `yes-allow-loopback-webhooks-for-local-tests` it lets the timer processor
+  deliver to `127.0.0.1` / `localhost` as well as Pushcut, which is how the test
+  suite drives its own stand-in server. Any other value does nothing, and a
+  deployed host (`NODE_ENV=production` or any `RAILWAY_*` marker) refuses it and
+  says so at startup.
 
 **The passphrase is not optional in a deployment.** Every route holding personal
 data — the whole calendar and the config-file reader included — goes through one
