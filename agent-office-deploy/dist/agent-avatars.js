@@ -36,12 +36,40 @@
     director: 'studioclaw',
   };
 
-  const HAIR_SPRITES = {
-    bald: null,
-    spiked: 'webclaw',
-    tousled: 'nutrimind',
-    swept: 'pc',
+  // Penny's head, measured off assets/character-demo/penny.png rather than
+  // guessed. Every head this compositor draws is hers — the outfit sprite's own
+  // head is cleared and Penny's pasted in its place — so hair, expressions and
+  // accessories all have to land on these coordinates and no others.
+  //
+  // They were not landing on them. The far eye's brow, sclera and lens were
+  // drawn around x22, which on this head is the ear, and the headset's right cup
+  // and the earpiece were drawn out past x45, which is off the head entirely:
+  // that is where the loose blocks floating beside every character came from.
+  // `sclera` is the white of each eye; `ear` is the one ear a three-quarter view
+  // shows, on the far side.
+  const PENNY_HEAD = {
+    crown: 2,
+    chin: 36,
+    farEye: { x0: 29, x1: 34, y0: 23, y1: 28 },
+    nearEye: { x0: 38, x1: 42, y0: 19, y1: 23 },
+    ear: { x0: 15, x1: 22, y0: 21, y1: 31 },
   };
+
+  // The five sprites are not registered to one another — each has its head in a
+  // slightly different place, by as much as nine rows. That is why nothing here
+  // borrows another sprite's head any more: hair is cut from Penny's own
+  // silhouette below, and her head is the only one this compositor ever draws.
+
+  // Penny's hairline: the lowest row hair may reach at a given column. The face
+  // is on the right of a three-quarter view, so the line rises towards it —
+  // level with the top of the ear at the back, above the near brow at the front.
+  // It curves rather than ramps: a straight line across twenty columns reads as
+  // a helmet with a bevelled edge, which is exactly what the first pass looked
+  // like.
+  function hairlineAt(x) {
+    const front = Math.max(0, x - PENNY_HEAD.ear.x1);
+    return 26 - front * 0.62 + Math.min(4, front * front * 0.012);
+  }
 
   const CHOICES = {
     face: [
@@ -152,7 +180,6 @@
 
   let assetsReady = false;
   const spriteImages = {};
-  const hairMasks = {};
   const workCanvas = document.createElement('canvas');
   workCanvas.width = SPRITE_W;
   workCanvas.height = SPRITE_H;
@@ -215,96 +242,105 @@
     context.putImageData(image, 0, 0);
   }
 
-  function buildHairMask(image) {
+  // Hair, cut from Penny's own skull.
+  //
+  // It used to be lifted out of WebClaw's, NutriMind's and PC's heads and
+  // stamped onto hers. Those heads sit up to nine rows lower and are shaped
+  // differently, so the borrowed hair landed across her eyes, left holes where
+  // her skull showed through, and hung in the air above her crown. Hair built
+  // from the silhouette it has to sit on cannot be misregistered, so that is
+  // what this does: it reads Penny's outline once, and fills it from the crown
+  // down to a hairline.
+  let headRows = null;
+
+  function measureHeadRows(image) {
     const canvas = document.createElement('canvas');
     canvas.width = SPRITE_W;
     canvas.height = SPRITE_H;
     const context = canvas.getContext('2d', { willReadFrequently: true });
+    context.imageSmoothingEnabled = false;
     context.drawImage(image, 0, 0);
     const pixels = context.getImageData(0, 0, SPRITE_W, SPRITE_H).data;
-    const candidate = new Uint8Array(SPRITE_W * 50);
-    for (let y = 0; y < 50; y += 1) {
+    const rows = [];
+    for (let y = 0; y <= PENNY_HEAD.chin; y += 1) {
+      let min = -1; let max = -1;
       for (let x = 0; x < SPRITE_W; x += 1) {
-        const index = (y * SPRITE_W + x) * 4;
-        const alpha = pixels[index + 3];
-        const brightness = Math.max(pixels[index], pixels[index + 1], pixels[index + 2]);
-        if (alpha > 30 && brightness < 125) candidate[y * SPRITE_W + x] = 1;
+        if (pixels[(y * SPRITE_W + x) * 4 + 3] > 20) { if (min < 0) min = x; max = x; }
+      }
+      rows[y] = min < 0 ? null : [min, max];
+    }
+    return rows;
+  }
+
+  // How far past the base hairline each style grows, and how ragged its edge is.
+  // `spikes` adds tufts above the crown; `lift` pulls the whole hairline up.
+  const HAIR_STYLES = {
+    spiked: { drop: -1, ragged: 2, spikes: true },
+    tousled: { drop: 2, ragged: 2, spikes: false },
+    swept: { drop: 0, ragged: 1, spikes: false },
+  };
+
+  // A repeatable wobble, so a style's edge is uneven without being noisy from
+  // one render to the next.
+  function edgeWobble(x, amount) {
+    if (!amount) return 0;
+    return (((x * 7 + 3) % 5) - 2) * amount / 2;
+  }
+
+  function hairPixels(style) {
+    const shape = HAIR_STYLES[style];
+    if (!shape || !headRows) return [];
+    const cells = [];
+    const top = PENNY_HEAD.crown - (shape.spikes ? 3 : 0);
+    for (let y = Math.max(0, top); y <= PENNY_HEAD.chin; y += 1) {
+      // Above the crown only the spikes reach, and they follow the crown's own
+      // width so they never float clear of the head.
+      const span = headRows[y] || headRows[PENNY_HEAD.crown];
+      if (!span) continue;
+      const limit = y < PENNY_HEAD.crown ? span : span;
+      for (let x = limit[0]; x <= limit[1]; x += 1) {
+        const line = hairlineAt(x) + shape.drop + edgeWobble(x, shape.ragged);
+        if (y > line) continue;
+        if (y < PENNY_HEAD.crown && !(shape.spikes && (x % 4 === 1 || x % 7 === 3))) continue;
+        cells.push({ x, y, edge: x === limit[0] || x === limit[1] || y >= line - 1 });
       }
     }
-
-    const visited = new Uint8Array(candidate.length);
-    const queue = [];
-    for (let y = 0; y < 13; y += 1) {
-      for (let x = 0; x < SPRITE_W; x += 1) {
-        const position = y * SPRITE_W + x;
-        if (candidate[position]) { visited[position] = 1; queue.push(position); }
-      }
-    }
-    for (let cursor = 0; cursor < queue.length; cursor += 1) {
-      const position = queue[cursor];
-      const x = position % SPRITE_W; const y = Math.floor(position / SPRITE_W);
-      const neighbors = [position - 1, position + 1, position - SPRITE_W, position + SPRITE_W];
-      neighbors.forEach((next) => {
-        const nx = next % SPRITE_W; const ny = Math.floor(next / SPRITE_W);
-        if (next < 0 || next >= candidate.length || Math.abs(nx - x) > 1 || Math.abs(ny - y) > 1) return;
-        if (candidate[next] && !visited[next]) { visited[next] = 1; queue.push(next); }
-      });
-    }
-
-    return queue.filter((position) => {
-      const x = position % SPRITE_W;
-      const y = Math.floor(position / SPRITE_W);
-      // The source sprite's eyes, glasses and jaw use the same near-black ink
-      // as its hair. Keep only the scalp and outside silhouette; controlled
-      // fringe pixels are added separately so facial details never leak in.
-      return y < 21 || (y < 45 && (x < 19 || x > 45));
-    }).map((position) => {
-      const index = position * 4;
-      return {
-        x: position % SPRITE_W,
-        y: Math.floor(position / SPRITE_W),
-        r: pixels[index], g: pixels[index + 1], b: pixels[index + 2], a: pixels[index + 3],
-      };
-    });
+    return cells;
   }
 
   function drawHair(context, style, color) {
-    if (style === 'bald' || !hairMasks[style]) return;
+    if (style === 'bald' || !HAIR_STYLES[style]) return;
     const target = parseHex(color);
     const image = context.getImageData(0, 0, SPRITE_W, SPRITE_H);
     const data = image.data;
-    hairMasks[style].forEach((pixel) => {
-      const index = (pixel.y * SPRITE_W + pixel.x) * 4;
-      const brightness = Math.max(pixel.r, pixel.g, pixel.b);
-      if (brightness < 30) {
-        data[index] = 13; data[index + 1] = 14; data[index + 2] = 18;
+    hairPixels(style).forEach((cell) => {
+      if (cell.y < 0 || cell.y >= SPRITE_H || cell.x < 0 || cell.x >= SPRITE_W) return;
+      const index = (cell.y * SPRITE_W + cell.x) * 4;
+      if (cell.edge) {
+        // An ink outline, the same one the source sprites draw around their own
+        // hair, so the cap reads as hair rather than as a painted patch.
+        data[index] = 17; data[index + 1] = 18; data[index + 2] = 24;
       } else {
+        // Light falls from the top front, which is where this character's other
+        // highlights sit; the back of the head stays in shadow.
+        const lit = 92 + (cell.x - PENNY_HEAD.ear.x0) * 2.6 - (cell.y - PENNY_HEAD.crown) * 1.9;
+        const brightness = Math.max(48, Math.min(190, Math.round(lit)));
         data[index] = tintChannel(target.r, brightness);
         data[index + 1] = tintChannel(target.g, brightness);
         data[index + 2] = tintChannel(target.b, brightness);
       }
-      data[index + 3] = pixel.a;
+      data[index + 3] = 255;
     });
     context.putImageData(image, 0, 0);
-
-    const ink = '#111318';
-    const shade = parseHex(color);
-    const mid = `rgb(${tintChannel(shade.r, 112)}, ${tintChannel(shade.g, 112)}, ${tintChannel(shade.b, 112)})`;
-    context.fillStyle = ink;
-    if (style === 'spiked') {
-      context.fillRect(18, 18, 7, 4); context.fillRect(27, 18, 6, 3); context.fillRect(36, 17, 7, 3);
-      context.fillStyle = mid;
-      context.fillRect(19, 18, 5, 2); context.fillRect(28, 18, 4, 1); context.fillRect(37, 17, 5, 1);
-    } else if (style === 'tousled') {
-      context.fillRect(18, 17, 8, 5); context.fillRect(25, 18, 8, 4); context.fillRect(34, 17, 9, 4);
-      context.fillStyle = mid;
-      context.fillRect(19, 18, 5, 2); context.fillRect(27, 18, 4, 2); context.fillRect(36, 17, 5, 2);
-    } else if (style === 'swept') {
-      context.fillRect(20, 17, 8, 3); context.fillRect(27, 18, 9, 4); context.fillRect(35, 18, 10, 5);
-      context.fillStyle = mid;
-      context.fillRect(21, 17, 6, 1); context.fillRect(29, 18, 6, 2); context.fillRect(37, 18, 6, 2);
-    }
   }
+
+  // Expressions are drawn onto PENNY_HEAD's eyes and mouth. In a three-quarter
+  // view the near eye sits higher and further forward than the far one, which is
+  // why the two are not a mirrored pair. The far eye's features used to be drawn
+  // around x22 — over the ear, seven columns short of the eye — so every
+  // expression but Friendly put a stray mark on the side of the head.
+  const FAR_EYE = PENNY_HEAD.farEye;
+  const NEAR_EYE = PENNY_HEAD.nearEye;
 
   function drawFace(context, expression, skin) {
     if (expression === 'friendly') return;
@@ -312,17 +348,24 @@
     const erase = `rgb(${Math.round(darkSkin.r * 0.92)}, ${Math.round(darkSkin.g * 0.92)}, ${Math.round(darkSkin.b * 0.92)})`;
     context.imageSmoothingEnabled = false;
     if (expression === 'focused') {
+      // A brow lowered over each eye.
       context.fillStyle = '#231a18';
-      context.fillRect(21, 20, 7, 1); context.fillRect(37, 19, 7, 1);
+      context.fillRect(FAR_EYE.x0, FAR_EYE.y0 - 2, 6, 1);
+      context.fillRect(NEAR_EYE.x0 - 1, NEAR_EYE.y0 - 1, 6, 1);
       context.fillStyle = erase;
       context.fillRect(30, 34, 8, 2);
       context.fillStyle = '#6b3027';
       context.fillRect(31, 35, 7, 1);
     } else if (expression === 'bright') {
+      // Opened wider, inside the eye the art already draws. Filling the whole
+      // socket with white and dropping a square in it — which is what this used
+      // to do — reads as a pair of stuck-on googly eyes.
       context.fillStyle = '#f7fbff';
-      context.fillRect(22, 23, 5, 4); context.fillRect(38, 21, 5, 4);
+      context.fillRect(FAR_EYE.x0 + 1, FAR_EYE.y0 + 1, 4, 3);
+      context.fillRect(NEAR_EYE.x0, NEAR_EYE.y0 + 1, 4, 3);
       context.fillStyle = '#17181c';
-      context.fillRect(24, 24, 2, 2); context.fillRect(39, 22, 2, 2);
+      context.fillRect(FAR_EYE.x0 + 3, FAR_EYE.y0 + 2, 2, 2);
+      context.fillRect(NEAR_EYE.x0 + 2, NEAR_EYE.y0 + 2, 2, 2);
       context.fillStyle = '#743029';
       context.fillRect(30, 34, 2, 1); context.fillRect(32, 35, 6, 1); context.fillRect(38, 34, 2, 1);
     } else if (expression === 'stoic') {
@@ -333,25 +376,43 @@
     }
   }
 
+  // Worn on PENNY_HEAD, which spans x13..x44 and ends at the chin on row 36.
+  // Everything here used to be drawn from x45 outwards — past the edge of the
+  // head — so the earpiece and the headset's second cup and microphone hung in
+  // empty space beside the character rather than sitting on it.
   function drawAccessory(context, accessory, accent) {
     const ink = '#111318';
+    const ear = PENNY_HEAD.ear;
     if (accessory === 'glasses') {
       context.fillStyle = ink;
-      context.fillRect(18, 20, 11, 2); context.fillRect(17, 22, 2, 7); context.fillRect(28, 22, 2, 7); context.fillRect(19, 28, 9, 2);
-      context.fillRect(35, 18, 10, 2); context.fillRect(34, 20, 2, 7); context.fillRect(44, 20, 2, 7); context.fillRect(36, 26, 8, 2);
-      context.fillRect(29, 22, 6, 1);
+      // Far lens, around the far eye.
+      context.fillRect(27, 21, 9, 2); context.fillRect(27, 23, 2, 6); context.fillRect(34, 23, 2, 6); context.fillRect(28, 28, 8, 2);
+      // Near lens, higher and further forward, and the bridge between them.
+      context.fillRect(36, 17, 9, 2); context.fillRect(36, 19, 2, 6); context.fillRect(43, 19, 2, 6); context.fillRect(37, 24, 8, 2);
+      context.fillRect(35, 21, 2, 1);
     } else if (accessory === 'headset') {
       context.fillStyle = ink;
-      context.fillRect(15, 3, 30, 3); context.fillRect(11, 6, 5, 18); context.fillRect(44, 6, 5, 18);
+      // The band sits on the crown, which is only x23..x33 wide on its top row.
+      context.fillRect(23, 2, 11, 1); context.fillRect(20, 3, 17, 2);
+      // The arm follows the head's own edge down to the ear rather than dropping
+      // straight past it, and the near side shows nothing but that edge.
+      context.fillRect(16, 7, 2, 2); context.fillRect(15, 9, 2, 2); context.fillRect(14, 11, 2, 10);
+      context.fillRect(42, 11, 3, 8);
+      // The cup: an ink shell with the accent inside it, cornered off so it
+      // reads as a pad over the ear instead of a coloured square.
+      context.fillRect(ear.x0, ear.y0, 7, 1); context.fillRect(ear.x0 - 1, ear.y0 + 1, 9, 7); context.fillRect(ear.x0, ear.y0 + 8, 7, 1);
       context.fillStyle = accent;
-      context.fillRect(10, 17, 6, 11); context.fillRect(45, 17, 6, 11);
+      context.fillRect(ear.x0 + 1, ear.y0 + 1, 5, 1); context.fillRect(ear.x0, ear.y0 + 2, 7, 5); context.fillRect(ear.x0 + 1, ear.y0 + 7, 5, 1);
       context.fillStyle = ink;
-      context.fillRect(47, 27, 8, 2); context.fillRect(53, 28, 3, 3);
+      // The boom, forward along the jaw rather than out into the air.
+      context.fillRect(21, 29, 7, 2); context.fillRect(27, 31, 3, 2);
     } else if (accessory === 'earpiece') {
+      context.fillStyle = ink;
+      context.fillRect(ear.x0 + 1, ear.y0 + 1, 6, 9);
       context.fillStyle = '#28344a';
-      context.fillRect(47, 22, 3, 7); context.fillRect(49, 28, 6, 2);
+      context.fillRect(ear.x0 + 2, ear.y0 + 2, 4, 6); context.fillRect(ear.x0 + 4, ear.y0 + 8, 4, 1);
       context.fillStyle = '#7dd3fc';
-      context.fillRect(48, 23, 2, 3);
+      context.fillRect(ear.x0 + 3, ear.y0 + 3, 2, 3);
     } else if (accessory === 'chain') {
       context.fillStyle = '#d5a733';
       context.fillRect(25, 49, 2, 2); context.fillRect(27, 51, 2, 2); context.fillRect(29, 53, 6, 2); context.fillRect(35, 51, 2, 2); context.fillRect(37, 49, 2, 2);
@@ -369,12 +430,17 @@
     workContext.clearRect(0, 0, SPRITE_W, SPRITE_H);
     workContext.imageSmoothingEnabled = false;
     workContext.drawImage(spriteImages[OUTFIT_SPRITES[look.outfit]], 0, 0);
-    recolorOutfit(workContext, look.outfitColor);
 
     // Every combination starts from the approved Penny head silhouette. The
     // interchangeable hair, expression, skin and accessory layers sit on top.
     workContext.clearRect(0, 0, SPRITE_W, 49);
     workContext.drawImage(spriteImages.penny, 0, 0, SPRITE_W, 49, 0, 0, SPRITE_W, 49);
+
+    // After the head, not before it. Recolouring first and then pasting rows
+    // 0..48 over the top put Penny's own un-recoloured collar back on every
+    // character, which is the horizontal band of the wrong shade that ran across
+    // each of them at the shoulders.
+    recolorOutfit(workContext, look.outfitColor);
     recolorSkin(workContext, look.skin);
     drawHair(workContext, look.hair, look.hairColor);
     drawFace(workContext, look.face, look.skin);
@@ -397,9 +463,7 @@
       image.onerror = () => reject(new Error(`Could not load ${source}`));
       image.src = source;
     }))).then(() => {
-      Object.entries(HAIR_SPRITES).forEach(([style, source]) => {
-        if (source) hairMasks[style] = buildHairMask(spriteImages[source]);
-      });
+      headRows = measureHeadRows(spriteImages.penny);
       assetsReady = true;
     });
   }
