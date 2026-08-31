@@ -9,6 +9,7 @@ const googleSync = require('./calendar-google-sync.js');
 const reminderTime = require('./reminder-time.js');
 const countdowns = require('./countdowns.js');
 const resetTimers = require('./reset-timers.js');
+const sharebotNewsroom = require('./sharebot-newsroom.js');
 
 process.env.TZ = process.env.APP_TIMEZONE || 'America/Vancouver';
 
@@ -5807,6 +5808,25 @@ const server = http.createServer(async (req, res) => {
       };
 
       sendJson(res, 200, { ok: true, agents: lastGatewayHeartbeat.agents.length });
+      return;
+    }
+
+    // -- SHAREBOT67 NEWSROOM ------------------------------------
+    //
+    // ShareBot67's newsroom lives in the Market Dashboard. This reads its
+    // health endpoint from *this* process, because reading it needs an
+    // x-admin-key and a key in browser JavaScript is a published key. The
+    // browser gets a normalized summary and never the credential; see
+    // sharebot-newsroom.js for the rest of the boundary.
+    //
+    // Read-only, and behind the same Office session as everything else. The
+    // target is fixed by MARKET_DASHBOARD_URL — no request parameter chooses
+    // it — so `?url=` and friends here do nothing at all. Always answers 200
+    // with a `state`: an unreachable newsroom is a status to display, not a
+    // reason for this app to fail.
+    if (req.method === 'GET' && pathname === '/api/sharebot/newsroom-health') {
+      if (!requireDropsAuth(res, req)) return;
+      sendJson(res, 200, await sharebotNewsroom.readNewsroomHealth({ deployed: IS_DEPLOYED }));
       return;
     }
 

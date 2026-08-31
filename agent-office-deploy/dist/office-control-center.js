@@ -13,6 +13,31 @@
   let missionGoals = [];
   let missionEditMode = false;
 
+  // -- ShareBot67 newsroom health ------------------------------
+  //
+  // ShareBot67's newsroom runs in the Market Dashboard. The office feed next
+  // to this agent is scripted context — "ShareBot67 smoke check passed" says
+  // the same thing on a morning the newsroom failed at 4am — so the panel
+  // below is fetched, labelled as live, and says "Unavailable" rather than
+  // anything reassuring when it cannot be read.
+  //
+  // The browser never holds the dashboard key: this reads Agent Office's own
+  // adapter, which does the authenticated call server-side.
+  const NEWSROOM_AGENT_ID = 'newsreporter';
+  const NEWSROOM_ENDPOINT = '/api/sharebot/newsroom-health';
+  const NEWSROOM_POLL_MS = 45000;
+  const NEWSROOM_HEALTH_LABELS = {
+    healthy: 'Healthy',
+    running: 'Running',
+    degraded: 'Degraded',
+    failed: 'Failed',
+    idle: 'No runs yet',
+    unavailable: 'Unavailable',
+  };
+  const NEWSROOM_ROUTE_LABELS = { verified: 'Verified', warning: 'Warning', failed: 'Failed' };
+  let newsroomTimer = null;
+  let newsroomInFlight = false;
+
   const escape = value => String(value == null ? '' : value)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
@@ -52,6 +77,7 @@
     shell.hidden = true;
     document.body.classList.remove('control-center-open');
     selectedId = null;
+    stopNewsroom();
   }
 
   function stat(label, value, note) {
@@ -81,6 +107,7 @@
         ${stat('Workspace', agent.workspace)}
         ${stat('Tokens today', live && live.cost_tokens_today ? Number(live.cost_tokens_today).toLocaleString() : 'Not reported')}
       </div>
+      ${agent.id === NEWSROOM_AGENT_ID ? newsroomPanelShell() : ''}
       <div class="control-actions">
         ${isPenny ? '<button class="ao-btn ao-btn--primary" type="button" onclick="AOControlCenter.openMissionControl()">Give Penny a goal</button>' : ''}
         <a class="ao-btn" href="/memory.html?agent=${encodeURIComponent(agent.id)}">View memory</a>
@@ -89,6 +116,119 @@
       </div>
       <div class="control-unavailable"><strong>Direct runtime controls</strong><span>Pause, stop, retry, logs, elapsed time, tools, and API cost will appear only when the OpenClaw gateway exposes verified control and telemetry endpoints.</span></div>`;
     openShell();
+    if (agent.id === NEWSROOM_AGENT_ID) startNewsroom();
+    else stopNewsroom();
+  }
+
+  function newsroomPanelShell() {
+    return `
+      <section class="newsroom-panel" id="newsroom-panel" aria-live="polite">
+        <div class="newsroom-panel-head">
+          <div>
+            <strong>ShareBot67 Newsroom</strong>
+            <span>Live from Market Dashboard. The office feed beside this agent is scripted context, not health.</span>
+          </div>
+          <button class="ao-btn ao-btn--sm newsroom-refresh" type="button">Refresh</button>
+        </div>
+        <div id="newsroom-panel-body"><div class="control-unavailable"><span>Reading newsroom health…</span></div></div>
+      </section>`;
+  }
+
+  function newsroomStamp(value) {
+    if (!value) return 'Not recorded';
+    const at = new Date(value);
+    return Number.isNaN(at.getTime()) ? 'Not recorded' : at.toLocaleString();
+  }
+
+  function newsroomRow(label, value, className) {
+    return `<div class="newsroom-row"><span>${escape(label)}</span><strong${className ? ` class="${escape(className)}"` : ''}>${escape(value)}</strong></div>`;
+  }
+
+  function renderNewsroom(payload) {
+    const target = body.querySelector('#newsroom-panel-body');
+    if (!target) return;
+
+    const health = (payload && payload.health) || 'unavailable';
+    const healthLabel = NEWSROOM_HEALTH_LABELS[health] || 'Unavailable';
+    const route = (payload && payload.agent_route) || {};
+    const routeLabel = NEWSROOM_ROUTE_LABELS[route.route] || 'Warning';
+
+    // A newsroom that cannot be read is never dressed up as one that is fine.
+    if (!payload || payload.available !== true) {
+      target.innerHTML = `
+        <div class="newsroom-rows">
+          ${newsroomRow('Health', healthLabel, `newsroom-health newsroom-health--${health}`)}
+        </div>
+        <div class="control-unavailable">
+          <strong>Live newsroom health is unavailable</strong>
+          <span>${escape((payload && payload.error) || 'Agent Office could not read newsroom health.')}</span>
+          <span>This is not evidence that the newsroom is healthy — only that its status could not be read.</span>
+        </div>`;
+      return;
+    }
+
+    const attempt = payload.last_attempt;
+    const generation = payload.generation || { generated: 0, expected: 0 };
+    const delivery = payload.delivery || { succeeded: 0, failed: 0 };
+    const error = payload.latest_error;
+
+    target.innerHTML = `
+      <div class="newsroom-rows">
+        ${newsroomRow('Health', healthLabel, `newsroom-health newsroom-health--${health}`)}
+        ${newsroomRow('Agent route', routeLabel, `newsroom-route newsroom-route--${route.route || 'warning'}`)}
+        ${newsroomRow('Last successful cycle', payload.last_success ? newsroomStamp(payload.last_success.completed_at || payload.last_success.started_at) : 'None recorded')}
+        ${newsroomRow('Last attempt', attempt ? `${String(attempt.status || 'unknown').replace(/_/g, ' ')} · ${newsroomStamp(attempt.completed_at || attempt.started_at)}` : 'None recorded')}
+        ${newsroomRow('Next expected cycle', payload.next_expected_at ? newsroomStamp(payload.next_expected_at) : 'No schedule reported')}
+        ${newsroomRow('Generation', `${generation.generated} / ${generation.expected} sections`)}
+        ${newsroomRow('Delivery', `${delivery.succeeded} successful · ${delivery.failed} failed`)}
+      </div>
+      ${error ? `<div class="newsroom-error"><strong>Latest error</strong><span>${escape(error.message || error.reason || error.code || 'Reported without detail.')}</span><small>${escape([error.phase, error.code, error.retryable ? 'retryable' : 'not retryable'].filter(Boolean).join(' · '))}</small></div>` : ''}
+      <small class="newsroom-checked">Checked ${escape(newsroomStamp(payload.checked_at))}</small>`;
+  }
+
+  async function refreshNewsroom() {
+    // One request at a time. A slow upstream plus a 45s tick would otherwise
+    // stack calls that all answer the same question.
+    if (newsroomInFlight) return;
+    if (!body.querySelector('#newsroom-panel-body')) {
+      stopNewsroom();
+      return;
+    }
+    newsroomInFlight = true;
+    try {
+      const response = await fetch(NEWSROOM_ENDPOINT, { credentials: 'same-origin' });
+      if (response.status === 401) {
+        renderNewsroom({ available: false, health: 'unavailable', error: 'Log in to Agent Office to read newsroom health.' });
+        return;
+      }
+      if (!response.ok) {
+        renderNewsroom({ available: false, health: 'unavailable', error: 'Agent Office could not read newsroom health.' });
+        return;
+      }
+      renderNewsroom(await response.json());
+    } catch (_) {
+      renderNewsroom({ available: false, health: 'unavailable', error: 'Agent Office could not reach its own newsroom health adapter.' });
+    } finally {
+      newsroomInFlight = false;
+    }
+  }
+
+  function startNewsroom() {
+    stopNewsroom();
+    const refresh = body.querySelector('.newsroom-refresh');
+    if (refresh) refresh.addEventListener('click', refreshNewsroom);
+    refreshNewsroom();
+    // A hidden tab polls nothing: the tick still fires, and skips.
+    newsroomTimer = setInterval(() => {
+      if (document.hidden) return;
+      refreshNewsroom();
+    }, NEWSROOM_POLL_MS);
+  }
+
+  function stopNewsroom() {
+    if (!newsroomTimer) return;
+    clearInterval(newsroomTimer);
+    newsroomTimer = null;
   }
 
   function workflowCounts() {
@@ -103,6 +243,7 @@
   }
 
   function openMissionControl() {
+    stopNewsroom();
     selectedId = 'oss';
     const counts = workflowCounts();
     kicker.textContent = 'PENNY · SOLE ORCHESTRATOR';
@@ -317,6 +458,11 @@
     openAgent(character.dataset.agentId);
   }, true);
   document.addEventListener('keydown', event => { if (event.key === 'Escape' && !shell.hidden) close(); });
+  // Coming back to a tab that skipped its ticks should not wait out another
+  // full interval before showing something current.
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && newsroomTimer) refreshNewsroom();
+  });
 
   window.AOControlCenter = { openAgent, openMissionControl, close, customize };
 
