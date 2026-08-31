@@ -22,7 +22,6 @@ const CALENDAR_EVENTS_FILE = path.resolve(__dirname, process.env.CALENDAR_EVENTS
 const CALENDAR_DISABLED_RECURRING_FILE = path.resolve(__dirname, process.env.CALENDAR_DISABLED_RECURRING_FILE || 'calendar-disabled-recurring.json');
 const CALENDAR_RECURRING_OVERRIDES_FILE = path.resolve(__dirname, process.env.CALENDAR_RECURRING_OVERRIDES_FILE || 'calendar-recurring-overrides.json');
 const APP_SETTINGS_FILE = path.resolve(__dirname, process.env.APP_SETTINGS_FILE || '.app-settings.json');
-const PROMPTS_FILE = path.resolve(__dirname, process.env.PROMPTS_FILE || 'prompts.json');
 const STREAKS_FILE = path.resolve(__dirname, process.env.STREAKS_FILE || 'streaks.json');
 const STREAK_DAYS_FILE = path.resolve(__dirname, process.env.STREAK_DAYS_FILE || 'streak-days.json');
 const COUNTDOWNS_FILE = path.resolve(__dirname, process.env.COUNTDOWNS_FILE || 'countdowns.json');
@@ -602,30 +601,6 @@ function toClientCountdown(row) {
   };
 }
 
-function validatePromptInput(input) {
-  if (!input || typeof input !== 'object' || Array.isArray(input)) {
-    return { ok: false, error: 'Body must be a JSON object.' };
-  }
-  const name = typeof input.name === 'string' ? input.name.trim() : '';
-  const subtitle = typeof input.subtitle === 'string' ? input.subtitle.trim() : '';
-  const folder = typeof input.folder === 'string' ? input.folder.trim() : '';
-  const instructions = typeof input.instructions === 'string' ? input.instructions.trim() : '';
-
-  if (!instructions || instructions.length > 50000) {
-    return { ok: false, error: 'Instructions are required and must be 50,000 characters or fewer.' };
-  }
-  if (name.length > 200) {
-    return { ok: false, error: 'Name must be 200 characters or fewer.' };
-  }
-  if (subtitle.length > 300) {
-    return { ok: false, error: 'Subtitle must be 300 characters or fewer.' };
-  }
-  if (folder.length > 200) {
-    return { ok: false, error: 'Folder must be 200 characters or fewer.' };
-  }
-  return { ok: true, value: { name: name || 'Untitled Prompt', subtitle, folder, instructions } };
-}
-
 function validatePatchInput(input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     return { ok: false, error: 'PATCH body must be a JSON object.' };
@@ -853,17 +828,6 @@ async function saveMemoriesToFile(memories) {
   await writeQueue;
 }
 
-async function loadPromptsFromFile() {
-  try {
-    const raw = await fs.readFile(PROMPTS_FILE, 'utf8');
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (error) {
-    if (error.code === 'ENOENT') return [];
-    throw error;
-  }
-}
-
 async function loadProjectsFromFile() {
   try {
     const raw = await fs.readFile(PROJECTS_FILE, 'utf8');
@@ -873,13 +837,6 @@ async function loadProjectsFromFile() {
     if (error.code === 'ENOENT') return [];
     throw error;
   }
-}
-
-async function savePromptsToFile(prompts) {
-  writeQueue = writeQueue.then(() =>
-    fs.writeFile(PROMPTS_FILE, JSON.stringify(prompts, null, 2), 'utf8')
-  );
-  await writeQueue;
 }
 
 async function saveProjectsToFile(projects) {
@@ -1084,18 +1041,6 @@ function buildRecurringEvents(disabledSeries, overrides) {
     }
   }
   return events.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
-}
-
-function toClientPrompt(row) {
-  return {
-    id: row.id,
-    name: row.name || 'Untitled Prompt',
-    subtitle: row.subtitle || '',
-    folder: row.folder || '',
-    instructions: row.instructions || '',
-    createdAt: row.createdAt || row.created_at || new Date().toISOString(),
-    updatedAt: row.updatedAt || row.updated_at || row.createdAt || row.created_at || new Date().toISOString(),
-  };
 }
 
 function toClientCalendarEvent(row) {
@@ -1512,35 +1457,6 @@ function createFileStorage() {
       if (deleted) await saveStreakDaysToFile(next);
       return deleted;
     },
-    async listPrompts() {
-      const prompts = await loadPromptsFromFile();
-      return prompts.map(toClientPrompt);
-    },
-    async createPrompt(prompt) {
-      const prompts = await loadPromptsFromFile();
-      prompts.unshift(prompt);
-      await savePromptsToFile(prompts);
-      return toClientPrompt(prompt);
-    },
-    async updatePrompt(id, fields) {
-      const prompts = await loadPromptsFromFile();
-      const prompt = prompts.find(p => p.id === id);
-      if (!prompt) return null;
-      prompt.name = fields.name;
-      prompt.subtitle = fields.subtitle;
-      prompt.folder = fields.folder;
-      prompt.instructions = fields.instructions;
-      prompt.updatedAt = new Date().toISOString();
-      await savePromptsToFile(prompts);
-      return toClientPrompt(prompt);
-    },
-    async deletePrompt(id) {
-      const prompts = await loadPromptsFromFile();
-      const next = prompts.filter(p => p.id !== id);
-      const deleted = next.length !== prompts.length;
-      if (deleted) await savePromptsToFile(next);
-      return deleted;
-    },
     async getAppSetting(key) {
       const settings = await loadAppSettingsFromFile();
       return Object.prototype.hasOwnProperty.call(settings, key) ? settings[key] : null;
@@ -1839,19 +1755,6 @@ async function createPostgresStorage() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
-
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS prompts (
-      id TEXT PRIMARY KEY,
-      name VARCHAR(200) NOT NULL DEFAULT 'Untitled Prompt',
-      subtitle VARCHAR(300) NOT NULL DEFAULT '',
-      folder VARCHAR(200) NOT NULL DEFAULT '',
-      instructions TEXT NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `);
-  await pool.query(`ALTER TABLE prompts ADD COLUMN IF NOT EXISTS folder VARCHAR(200) NOT NULL DEFAULT ''`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS streaks (
@@ -2616,41 +2519,6 @@ async function createPostgresStorage() {
     },
     async unmarkStreakDay(streakId, day) {
       const result = await pool.query('DELETE FROM streak_days WHERE streak_id = $1 AND day = $2', [streakId, day]);
-      return result.rowCount > 0;
-    },
-    async listPrompts() {
-      const result = await pool.query(`
-        SELECT id, name, subtitle, folder, instructions, created_at, updated_at
-        FROM prompts
-        ORDER BY created_at DESC
-      `);
-      return result.rows.map(toClientPrompt);
-    },
-    async createPrompt(prompt) {
-      const result = await pool.query(
-        `
-          INSERT INTO prompts (id, name, subtitle, folder, instructions, created_at, updated_at)
-          VALUES ($1, $2, $3, $4, $5, $6, $6)
-          RETURNING id, name, subtitle, folder, instructions, created_at, updated_at
-        `,
-        [prompt.id, prompt.name, prompt.subtitle, prompt.folder, prompt.instructions, prompt.createdAt]
-      );
-      return toClientPrompt(result.rows[0]);
-    },
-    async updatePrompt(id, fields) {
-      const result = await pool.query(
-        `
-          UPDATE prompts
-          SET name = $2, subtitle = $3, folder = $4, instructions = $5, updated_at = NOW()
-          WHERE id = $1
-          RETURNING id, name, subtitle, folder, instructions, created_at, updated_at
-        `,
-        [id, fields.name, fields.subtitle, fields.folder, fields.instructions]
-      );
-      return result.rows[0] ? toClientPrompt(result.rows[0]) : null;
-    },
-    async deletePrompt(id) {
-      const result = await pool.query('DELETE FROM prompts WHERE id = $1', [id]);
       return result.rowCount > 0;
     },
     async getAppSetting(key) {
@@ -6446,74 +6314,6 @@ const server = http.createServer(async (req, res) => {
       const deleted = await storage.deleteCountdown(id);
       if (!deleted) {
         sendJson(res, 404, { error: 'Countdown not found.' });
-        return;
-      }
-
-      sendJson(res, 200, { ok: true });
-      return;
-    }
-
-    // -- PROMPTS API (open, shared across devices) --------------
-    if (req.method === 'GET' && pathname === '/api/prompts') {
-      sendJson(res, 200, await storage.listPrompts());
-      return;
-    }
-
-    if (req.method === 'POST' && pathname === '/api/prompts') {
-      const payload = validatePromptInput(await readJsonBody(req));
-      if (!payload.ok) {
-        sendJson(res, 400, { error: payload.error });
-        return;
-      }
-
-      const now = new Date().toISOString();
-      const prompt = await storage.createPrompt({
-        id: `prompt-${typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now()}`,
-        name: payload.value.name,
-        subtitle: payload.value.subtitle,
-        folder: payload.value.folder,
-        instructions: payload.value.instructions,
-        createdAt: now,
-        updatedAt: now,
-      });
-
-      sendJson(res, 201, prompt);
-      return;
-    }
-
-    if (req.method === 'PUT' && pathname.startsWith('/api/prompts/')) {
-      const id = pathname.slice('/api/prompts/'.length).trim();
-      if (!id) {
-        sendJson(res, 400, { error: 'Prompt id is required.' });
-        return;
-      }
-
-      const payload = validatePromptInput(await readJsonBody(req));
-      if (!payload.ok) {
-        sendJson(res, 400, { error: payload.error });
-        return;
-      }
-
-      const prompt = await storage.updatePrompt(id, payload.value);
-      if (!prompt) {
-        sendJson(res, 404, { error: 'Prompt not found.' });
-        return;
-      }
-
-      sendJson(res, 200, prompt);
-      return;
-    }
-
-    if (req.method === 'DELETE' && pathname.startsWith('/api/prompts/')) {
-      const id = pathname.slice('/api/prompts/'.length).trim();
-      if (!id) {
-        sendJson(res, 400, { error: 'Prompt id is required.' });
-        return;
-      }
-
-      const deleted = await storage.deletePrompt(id);
-      if (!deleted) {
-        sendJson(res, 404, { error: 'Prompt not found.' });
         return;
       }
 
