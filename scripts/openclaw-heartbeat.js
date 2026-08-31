@@ -34,6 +34,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
+const { syncOpenClawMemories } = require('./sync-openclaw-memories');
 
 const execFileAsync = promisify(execFile);
 
@@ -48,6 +49,8 @@ const TELEGRAM_TARGET = String(process.env.PENNY_TELEGRAM_TARGET || '5752282291'
 const TELEGRAM_ACCOUNT = String(process.env.PENNY_TELEGRAM_ACCOUNT || 'oss').trim();
 const AGENT_TIMEOUT_MS = Math.max(60, Number(process.env.PENNY_GOAL_TIMEOUT_SECONDS) || 1800) * 1000;
 let cycleRunning = false;
+const MEMORY_SYNC_MS = Math.max(1, Number(process.env.MEMORY_SYNC_MINUTES) || 15) * 60 * 1000;
+let lastMemorySyncAt = 0;
 
 if (!OFFICE_URL || !TOKEN) {
   console.error('Set OFFICE_URL and GATEWAY_TOKEN. See the comment at the top of this file.');
@@ -235,12 +238,24 @@ async function sweepDueCalendarRuns() {
   }
 }
 
+async function syncMemoriesIfDue(force = false) {
+  if (!force && Date.now() - lastMemorySyncAt < MEMORY_SYNC_MS) return;
+  try {
+    const result = await syncOpenClawMemories({ officeUrl: OFFICE_URL, token: TOKEN });
+    lastMemorySyncAt = Date.now();
+    console.log(`${new Date().toISOString()} synced ${result.synced || 0} agent memory snapshot(s)`);
+  } catch (error) {
+    console.error(`${new Date().toISOString()} memory sync failed: ${error.message}`);
+  }
+}
+
 async function cycle() {
   if (cycleRunning) return;
   cycleRunning = true;
   try {
     const gatewayUp = await beat();
     if (!gatewayUp) return;
+    await syncMemoriesIfDue();
     await sweepDueCalendarRuns();
     await relayOneGoal();
   } catch (error) {
@@ -252,6 +267,7 @@ async function cycle() {
 
 (async () => {
   const ok = await beat();
+  if (ok) await syncMemoriesIfDue(true);
   if (ONCE) process.exit(ok ? 0 : 1);
   setInterval(cycle, INTERVAL_MS);
   console.log(`Reporting ${GATEWAY_URL} and relaying Penny goals from ${OFFICE_URL} every ${INTERVAL_MS / 1000}s. Ctrl-C to stop.`);

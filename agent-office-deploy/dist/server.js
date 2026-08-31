@@ -1409,6 +1409,14 @@ function createFileStorage() {
       await saveMemoriesToFile(memories);
       return mem;
     },
+    async upsertMemory(mem) {
+      const memories = await loadMemoriesFromFile();
+      const existing = memories.find(item => item.id === mem.id);
+      if (existing) Object.assign(existing, mem, { updated_at: new Date().toISOString() });
+      else memories.unshift(mem);
+      await saveMemoriesToFile(memories);
+      return existing || mem;
+    },
     async updateMemory(id, content) {
       const memories = await loadMemoriesFromFile();
       const mem = memories.find(m => m.id === id);
@@ -2424,6 +2432,19 @@ async function createPostgresStorage() {
         `
           INSERT INTO memories (id, agent, content, created_at, updated_at)
           VALUES ($1, $2, $3, $4, $4)
+          RETURNING id, agent, content, created_at AS date, updated_at
+        `,
+        [mem.id, mem.agent, mem.content, mem.date]
+      );
+      return result.rows[0];
+    },
+    async upsertMemory(mem) {
+      const result = await pool.query(
+        `
+          INSERT INTO memories (id, agent, content, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $4)
+          ON CONFLICT (id) DO UPDATE
+          SET agent = EXCLUDED.agent, content = EXCLUDED.content, updated_at = NOW()
           RETURNING id, agent, content, created_at AS date, updated_at
         `,
         [mem.id, mem.agent, mem.content, mem.date]
@@ -6112,6 +6133,38 @@ const server = http.createServer(async (req, res) => {
     }
 
     // -- MEMORIES API -------------------------------------------
+    if (req.method === 'POST' && pathname === '/api/memories/sync') {
+      if (!requireGatewayToken(res, req)) return;
+      const body = await readJsonBody(req);
+      const incoming = body && Array.isArray(body.memories) ? body.memories : [];
+      if (!incoming.length || incoming.length > 50) {
+        sendJson(res, 400, { error: 'Provide between 1 and 50 memory snapshots.' });
+        return;
+      }
+      const now = new Date().toISOString();
+      const synced = [];
+      for (const item of incoming) {
+        const payload = validateMemoryInput(item);
+        if (!payload.ok) {
+          sendJson(res, 400, { error: payload.error });
+          return;
+        }
+        const safeAgent = payload.value.agent.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 50);
+        if (!safeAgent) {
+          sendJson(res, 400, { error: 'Memory agent id is invalid.' });
+          return;
+        }
+        synced.push(await storage.upsertMemory({
+          id: `openclaw-sync-${safeAgent}`,
+          agent: safeAgent,
+          content: payload.value.content,
+          date: now,
+        }));
+      }
+      sendJson(res, 200, { ok: true, synced: synced.length, memories: synced });
+      return;
+    }
+
     if (req.method === 'GET' && pathname === '/api/memories') {
       if (!requireDropsAuth(res, req)) return;
       sendJson(res, 200, await storage.listMemories());
