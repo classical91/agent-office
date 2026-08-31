@@ -78,6 +78,8 @@ agent-office-deploy/
     ai-landscape.{js,css}      # AI Landscape-only logic
     visitors.{js,css}          # Visitors dashboard
     visit-tracker.js           # The script you paste on a tracked site
+    sharebot-newsroom.js       # Reads Market Dashboard newsroom health server-side
+    office-control-center.js   # Agent inspector + Mission Control panel (incl. ShareBot67 health)
     server.js                  # Node HTTP server
     config-files/              # Placeholder only; local agent files are not deployed
 YOUTUBE_PACKAGING.md          # The YouTube packaging playbook (read at runtime)
@@ -144,6 +146,18 @@ they all load the same build of `shared.css`, that no page hardcodes its own
 active nav row (`markActiveNav()` in `app-shared.js` works that out from the
 URL), and that every sidebar row has the `data-icon` the compact rail needs.
 Run `npm run sync:shell` when it fails.
+
+`tests/sharebot-newsroom.test.js` covers the ShareBot67 newsroom adapter against
+a fake Market Dashboard: that a configured upstream normalizes, that the
+dashboard key goes up and never comes back down — including from an upstream
+that echoes it in its own error body — that each way the read can fail gets its
+own state instead of a hopeful blank, that a redirect is never followed, that no
+request parameter can choose the upstream, and that the Office session still
+guards it. `tests/sharebot-newsroom-ui.test.js` runs the panel in Chromium
+across healthy, running, degraded, failed and unavailable states, checks the
+latest error appears, that no report content or credential is on screen, that
+the only control is a re-read, and that it fits a 375px phone with nothing
+scrolling sideways.
 
 `tests/youtube-packaging.test.js` covers the packaging command: that the
 committed fixtures still match freshly generated output, that `--check` reports
@@ -248,6 +262,7 @@ All endpoints return JSON.
 | GET    | `/api/config-files/:agent`        | Read snapshots only from a private runtime CONFIG_FILES_DIR (session-authenticated) |
 | GET    | `/api/orchestration/goals`        | List Penny goals and Outbox results (session-authenticated) |
 | POST   | `/api/orchestration/goals`        | Queue a goal for Penny (session-authenticated) |
+| GET    | `/api/sharebot/newsroom-health`   | ShareBot67's live newsroom health, read server-side from Market Dashboard (session-authed) |
 | POST   | `/api/orchestration/goals/claim`  | Atomically claim the next goal (gateway-token authenticated) |
 | PATCH  | `/api/orchestration/goals/:id`    | Complete/fail a claimed goal (gateway-token authenticated) |
 
@@ -550,6 +565,96 @@ the gateway actually reported; an empty list says so rather than inventing rows.
 | GET    | `/api/gateway/status`    | Probe result, heartbeat state, agents      |
 | POST   | `/api/gateway/heartbeat` | The gateway machine reporting in (token)   |
 
+## ShareBot67 newsroom health
+
+ShareBot67's newsroom — the scheduled market/news reports — runs in the
+**Market Dashboard**, not here. Agent Office knew nothing about it: the office
+feed beside ShareBot67 is scripted context, and "ShareBot67 smoke check passed"
+says exactly the same thing on a morning the newsroom failed at 4am.
+
+Clicking ShareBot67 in the office now shows a compact panel of real state:
+
+```
+ShareBot67 Newsroom
+  Health                  Healthy / Running / Degraded / Failed / No runs yet / Unavailable
+  Agent route             Verified / Warning / Failed
+  Last successful cycle   timestamp
+  Last attempt            status · timestamp
+  Next expected cycle     timestamp
+  Generation              X / Y sections
+  Delivery                X successful · Y failed
+  Latest error            when there is one
+```
+
+**Why the browser cannot fetch this itself.** Market Dashboard's
+`GET /api/newsroom/health` requires an admin key, and a key in page JavaScript
+is a published key. So this server reads it — with the key in a header, server
+to server — and hands the browser a normalized summary. The key never reaches
+the page, and neither does anything else: the normalizer is a whitelist of
+operational fields, so no report text can arrive through this panel even if the
+upstream response grows a field carrying it.
+
+**Configuration.** Both are needed; with either missing the panel says which:
+
+- `MARKET_DASHBOARD_URL` — the dashboard's base URL, e.g.
+  `https://market-dashboard-production-xxxx.up.railway.app`. Any path on it is
+  discarded: this names a host, not a route. **A deployed host must use HTTPS**
+  (plain HTTP is allowed only against loopback, for running both apps on one
+  machine).
+- `MARKET_DASHBOARD_ADMIN_API_KEY` — the dashboard's `ADMIN_API_KEY`. On that
+  side it opens `/api/newsroom/health` and nothing else: not cycle detail, not
+  preflight, and no route that can generate or send anything.
+- `MARKET_DASHBOARD_TIMEOUT_MS` — optional, defaults to `6000`, clamped to
+  1–20s.
+
+**What it does not do.** It is read-only and has no Run, Retry, Deliver or
+Telegram control, because it reports on a service that publishes to real
+channels and nothing on this screen should be able to make that happen. It also
+never claims health it does not have: a newsroom that is unconfigured, rejecting
+this server's key, unreachable, timing out, answering with something that is not
+health JSON, or returning a server error each reads as its own state, and the
+unavailable panel says in as many words that this is *not* evidence the
+newsroom is healthy.
+
+The target comes from server configuration and only from there — no request
+parameter picks a host — and redirects are not followed, so a moved endpoint
+cannot forward the key to another origin.
+
+Panel polling is 45 seconds, skipped entirely while the tab is hidden, with one
+request in flight at a time and a manual **Refresh** for the impatient.
+
+| Method | Path                            | Purpose                                  |
+| ------ | ------------------------------- | ---------------------------------------- |
+| GET    | `/api/sharebot/newsroom-health` | Normalized newsroom health (session)     |
+
+Covered by `tests/sharebot-newsroom.test.js` (the adapter and its boundary) and
+`tests/sharebot-newsroom-ui.test.js` (the panel, including phone width).
+
+### Verifying it in production
+
+Every test above runs against a fake Market Dashboard, so none of it is
+evidence about the real one. After deploying, with a logged-in session:
+
+```bash
+curl -s "$OFFICE_URL/api/sharebot/newsroom-health" -H "cookie: agent_office_session=…" | jq '.state, .health, .agent_route'
+```
+
+- `"state": "ok"` means this server reached the dashboard and was accepted.
+- `"not_configured"` names the missing variable.
+- `"auth_error"` means `MARKET_DASHBOARD_ADMIN_API_KEY` does not match the
+  dashboard's `ADMIN_API_KEY`.
+- `"unreachable"` / `"upstream_error"` are about the dashboard, not this app.
+
+Then open the panel and confirm from the browser's network tab that the only
+request is to this server's own `/api/sharebot/newsroom-health` — nothing
+addressed to the dashboard, and no key in any response body.
+
+`agent_route.verified` stays `false` until `NEWSROOM_AGENT_PREFLIGHT_URL` is
+configured on the dashboard. That is honest, not broken: an unverified route is
+an unknown one. The dashboard's `docs/newsroom-401-verification.md` carries the
+full checklist, including the read-only check for the August 11
+`HTTP 401: User not found`.
+
 ## Phone inbox / iOS Shortcuts
 
 The Dropbox web UI is behind a passphrase and a session cookie, which a phone
@@ -788,6 +893,12 @@ Dropbox-related variables:
   Timer has landed and needs its Pushcut webhook sent (defaults to `45000`;
   `0` turns server-side delivery off). Nothing else is needed to switch this
   on: the webhook URLs already live on the timers.
+- `MARKET_DASHBOARD_URL` / `MARKET_DASHBOARD_ADMIN_API_KEY` — the Market
+  Dashboard the ShareBot67 newsroom panel reads, and the key it reads with. Both
+  stay on the server; neither reaches the browser. HTTPS is required on a
+  deployed host. See [ShareBot67 newsroom health](#sharebot67-newsroom-health).
+- `MARKET_DASHBOARD_TIMEOUT_MS` — optional timeout for that read (default
+  `6000`, clamped to 1–20s).
 - `RESET_TIMER_ALLOW_LOOPBACK_WEBHOOKS` — **local testing only.** Set to
   `yes-allow-loopback-webhooks-for-local-tests` it lets the timer processor
   deliver to `127.0.0.1` / `localhost` as well as Pushcut, which is how the test

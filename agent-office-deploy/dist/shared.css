@@ -2139,6 +2139,29 @@
   .control-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0; }
   .control-unavailable { display: grid; gap: 5px; padding: 14px; border: 1px dashed var(--border); border-radius: 10px; color: var(--text-dim); }
   .control-unavailable strong { color: var(--text); }
+  /* ShareBot67 live newsroom health. Read-only: no run, retry or send
+     control appears here, because this panel reports on another service and
+     must never be able to make it publish anything. */
+  .newsroom-panel { margin: 18px 0; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--view-bg); }
+  .newsroom-panel-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+  .newsroom-panel-head > div { display: grid; gap: 4px; min-width: 0; }
+  .newsroom-panel-head span { color: var(--text-dim); font-size: 11px; line-height: 1.45; }
+  .newsroom-rows { display: grid; gap: 6px; }
+  .newsroom-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 12px; padding: 7px 0; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+  .newsroom-row:last-child { border-bottom: 0; }
+  .newsroom-row span { color: var(--text-dim); font-size: 11px; }
+  /* Long values wrap instead of pushing the panel sideways. */
+  .newsroom-row strong { min-width: 0; font-size: 13px; text-align: right; overflow-wrap: anywhere; }
+  .newsroom-health--healthy, .newsroom-route--verified { color: var(--state-active); }
+  .newsroom-health--running { color: var(--cyan); }
+  .newsroom-health--degraded, .newsroom-route--warning { color: #f59e0b; }
+  .newsroom-health--failed, .newsroom-route--failed { color: var(--state-blocked); }
+  .newsroom-health--idle, .newsroom-health--unavailable { color: var(--text-dim); }
+  .newsroom-error { display: grid; gap: 4px; margin-top: 12px; padding: 12px; border: 1px solid color-mix(in srgb, var(--state-blocked) 35%, var(--border)); border-radius: 10px; }
+  .newsroom-error strong { color: var(--state-blocked); font-size: 12px; }
+  .newsroom-error span { line-height: 1.5; overflow-wrap: anywhere; }
+  .newsroom-error small { color: var(--muted); font-size: 11px; }
+  .newsroom-checked { display: block; margin-top: 10px; color: var(--muted); font-size: 11px; }
   .mission-goal { display: grid; gap: 10px; margin: 18px 0; }
   .mission-goal label { font-weight: 700; }
   .mission-goal textarea { width: 100%; resize: vertical; color: var(--text); background: var(--view-bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px; font: inherit; }
@@ -2181,6 +2204,8 @@
     .control-center-backdrop { display: none; }
     .control-center-panel { border-left: 0; padding: 18px; }
     .control-stats { grid-template-columns: 1fr; }
+    .newsroom-row { flex-direction: column; align-items: flex-start; }
+    .newsroom-row strong { text-align: left; }
     .office-bar-meta { flex-shrink: 0; }
     .office-command-btn { display: inline-flex; white-space: nowrap; }
   }
