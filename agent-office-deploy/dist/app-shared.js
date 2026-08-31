@@ -3486,10 +3486,10 @@ const MEM = (() => {
     ).join('');
   }
 
-  async function renderList() {
+  async function renderList(entriesOverride) {
     const list = document.getElementById('mem-list');
     list.innerHTML = `<div class="ao-empty">Loading…</div>`;
-    const entries = await load();
+    const entries = entriesOverride || await load();
     const filtered = activeAgent === 'all' ? entries : entries.filter(e => e.agent === activeAgent);
 
     if (filtered.length === 0) {
@@ -3517,11 +3517,18 @@ const MEM = (() => {
     }).join('') + `</div>`;
   }
 
-  function renderRoster() {
+  function renderRoster(entries = []) {
     const grid = document.getElementById('mem-roster-grid');
     if (!grid) return;
     grid.innerHTML = Object.entries(AGENT_DESCRIPTIONS).map(([id, info]) => {
       const agent = AGENTS.find(a => a.id === id) || { color: 'var(--muted)', emoji: '?' };
+      const saved = entries.filter(entry => entry.agent === id);
+      const latest = saved[0];
+      const focuses = (agent.tasks || []).slice(0, 3);
+      const updated = latest && (latest.updated_at || latest.date || latest.created_at);
+      const updateLabel = updated
+        ? new Date(updated).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric' })
+        : 'No HQ note saved yet';
       const memBadge = info.memory
         ? '<span class="ao-badge ao-badge--success">MEMORY ON</span>'
         : '<span class="ao-badge">STATELESS</span>';
@@ -3534,20 +3541,29 @@ const MEM = (() => {
           </div>
           <div>
             <div class="ao-entity-meta">${escHTML(info.role)}</div>
-            <div class="ao-card-sub">Model: <span class="mem-roster-model">${escHTML(info.model)}</span></div>
+            <div class="ao-card-sub">${saved.length} saved ${saved.length === 1 ? 'memory' : 'memories'} · ${escHTML(updateLabel)}</div>
           </div>
-          <div class="ao-card-sub">${escHTML(info.desc)}</div>
+          <div class="mem-bank-summary">
+            <div class="mem-bank-label">Remembered context</div>
+            <div class="ao-card-sub">${escHTML(info.desc)}</div>
+          </div>
+          ${focuses.length ? `<div class="mem-bank-summary">
+            <div class="mem-bank-label">Current focus</div>
+            <div class="mem-bank-focus">${focuses.map(focus => `<span>${escHTML(focus)}</span>`).join('')}</div>
+          </div>` : ''}
         </div>`;
     }).join('');
   }
   async function render() {
-    renderRoster();
     renderFilters();
     if (!(await ensureAuth())) {
+      renderRoster();
       document.getElementById('mem-list').innerHTML = `<div class="ao-empty">Unlock the dropbox first to access memories.</div>`;
       return;
     }
-    await renderList();
+    const entries = await load();
+    renderRoster(entries);
+    await renderList(entries);
   }
 
   return { render, renderRoster, showForm, hideForm, save, remove, edit, setFilter, selectFormAgent };

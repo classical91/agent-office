@@ -1397,6 +1397,22 @@
     overflow-wrap: anywhere;
   }
   .mem-roster-model { color: var(--text); }
+  .mem-bank-summary { display: grid; gap: 6px; }
+  .mem-bank-label {
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .mem-bank-focus { display: flex; flex-wrap: wrap; gap: 6px; }
+  .mem-bank-focus span {
+    border: 1px solid color-mix(in srgb, var(--entity-color, var(--accent)) 35%, var(--border));
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 11px;
+    padding: 4px 8px;
+  }
 
   /* ROOM TOOLBAR — the strip under the floor. */
   .room-toolbar { gap: 0; }
