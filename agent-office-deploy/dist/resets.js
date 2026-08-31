@@ -18,6 +18,7 @@
 window.AOResets = (() => {
   const STORAGE_KEY = 'agent-office-per-card-countdowns-v2';
   const IPHONE_UPDATE_MIGRATION_KEY = 'agent-office-countdown-iphone-updates-v1';
+  const SUBSCRIPTIONS_MIGRATION_KEY = 'agent-office-countdown-subscriptions-bills-v1';
   const SORT_KEY = 'ao-resets-sort';
   const FILTER_KEY = 'ao-resets-filter';
   const TICK_MS = 1000;
@@ -45,6 +46,8 @@ window.AOResets = (() => {
     { value: 7, label: 'Every week' },
     { value: 14, label: 'Every 2 weeks' },
     { value: 30, label: 'Every 30 days' },
+    { value: -1, label: 'Every month' },
+    { value: -12, label: 'Every year' },
   ];
 
   // The list order. "soonest" is the default and the one this page is for:
@@ -60,6 +63,7 @@ window.AOResets = (() => {
 
   const FILTERS = {
     all: { label: 'All timers', keep: () => true },
+    'subscriptions-bills': { label: 'Subscriptions/Bills', keep: view => view.card.category === 'subscriptions-bills' },
     active: { label: 'Active only', keep: view => view.state === 'active' },
     paused: { label: 'Paused', keep: view => view.state === 'paused' },
     finished: { label: 'Finished', keep: view => view.state === 'expired' || view.state === 'completed' },
@@ -300,6 +304,41 @@ window.AOResets = (() => {
     return [];
   }
 
+  function subscriptionCards() {
+    const at = (year, month, day) => new Date(year, month - 1, day, 9, 0, 0, 0).toISOString();
+    const monthly = (id, title, month, day) => ({
+      id, title, resetAt: at(2026, month, day), repeatMonths: 1,
+      category: 'subscriptions-bills', status: 'active', createdAt: Date.now(),
+      updatedAt: new Date().toISOString(), message: 'Added from subscriptions and bills.',
+    });
+    return [
+      monthly('bill-rent', 'Rent', 9, 1),
+      monthly('subscription-soundcloud-go', 'SoundCloud Go', 9, 6),
+      monthly('subscription-chatgpt-plus', 'ChatGPT Plus', 9, 7),
+      monthly('subscription-icloud-plus', 'iCloud+ 50 GB', 9, 8),
+      monthly('subscription-pushcut', 'Pushcut Subscription', 9, 25),
+      monthly('subscription-youtube-premium', 'YouTube Premium', 9, 25),
+      monthly('subscription-telegram-premium', 'Telegram Premium', 9, 29),
+      monthly('subscription-pushcut-automation', 'Pushcut Automation Server', 9, 30),
+      { ...monthly('subscription-weather-radar', 'Weather Radar Widget PRO', 8, 8), resetAt: at(2027, 8, 8), repeatMonths: 12 },
+      { ...monthly('subscription-vocabulary-premium', 'Vocabulary Premium', 8, 14), resetAt: at(2027, 8, 14), repeatMonths: 12 },
+    ];
+  }
+
+  function applySubscriptionsMigration(cards) {
+    try {
+      if (localStorage.getItem(SUBSCRIPTIONS_MIGRATION_KEY) === '1') return cards;
+      const existing = new Set(cards.map(card => card.id));
+      subscriptionCards().forEach(card => {
+        if (!existing.has(card.id)) cards.push(normalizeCard(card, cards.length));
+      });
+      localStorage.setItem(SUBSCRIPTIONS_MIGRATION_KEY, '1');
+    } catch (err) {
+      /* A blocked preference store should not prevent the countdown page loading. */
+    }
+    return cards;
+  }
+
   function toIso(value) {
     if (!value) return '';
     const date = new Date(value);
@@ -310,6 +349,7 @@ window.AOResets = (() => {
     if (!raw || typeof raw !== 'object') return null;
     const target = new Date(raw.resetAt);
     const repeatDays = Number(raw.repeatDays);
+    const repeatMonths = Number(raw.repeatMonths);
     const status = raw.status === 'paused' || raw.status === 'completed' ? raw.status : 'active';
     return {
       id: String(raw.id || randomId()),
@@ -317,6 +357,8 @@ window.AOResets = (() => {
       resetAt: Number.isNaN(target.getTime()) ? daysFromNow(1) : target.toISOString(),
       webhookUrl: String(raw.webhookUrl || ''),
       repeatDays: Number.isFinite(repeatDays) && repeatDays > 0 ? Math.round(repeatDays) : 0,
+      repeatMonths: Number.isFinite(repeatMonths) && repeatMonths > 0 ? Math.round(repeatMonths) : 0,
+      category: raw.category === 'subscriptions-bills' ? 'subscriptions-bills' : '',
       status,
       fired: Boolean(raw.fired),
       message: String(raw.message || ''),
@@ -413,12 +455,23 @@ window.AOResets = (() => {
   // notification processor now, and rolling it forward in the browser would
   // hide the very moment the processor is looking for - the notification would
   // simply never be sent. The server advances it once Pushcut has taken it.
+  function addMonths(date, months) {
+    const day = date.getDate();
+    date.setDate(1);
+    date.setMonth(date.getMonth() + months);
+    const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+    date.setDate(Math.min(day, lastDay));
+  }
+
   function rollForward(card) {
-    if (card.deleted || !card.repeatDays || card.status === 'completed') return false;
+    if (card.deleted || (!card.repeatDays && !card.repeatMonths) || card.status === 'completed') return false;
     const next = new Date(card.resetAt);
     if (Number.isNaN(next.getTime()) || next.getTime() > Date.now()) return false;
     if (card.webhookUrl && card.firedForResetAt !== card.resetAt) return false;
-    while (next.getTime() <= Date.now()) next.setDate(next.getDate() + card.repeatDays);
+    while (next.getTime() <= Date.now()) {
+      if (card.repeatMonths) addMonths(next, card.repeatMonths);
+      else next.setDate(next.getDate() + card.repeatDays);
+    }
     card.resetAt = next.toISOString();
     card.fired = false;
     touch(card);
@@ -448,7 +501,7 @@ window.AOResets = (() => {
       if (card.id === HAPPY_HOUR_ID) syncHappyHourCard(card);
       else rollForward(card);
     });
-    return cards;
+    return applySubscriptionsMigration(cards);
   }
 
   function writeLocalCards() {
@@ -687,7 +740,7 @@ window.AOResets = (() => {
             <div class="ao-field">
               <label class="ao-label" for="rst-repeat-${escHtml(card.id)}">Repeats</label>
               <select class="ao-select" id="rst-repeat-${escHtml(card.id)}" data-field="repeatDays">
-                ${optionsHtml(REPEAT_OPTIONS, card.repeatDays)}
+                ${optionsHtml(REPEAT_OPTIONS, card.repeatMonths ? -card.repeatMonths : card.repeatDays)}
               </select>
             </div>
 
@@ -902,7 +955,8 @@ window.AOResets = (() => {
     return {
       title: read('title'),
       resetAt: fromDateTime(read('date'), read('time')),
-      repeatDays: Number(read('repeatDays')) || 0,
+      repeatDays: Math.max(0, Number(read('repeatDays')) || 0),
+      repeatMonths: Math.max(0, -(Number(read('repeatDays')) || 0)),
       webhookUrl: read('webhookUrl'),
     };
   }
@@ -950,6 +1004,7 @@ window.AOResets = (() => {
     card.title = draft.title;
     card.resetAt = draft.resetAt;
     card.repeatDays = draft.repeatDays;
+    card.repeatMonths = draft.repeatMonths;
     card.webhookUrl = draft.webhookUrl;
     if (retimed) {
       // A new time is a new occurrence, so the server's record of the last one
@@ -1098,7 +1153,8 @@ window.AOResets = (() => {
       id: randomId(),
       title,
       resetAt,
-      repeatDays: Number(el('rst-new-repeat').value) || 0,
+      repeatDays: Math.max(0, Number(el('rst-new-repeat').value) || 0),
+      repeatMonths: Math.max(0, -(Number(el('rst-new-repeat').value) || 0)),
       webhookUrl,
       status: 'active',
       createdAt: Date.now(),

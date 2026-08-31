@@ -528,6 +528,21 @@ test('a repeating timer advances exactly once, a one-off stays expired', async t
   assert.deepEqual(again.results.map(r => r.reason).sort(), ['already-fired', 'not-due']);
 });
 
+test('calendar-month repeats keep the due day instead of drifting by 30 days', () => {
+  const septemberFirst = new Date(2026, 8, 1, 9, 0, 0).toISOString();
+  const afterSeptemberRent = new Date(2026, 8, 2, 12, 0, 0).getTime();
+  const nextRent = new Date(resetTimers.nextOccurrence(septemberFirst, 0, afterSeptemberRent, 1));
+  assert.equal(nextRent.getFullYear(), 2026);
+  assert.equal(nextRent.getMonth(), 9);
+  assert.equal(nextRent.getDate(), 1);
+
+  const leapDay = new Date(2028, 1, 29, 9, 0, 0).toISOString();
+  const nextYear = new Date(resetTimers.nextOccurrence(leapDay, 0, new Date(2028, 2, 1).getTime(), 12));
+  assert.equal(nextYear.getFullYear(), 2029);
+  assert.equal(nextYear.getMonth(), 1);
+  assert.equal(nextYear.getDate(), 28);
+});
+
 test('timers the browser already fired, and long-dead ones, are not replayed', async t => {
   const pushcut = await startPushcut();
   t.after(() => pushcut.close());

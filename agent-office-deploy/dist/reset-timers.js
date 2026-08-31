@@ -94,6 +94,7 @@ function normalizeTimer(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
 
   const repeatDays = Number(raw.repeatDays);
+  const repeatMonths = Number(raw.repeatMonths);
   const status = raw.status === 'paused' || raw.status === 'completed' ? raw.status : 'active';
   const resetAt = toIso(raw.resetAt);
 
@@ -104,6 +105,7 @@ function normalizeTimer(raw) {
     targetMs: resetAt ? Date.parse(resetAt) : NaN,
     webhookUrl: typeof raw.webhookUrl === 'string' ? raw.webhookUrl.trim() : '',
     repeatDays: Number.isFinite(repeatDays) && repeatDays > 0 ? Math.round(repeatDays) : 0,
+    repeatMonths: Number.isFinite(repeatMonths) && repeatMonths > 0 ? Math.round(repeatMonths) : 0,
     status,
     deleted: Boolean(raw.deleted),
     source: raw.source === 'office' ? 'office' : 'browser',
@@ -215,6 +217,7 @@ function toShortcutItem(timer, now = Date.now()) {
     remaining_ms: remainingMs,
     remaining: formatRemaining(remainingMs),
     repeat_days: timer.repeatDays,
+    repeat_months: timer.repeatMonths,
     status: deriveState(timer, now),
   };
 }
@@ -260,13 +263,22 @@ function formatShortcutText(items, state = 'active') {
  * The next occurrence of a repeating timer after `now`, keeping the hour it was
  * set to. Returns '' for a one-off: an expired one-off stays expired.
  */
-function nextOccurrence(resetAt, repeatDays, now = Date.now()) {
+function nextOccurrence(resetAt, repeatDays, now = Date.now(), repeatMonths = 0) {
   const days = Number(repeatDays);
-  if (!Number.isFinite(days) || days <= 0) return '';
+  const months = Number(repeatMonths);
+  if ((!Number.isFinite(days) || days <= 0) && (!Number.isFinite(months) || months <= 0)) return '';
   const next = new Date(resetAt);
   if (Number.isNaN(next.getTime())) return '';
   for (let step = 0; step < MAX_ROLL_STEPS && next.getTime() <= now; step += 1) {
-    next.setDate(next.getDate() + Math.round(days));
+    if (months > 0) {
+      const day = next.getDate();
+      next.setDate(1);
+      next.setMonth(next.getMonth() + Math.round(months));
+      const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
+      next.setDate(Math.min(day, lastDay));
+    } else {
+      next.setDate(next.getDate() + Math.round(days));
+    }
   }
   return next.getTime() > now ? next.toISOString() : '';
 }
@@ -512,7 +524,7 @@ function firedPatch(timer, now, error) {
     updatedAt: nowIso,
   };
 
-  const advanced = nextOccurrence(timer.resetAt, timer.repeatDays, now);
+  const advanced = nextOccurrence(timer.resetAt, timer.repeatDays, now, timer.repeatMonths);
   if (advanced) {
     patch.resetAt = advanced;
     // The new occurrence has not been sent, and the page reads `fired` to
