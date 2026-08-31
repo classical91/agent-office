@@ -17,8 +17,7 @@ const PAIRED_FILES = [
   'calendar-mobile-fit.js',
   'calendar-view-base.js',
   'calendar-view.css',
-  'calendar-view.js',
-  'prompt-builder.html'
+  'calendar-view.js'
 ];
 
 let copied = 0;

@@ -27,7 +27,6 @@ The 3D office is intended to be an operational view of that system, not a decora
 - **Agent Registry** — a directory of configured agents.
 - **Resets** — countdown cards for tracked reset times.
 - **Settings** — app-level configuration.
-- **Prompt Builder** — a standalone page (`/prompt-builder.html`) for assembling structured, reusable prompts with a live preview, saved-prompt library, search, and JSON import/export.
 - **YouTube packaging** — one command that turns a video idea, or a Studio Director handoff packet, into a complete YouTube package: titles, thumbnail concepts, description, pinned comment, Shorts cutdowns, longform chapters, and a review checklist. Deterministic and offline. This is the workflow the YouTube Claw agent runs. See [YouTube packaging](#youtube-packaging-youtube-claw).
 
 ## Tech stack
@@ -56,7 +55,6 @@ agent-office-deploy/
     agent-registry.html        # Agent Registry page
     visitors.html              # Visitors page
     settings.html               # Settings page
-    prompt-builder.html        # Prompt Builder (fully standalone, own styles/scripts)
     shared.css                 # Design system + shared chrome/nav/view styles for all pages above
     app-shared.js              # Shared JS: agent/office data, office canvas+SVG rendering,
                                 #   view-switching, nav helpers, Dropbox/Memory/Settings/Resets logic
