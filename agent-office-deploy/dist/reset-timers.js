@@ -13,6 +13,10 @@
 // server owns storage and the timer loop, which is what lets the delivery
 // decisions - is this due, has it already been sent, may it be retried yet - be
 // tested without a server and without ever touching Pushcut.
+//
+// A timer's webhook URL is owner-supplied, so it also decides where this server
+// makes an outbound request to. checkWebhookTarget() is the answer to that: the
+// destination is Pushcut or it is refused, before any socket is opened.
 
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
@@ -42,6 +46,27 @@ const LATE_GRACE_MS = 24 * HOUR_MS;
 
 const DELIVERY_TIMEOUT_MS = 10 * 1000;
 const STATE_FILTERS = ['active', 'paused', 'expired', 'completed', 'all'];
+
+// Where a notification may be sent. Reset timers notify Pushcut and nothing
+// else, so the destination is an allowlist of one host rather than a filter
+// that tries to guess which of the rest of the internet is dangerous.
+const PUSHCUT_WEBHOOK_HOSTS = ['api.pushcut.io'];
+
+// The stand-in a test runs its own HTTP server on. Never Pushcut, never
+// anything reachable from a deployment: loopback is the machine running the
+// tests.
+const LOOPBACK_WEBHOOK_HOSTS = ['127.0.0.1', 'localhost', '[::1]', '::1'];
+
+// The exact value RESET_TIMER_ALLOW_LOOPBACK_WEBHOOKS has to carry to buy that.
+// A sentence rather than a flag: nothing sets this by copying a habit, and
+// reading it in a Railway variable list says what it does.
+const LOOPBACK_WEBHOOK_ACK = 'yes-allow-loopback-webhooks-for-local-tests';
+
+// One message for every rejected destination. The reason is deliberately not
+// itemised: the owner needs to know the URL is not usable, and a reply that
+// distinguishes "wrong host" from "wrong scheme" is a probe answering itself.
+const BLOCKED_WEBHOOK_ERROR = 'Webhook destination is not allowed.';
+const INVALID_WEBHOOK_ERROR = 'The webhook URL is not a valid URL.';
 
 // ─── Records ─────────────────────────────────────────────────────────────────
 
@@ -277,6 +302,85 @@ function redactWebhook(text, url) {
   return message.replace(/https?:\/\/\S+/g, '[webhook]').slice(0, 300);
 }
 
+/**
+ * May a notification be POSTed to this URL?
+ *
+ * The webhook URL comes from a stored timer record, which means whoever holds
+ * the passphrase decides where this server makes a request to. Pushcut is the
+ * only place that request has any business going, so anything else - loopback,
+ * a private address, a Railway-internal service, another site entirely - is
+ * refused here, before a socket is opened.
+ *
+ * This is a pure function and the only place the answer is decided. Everything
+ * that sends, or asks whether a URL is sendable, goes through it.
+ *
+ * @param {string} url
+ * @param {object}   [options]
+ * @param {Function} [options.allowTarget] (URL) => boolean, an extra
+ *   destination permitted on top of Pushcut. This is how the tests reach their
+ *   own local server; nothing in a deployment passes it.
+ * @returns {{ok: boolean, error: string}}
+ */
+function checkWebhookTarget(url, options = {}) {
+  let parsed;
+  try {
+    parsed = new URL(String(url == null ? '' : url).trim());
+  } catch {
+    return { ok: false, error: INVALID_WEBHOOK_ERROR };
+  }
+
+  const allowTarget = typeof options.allowTarget === 'function' ? options.allowTarget : null;
+  if (allowTarget && allowTarget(parsed) === true) return { ok: true, error: '' };
+
+  // Pushcut is HTTPS. The webhook URL carries the account secret in its query
+  // string, so plaintext is not a destination this sends a secret to even when
+  // the host is right.
+  if (parsed.protocol !== 'https:') return { ok: false, error: BLOCKED_WEBHOOK_ERROR };
+  // `https://api.pushcut.io@10.0.0.1/…` is a request to 10.0.0.1. The host
+  // check below already catches it; credentials are refused outright so a URL
+  // that reads like Pushcut never gets close.
+  if (parsed.username || parsed.password) return { ok: false, error: BLOCKED_WEBHOOK_ERROR };
+  if (parsed.port) return { ok: false, error: BLOCKED_WEBHOOK_ERROR };
+  if (!PUSHCUT_WEBHOOK_HOSTS.includes(parsed.hostname.toLowerCase())) {
+    return { ok: false, error: BLOCKED_WEBHOOK_ERROR };
+  }
+  return { ok: true, error: '' };
+}
+
+/**
+ * The one destination that is not Pushcut: a loopback stand-in, for tests.
+ *
+ * Pass the result as `allowTarget`. It widens delivery to the machine the
+ * process is already running on and nothing else, so the worst an accidental
+ * use can reach is itself - and the server refuses to build one at all on a
+ * real deployment.
+ */
+function loopbackWebhookTarget() {
+  return parsed => (parsed.protocol === 'http:' || parsed.protocol === 'https:')
+    && LOOPBACK_WEBHOOK_HOSTS.includes(parsed.hostname.toLowerCase());
+}
+
+/**
+ * The delivery allowance this process should run with: `null` - Pushcut only -
+ * unless a developer has asked for the loopback stand-in by name.
+ *
+ * Two locks, because an environment variable that quietly turns off an SSRF
+ * guard is worse than no guard at all. The value must be the acknowledgement
+ * above, and a deployment refuses it however it got there: on Railway this
+ * always returns null.
+ *
+ * @param {object} [options]
+ * @param {object} [options.env]      Usually process.env.
+ * @param {boolean} [options.deployed] Is this a real deployment?
+ * @returns {Function|null} an `allowTarget` for deliverWebhook(), or null.
+ */
+function resolveWebhookAllowance(options = {}) {
+  const env = options.env || {};
+  if (String(env.RESET_TIMER_ALLOW_LOOPBACK_WEBHOOKS || '') !== LOOPBACK_WEBHOOK_ACK) return null;
+  if (options.deployed) return null;
+  return loopbackWebhookTarget();
+}
+
 function describeDeliveryError(error, url) {
   if (!error) return 'Delivery failed.';
   if (error.name === 'TimeoutError' || error.name === 'AbortError') return 'Pushcut did not answer in time.';
@@ -291,21 +395,17 @@ function describeDeliveryError(error, url) {
  * reason delivery moved to the server is that a status code can be read here,
  * so "sent" can mean sent rather than "the fetch resolved".
  *
+ * A destination that is not allowed returns a failure without a request being
+ * made: nothing below this line runs for it.
+ *
  * @returns {Promise<{ok: boolean, status: number, error: string}>}
  */
 async function deliverWebhook(url, payload, options = {}) {
   const fetchImpl = options.fetchImpl || fetch;
   const timeoutMs = Number.isFinite(options.timeoutMs) ? options.timeoutMs : DELIVERY_TIMEOUT_MS;
 
-  let parsed;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return { ok: false, status: 0, error: 'The webhook URL is not a valid URL.' };
-  }
-  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
-    return { ok: false, status: 0, error: 'The webhook URL must be http or https.' };
-  }
+  const target = checkWebhookTarget(url, options);
+  if (!target.ok) return { ok: false, status: 0, error: target.error };
 
   try {
     const response = await fetchImpl(url, {
@@ -444,6 +544,8 @@ function failedPatch(timer, now, error) {
  * @param {Array}  options.timers   Stored timer records.
  * @param {Date|number} [options.now]
  * @param {Function} [options.send] Delivery function, for tests. (url, payload) => {ok, status, error}
+ * @param {Function} [options.allowTarget] Extra allowed destination, for tests;
+ *   passed through to deliverWebhook(). See checkWebhookTarget().
  * @param {number} [options.retryBaseMs]
  * @param {number} [options.retryMaxMs]
  * @param {number} [options.lateGraceMs]
@@ -518,20 +620,26 @@ function applyTimerUpdates(items, updates) {
 }
 
 module.exports = {
+  BLOCKED_WEBHOOK_ERROR,
   DAY_MS,
+  INVALID_WEBHOOK_ERROR,
   LATE_GRACE_MS,
+  LOOPBACK_WEBHOOK_ACK,
   MAX_TIMERS,
+  PUSHCUT_WEBHOOK_HOSTS,
   RETRY_BASE_MS,
   RETRY_MAX_MS,
   STATE_FILTERS,
   STORAGE_KEY,
   applyTimerUpdates,
   backoffMs,
+  checkWebhookTarget,
   deliverWebhook,
   deriveState,
   describeWebhook,
   formatRemaining,
   formatShortcutText,
+  loopbackWebhookTarget,
   nextOccurrence,
   normalizeStateFilter,
   normalizeTimer,
@@ -539,6 +647,7 @@ module.exports = {
   parseStoredTimers,
   processDueTimers,
   redactWebhook,
+  resolveWebhookAllowance,
   selectShortcutTimers,
   toShortcutItem,
   validateStoredItems,

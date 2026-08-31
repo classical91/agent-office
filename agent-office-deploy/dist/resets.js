@@ -65,6 +65,13 @@ window.AOResets = (() => {
     finished: { label: 'Finished', keep: view => view.state === 'expired' || view.state === 'completed' },
   };
 
+  // The same destination rule the server enforces in reset-timers.js, so a URL
+  // the processor will refuse to send to cannot be saved here in the first
+  // place. The server is where it matters - this is the version that can say so
+  // while the URL is still in front of the person who pasted it.
+  const PUSHCUT_WEBHOOK_HOSTS = ['api.pushcut.io'];
+  const WEBHOOK_HELP = 'Only Pushcut webhooks are supported (https://api.pushcut.io/…).';
+
   const STATES = {
     active: { label: 'Active', dot: 'active', tone: 'active' },
     paused: { label: 'Paused', dot: 'idle', tone: 'idle' },
@@ -900,6 +907,27 @@ window.AOResets = (() => {
     };
   }
 
+  /**
+   * '' when this webhook URL is one a notification may be sent to, otherwise
+   * the sentence to show whoever typed it.
+   *
+   * An empty URL is fine: a timer without a webhook is just a countdown.
+   */
+  function webhookTargetError(url) {
+    const value = String(url == null ? '' : url).trim();
+    if (!value) return '';
+    let parsed;
+    try {
+      parsed = new URL(value);
+    } catch (err) {
+      return `That is not a valid URL. ${WEBHOOK_HELP}`;
+    }
+    const allowed = parsed.protocol === 'https:'
+      && !parsed.username && !parsed.password && !parsed.port
+      && PUSHCUT_WEBHOOK_HOSTS.indexOf(parsed.hostname.toLowerCase()) !== -1;
+    return allowed ? '' : WEBHOOK_HELP;
+  }
+
   function setMessage(id, text) {
     const card = state.cards.find(item => item.id === id);
     if (card) card.message = text;
@@ -915,6 +943,8 @@ window.AOResets = (() => {
     const draft = draftFrom(node);
     if (!draft.title) return setMessage(id, 'Give the countdown a name before saving.');
     if (!draft.resetAt) return setMessage(id, 'Pick a date and time before saving.');
+    const hookError = webhookTargetError(draft.webhookUrl);
+    if (hookError) return setMessage(id, hookError);
 
     const retimed = draft.resetAt !== card.resetAt;
     card.title = draft.title;
@@ -1001,6 +1031,8 @@ window.AOResets = (() => {
     if (!card) return;
     const url = (override == null ? card.webhookUrl : override).trim();
     if (!url) return setMessage(id, 'No Pushcut webhook URL on this card yet.');
+    const hookError = webhookTargetError(url);
+    if (hookError) return setMessage(id, hookError);
 
     setMessage(id, 'Sending a test to Pushcut...');
     try {
@@ -1056,15 +1088,18 @@ window.AOResets = (() => {
   async function addFromForm() {
     const title = el('rst-new-title').value.trim();
     const resetAt = fromDateTime(el('rst-new-date').value, el('rst-new-time').value);
+    const webhookUrl = el('rst-new-webhook').value.trim();
     if (!title) return showFormError('Give the countdown a name.');
     if (!resetAt) return showFormError('Pick the date and time it lands.');
+    const hookError = webhookTargetError(webhookUrl);
+    if (hookError) return showFormError(hookError);
 
     const card = normalizeCard({
       id: randomId(),
       title,
       resetAt,
       repeatDays: Number(el('rst-new-repeat').value) || 0,
-      webhookUrl: el('rst-new-webhook').value.trim(),
+      webhookUrl,
       status: 'active',
       createdAt: Date.now(),
       updatedAt: new Date().toISOString(),
@@ -1192,5 +1227,6 @@ window.AOResets = (() => {
     isListView,
     isDueSoon,
     colorForView,
+    webhookTargetError,
   };
 })();
