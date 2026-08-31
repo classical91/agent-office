@@ -3369,6 +3369,12 @@ const MEM = (() => {
   let _cache = null;
   let _editingId = null;
 
+  function canonicalAgentId(value) {
+    const wanted = String(value || '').trim().toLowerCase();
+    const agent = AGENTS.find(item => item.id.toLowerCase() === wanted || item.name.toLowerCase() === wanted);
+    return agent ? agent.id : wanted;
+  }
+
   async function ensureAuth() {
     if (typeof ensureDropsSession === 'function') {
       return await ensureDropsSession(true);
@@ -3473,7 +3479,7 @@ const MEM = (() => {
   // `btn.classList` and left clicking a card dead. The filter bar redraws
   // itself from activeAgent now, so there is no button to be handed.
   function setFilter(agentId) {
-    activeAgent = agentId;
+    activeAgent = agentId === 'all' ? 'all' : canonicalAgentId(agentId);
     renderFilters();
     renderList();
   }
@@ -3490,7 +3496,7 @@ const MEM = (() => {
     const list = document.getElementById('mem-list');
     list.innerHTML = `<div class="ao-empty">Loading…</div>`;
     const entries = entriesOverride || await load();
-    const filtered = activeAgent === 'all' ? entries : entries.filter(e => e.agent === activeAgent);
+    const filtered = activeAgent === 'all' ? entries : entries.filter(e => canonicalAgentId(e.agent) === activeAgent);
 
     if (filtered.length === 0) {
       list.innerHTML = `<div class="ao-empty">No memories yet. Hit <strong>＋ New Memory</strong> to add one.</div>`;
@@ -3498,7 +3504,8 @@ const MEM = (() => {
     }
 
     list.innerHTML = `<div class="mem-entries">` + filtered.map(e => {
-      const agent = AGENTS.find(a => a.id === e.agent) || { emoji: '?', name: e.agent, color: 'var(--muted)' };
+      const agentId = canonicalAgentId(e.agent);
+      const agent = AGENTS.find(a => a.id === agentId) || { emoji: '?', name: e.agent, color: 'var(--muted)' };
       const date = new Date(e.date || e.created_at).toLocaleDateString('en-CA', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
       return `<article class="ao-card ao-entity-card" style="--entity-color:${agent.color};">
         <div class="ao-card-head">
@@ -3522,7 +3529,7 @@ const MEM = (() => {
     if (!grid) return;
     grid.innerHTML = Object.entries(AGENT_DESCRIPTIONS).map(([id, info]) => {
       const agent = AGENTS.find(a => a.id === id) || { color: 'var(--muted)', emoji: '?' };
-      const saved = entries.filter(entry => entry.agent === id);
+      const saved = entries.filter(entry => canonicalAgentId(entry.agent) === id);
       const latest = saved[0];
       const focuses = (agent.tasks || []).slice(0, 3);
       const updated = latest && (latest.updated_at || latest.date || latest.created_at);
@@ -3532,7 +3539,7 @@ const MEM = (() => {
       const memBadge = info.memory
         ? '<span class="ao-badge ao-badge--success">MEMORY ON</span>'
         : '<span class="ao-badge">STATELESS</span>';
-      return `<div class="ao-card ao-card--interactive ao-entity-card" style="--entity-color:${agent.color};" onclick="MEM.setFilter('${id}')">
+      return `<button type="button" class="ao-card ao-card--interactive ao-entity-card mem-bank-card" style="--entity-color:${agent.color};" onclick="MEM.setFilter('${id}')" aria-label="Show ${escHTML(info.name)} memories">
           <div class="ao-card-head">
             <div class="mem-entry-agent">
               <span class="ao-entity-emoji">${agent.emoji}</span>
@@ -3551,7 +3558,7 @@ const MEM = (() => {
             <div class="mem-bank-label">Current focus</div>
             <div class="mem-bank-focus">${focuses.map(focus => `<span>${escHTML(focus)}</span>`).join('')}</div>
           </div>` : ''}
-        </div>`;
+        </button>`;
     }).join('');
   }
   async function render() {

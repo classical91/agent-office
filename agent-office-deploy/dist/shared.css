@@ -1397,6 +1397,14 @@
     overflow-wrap: anywhere;
   }
   .mem-roster-model { color: var(--text); }
+  .mem-bank-card {
+    appearance: none;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    width: 100%;
+  }
   .mem-bank-summary { display: grid; gap: 6px; }
   .mem-bank-label {
     color: var(--text);
