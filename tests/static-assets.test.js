@@ -148,3 +148,13 @@ test('Dev Links Developer Control Center includes the requested consoles', () =>
   assert.match(page, /https:\/\/console\.cloud\.google\.com\//);
   assert.match(page, />Google Cloud Console</);
 });
+
+test('Dev Links places usage dashboards above platform update feeds', () => {
+  const page = fs.readFileSync(path.join(DIST, 'dev.html'), 'utf8');
+  assert.ok(page.indexOf('Usage &amp; Billing') < page.indexOf('Platform Update Feeds'));
+  assert.match(page, /chatgpt\.com\/codex\/cloud\/settings\/analytics#usage/);
+  assert.match(page, /console\.x\.ai\/team\/9a1fb5df-4e2d-4777-8403-a883dc1e3478\/usage/);
+  assert.match(page, /platform\.openai\.com\/settings\/organization\/billing\/overview/);
+  assert.match(page, /claude\.ai\/new#settings\/usage/);
+  assert.match(page, /railway\.com\/workspace\/usage/);
+});
