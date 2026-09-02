@@ -154,7 +154,8 @@ test('Dev Links places usage dashboards above platform update feeds', () => {
   assert.ok(page.indexOf('Usage &amp; Billing') < page.indexOf('Platform Update Feeds'));
   assert.match(page, /chatgpt\.com\/codex\/cloud\/settings\/analytics#usage/);
   assert.match(page, /console\.x\.ai\/team\/9a1fb5df-4e2d-4777-8403-a883dc1e3478\/usage/);
-  assert.match(page, /platform\.openai\.com\/settings\/organization\/billing\/overview/);
+  assert.match(page, /platform\.openai\.com\/settings\/organization\/usage/);
   assert.match(page, /claude\.ai\/new#settings\/usage/);
+  assert.match(page, /platform\.claude\.com\/claude-code/);
   assert.match(page, /railway\.com\/workspace\/usage/);
 });
