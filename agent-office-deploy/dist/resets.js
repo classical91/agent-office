@@ -19,6 +19,7 @@ window.AOResets = (() => {
   const STORAGE_KEY = 'agent-office-per-card-countdowns-v2';
   const IPHONE_UPDATE_MIGRATION_KEY = 'agent-office-countdown-iphone-updates-v1';
   const SUBSCRIPTIONS_MIGRATION_KEY = 'agent-office-countdown-subscriptions-bills-v1';
+  const HOLIDAYS_MIGRATION_KEY = 'agent-office-countdown-holidays-v1';
   const SORT_KEY = 'ao-resets-sort';
   const FILTER_KEY = 'ao-resets-filter';
   const TICK_MS = 1000;
@@ -64,6 +65,7 @@ window.AOResets = (() => {
   const FILTERS = {
     all: { label: 'All timers', keep: () => true },
     'subscriptions-bills': { label: 'Subscriptions/Bills', keep: view => view.card.category === 'subscriptions-bills' },
+    holidays: { label: 'Holidays', keep: view => view.card.category === 'holidays' },
     active: { label: 'Active only', keep: view => view.state === 'active' },
     paused: { label: 'Paused', keep: view => view.state === 'paused' },
     finished: { label: 'Finished', keep: view => view.state === 'expired' || view.state === 'completed' },
@@ -339,6 +341,36 @@ window.AOResets = (() => {
     return cards;
   }
 
+  function holidayCards() {
+    const at = (year, month, day) => new Date(year, month - 1, day, 9, 0, 0, 0).toISOString();
+    const holiday = (id, title, year, month, day) => ({
+      id, title, resetAt: at(year, month, day), repeatMonths: 12,
+      category: 'holidays', status: 'active', createdAt: Date.now(),
+      updatedAt: new Date().toISOString(), message: 'Added from holidays.',
+    });
+    return [
+      holiday('holiday-halloween', 'Halloween', 2026, 10, 31),
+      holiday('holiday-black-friday', 'Black Friday', 2026, 11, 27),
+      holiday('holiday-christmas', 'Christmas', 2026, 12, 25),
+      holiday('holiday-new-years-day', "New Year's Day", 2027, 1, 1),
+      holiday('holiday-valentines-day', "Valentine's Day", 2027, 2, 14),
+    ];
+  }
+
+  function applyHolidaysMigration(cards) {
+    try {
+      if (localStorage.getItem(HOLIDAYS_MIGRATION_KEY) === '1') return cards;
+      const existing = new Set(cards.map(card => card.id));
+      holidayCards().forEach(card => {
+        if (!existing.has(card.id)) cards.push(normalizeCard(card, cards.length));
+      });
+      localStorage.setItem(HOLIDAYS_MIGRATION_KEY, '1');
+    } catch (err) {
+      /* A blocked preference store should not prevent the countdown page loading. */
+    }
+    return cards;
+  }
+
   function toIso(value) {
     if (!value) return '';
     const date = new Date(value);
@@ -358,7 +390,7 @@ window.AOResets = (() => {
       webhookUrl: String(raw.webhookUrl || ''),
       repeatDays: Number.isFinite(repeatDays) && repeatDays > 0 ? Math.round(repeatDays) : 0,
       repeatMonths: Number.isFinite(repeatMonths) && repeatMonths > 0 ? Math.round(repeatMonths) : 0,
-      category: raw.category === 'subscriptions-bills' ? 'subscriptions-bills' : '',
+      category: raw.category === 'subscriptions-bills' || raw.category === 'holidays' ? raw.category : '',
       status,
       fired: Boolean(raw.fired),
       message: String(raw.message || ''),
@@ -501,7 +533,7 @@ window.AOResets = (() => {
       if (card.id === HAPPY_HOUR_ID) syncHappyHourCard(card);
       else rollForward(card);
     });
-    return applySubscriptionsMigration(cards);
+    return applyHolidaysMigration(applySubscriptionsMigration(cards));
   }
 
   function writeLocalCards() {
@@ -1270,6 +1302,7 @@ window.AOResets = (() => {
     init,
     mergeCardLists,
     normalizeCard,
+    holidayCards,
     setSort,
     setFilter,
     openForm,

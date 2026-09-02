@@ -17,9 +17,32 @@ const {
   happyHourDetails,
   happyHourMeal,
   happyHourShortcutTime,
+  holidayCards,
   isDueSoon,
   isListView,
 } = context.window.AOResets;
+
+test('holiday countdowns use the Holidays filter and requested dates', () => {
+  const cards = holidayCards();
+  assert.deepEqual(Array.from(cards, card => card.title), [
+    'Halloween',
+    'Black Friday',
+    'Christmas',
+    "New Year's Day",
+    "Valentine's Day",
+  ]);
+  assert.deepEqual(Array.from(cards, card => card.resetAt.slice(0, 10)), [
+    '2026-10-31',
+    '2026-11-27',
+    '2026-12-25',
+    '2027-01-01',
+    '2027-02-14',
+  ]);
+  cards.forEach(card => {
+    assert.equal(card.category, 'holidays');
+    assert.equal(card.repeatMonths, 12);
+  });
+});
 
 test('happy hour keeps only the meal name in the header shortcut', () => {
   assert.equal(happyHourMeal('50% off Fresh Appetizers'), 'Fresh Appetizers');
