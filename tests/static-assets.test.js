@@ -138,8 +138,9 @@ test('Dev Links includes the Dropbox Developer Console', () => {
   assert.match(page, />Dropbox Developer Console</);
 });
 
-test('Dev Links Control Room includes the requested developer consoles', () => {
+test('Dev Links Developer Control Center includes the requested consoles', () => {
   const page = fs.readFileSync(path.join(DIST, 'dev.html'), 'utf8');
+  assert.match(page, />Developer Control Center</);
   assert.match(page, /https:\/\/console\.x\.ai\//);
   assert.match(page, />Grok Console</);
   assert.match(page, /https:\/\/console\.x\.com\//);
