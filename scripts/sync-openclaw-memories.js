@@ -89,7 +89,10 @@ async function buildSnapshot(agent) {
 
 async function configuredAgents(configPath) {
   const config = JSON.parse(await fs.readFile(configPath, 'utf8'));
-  const list = config && config.agents && Array.isArray(config.agents.list) ? config.agents.list : [];
+  const agentConfig = config && config.agents;
+  const list = Array.isArray(agentConfig && agentConfig.list)
+    ? agentConfig.list
+    : Object.entries((agentConfig && agentConfig.entries) || {}).map(([id, agent]) => ({ id, ...agent }));
   return list
     .filter(agent => agent && agent.id && agent.workspace)
     .map(agent => ({ id: String(agent.id), workspace: path.resolve(String(agent.workspace)) }));

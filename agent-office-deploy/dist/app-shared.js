@@ -118,7 +118,7 @@ const AGENTS = [
     emoji: 'TC',
     color: '#14b8a6',
     role: 'Trading and Market Specialist',
-    model: 'GPT-5.5',
+    model: 'GPT-5.6 Sol',
     authority: 'specialist',
     memory: true,
     workspace: 'workspace-trader',

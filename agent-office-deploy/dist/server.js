@@ -5275,7 +5275,10 @@ function sessionStatusFromRecords(records, now = Date.now()) {
 async function readLocalOpenClawAgents() {
   const configPath = process.env.OPENCLAW_CONFIG_PATH || homePath('.openclaw', 'openclaw.json');
   const config = await readJsonFileSafe(configPath, {});
-  const configured = Array.isArray(config && config.agents && config.agents.list) ? config.agents.list : [];
+  const agentConfig = config && config.agents;
+  const configured = Array.isArray(agentConfig && agentConfig.list)
+    ? agentConfig.list
+    : Object.entries((agentConfig && agentConfig.entries) || {}).map(([id, agent]) => ({ id, ...agent }));
   const now = Date.now();
 
   const agents = [];
