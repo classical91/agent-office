@@ -242,6 +242,35 @@
 .rst-field-row { display: flex; gap: var(--space-3); }
 .rst-field-row > .ao-field { flex: 1 1 0; min-width: 0; }
 
+/* The Pushcut tick: the whole row is the label, so the box has a target the
+   size of a phone thumb rather than 16 pixels of checkbox. */
+.rst-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--fs-sm);
+  color: var(--text);
+  cursor: pointer;
+}
+.rst-check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  flex: 0 0 auto;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* The same answer on the collapsed card, where there is room for one glyph and
+   no more. */
+.rst-pushcut-mark {
+  flex: 0 0 auto;
+  align-self: center;
+  color: var(--accent);
+  font-size: var(--fs-sm);
+  line-height: 1;
+}
+
 .rst-hook-row { display: flex; gap: var(--space-4); }
 .rst-link {
   padding: 0;
