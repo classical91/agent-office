@@ -1,0 +1,58 @@
+'use strict';
+
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const test = require('node:test');
+const vm = require('node:vm');
+
+const DIST = path.join(__dirname, '..', 'agent-office-deploy', 'dist');
+const source = fs.readFileSync(path.join(DIST, 'resets.js'), 'utf8');
+const context = { window: {}, Date, console, setInterval, clearInterval };
+vm.runInNewContext(source, context);
+const { DEFAULT_FILTER, FILTERS, normalizeCard } = context.window.AOResets;
+
+const keep = card => FILTERS.pushcut.keep({ card: normalizeCard(card, 0) });
+
+test('the countdown page opens on the Pushcut filter', () => {
+  assert.equal(DEFAULT_FILTER, 'pushcut');
+  assert.equal(Object.keys(FILTERS)[0], 'pushcut');
+});
+
+test('the Pushcut filter keeps the ticked countdowns and nothing else', () => {
+  assert.equal(keep({ title: 'Claude reset', resetAt: '2026-09-09T12:00:00.000Z', pushcut: true }), true);
+  assert.equal(keep({ title: 'Haircut', resetAt: '2026-09-09T12:00:00.000Z', pushcut: false }), false);
+});
+
+test('the tick is the filter answer, not the webhook: either can be set without the other', () => {
+  // Ticked with no webhook is a countdown you want in the list but do not want
+  // pushed; a webhook with the tick cleared still notifies, it just sits under
+  // "All timers".
+  assert.equal(keep({ title: 'Rent', resetAt: '2026-09-09T12:00:00.000Z', pushcut: true, webhookUrl: '' }), true);
+  assert.equal(
+    keep({
+      title: 'Backup',
+      resetAt: '2026-09-09T12:00:00.000Z',
+      pushcut: false,
+      webhookUrl: 'https://api.pushcut.io/secret/notifications/Backup',
+    }),
+    false
+  );
+});
+
+test('a countdown saved before the tick existed answers from its webhook', () => {
+  const withHook = normalizeCard({
+    title: 'Gemini reset',
+    resetAt: '2026-09-09T12:00:00.000Z',
+    webhookUrl: 'https://api.pushcut.io/secret/notifications/Gemini',
+  }, 0);
+  const without = normalizeCard({ title: 'Sheets', resetAt: '2026-09-09T12:00:00.000Z' }, 1);
+  assert.equal(withHook.pushcut, true);
+  assert.equal(without.pushcut, false);
+});
+
+test('the editor and the new-countdown form both offer the tick', () => {
+  assert.match(source, /data-field="pushcut"/);
+  const html = fs.readFileSync(path.join(DIST, 'resets.html'), 'utf8');
+  assert.match(html, /id="rst-new-pushcut" checked/);
+});

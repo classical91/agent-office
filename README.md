@@ -385,6 +385,16 @@ resets.html  →  /api/reset-timers  →  ┬─ /api/shortcuts/reset-timers  �
                 (persistent store)    └─ server-side timer processor   →  Pushcut  →  iPhone
 ```
 
+**The Pushcut list is what the page opens on.** Every countdown carries a
+**Pushcut** tick box, and the **Show** dropdown opens on **Pushcut**: the cards
+you keep on the phone are the list, and everything else — reference dates,
+holidays, the subscription rows — is one switch to **All timers** away. The tick
+is a label on the card and nothing more. It does not decide whether a
+notification is sent: that is still the webhook URL and the server's processor,
+so a ticked card with no webhook is quiet, and an unticked card with one still
+fires. A timer stored before the box existed opens ticked when it has a webhook,
+because that is what it already was.
+
 **The notification is the server's job.** It used to be the browser's: the page
 fired the webhook itself, which meant nothing arrived unless the page happened
 to be open, and `no-cors` meant even then nothing could tell whether Pushcut had

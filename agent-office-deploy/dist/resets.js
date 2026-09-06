@@ -22,6 +22,10 @@ window.AOResets = (() => {
   const HOLIDAYS_MIGRATION_KEY = 'agent-office-countdown-holidays-v1';
   const SORT_KEY = 'ao-resets-sort';
   const FILTER_KEY = 'ao-resets-filter';
+  // The list opens on the Pushcut cards. Most of what is on this page is a
+  // countdown that pushes a notification to the phone; the rest is reference,
+  // and "Show: All timers" is one control away.
+  const DEFAULT_FILTER = 'pushcut';
   const TICK_MS = 1000;
   // The server advances repeating timers and records Pushcut deliveries, so the
   // page pulls those back periodically instead of only on load.
@@ -63,6 +67,11 @@ window.AOResets = (() => {
   };
 
   const FILTERS = {
+    // First in the list because it is what the page opens on. A card is in
+    // this view because its Pushcut box is ticked, not because it happens to
+    // carry a webhook URL: the tick is the answer to "is this one of my
+    // Pushcut countdowns", and it never decides whether a notification is sent.
+    pushcut: { label: 'Pushcut', keep: view => view.card.pushcut },
     all: { label: 'All timers', keep: () => true },
     'subscriptions-bills': { label: 'Subscriptions/Bills', keep: view => view.card.category === 'subscriptions-bills' },
     holidays: { label: 'Holidays', keep: view => view.card.category === 'holidays' },
@@ -106,7 +115,7 @@ window.AOResets = (() => {
     initialized: false,
     cards: [],
     sort: 'soonest',
-    filter: 'all',
+    filter: DEFAULT_FILTER,
     openId: '',
     savedId: '',
     tickTimer: null,
@@ -388,6 +397,11 @@ window.AOResets = (() => {
       title: String(raw.title || 'Untitled countdown').slice(0, 160),
       resetAt: Number.isNaN(target.getTime()) ? daysFromNow(1) : target.toISOString(),
       webhookUrl: String(raw.webhookUrl || ''),
+      // Is this one of the Pushcut countdowns? Set by the tick box on the card
+      // and by nothing else. A record saved before the box existed answers with
+      // the only evidence it has: a card with a webhook was already a Pushcut
+      // card, so it opens ticked.
+      pushcut: raw.pushcut == null ? Boolean(raw.webhookUrl) : Boolean(raw.pushcut),
       repeatDays: Number.isFinite(repeatDays) && repeatDays > 0 ? Math.round(repeatDays) : 0,
       repeatMonths: Number.isFinite(repeatMonths) && repeatMonths > 0 ? Math.round(repeatMonths) : 0,
       category: raw.category === 'subscriptions-bills' || raw.category === 'holidays' ? raw.category : '',
@@ -738,6 +752,7 @@ window.AOResets = (() => {
           <span class="rst-head-main">
             <span class="rst-head-top">
               <span class="rst-title" data-role="title">${escHtml(card.title)}</span>
+              ${card.pushcut ? '<span class="rst-pushcut-mark" title="In the Pushcut filter" aria-label="In the Pushcut filter">\u2713</span>' : ''}
               <span class="ao-status ao-status--${meta.tone} rst-state" data-role="status">
                 <span class="ao-dot ao-dot--${meta.dot}"></span>${meta.label}
               </span>
@@ -775,6 +790,11 @@ window.AOResets = (() => {
                 ${optionsHtml(REPEAT_OPTIONS, card.repeatMonths ? -card.repeatMonths : card.repeatDays)}
               </select>
             </div>
+
+            <label class="rst-check">
+              <input type="checkbox" data-field="pushcut" ${card.pushcut ? 'checked' : ''} />
+              <span>Pushcut &mdash; keep this one in the Pushcut list</span>
+            </label>
 
             <div class="ao-field">
               <label class="ao-label" for="rst-hook-${escHtml(card.id)}">Pushcut webhook</label>
@@ -984,12 +1004,17 @@ window.AOResets = (() => {
       const input = node.querySelector(`[data-field="${field}"]`);
       return input ? input.value.trim() : '';
     };
+    const checked = field => {
+      const input = node.querySelector(`[data-field="${field}"]`);
+      return Boolean(input && input.checked);
+    };
     return {
       title: read('title'),
       resetAt: fromDateTime(read('date'), read('time')),
       repeatDays: Math.max(0, Number(read('repeatDays')) || 0),
       repeatMonths: Math.max(0, -(Number(read('repeatDays')) || 0)),
       webhookUrl: read('webhookUrl'),
+      pushcut: checked('pushcut'),
     };
   }
 
@@ -1038,6 +1063,7 @@ window.AOResets = (() => {
     card.repeatDays = draft.repeatDays;
     card.repeatMonths = draft.repeatMonths;
     card.webhookUrl = draft.webhookUrl;
+    card.pushcut = draft.pushcut;
     if (retimed) {
       // A new time is a new occurrence, so the server's record of the last one
       // must not read as "already sent" against it.
@@ -1172,6 +1198,13 @@ window.AOResets = (() => {
     box.hidden = !text;
   }
 
+  // The new-countdown form's Pushcut box. It opens ticked, so a countdown
+  // typed in on a phone lands in the list the page opens on.
+  function readNewPushcut() {
+    const box = el('rst-new-pushcut');
+    return box ? Boolean(box.checked) : true;
+  }
+
   async function addFromForm() {
     const title = el('rst-new-title').value.trim();
     const resetAt = fromDateTime(el('rst-new-date').value, el('rst-new-time').value);
@@ -1188,6 +1221,7 @@ window.AOResets = (() => {
       repeatDays: Math.max(0, Number(el('rst-new-repeat').value) || 0),
       repeatMonths: Math.max(0, -(Number(el('rst-new-repeat').value) || 0)),
       webhookUrl,
+      pushcut: readNewPushcut(),
       status: 'active',
       createdAt: Date.now(),
       updatedAt: new Date().toISOString(),
@@ -1211,7 +1245,7 @@ window.AOResets = (() => {
   }
 
   function setFilter(value) {
-    state.filter = FILTERS[value] ? value : 'all';
+    state.filter = FILTERS[value] ? value : DEFAULT_FILTER;
     writePreference(FILTER_KEY, state.filter);
     render();
   }
@@ -1276,7 +1310,7 @@ window.AOResets = (() => {
   function init() {
     if (!state.initialized) {
       state.sort = readPreference(SORT_KEY, SORTS, 'soonest');
-      state.filter = readPreference(FILTER_KEY, FILTERS, 'all');
+      state.filter = readPreference(FILTER_KEY, FILTERS, DEFAULT_FILTER);
       state.cards = loadCards();
       saveCards();
 
@@ -1315,6 +1349,8 @@ window.AOResets = (() => {
     happyHourShortcutTime,
     isListView,
     isDueSoon,
+    FILTERS,
+    DEFAULT_FILTER,
     colorForView,
     webhookTargetError,
   };
