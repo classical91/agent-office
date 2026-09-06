@@ -20,6 +20,7 @@ window.AOResets = (() => {
   const IPHONE_UPDATE_MIGRATION_KEY = 'agent-office-countdown-iphone-updates-v1';
   const SUBSCRIPTIONS_MIGRATION_KEY = 'agent-office-countdown-subscriptions-bills-v1';
   const HOLIDAYS_MIGRATION_KEY = 'agent-office-countdown-holidays-v1';
+  const TRADINGVIEW_MIGRATION_KEY = 'agent-office-countdown-tradingview-timeframes-v1';
   const SORT_KEY = 'ao-resets-sort';
   const FILTER_KEY = 'ao-resets-filter';
   // The list opens on the Pushcut cards. Most of what is on this page is a
@@ -380,6 +381,53 @@ window.AOResets = (() => {
     return cards;
   }
 
+  function tradingViewTimeframeCards(now = new Date()) {
+    const weeklyTarget = new Date(now);
+    const daysUntilSunday = (7 - weeklyTarget.getDay()) % 7 || 7;
+    weeklyTarget.setDate(weeklyTarget.getDate() + daysUntilSunday);
+    weeklyTarget.setHours(9, 0, 0, 0);
+    const monthlyTarget = new Date(now.getFullYear(), now.getMonth() + 1, 1, 9, 0, 0, 0);
+    const createdAt = Date.now();
+    return ['Bitcoin', 'TOTAL1', 'TOTAL2', 'TOTAL3'].flatMap(symbol => [
+      {
+        id: `tradingview-weekly-${symbol.toLowerCase()}`,
+        title: `Weekly timeframe review - ${symbol}`,
+        resetAt: weeklyTarget.toISOString(),
+        repeatDays: 7,
+        pushcut: true,
+        status: 'active',
+        createdAt,
+        updatedAt: new Date().toISOString(),
+        message: `Review the ${symbol} weekly chart in TradingView.`,
+      },
+      {
+        id: `tradingview-monthly-${symbol.toLowerCase()}`,
+        title: `Monthly timeframe review - ${symbol}`,
+        resetAt: monthlyTarget.toISOString(),
+        repeatMonths: 1,
+        pushcut: true,
+        status: 'active',
+        createdAt,
+        updatedAt: new Date().toISOString(),
+        message: `Review the ${symbol} monthly chart in TradingView.`,
+      },
+    ]);
+  }
+
+  function applyTradingViewMigration(cards) {
+    try {
+      if (localStorage.getItem(TRADINGVIEW_MIGRATION_KEY) === '1') return cards;
+      const existing = new Set(cards.map(card => card.id));
+      tradingViewTimeframeCards().forEach(card => {
+        if (!existing.has(card.id)) cards.push(normalizeCard(card, cards.length));
+      });
+      localStorage.setItem(TRADINGVIEW_MIGRATION_KEY, '1');
+    } catch (err) {
+      /* A blocked preference store should not prevent the countdown page loading. */
+    }
+    return cards;
+  }
+
   function toIso(value) {
     if (!value) return '';
     const date = new Date(value);
@@ -547,7 +595,7 @@ window.AOResets = (() => {
       if (card.id === HAPPY_HOUR_ID) syncHappyHourCard(card);
       else rollForward(card);
     });
-    return applyHolidaysMigration(applySubscriptionsMigration(cards));
+    return applyTradingViewMigration(applyHolidaysMigration(applySubscriptionsMigration(cards)));
   }
 
   function writeLocalCards() {
@@ -1337,6 +1385,7 @@ window.AOResets = (() => {
     mergeCardLists,
     normalizeCard,
     holidayCards,
+    tradingViewTimeframeCards,
     setSort,
     setFilter,
     openForm,

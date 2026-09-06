@@ -10,7 +10,7 @@ const DIST = path.join(__dirname, '..', 'agent-office-deploy', 'dist');
 const source = fs.readFileSync(path.join(DIST, 'resets.js'), 'utf8');
 const context = { window: {}, Date, console, setInterval, clearInterval };
 vm.runInNewContext(source, context);
-const { DEFAULT_FILTER, FILTERS, normalizeCard } = context.window.AOResets;
+const { DEFAULT_FILTER, FILTERS, normalizeCard, tradingViewTimeframeCards } = context.window.AOResets;
 
 const keep = card => FILTERS.pushcut.keep({ card: normalizeCard(card, 0) });
 
@@ -55,4 +55,22 @@ test('the editor and the new-countdown form both offer the tick', () => {
   assert.match(source, /data-field="pushcut"/);
   const html = fs.readFileSync(path.join(DIST, 'resets.html'), 'utf8');
   assert.match(html, /id="rst-new-pushcut" checked/);
+});
+
+test('TradingView weekly and monthly reviews live in the Pushcut filter', () => {
+  const cards = Array.from(tradingViewTimeframeCards(new Date(2026, 8, 5, 12, 0, 0)));
+  assert.equal(cards.length, 8);
+  assert.equal(cards.every(card => keep(card)), true);
+  assert.equal(cards.filter(card => card.repeatDays === 7).length, 4);
+  assert.equal(cards.filter(card => card.repeatMonths === 1).length, 4);
+  assert.deepEqual(cards.map(card => card.title), [
+    'Weekly timeframe review - Bitcoin',
+    'Monthly timeframe review - Bitcoin',
+    'Weekly timeframe review - TOTAL1',
+    'Monthly timeframe review - TOTAL1',
+    'Weekly timeframe review - TOTAL2',
+    'Monthly timeframe review - TOTAL2',
+    'Weekly timeframe review - TOTAL3',
+    'Monthly timeframe review - TOTAL3',
+  ]);
 });
