@@ -17,6 +17,7 @@ const CATEGORIES = [
   { id: 'shift', label: 'Work Shift', color: '#38bdf8' },
   { id: 'routine', label: 'Routine', color: '#22c55e' },
   { id: 'trading', label: 'Trading', color: '#f59e0b' },
+  { id: 'tradingview-timeframes', label: 'TradingView Time Frames', color: '#0ea5e9' },
   { id: 'personal', label: 'Personal', color: '#a855f7' },
 ];
 
@@ -72,6 +73,40 @@ function addMonths(date, months) {
   const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
   next.setDate(Math.min(day, lastDay));
   return next;
+}
+
+function tradingViewTimeframeSeeds(now = new Date()) {
+  const weeklyTarget = new Date(now);
+  const daysUntilSunday = (7 - weeklyTarget.getDay()) % 7 || 7;
+  weeklyTarget.setDate(weeklyTarget.getDate() + daysUntilSunday);
+  weeklyTarget.setHours(9, 0, 0, 0);
+
+  const monthlyTarget = new Date(now.getFullYear(), now.getMonth() + 1, 1, 9, 0, 0, 0);
+  const symbols = ['Bitcoin', 'TOTAL1', 'TOTAL2', 'TOTAL3'];
+  return symbols.flatMap(symbol => [
+    {
+      id: `tradingview-weekly-${symbol.toLowerCase()}`,
+      title: `Weekly timeframe review - ${symbol}`,
+      target_at: weeklyTarget.toISOString(),
+      category: 'tradingview-timeframes',
+      repeat: 'weekly',
+      next_action: `Review the ${symbol} weekly chart in TradingView.`,
+      notes: 'Recurring weekly higher-timeframe market review.',
+      pinned: false,
+      archived: false,
+    },
+    {
+      id: `tradingview-monthly-${symbol.toLowerCase()}`,
+      title: `Monthly timeframe review - ${symbol}`,
+      target_at: monthlyTarget.toISOString(),
+      category: 'tradingview-timeframes',
+      repeat: 'monthly',
+      next_action: `Review the ${symbol} monthly chart in TradingView.`,
+      notes: 'Recurring monthly higher-timeframe market review.',
+      pinned: false,
+      archived: false,
+    },
+  ]);
 }
 
 function categoryLabel(id) {
@@ -468,5 +503,6 @@ module.exports = {
   normalizeCategory,
   normalizeRepeat,
   selectRollupItems,
+  tradingViewTimeframeSeeds,
   validateCountdownInput,
 };

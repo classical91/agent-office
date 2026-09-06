@@ -3283,6 +3283,19 @@ async function ensureShareBotCountdowns(storage, now = new Date()) {
   await storage.setAppSetting(migrationKey, createdAt);
 }
 
+async function ensureTradingViewTimeframeCountdowns(storage, now = new Date()) {
+  const migrationKey = 'countdowns.tradingview-timeframes.persisted.v1';
+  if (await storage.getAppSetting(migrationKey)) return;
+
+  const createdAt = now.toISOString();
+  const existing = new Set((await storage.listCountdowns()).map(item => item.id));
+  for (const seed of countdowns.tradingViewTimeframeSeeds(now)) {
+    if (existing.has(seed.id)) continue;
+    await storage.createCountdown({ ...seed, created_at: createdAt, updated_at: createdAt });
+  }
+  await storage.setAppSetting(migrationKey, createdAt);
+}
+
 /**
  * Everything the Countdowns page draws, in one payload.
  *
@@ -3293,6 +3306,7 @@ async function ensureShareBotCountdowns(storage, now = new Date()) {
 async function buildCountdownsPayload(options = {}) {
   const storage = await storageReady;
   const now = options.now instanceof Date ? options.now : new Date();
+  if (options.includeTradingViewTimeframes) await ensureTradingViewTimeframeCountdowns(storage, now);
   if (options.includeShareBotReports) await ensureShareBotCountdowns(storage, now);
   const stored = await storage.listCountdowns();
 
@@ -6260,6 +6274,7 @@ const server = http.createServer(async (req, res) => {
         includeArchived: parsedUrl.searchParams.get('archived') === '1',
         includeEvents: parsedUrl.searchParams.get('events') !== '0',
         includeShareBotReports: parsedUrl.searchParams.get('sharebot') === '1',
+        includeTradingViewTimeframes: parsedUrl.searchParams.get('tradingview') === '1',
       }));
       return;
     }

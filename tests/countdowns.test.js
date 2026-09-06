@@ -85,6 +85,26 @@ test('monthly repeats clamp to the last day of a short month', () => {
   assert.equal(occurrence.getDate(), 28);
 });
 
+test('TradingView Time Frames seeds weekly and monthly reviews for all four charts', () => {
+  const seeds = countdowns.tradingViewTimeframeSeeds(WEDNESDAY);
+  assert.equal(seeds.length, 8);
+  assert.deepEqual(seeds.map(item => item.title), [
+    'Weekly timeframe review - Bitcoin',
+    'Monthly timeframe review - Bitcoin',
+    'Weekly timeframe review - TOTAL1',
+    'Monthly timeframe review - TOTAL1',
+    'Weekly timeframe review - TOTAL2',
+    'Monthly timeframe review - TOTAL2',
+    'Weekly timeframe review - TOTAL3',
+    'Monthly timeframe review - TOTAL3',
+  ]);
+  assert.deepEqual([...new Set(seeds.map(item => item.category))], ['tradingview-timeframes']);
+  assert.equal(seeds.filter(item => item.repeat === 'weekly').length, 4);
+  assert.equal(seeds.filter(item => item.repeat === 'monthly').length, 4);
+  assert.equal(new Date(seeds[0].target_at).getDay(), 0);
+  assert.equal(new Date(seeds[1].target_at).getDate(), 1);
+});
+
 test('weekday routines and trading countdowns never land on a weekend', () => {
   // A daily-shaped routine started on a Friday: the next one is Monday, not
   // Saturday.
