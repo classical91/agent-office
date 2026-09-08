@@ -58,11 +58,17 @@
           <div class="nav-sub">
             <a class="nav-item" href="/?panel=mission-control" data-icon="&#127919;"><span class="nav-item-label">Mission Control</span></a>
             <a class="nav-item" href="/mission-board.html?view=ios" data-icon="&#9200;"><span class="nav-item-label">Reminders</span></a>
-            <a class="nav-item" href="/calendar-v3.html" data-icon="&#128197;"><span class="nav-item-label">Calendar</span></a>
+            <a class="nav-item" href="/planning.html" data-icon="&#9989;"><span class="nav-item-label">Planning Mode</span></a>
             <a class="nav-item" href="/streaks.html" data-icon="&#128293;"><span class="nav-item-label">Streaks</span></a>
             <a class="nav-item" href="/resets.html" data-icon="&#8987;"><span class="nav-item-label">Countdown Timers</span></a>
           </div>
         </div>
+        <!-- Calendar is a workspace, not one more link in a list of fifteen:
+             it sits above Dropbox at the top of the flat rows and is styled as
+             a card so it can be found without reading. It opens in Focus Mode
+             (see data-focus-default in calendar-v3.html), which is why the row
+             says so. -->
+        <a class="nav-item nav-item-feature" href="/calendar-v3.html" data-icon="&#128197;"><span class="nav-item-label">Calendar</span><span class="nav-item-badge">Focus</span></a>
         <a class="nav-item" href="/mission-board.html" data-icon="&#128229;"><span class="nav-item-label">Dropbox</span></a>
         <a class="nav-item" href="/dev.html" data-icon="&#128736;"><span class="nav-item-label">Dev Links</span></a>
         <a class="nav-item" href="https://main-page-production-9927.up.railway.app/ai.html" target="_blank" rel="noopener noreferrer" data-icon="&#127760;"><span class="nav-item-label">AI Portal</span> <span class="link-ext">&#8599;</span></a>

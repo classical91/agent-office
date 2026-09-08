@@ -414,3 +414,124 @@ test('opening a note takes the screen, and Back returns to its folder', async t 
   assert.equal(await page.locator('.drop-folder-crumb').textContent(), 'Evening Rollup');
   assert.deepEqual(problems, []);
 });
+
+// ─── FOCUS MODE AND THE SIDEBAR ──────────────────────────────────────────────
+//
+// The Calendar used to hide the topbar and the sidebar with a stylesheet of its
+// own, which is why it was the one page in the app you could not navigate away
+// from without the browser's Back button. Focus Mode is a shared state now, and
+// these tests are what stop it drifting back into a second, page-private idea
+// of what "focus" means: the Calendar opens in it, the rail gets you out of it
+// and into the sidebar, and no other page opens in it by accident.
+
+test('the Calendar opens in Focus Mode with the chrome gone', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  const { page } = await openPage(t);
+  await page.goto(`${server.origin}/calendar-v3.html`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('.ao-focus-rail');
+
+  assert.ok(await page.evaluate(() => document.documentElement.classList.contains('ao-focus')));
+  assert.ok(!await page.locator('.topbar').isVisible(), 'the topbar is hidden in focus');
+  assert.ok(!await page.locator('.nav').isVisible(), 'the sidebar is hidden in focus');
+  assert.ok(await page.locator('#focus-rail-menu').isVisible(), 'the way back to the sidebar is on screen');
+});
+
+test('the focus rail opens the one sidebar the app has, and closes it again', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  const { page } = await openPage(t);
+  await page.goto(`${server.origin}/calendar-v3.html`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('.ao-focus-rail');
+
+  await page.click('#focus-rail-menu');
+  await page.waitForSelector('.nav.mobile-open');
+  assert.ok(await page.locator('.nav').isVisible(), 'the drawer is the sidebar, not a second menu');
+  assert.ok(await page.locator('.nav .nav-item', { hasText: 'Dropbox' }).first().isVisible());
+
+  // The scrim is the same one the phone drawer uses.
+  await page.click('#mobile-overlay');
+  await page.waitForSelector('.nav.mobile-open', { state: 'detached' });
+});
+
+test('leaving Focus Mode gives the Calendar the ordinary layout back, and it sticks', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  const { page } = await openPage(t);
+  await page.goto(`${server.origin}/calendar-v3.html`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('.ao-focus-rail');
+
+  await page.click('#focus-rail-exit');
+  await page.waitForSelector('html:not(.ao-focus)');
+  assert.ok(await page.locator('.topbar').isVisible(), 'the topbar is back');
+  assert.ok(await page.locator('.nav').isVisible(), 'the sidebar is a column again, not a drawer');
+  assert.ok(await page.locator('#calendar-app').isVisible(), 'the calendar is still there');
+
+  // The choice is the user's, and it outlives the page's default.
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('.topbar', { state: 'visible' });
+  assert.ok(!await page.evaluate(() => document.documentElement.classList.contains('ao-focus')));
+});
+
+test('focus is remembered per page, so the Calendar does not drag the rest of the app in', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  const { page } = await openPage(t);
+  await page.goto(`${server.origin}/planning.html`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('#planning-list');
+  assert.ok(!await page.evaluate(() => document.documentElement.classList.contains('ao-focus')));
+  assert.ok(await page.locator('.nav').isVisible(), 'an ordinary page keeps its sidebar');
+
+  // The Calendar is still the page that opens focused.
+  await page.goto(`${server.origin}/calendar-v3.html`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('.ao-focus-rail');
+  assert.ok(await page.evaluate(() => document.documentElement.classList.contains('ao-focus')));
+});
+
+test('Calendar sits directly above Dropbox, out of the Planning Tools list', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  const { page } = await openPage(t);
+  await page.goto(`${server.origin}/planning.html`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('.nav');
+
+  const rows = await page.evaluate(() => [...document.querySelectorAll('.nav .nav-items-wrap > .nav-item')]
+    .map(item => item.querySelector('.nav-item-label').textContent.trim()));
+  assert.equal(rows[0], 'Calendar', 'Calendar leads the flat rows');
+  assert.equal(rows[1], 'Dropbox', 'and Dropbox follows it');
+
+  const submenu = await page.evaluate(() => [...document.querySelectorAll('.nav-sub .nav-item')]
+    .map(item => item.querySelector('.nav-item-label').textContent.trim()));
+  assert.ok(!submenu.includes('Calendar'), 'and it is no longer one more row in Planning Tools');
+  assert.ok(submenu.includes('Planning Mode'));
+});
+
+test('a planning item can be added, ticked, done and deleted from the page', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  const { page, problems } = await openPage(t);
+  await page.goto(`${server.origin}/planning.html`, { waitUntil: 'domcontentloaded' });
+  await logIn(page);
+  await page.waitForSelector('#planning-new-title');
+
+  await page.fill('#planning-new-title', 'Workout 3 times');
+  await page.click('.planning-btn--primary');
+  const item = page.locator('.planning-item', { hasText: 'Workout 3 times' });
+  await item.waitFor();
+  assert.ok(await item.locator('.planning-check').isChecked(), 'a new item is asking to be scheduled');
+
+  // Unticking parks it: still on the list, out of the week, not finished.
+  await item.locator('.planning-check').uncheck();
+  await page.waitForSelector('.planning-group:nth-child(2) .planning-item');
+  assert.ok(!await page.locator('.planning-item', { hasText: 'Workout 3 times' }).locator('.planning-check').isChecked());
+  assert.equal(await page.locator('.planning-chip--done').count(), 0, 'unticking is not completing');
+
+  // Done is the other state, and it is a different control.
+  await page.locator('.planning-item', { hasText: 'Workout 3 times' }).getByText('Done', { exact: true }).click();
+  await page.waitForSelector('.planning-chip--done');
+
+  page.once('dialog', dialog => dialog.accept());
+  await page.locator('.planning-item', { hasText: 'Workout 3 times' }).getByText('Delete', { exact: true }).click();
+  await page.waitForSelector('.planning-item', { state: 'detached' });
+  assert.deepEqual(problems, []);
+});

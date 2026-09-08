@@ -9,6 +9,7 @@ const googleSync = require('./calendar-google-sync.js');
 const reminderTime = require('./reminder-time.js');
 const countdowns = require('./countdowns.js');
 const resetTimers = require('./reset-timers.js');
+const planning = require('./planning.js');
 const sharebotNewsroom = require('./sharebot-newsroom.js');
 
 process.env.TZ = process.env.APP_TIMEZONE || 'America/Vancouver';
@@ -4704,6 +4705,23 @@ async function loadResetTimers(storage) {
   return resetTimers.parseStoredTimers(await storage.getAppSetting(resetTimers.STORAGE_KEY));
 }
 
+// Planning Mode's checklist lives in one app_settings row, the same way the
+// reset timers do: it is a personal list of a few dozen lines, not a table
+// anything joins against.
+async function loadPlanningItems(storage) {
+  return planning.parseStoredItems(await storage.getAppSetting(planning.STORAGE_KEY));
+}
+
+// Returns an error string instead of throwing, because every caller here turns
+// it straight into a status code.
+async function savePlanningItems(storage, items) {
+  if (items.length > planning.MAX_ITEMS) return `A planning list holds at most ${planning.MAX_ITEMS} items.`;
+  const encoded = planning.encodeItems(items);
+  if (encoded.length > planning.MAX_ENCODED_LENGTH) return 'The planning list is too large to store.';
+  await storage.setAppSetting(planning.STORAGE_KEY, encoded);
+  return null;
+}
+
 /**
  * One pass of the reset-timer processor.
  *
@@ -6225,6 +6243,93 @@ const server = http.createServer(async (req, res) => {
       }
 
       sendJson(res, 200, { ok: true });
+      return;
+    }
+
+    // -- PLANNING MODE API --------------------------------------
+    // The weekly planning checklist. Two states per item and they never stand
+    // in for each other: `schedule_this_week` is a request to CoachClaw to find
+    // time for something, `completed` is a record that it happened. See
+    // planning.js for why that matters.
+    if (req.method === 'GET' && pathname === '/api/planning') {
+      if (!requireDropsAuth(res, req)) return;
+      const items = await loadPlanningItems(storage);
+      sendJson(res, 200, { items, counts: planning.summarize(items) });
+      return;
+    }
+
+    // Step 2 of the weekly build: what CoachClaw should try to schedule, in the
+    // shape calendar-scheduling.js reads. Unticked items are not in here and
+    // have not been deleted either - they are next week's list.
+    if (req.method === 'GET' && pathname === '/api/planning/brief') {
+      if (!requireDropsAuth(res, req)) return;
+      sendJson(res, 200, planning.buildSchedulingBrief(await loadPlanningItems(storage)));
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/planning') {
+      if (!requireDropsAuth(res, req)) return;
+
+      const payload = planning.validateInput(await readJsonBody(req));
+      if (!payload.ok) {
+        sendJson(res, 400, { error: payload.error });
+        return;
+      }
+
+      const items = await loadPlanningItems(storage);
+      const item = planning.createItem(payload.value);
+      const failure = await savePlanningItems(storage, [...items, item]);
+      if (failure) {
+        sendJson(res, 400, { error: failure });
+        return;
+      }
+
+      sendJson(res, 201, item);
+      return;
+    }
+
+    if ((req.method === 'PATCH' || req.method === 'DELETE') && pathname.startsWith('/api/planning/')) {
+      if (!requireDropsAuth(res, req)) return;
+
+      const id = decodeURIComponent(pathname.slice('/api/planning/'.length)).trim();
+      if (!id) {
+        sendJson(res, 400, { error: 'Planning item id is required.' });
+        return;
+      }
+
+      const items = await loadPlanningItems(storage);
+      const index = items.findIndex(entry => entry.id === id);
+      if (index === -1) {
+        sendJson(res, 404, { error: 'Planning item not found.' });
+        return;
+      }
+
+      if (req.method === 'DELETE') {
+        const failure = await savePlanningItems(storage, items.filter(entry => entry.id !== id));
+        if (failure) {
+          sendJson(res, 400, { error: failure });
+          return;
+        }
+        sendJson(res, 200, { ok: true });
+        return;
+      }
+
+      const payload = planning.validateInput(await readJsonBody(req), true);
+      if (!payload.ok) {
+        sendJson(res, 400, { error: payload.error });
+        return;
+      }
+
+      const updated = planning.applyUpdate(items[index], payload.value);
+      const next = items.slice();
+      next[index] = updated;
+      const failure = await savePlanningItems(storage, next);
+      if (failure) {
+        sendJson(res, 400, { error: failure });
+        return;
+      }
+
+      sendJson(res, 200, updated);
       return;
     }
 

@@ -38,6 +38,7 @@ const PAGES = [
   'dev.html',
   'calendar-v3.html',
   'countdowns.html',
+  'planning.html',
 ];
 
 // The two regions a page hands over. Both are delimited by markup the pages
@@ -56,7 +57,11 @@ const REGIONS = [
     // The pre-paint boot script, with the comment above it when there is one.
     // Matched on the ACCENTS map rather than the comment's wording, which has
     // changed and would otherwise pin the pattern to one revision of it.
-    pattern: /(?:<!--[\s\S]*?-->\s*)?<script>\s*\(function\(\)\{[\s\S]*?ACCENTS[\s\S]*?<\/script>/,
+    // The leading comment may not itself contain `-->`: without that, a
+    // comment anywhere earlier in the page satisfies the optional group and
+    // the region swallows everything between the two — which is how a note
+    // added above <html> once took the page's stylesheet link with it.
+    pattern: /(?:<!--(?:(?!-->)[\s\S])*-->\s*)?<script>\s*\(function\(\)\{[\s\S]*?ACCENTS[\s\S]*?<\/script>/,
   },
   {
     name: 'shell',
