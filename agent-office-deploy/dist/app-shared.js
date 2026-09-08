@@ -2319,35 +2319,81 @@ function toggleFeedPanel() {
   setToggleButton('feed-toggle-btn', feedPanelOpen);
 }
 
+// ─── FOCUS MODE ───────────────────────────────────────────────────────────────
+// One behaviour for every page: html.ao-focus hides the chrome, the page takes
+// the viewport, and the sidebar is a menu button away in the focus rail rather
+// than gone. What differs per page is only whether it *opens* in focus —
+// <html data-focus-default="on"> says it does, and the Calendar is the page
+// that says so, because a week grid is worth every pixel of width it can get.
+//
+// The choice is remembered per page, not globally: leaving focus on the
+// Calendar should not drag every other page out of it. The boot script in each
+// page's <head> reads the same default and the same key before first paint, so
+// a focus page never flashes its topbar on the way in.
+const FOCUS_KEY_PREFIX = 'ao-focus:';
+
+function focusScopeKey() {
+  return FOCUS_KEY_PREFIX + (location.pathname === '/index.html' ? '/' : location.pathname);
+}
+
+function focusPreferred() {
+  let saved = null;
+  try { saved = localStorage.getItem(focusScopeKey()); } catch {}
+  if (saved === '1') return true;
+  if (saved === '0') return false;
+  return document.documentElement.dataset.focusDefault === 'on';
+}
+
 let focusMode = false;
 
-function setFocusMode(enabled) {
-  focusMode = enabled;
+function setFocusMode(enabled, options = {}) {
+  focusMode = Boolean(enabled);
+  document.documentElement.classList.toggle('ao-focus', focusMode);
   const layout = document.querySelector('.layout');
-  layout.classList.toggle('nav-collapsed', focusMode);
-  layout.classList.toggle('feed-collapsed', focusMode || !feedPanelOpen);
-  setToggleButton('focus-btn', focusMode);
+  if (layout) {
+    // The layout classes stay in step for everything already styled off them.
+    layout.classList.toggle('nav-collapsed', focusMode);
+    layout.classList.toggle('feed-collapsed', focusMode || !feedPanelOpen);
+  }
+  // Entering focus with the drawer open leaves it floating over a page that
+  // just changed shape underneath it.
+  if (focusMode) closeMobileNav();
+  const btn = setToggleButton('focus-btn', focusMode);
+  if (btn) btn.textContent = focusMode ? '⛶ Exit Focus' : '⛶ Focus';
+  if (options.remember !== false) {
+    try { localStorage.setItem(focusScopeKey(), focusMode ? '1' : '0'); } catch {}
+  }
+  // The Calendar re-measures its board on this; anything else can too.
+  window.dispatchEvent(new CustomEvent('ao-focus-change', { detail: { focus: focusMode } }));
 }
-
-// ─── MOBILE NAV ───────────────────────────────────────────────────────────────
-function updateFocusButtonLabel() {
-  const btn = document.getElementById('focus-btn');
-  if (!btn) return;
-  btn.textContent = focusMode ? '⛶ Exit Focus' : '⛶ Focus';
-}
-
-const _baseSetFocusMode = setFocusMode;
-setFocusMode = function(enabled) {
-  _baseSetFocusMode(enabled);
-  updateFocusButtonLabel();
-};
-
-document.addEventListener('DOMContentLoaded', updateFocusButtonLabel);
 
 function toggleFocusMode() {
   setFocusMode(!focusMode);
 }
 
+// The way back out. Without it, a page that opens in focus has hidden the
+// topbar holding the button for leaving it.
+function ensureFocusRail() {
+  if (!document.body || document.querySelector('.ao-focus-rail')) return;
+  const rail = document.createElement('div');
+  rail.className = 'ao-focus-rail';
+  rail.innerHTML = '<button class="ao-focus-rail-btn" type="button" id="focus-rail-menu" aria-label="Open navigation" title="Open navigation">☰</button>'
+    + '<button class="ao-focus-rail-btn" type="button" id="focus-rail-exit" aria-label="Leave Focus Mode" title="Leave Focus Mode">⛶</button>';
+  // The menu button opens the drawer the mobile hamburger opens. There is one
+  // navigation system; focus mode only changes how it is reached.
+  rail.querySelector('#focus-rail-menu').addEventListener('click', toggleMobileNav);
+  rail.querySelector('#focus-rail-exit').addEventListener('click', () => setFocusMode(false));
+  document.body.appendChild(rail);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  ensureFocusRail();
+  setFocusMode(focusPreferred(), { remember: false });
+});
+
+// ─── NAV DRAWER ───────────────────────────────────────────────────────────────
+// The drawer the hamburger opens on a phone is the drawer the focus rail opens
+// at any width — same class, same scrim, same handlers.
 function setMobileNavOpen(open) {
   const nav = document.querySelector('.nav');
   const overlay = document.getElementById('mobile-overlay');
@@ -2365,11 +2411,16 @@ function toggleMobileNav() {
 function closeMobileNav() {
   setMobileNavOpen(false);
 }
-// Close nav when a nav-item is tapped on mobile
+// Close the drawer when a row in it is tapped — on a phone, and in focus mode
+// at any width, where the drawer is the only way the sidebar is on screen.
 document.querySelectorAll('.nav-item').forEach(el => {
   el.addEventListener('click', () => {
-    if (window.innerWidth <= 768) closeMobileNav();
+    if (window.innerWidth <= 768 || document.documentElement.classList.contains('ao-focus')) closeMobileNav();
   });
+});
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') closeMobileNav();
 });
 
 // ─── DROPBOX ─────────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-focus-default="on">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -7,10 +7,11 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>Calendar v3 - Agent Office</title>
-<link rel="stylesheet" href="shared.css?v=sharebot-newsroom-20260831"/>
-<!-- Restores the saved theme and sidebar state before first paint, so no page
-     flashes the default accent or a full-width sidebar on its way in.
-     ACCENTS mirrors THEMES in app-shared.js. -->
+<link rel="stylesheet" href="shared.css?v=calendar-focus-planning-20260908"/>
+<!-- Restores the saved theme, sidebar state and focus mode before first paint,
+     so no page flashes the default accent, a full-width sidebar, or the chrome
+     of a page that opens in Focus Mode. ACCENTS mirrors THEMES in
+     app-shared.js, and the focus key mirrors focusScopeKey() there. -->
 <script>
 (function(){
   // A theme is just an accent; shared.css derives every surface from it.
@@ -19,6 +20,13 @@
     var a=ACCENTS[localStorage.getItem('ao-theme')];
     if(a) document.documentElement.style.setProperty('--accent',a);
     if(localStorage.getItem('ao-nav-compact')==='1') document.documentElement.classList.add('nav-compact');
+    // Focus is remembered per page: this page's own choice, falling back to
+    // whether the page declares data-focus-default="on".
+    var p=location.pathname==='/index.html'?'/':location.pathname;
+    var f=localStorage.getItem('ao-focus:'+p);
+    if(f==='1'||(f===null&&document.documentElement.getAttribute('data-focus-default')==='on')){
+      document.documentElement.classList.add('ao-focus');
+    }
   }catch(e){}
 })();
 </script>
@@ -119,34 +127,37 @@
 
 
 </style>
-<style id="calendar-v3-compact-focus-style">
-/* Calendar v3 compact focus mode: hides the app chrome and gives the calendar
-   the whole viewport. Everything inside the board — toolbar, lane bar, grid —
-   is sized by the .calendar-compact-board layer below, so it stays in one
-   place instead of being fought over from here. */
-html, body { height: 100%; overflow: hidden; }
-body > .topbar,
-body > .statusbar,
-.layout > .nav,
-.layout > .feed,
-#mobile-overlay,
-.calendar-connection-bar,
-.calendar-range-sub,
-.calendar-status-chip,
-.calendar-mini-month,
-.calendar-detail-panel,
-.calendar-details-panel,
-.calendar-inspector,
-.calendar-side-panel,
-.calendar-sidebar-panel,
-.calendar-right-panel,
-.calendar-command-panel,
-.calendar-smart-panel,
-.calendar-agenda-panel {
+<style id="calendar-v3-focus-style">
+/* The Calendar in Focus Mode.
+   This block used to hide the topbar, the sidebar and the feed unconditionally,
+   which is why the Calendar was the one page in the app with no navigation at
+   all. Focus Mode is now a real, shared state (html.ao-focus, see shared.css
+   and app-shared.js) and everything that takes the viewport is scoped to it:
+   the page opens in focus because it declares data-focus-default="on", and
+   leaving focus puts the Calendar back in the ordinary three-column layout
+   rather than into a second, page-private idea of what focus means.
+   Hiding the chrome itself is shared.css's job now. What is left here is what
+   only this page knows: the calendar-specific panels that a focused board has
+   no room for, and the board filling whatever it has been given. */
+html.ao-focus,
+html.ao-focus body { height: 100%; overflow: hidden; }
+html.ao-focus .calendar-connection-bar:not(.is-open),
+html.ao-focus .calendar-range-sub,
+html.ao-focus .calendar-status-chip,
+html.ao-focus .calendar-mini-month,
+html.ao-focus .calendar-detail-panel,
+html.ao-focus .calendar-details-panel,
+html.ao-focus .calendar-inspector,
+html.ao-focus .calendar-side-panel,
+html.ao-focus .calendar-sidebar-panel,
+html.ao-focus .calendar-right-panel,
+html.ao-focus .calendar-command-panel,
+html.ao-focus .calendar-smart-panel,
+html.ao-focus .calendar-agenda-panel {
   display: none !important;
 }
-.layout,
-.layout.feed-collapsed {
+html.ao-focus .layout,
+html.ao-focus .layout.feed-collapsed {
   display: block !important;
   height: 100vh !important;
   min-height: 100vh !important;
@@ -155,21 +166,9 @@ body > .statusbar,
   padding: 0 !important;
   overflow: hidden !important;
 }
-#view-calendar-v3 {
-  display: flex !important;
-  height: 100vh !important;
-  width: 100vw !important;
-  max-width: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-}
-#calendar-app {
-  flex: 1 1 auto !important;
-  height: 100vh !important;
-  min-height: 0 !important;
-  overflow: hidden !important;
-}
+/* The focus rail sits where the toolbar's left edge is, so the toolbar makes
+   room for it rather than being covered by it. */
+html.ao-focus .calendar-compact-board .calendar-toolbar { padding-left: 88px !important; }
 #calendar-app .calendar-layout,
 #calendar-app .calendar-content,
 #calendar-app .calendar-grid-layout,
@@ -183,11 +182,15 @@ body > .statusbar,
 
 
 <style id="calendar-v3-true-compact-style">
-/* Calendar v3 true compact view: the board fills the viewport and every piece
-   inside it — toolbar, lane bar, month grid, day/week shell, agenda — is sized
-   here. This is the only layer that sizes the board. */
+/* Calendar v3 compact board: the board fills whatever it has been given — the
+   viewport in Focus Mode, the middle column out of it — and every piece inside
+   it (toolbar, lane bar, month grid, day/week shell, agenda) is sized here.
+   This is the only layer that sizes the board.
+   The sizes below are percentages rather than viewport units on purpose: the
+   same rules then hold in both modes, which is what keeps Focus Mode a state
+   this page enters rather than a second layout it maintains. */
 /* The sync chip in the toolbar opens the connection bar on demand, so hiding it
-   by default no longer means it is unreachable. */
+   in focus no longer means it is unreachable. */
 .calendar-connection-bar.is-open {
   display: flex !important;
   position: absolute;
@@ -206,8 +209,8 @@ body > .statusbar,
 .calendar-compact-board {
   display: flex !important;
   flex-direction: column !important;
-  width: 100vw !important;
-  height: 100vh !important;
+  width: 100% !important;
+  height: 100% !important;
   min-height: 0 !important;
   max-width: none !important;
   margin: 0 !important;
@@ -237,8 +240,6 @@ body > .statusbar,
   font-weight: 650 !important;
   white-space: nowrap !important;
 }
-.calendar-compact-board .calendar-range-sub,
-.calendar-compact-board .calendar-status-chip { display: none !important; }
 .calendar-compact-board .calendar-toolbar-controls { gap: 6px !important; }
 .calendar-compact-board .calendar-nav { gap: 4px !important; }
 .calendar-compact-board .calendar-view-switcher { gap: 4px !important; }
@@ -305,14 +306,16 @@ body > .statusbar,
 
 
 <style id="calendar-v3-mobile-fix-style">
-/* Calendar v3 mobile cleanup: single compact bar, calendar-first. */
+/* Calendar v3 on a phone in Focus Mode: single compact bar, calendar-first.
+   Scoped to focus like everything else that takes the viewport — out of focus
+   the page keeps the topbar and scrolls the way the rest of the app does. */
 @media (max-width: 640px) {
-  html, body { height: 100dvh !important; overflow: hidden !important; }
-  #view-calendar-v3,
-  #calendar-app,
-  .calendar-compact-shell,
-  .calendar-compact-stage,
-  .calendar-compact-board {
+  html.ao-focus, html.ao-focus body { height: 100dvh !important; overflow: hidden !important; }
+  html.ao-focus #view-calendar-v3,
+  html.ao-focus #calendar-app,
+  html.ao-focus .calendar-compact-shell,
+  html.ao-focus .calendar-compact-stage,
+  html.ao-focus .calendar-compact-board {
     width: 100vw !important;
     height: 100dvh !important;
     min-height: 0 !important;
@@ -334,6 +337,7 @@ body > .statusbar,
     box-sizing: border-box !important;
   }
   .calendar-compact-board .calendar-toolbar::-webkit-scrollbar { display: none !important; }
+  html.ao-focus .calendar-compact-board .calendar-toolbar { padding-left: 84px !important; }
   .calendar-compact-board .calendar-toolbar > div:first-child {
     flex: 0 0 auto !important;
     min-width: 86px !important;
@@ -375,7 +379,7 @@ body > .statusbar,
     letter-spacing: 0.12em !important;
     white-space: nowrap !important;
   }
-  .calendar-compact-board .calendar-month-grid {
+  html.ao-focus .calendar-compact-board .calendar-month-grid {
     height: calc(100dvh - 52px) !important;
     min-height: 0 !important;
     grid-template-rows: 24px repeat(6, minmax(0, 1fr)) !important;
@@ -422,48 +426,12 @@ body > .statusbar,
 }
 </style>
 
-
-
-<style id="calendar-v3-mobile-menu-style">
-/* Calendar v3 mobile menu restoration: keep compact view but allow sidebar overlay. */
-.calendar-mobile-menu-btn {
-  display: none;
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--panel) 88%, transparent);
-  color: var(--text);
-  border-radius: 999px;
-  width: 34px;
-  height: 30px;
-  min-width: 34px;
-  padding: 0;
-  font-size: 17px;
-  line-height: 28px;
-  cursor: pointer;
-}
+<style id="calendar-v3-mobile-toolbar-style">
+/* What is left of the Calendar's old private mobile menu block. The button it
+   styled is gone: the sidebar is reached through the focus rail (in Focus Mode)
+   or the topbar hamburger (out of it), which is the same drawer the rest of the
+   app opens. Only the narrow-screen toolbar sizes survive. */
 @media (max-width: 640px) {
-  .calendar-mobile-menu-btn { display: inline-flex !important; align-items: center; justify-content: center; flex: 0 0 34px !important; }
-  .layout > .nav.mobile-open {
-    display: flex !important;
-    flex-direction: column !important;
-    position: fixed !important;
-    top: 52px !important;
-    left: 0 !important;
-    bottom: 0 !important;
-    width: min(82vw, 300px) !important;
-    z-index: 10001 !important;
-    background: var(--panel) !important;
-    border-right: 1px solid var(--border) !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    padding-top: 8px !important;
-  }
-  #mobile-overlay[style*="block"] {
-    display: block !important;
-    position: fixed !important;
-    inset: 52px 0 0 0 !important;
-    z-index: 10000 !important;
-    background: rgba(0,0,0,0.55) !important;
-  }
   .calendar-compact-board .calendar-toolbar > div:first-child {
     min-width: 78px !important;
   }
@@ -540,11 +508,17 @@ body > .statusbar,
           <div class="nav-sub">
             <a class="nav-item" href="/?panel=mission-control" data-icon="&#127919;"><span class="nav-item-label">Mission Control</span></a>
             <a class="nav-item" href="/mission-board.html?view=ios" data-icon="&#9200;"><span class="nav-item-label">Reminders</span></a>
-            <a class="nav-item" href="/calendar-v3.html" data-icon="&#128197;"><span class="nav-item-label">Calendar</span></a>
+            <a class="nav-item" href="/planning.html" data-icon="&#9989;"><span class="nav-item-label">Planning Mode</span></a>
             <a class="nav-item" href="/streaks.html" data-icon="&#128293;"><span class="nav-item-label">Streaks</span></a>
             <a class="nav-item" href="/resets.html" data-icon="&#8987;"><span class="nav-item-label">Countdown Timers</span></a>
           </div>
         </div>
+        <!-- Calendar is a workspace, not one more link in a list of fifteen:
+             it sits above Dropbox at the top of the flat rows and is styled as
+             a card so it can be found without reading. It opens in Focus Mode
+             (see data-focus-default in calendar-v3.html), which is why the row
+             says so. -->
+        <a class="nav-item nav-item-feature" href="/calendar-v3.html" data-icon="&#128197;"><span class="nav-item-label">Calendar</span><span class="nav-item-badge">Focus</span></a>
         <a class="nav-item" href="/mission-board.html" data-icon="&#128229;"><span class="nav-item-label">Dropbox</span></a>
         <a class="nav-item" href="/dev.html" data-icon="&#128736;"><span class="nav-item-label">Dev Links</span></a>
         <a class="nav-item" href="https://main-page-production-9927.up.railway.app/ai.html" target="_blank" rel="noopener noreferrer" data-icon="&#127760;"><span class="nav-item-label">AI Portal</span> <span class="link-ext">&#8599;</span></a>
@@ -602,7 +576,7 @@ body > .statusbar,
 <!-- BOTTOM STATUS BAR -->
 <div class="statusbar" id="statusbar"></div>
 
-<script src="app-shared.js?v=memory-filter-20260831"></script>
+<script src="app-shared.js?v=calendar-focus-planning-20260908"></script>
 
 
 <script src="calendar-view.js?v=agent-intelligence-20260727"></script>

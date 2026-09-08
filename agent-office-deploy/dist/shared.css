@@ -2414,6 +2414,132 @@
   .mobile-overlay.is-open { display: block; }
 
 
+  /* ── FOCUS MODE ────────────────────────────────────────
+     One behaviour for the whole app: html.ao-focus hides the chrome and gives
+     the page the viewport. The sidebar is not deleted, it is moved behind the
+     focus rail's menu button — the same drawer the mobile hamburger opens — so
+     there is one navigation system rather than a second one per page.
+
+     Which pages open in focus is a per-page default (data-focus-default on
+     <html>) plus whatever the user last chose on that page; both are restored
+     before first paint by the boot script, so a focus page never flashes its
+     chrome on the way in. The Calendar is the page that wants this: it is a
+     grid that is worth every pixel of width it can get. */
+  html.ao-focus body > .topbar,
+  html.ao-focus body > .statusbar,
+  html.ao-focus .layout > .feed { display: none !important; }
+  html.ao-focus .layout {
+    --layout-nav: 0px;
+    --layout-feed: 0px;
+  }
+  html.ao-focus .layout > .nav { display: none; }
+
+  /* The drawer. `.mobile-open` is the class the hamburger already sets; this
+     is what makes it work at any width, which is what lets focus mode reach
+     the sidebar without giving the column back. */
+  html.ao-focus .layout > .nav.mobile-open {
+    display: flex !important;
+    flex-direction: column;
+    position: fixed;
+    /* !important because the phone drawer drops below the topbar, and in focus
+       there is no topbar to drop below. */
+    top: 0 !important;
+    left: 0;
+    bottom: 0;
+    width: min(86vw, 280px);
+    z-index: 9999;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    box-shadow: 6px 0 40px rgba(0, 0, 0, 0.75);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: var(--space-2) 0;
+  }
+  /* The rail state is a desktop column, not a drawer: opened as a drawer it is
+     a full-width menu whether or not the sidebar is collapsed to icons. */
+  html.nav-compact .nav.mobile-open .nav-heading,
+  html.nav-compact .nav.mobile-open .nav-item-label,
+  html.nav-compact .nav.mobile-open .nav-sub-chevron,
+  html.nav-compact .nav.mobile-open .nav-item .link-ext,
+  html.nav-compact .nav.mobile-open .nav-link .link-ext { display: revert; }
+  html.nav-compact .nav.mobile-open .nav-sub { display: block; }
+  html.nav-compact .nav.mobile-open .nav-item,
+  html.nav-compact .nav.mobile-open .nav-link {
+    justify-content: flex-start;
+    padding: var(--space-2) var(--space-4);
+    gap: var(--space-3);
+  }
+  html.nav-compact .nav.mobile-open .nav-item::before { width: 18px; font-size: var(--fs-md); }
+  /* Collapsing a drawer to icons collapses nothing, so the control that does
+     it is not offered there. */
+  html.ao-focus .nav.mobile-open .nav-footer { display: none; }
+
+  /* The focus rail: the way back. Two controls — open the menu, leave focus —
+     pinned where a title bar would be, on every page that goes into focus. */
+  .ao-focus-rail {
+    display: none;
+    position: fixed;
+    top: max(8px, env(safe-area-inset-top, 0px));
+    left: 8px;
+    z-index: 900;
+    gap: 6px;
+    align-items: center;
+  }
+  html.ao-focus .ao-focus-rail { display: flex; }
+  .ao-focus-rail-btn {
+    width: 34px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    color: var(--text);
+    font-size: var(--fs-md);
+    line-height: 1;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    transition: color var(--duration-fast), border-color var(--duration-fast);
+  }
+  .ao-focus-rail-btn:hover {
+    color: var(--text-strong);
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  }
+
+  /* ── FEATURE NAV ROW ───────────────────────────────────
+     Calendar is a workspace you go to and stay in, not one more link in a list
+     of fifteen. It reads as a card so it can be found without reading. */
+  .nav-item-feature {
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--text);
+    font-weight: 600;
+    margin-top: var(--space-2);
+    margin-bottom: var(--space-2);
+  }
+  .nav-item-feature:hover {
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+  }
+  .nav-item-feature.active { background: color-mix(in srgb, var(--accent) 20%, transparent); }
+  .nav-item-badge {
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: var(--fs-2xs);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-caps);
+    color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+    border-radius: var(--radius-pill);
+    padding: 1px 6px;
+  }
+  html.nav-compact .nav-item-badge { display: none; }
+  html.nav-compact .nav-item-feature { margin-left: var(--space-2); margin-right: var(--space-2); }
+  html.nav-compact .nav.mobile-open .nav-item-badge { display: revert; }
+
+
   /* DROPBOX */
   .drop-section-kicker {
     font-size: 10px;
