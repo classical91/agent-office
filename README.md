@@ -112,7 +112,7 @@ Edit `scripts/shell/shell.html` (topbar + sidebar), `scripts/shell/boot.html`
 re-run it — never the copies inside the pages. Which sidebar row is highlighted
 is worked out from the URL by `markActiveNav()`, so no page marks its own.
 
-> **Note:** the repo also has two pre-existing single-page copies of the old monolithic UI — root `agent-office.html` and `agent-office-deploy/agent-office.html`. Neither is referenced by `server.js` or any build/deploy step, and they were already out of sync with `dist/index.html` before this multi-page split. They're left as-is; treat `agent-office-deploy/dist/` as the only frontend that's actually served.
+> **Note:** `agent-office-deploy/dist/` is the canonical frontend served by the application.
 
 ## Running locally
 
