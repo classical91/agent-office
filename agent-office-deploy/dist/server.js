@@ -4485,6 +4485,13 @@ async function handleShortcutsRequest(req, res, url, storage) {
   const pathname = url.pathname;
   const now = new Date();
 
+  // Read-only machine access for CoachClaw. Authentication is handled by the
+  // shared /api/shortcuts gate before this dispatcher runs.
+  if (req.method === 'GET' && pathname === '/api/shortcuts/planning/brief') {
+    sendJson(res, 200, planning.buildSchedulingBrief(await loadPlanningItems(storage)));
+    return true;
+  }
+
   if (req.method === 'GET' && pathname === '/api/shortcuts/status') {
     const drops = await storage.listDrops();
     const due = selectShortcutDrops(drops, 'now', now);

@@ -18,6 +18,7 @@ const DIST = path.join(REPO_ROOT, 'agent-office-deploy', 'dist');
 const SERVER_PATH = path.join(DIST, 'server.js');
 
 const PASSPHRASE = 'plan-the-week';
+const SHORTCUTS_TOKEN = 'coachclaw-planning-test-token';
 
 function buildEnvFor(scratch) {
   return port => {
@@ -36,6 +37,7 @@ function buildEnvFor(scratch) {
       STREAK_DAYS_FILE: path.join(scratch, 'streak-days.json'),
       COUNTDOWNS_FILE: path.join(scratch, 'countdowns.json'),
       DROPS_PASSPHRASE: PASSPHRASE,
+      SHORTCUTS_TOKEN,
     };
     ['DATABASE_URL', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'DROPS_PASSPHRASE_HASH']
       .forEach(key => { delete environment[key]; });
@@ -218,6 +220,37 @@ test('the brief hands CoachClaw the ticked items in the shape the scheduler read
     assert.deepEqual(workout.preferred_window, { start: '06:00', end: '12:00' });
     assert.equal(review.request.durationMinutes, brief.default_duration_minutes);
     assert.equal(review.duration_is_estimated, true);
+  } finally {
+    stop(server);
+  }
+});
+
+test('CoachClaw can read the brief with its bearer token but gets no planning write access', async () => {
+  const server = await startServer();
+  try {
+    await addItem(server, { title: 'Workout', estimated_duration: 45, priority: 'high' });
+    await addItem(server, { title: 'Clean garage', schedule_this_week: false });
+
+    const locked = await fetch(`${server.origin}/api/shortcuts/planning/brief`);
+    assert.equal(locked.status, 401);
+
+    const response = await fetch(`${server.origin}/api/shortcuts/planning/brief`, {
+      headers: { Authorization: `Bearer ${SHORTCUTS_TOKEN}` },
+    });
+    assert.equal(response.status, 200);
+    const brief = await response.json();
+    assert.deepEqual(brief.items.map(entry => entry.title), ['Workout']);
+    assert.equal(brief.counts.parked, 1);
+
+    const write = await fetch(`${server.origin}/api/planning`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${SHORTCUTS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ title: 'Must stay locked' }),
+    });
+    assert.equal(write.status, 401);
   } finally {
     stop(server);
   }
