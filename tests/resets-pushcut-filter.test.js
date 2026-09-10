@@ -7,9 +7,15 @@ const test = require('node:test');
 const vm = require('node:vm');
 
 const DIST = path.join(__dirname, '..', 'agent-office-deploy', 'dist');
-const source = fs.readFileSync(path.join(DIST, 'resets.js'), 'utf8');
-const context = { window: {}, Date, console, setInterval, clearInterval };
-vm.runInNewContext(source, context);
+const read = name => fs.readFileSync(path.join(DIST, name), 'utf8');
+
+// `window` points at the sandbox itself, as it does in a browser: happy-hour.js
+// hangs its exports off the global and resets.js reads them off `window`, which
+// is how resets.html loads the pair.
+const context = { Date, console, setInterval, clearInterval };
+context.window = context;
+vm.runInNewContext(read('happy-hour.js'), context);
+vm.runInNewContext(read('resets.js'), context);
 const { DEFAULT_FILTER, FILTERS, normalizeCard, tradingViewTimeframeCards } = context.window.AOResets;
 
 const keep = card => FILTERS.pushcut.keep({ card: normalizeCard(card, 0) });
@@ -52,7 +58,7 @@ test('a countdown saved before the tick existed answers from its webhook', () =>
 });
 
 test('the editor and the new-countdown form both offer the tick', () => {
-  assert.match(source, /data-field="pushcut"/);
+  assert.match(read('resets.js'), /data-field="pushcut"/);
   const html = fs.readFileSync(path.join(DIST, 'resets.html'), 'utf8');
   assert.match(html, /id="rst-new-pushcut" checked/);
 });

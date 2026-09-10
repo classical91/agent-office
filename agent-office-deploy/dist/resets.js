@@ -34,16 +34,11 @@ window.AOResets = (() => {
   const TOMBSTONE_TTL_MS = 30 * 86400000;
   const DAY_MS = 86400000;
   const DUE_SOON_COLOR = 'var(--yellow)';
-  const HAPPY_HOUR_ID = 'routine-happy-hour-daily';
-  const HAPPY_HOUR_DEALS = [
-    '50% off Burger Patties',
-    '50% off Marinated Chicken Kebobs',
-    '50% off Marinated Chicken Kebobs',
-    '50\u00a2 each Marinated Split Chicken Wings',
-    '50% off Fresh Appetizers',
-    '50% off Fresh Appetizers',
-    '50% off Burger Patties',
-  ];
+  // The Happy Hour schedule lives in happy-hour.js, which the server loads too —
+  // Main Hub's Daily Dashboard shows the same meal and the same countdown, and
+  // one schedule in two places is one schedule too many. This page renders it;
+  // it does not decide it.
+  const { HAPPY_HOUR_ID, atHour, happyHourDetails, happyHourMeal } = window.AOHappyHour;
 
   const REPEAT_OPTIONS = [
     { value: 0, label: 'Does not repeat' },
@@ -145,12 +140,6 @@ window.AOResets = (() => {
     return 'reset-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
   }
 
-  function atHour(date, hour, minute) {
-    const copy = new Date(date);
-    copy.setHours(hour, minute || 0, 0, 0);
-    return copy;
-  }
-
   function daysFromNow(days, hour) {
     const date = new Date();
     date.setDate(date.getDate() + days);
@@ -162,47 +151,6 @@ window.AOResets = (() => {
     const daysAhead = (weekday - date.getDay() + 7) % 7 || 7;
     date.setDate(date.getDate() + daysAhead);
     return atHour(date, hour == null ? 9 : hour, 0).toISOString();
-  }
-
-  function happyHourDetails(now = new Date()) {
-    const current = new Date(now);
-    const reminder = atHour(current, 14, 30);
-    const starts = atHour(current, 15, 0);
-    const ends = atHour(current, 18, 0);
-    let dealDate = current;
-    let target = reminder;
-    let phase = 'upcoming';
-
-    if (current >= ends) {
-      dealDate = new Date(current);
-      dealDate.setDate(dealDate.getDate() + 1);
-      target = atHour(dealDate, 14, 30);
-      phase = 'tomorrow';
-    } else if (current >= starts) {
-      target = ends;
-      phase = 'open';
-    } else if (current >= reminder) {
-      target = starts;
-      phase = 'starting';
-    }
-
-    const dayName = dealDate.toLocaleDateString([], { weekday: 'long' });
-    const deal = HAPPY_HOUR_DEALS[dealDate.getDay()];
-    return {
-      phase,
-      target,
-      dayName,
-      deal,
-      meal: happyHourMeal(deal),
-      title: `Happy Hour ${phase === 'tomorrow' ? 'Tomorrow' : 'Today'} \u2014 ${deal}`,
-      message: `${dayName}: ${deal}. Happy Hour is 3:00\u20136:00 PM; the countdown starts at 2:30 PM. More Rewards card required; while quantities last.`,
-    };
-  }
-
-  function happyHourMeal(deal) {
-    return String(deal || '')
-      .replace(/^50% off\s+/i, '')
-      .replace(/^50\u00a2 each\s+/i, '');
   }
 
   function syncHappyHourCard(card, now = new Date()) {

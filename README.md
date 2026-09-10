@@ -248,6 +248,7 @@ All endpoints return JSON.
 | PATCH  | `/api/countdowns/:id`             | Edit, pin or archive a countdown |
 | DELETE | `/api/countdowns/:id`             | Delete a countdown               |
 | GET    | `/api/countdowns/rollup`          | The top countdowns only, as JSON or `?format=text` |
+| GET    | `/api/happy-hour`                 | Today's Happy Hour deal, phase and countdown (open) |
 | POST   | `/api/visits/track`               | Record a page view or a still-here ping (public) |
 | GET    | `/api/visits/summary`             | Live visitors, totals, top pages and referrers |
 | DELETE | `/api/visits`                     | Delete every recorded page view  |
@@ -394,6 +395,42 @@ separate workflow; the two share the screen and nothing else.
 resets.html  →  /api/reset-timers  →  ┬─ /api/shortcuts/reset-timers  →  iPhone Shortcut
                 (persistent store)    └─ server-side timer processor   →  Pushcut  →  iPhone
 ```
+
+#### Happy Hour
+
+One card on `/resets.html` is not a timer you set: the Happy Hour countdown
+knows the week's deals and rewrites itself as the day moves through the window.
+
+```
+2:30 PM  heads-up     3:00 PM  opens     6:00 PM  closes     after 6  tomorrow's deal
+   upcoming    →    starting    →      open      →                tomorrow
+```
+
+That schedule lives in `happy-hour.js`, which is loaded two ways on purpose:
+`resets.html` pulls it in with a `<script>` tag ahead of `resets.js`, and
+`server.js` `require()`s it. It used to live inside `resets.js`, where only the
+page could reach it — but Main Hub's Daily Dashboard shows the same meal and the
+same countdown, and a second copy of the deal table in another repository would
+be wrong the first week a deal changed.
+
+`GET /api/happy-hour` serves it:
+
+```json
+{
+  "now": "2026-09-10T01:05:39.913Z",
+  "timezone": "America/Vancouver",
+  "phase": "tomorrow",
+  "meal": "Fresh Appetizers",
+  "deal": "50% off Fresh Appetizers",
+  "dayName": "Thursday",
+  "targetAt": "2026-09-10T21:30:00.000Z",
+  "remainingMs": 73460087
+}
+```
+
+The route is open, like `/api/countdowns` — this is a grocery flyer, not a
+personal record. It reads nothing from the reset-timer store, which stays behind
+the passphrase.
 
 **The Pushcut list is what the page opens on.** Every countdown carries a
 **Pushcut** tick box, and the **Show** dropdown opens on **Pushcut**: the cards
