@@ -6408,6 +6408,38 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // The Daily Dashboard's Today and Next Up cards.
+    //
+    // Deliberately not /api/countdowns. That route is this page's whole payload
+    // — every bucket, notes and all — and a dashboard card had no business
+    // depending on it. This one answers the narrower question and hands back
+    // only the fields a row draws, so the page here can grow without moving
+    // anything on the dashboard.
+    //
+    // Open, like /api/countdowns: reading countdowns has never needed a session.
+    if (pathname === '/api/widgets/today') {
+      if (req.method !== 'GET' && req.method !== 'HEAD') {
+        sendJson(res, 405, { error: 'Only GET is supported for the today widget.' });
+        return;
+      }
+
+      const now = new Date();
+      const payload = await buildCountdownsPayload({ now });
+      const limit = Number.parseInt(parsedUrl.searchParams.get('limit') || '', 10);
+      const month = `${now.getMonth() + 1}`.padStart(2, '0');
+      const day = `${now.getDate()}`.padStart(2, '0');
+
+      sendJson(res, 200, {
+        now: now.toISOString(),
+        // This server pins TZ to APP_TIMEZONE at boot, so "today" here is the
+        // same day the dashboard means without either side converting anything.
+        timezone: process.env.TZ,
+        date: `${now.getFullYear()}-${month}-${day}`,
+        ...countdowns.selectWidgetToday(payload, { limit }),
+      });
+      return;
+    }
+
     if (req.method === 'GET' && pathname === '/api/countdowns') {
       sendJson(res, 200, await buildCountdownsPayload({
         includeArchived: parsedUrl.searchParams.get('archived') === '1',
