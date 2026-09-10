@@ -410,6 +410,76 @@ function buildUpcoming(options = {}) {
   };
 }
 
+// ─── The Daily Dashboard widget ──────────────────────────────────────────────
+//
+// Main Hub's Daily Dashboard asks one question — "what is on today, and what
+// should I look at next" — and used to answer it by reading /api/countdowns,
+// which is this page's whole payload: every bucket, every card, notes and all.
+//
+// That coupled a dashboard card to an internal API. What travels now is this
+// projection and nothing else: no notes, no archived rows, no later buckets,
+// and no field a card does not draw.
+
+/**
+ * One countdown or event, reduced to what a dashboard row shows.
+ *
+ * `notes` is absent on purpose. It is the free-text field on a countdown, so it
+ * is the one most likely to hold something personal, and a dashboard row has
+ * nowhere to put it.
+ */
+function toWidgetItem(item) {
+  return {
+    id: item.id,
+    kind: item.kind,
+    title: item.title,
+    categoryLabel: item.categoryLabel,
+    color: item.color,
+    nextAction: item.next_action || '',
+    remaining: item.remaining ? item.remaining.label : '',
+    remainingMs: item.remaining ? item.remaining.ms : null,
+    occurrenceAt: item.occurrence_at || null,
+    overdue: Boolean(item.overdue),
+    urgent: Boolean(item.urgent),
+    inProgress: Boolean(item.inProgress),
+  };
+}
+
+/**
+ * Today's rows, plus the single thing to look at next.
+ *
+ * `next` is what the dashboard leads with, so it follows two rules the page
+ * itself already follows:
+ *
+ *   Overdue work leads. sortItems() puts it first and this does not second-guess
+ *   that — something past due IS the thing to pay attention to.
+ *
+ *   Quiet weekend trading cards never lead. formatRollupText() leaves them out
+ *   for the same reason: nudging about a trade on a Saturday is exactly the
+ *   pressure these pages are meant not to add. They still appear in the list.
+ *
+ * When today is empty, `next` looks ahead rather than going blank — "nothing
+ * until Thursday" is a more useful answer than nothing at all.
+ */
+function selectWidgetToday(payload, options = {}) {
+  const requested = Number(options.limit);
+  const limit = Number.isFinite(requested) && requested > 0 ? Math.min(Math.floor(requested), 20) : 6;
+
+  const today = payload.groups.today;
+  const leadable = payload.items.filter(item => !item.weekendQuiet);
+  const next = leadable.find(item => item.bucket === 'past' || item.bucket === 'today')
+    || leadable[0]
+    || null;
+
+  return {
+    next: next ? toWidgetItem(next) : null,
+    // True when `next` is not on today's list — it is the look-ahead above.
+    nextIsLater: Boolean(next && next.bucket !== 'past' && next.bucket !== 'today'),
+    items: today.slice(0, limit).map(toWidgetItem),
+    total: today.length,
+    overdue: today.filter(item => item.overdue).length,
+  };
+}
+
 // ─── The evening roll-up ─────────────────────────────────────────────────────
 
 function formatClock(date) {
@@ -469,5 +539,7 @@ module.exports = {
   normalizeCategory,
   normalizeRepeat,
   selectRollupItems,
+  selectWidgetToday,
+  toWidgetItem,
   validateCountdownInput,
 };

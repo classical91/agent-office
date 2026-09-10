@@ -249,6 +249,7 @@ All endpoints return JSON.
 | DELETE | `/api/countdowns/:id`             | Delete a countdown               |
 | GET    | `/api/countdowns/rollup`          | The top countdowns only, as JSON or `?format=text` |
 | GET    | `/api/happy-hour`                 | Today's Happy Hour deal, phase and countdown (open) |
+| GET    | `/api/widgets/today`              | Today's countdowns and the next one, for the Daily Dashboard (open) |
 | POST   | `/api/visits/track`               | Record a page view or a still-here ping (public) |
 | GET    | `/api/visits/summary`             | Live visitors, totals, top pages and referrers |
 | DELETE | `/api/visits`                     | Delete every recorded page view  |
@@ -383,6 +384,47 @@ left, the section, whether a card is urgent — is worked out on the server in
 **Access.** Reading is open, like the calendar the page shows alongside the
 cards. Adding, editing and deleting sit behind the same `DROPS_PASSPHRASE` as
 the Dropbox and share its session cookie.
+
+### The Daily Dashboard widget
+
+Main Hub's Daily Dashboard shows what is on today and what is next. It used to
+read `/api/countdowns` to get that — this page's entire payload, every bucket,
+notes and all — which coupled a dashboard card to an internal API.
+
+`GET /api/widgets/today` answers the narrower question instead:
+
+```json
+{
+  "now": "2026-09-10T16:00:00.000Z",
+  "timezone": "America/Vancouver",
+  "date": "2026-09-10",
+  "next": {
+    "id": "…", "kind": "countdown", "title": "Rent due",
+    "categoryLabel": "Deadline", "color": "#ef4444",
+    "nextAction": "Send the transfer", "remaining": "5 hrs",
+    "remainingMs": 18000000, "occurrenceAt": "2026-09-10T23:00:00.000Z",
+    "overdue": false, "urgent": true, "inProgress": false
+  },
+  "nextIsLater": false,
+  "items": [],
+  "total": 1,
+  "overdue": 0
+}
+```
+
+`next` follows the two rules this page already follows. **Overdue work leads** —
+something past due is the thing to pay attention to. **A quiet weekend trading
+card never leads**, the same exclusion `formatRollupText()` makes, because
+nudging about a trade on a Saturday is the pressure these pages exist not to
+add; it still appears in `items`. When today is empty, `next` looks ahead to the
+next thing and sets `nextIsLater`, since "nothing until Thursday" beats a blank.
+
+`items` is today only, capped at 6 (`?limit=`, max 20), while `total` reports the
+real count. **`notes` never travels** — it is the free-text field on a countdown,
+so the one most likely to hold something personal, and a dashboard row has
+nowhere to put it.
+
+Open, like `/api/countdowns`: reading countdowns has never needed a session.
 
 ### Countdown Timers and Pushcut
 
