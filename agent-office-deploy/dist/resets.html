@@ -285,7 +285,9 @@
 <div class="statusbar" id="statusbar"></div>
 
 <script src="app-shared.js?v=calendar-focus-planning-20260908"></script>
-<script src="resets.js?v=pushcut-filter-20260906"></script>
+<!-- The Happy Hour schedule, shared with the server. Must load before resets.js. -->
+<script src="happy-hour.js?v=happy-hour-shared-20260910"></script>
+<script src="resets.js?v=happy-hour-shared-20260910"></script>
 <script>
 switchView('resets', document.querySelector('.nav-item.active'));
 </script>

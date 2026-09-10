@@ -11,6 +11,7 @@ const countdowns = require('./countdowns.js');
 const resetTimers = require('./reset-timers.js');
 const planning = require('./planning.js');
 const sharebotNewsroom = require('./sharebot-newsroom.js');
+const happyHour = require('./happy-hour.js');
 
 process.env.TZ = process.env.APP_TIMEZONE || 'America/Vancouver';
 
@@ -6375,6 +6376,35 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       sendJson(res, 200, { now: payload.now, counts: payload.counts, items });
+      return;
+    }
+
+    // Happy Hour, for anything that shows it outside resets.html — Main Hub's
+    // Daily Dashboard is the first. The schedule lives in happy-hour.js, which
+    // the page loads too, so there is one deal table rather than two.
+    //
+    // Open, like the countdowns below it: this is a grocery flyer, not a
+    // personal record. Nothing from the reset-timer store is touched, and that
+    // store stays behind requireDropsAuth where it belongs.
+    if (pathname === '/api/happy-hour') {
+      if (req.method !== 'GET' && req.method !== 'HEAD') {
+        sendJson(res, 405, { error: 'Only GET is supported for Happy Hour.' });
+        return;
+      }
+      const now = new Date();
+      const details = happyHour.happyHourDetails(now);
+      sendJson(res, 200, {
+        now: now.toISOString(),
+        timezone: process.env.TZ,
+        phase: details.phase,
+        meal: details.meal,
+        deal: details.deal,
+        dayName: details.dayName,
+        title: details.title,
+        message: details.message,
+        targetAt: details.target.toISOString(),
+        remainingMs: Math.max(0, details.target.getTime() - now.getTime()),
+      });
       return;
     }
 
