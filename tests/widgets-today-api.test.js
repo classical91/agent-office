@@ -84,6 +84,49 @@ test('an empty today looks ahead rather than going blank', () => {
   assert.equal(widget.total, 0);
 });
 
+test('a pinned card leads the page, but does not decide what is next', () => {
+  // Pinning is how this page is told to keep a card where it can be seen. It is
+  // not a claim about time, and the look-ahead used to read it as one — it took
+  // payload.items[0], which is the first card in the page's order, not the next
+  // thing to happen. The dashboard led with an audit two days out while an
+  // unpinned review due the next morning went unmentioned.
+  const now = at(9);
+  const payload = build(now, [
+    { id: 'pinned', title: 'Weekly agent health audit', category: 'routine', pinned: true, target_at: on(13, 9).toISOString() },
+    { id: 'sooner', title: 'Review phone privacy', category: 'routine', target_at: on(11, 9).toISOString() },
+  ]);
+
+  assert.equal(payload.items[0].title, 'Weekly agent health audit', 'the page no longer leads with the pinned card');
+
+  const widget = countdowns.selectWidgetToday(payload);
+  assert.equal(widget.next.title, 'Review phone privacy', 'the look-ahead followed the pin instead of the clock');
+  assert.equal(widget.nextIsLater, true);
+});
+
+test('pinning does not reorder what is due today either', () => {
+  const now = at(9);
+  const payload = build(now, [
+    { id: 'pinned', title: 'Evening review', category: 'routine', pinned: true, target_at: at(21).toISOString() },
+    { id: 'sooner', title: 'Standup', category: 'routine', target_at: at(11).toISOString() },
+  ]);
+
+  const widget = countdowns.selectWidgetToday(payload);
+  assert.equal(widget.next.title, 'Standup');
+  assert.equal(widget.nextIsLater, false);
+});
+
+test('overdue leads even when something later today is pinned', () => {
+  const now = at(15);
+  const payload = build(now, [
+    { id: 'pinned', title: 'Standup', category: 'routine', pinned: true, target_at: at(17).toISOString() },
+    { id: 'late', title: 'Rent due', category: 'deadline', target_at: at(9).toISOString() },
+  ]);
+
+  const widget = countdowns.selectWidgetToday(payload);
+  assert.equal(widget.next.title, 'Rent due');
+  assert.equal(widget.next.overdue, true);
+});
+
 test('nothing anywhere is null, not a fabricated row', () => {
   const widget = countdowns.selectWidgetToday(build(at(9), []));
   assert.equal(widget.next, null);
