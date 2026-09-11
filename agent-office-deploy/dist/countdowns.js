@@ -459,16 +459,39 @@ function toWidgetItem(item) {
  *
  * When today is empty, `next` looks ahead rather than going blank — "nothing
  * until Thursday" is a more useful answer than nothing at all.
+ *
+ * Within whichever of those two tiers answers, `next` is the soonest by the
+ * clock. It is not read off the front of payload.items: that is the page's
+ * display order, and sortItems() puts pinned cards at the top of their section.
+ * Pinning is how resets.html is told to keep a card where it can be seen — it
+ * is not a claim about time, and reading it as one answered "what is the first
+ * card on the page" when the question was "what happens next". A pinned audit
+ * two days out displaced an unpinned review due in nineteen hours, and the
+ * dashboard led with the wrong one. Pinning still orders the page; it no longer
+ * decides what is next.
  */
+
+/** Whichever of these lands first, with a missing time sorting last. */
+function soonest(items) {
+  return items.reduce((first, item) =>
+    (first === null || occurrenceTime(item) < occurrenceTime(first) ? item : first), null);
+}
+
+function occurrenceTime(item) {
+  const at = item.occurrence_at ? Date.parse(item.occurrence_at) : NaN;
+  return Number.isNaN(at) ? Infinity : at;
+}
+
 function selectWidgetToday(payload, options = {}) {
   const requested = Number(options.limit);
   const limit = Number.isFinite(requested) && requested > 0 ? Math.min(Math.floor(requested), 20) : 6;
 
   const today = payload.groups.today;
   const leadable = payload.items.filter(item => !item.weekendQuiet);
-  const next = leadable.find(item => item.bucket === 'past' || item.bucket === 'today')
-    || leadable[0]
-    || null;
+  // Overdue work still leads: a past occurrence is by definition earlier than
+  // anything due later today, so the tier needs no rule of its own.
+  const due = leadable.filter(item => item.bucket === 'past' || item.bucket === 'today');
+  const next = soonest(due) || soonest(leadable) || null;
 
   return {
     next: next ? toWidgetItem(next) : null,
