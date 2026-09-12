@@ -36,6 +36,39 @@
     director: 'studioclaw',
   };
 
+  // Hair is not drawn. It arrives on a head, the way it was originally painted.
+  //
+  // Generating hair was tried and it cannot work here: Penny's head is drawn
+  // high on the canvas because she is bald, and the sprites that do have hair
+  // sit five to nine rows lower precisely to leave room for it. Building hair
+  // onto her skull therefore has nowhere to go but sideways, which reads as a
+  // cap or a beret rather than as hair. So a hairstyle selects the head that was
+  // hand-painted with it, and the strands, the black outline and the shading are
+  // the artist's, not an approximation of them.
+  const HAIR_HEADS = {
+    bald: 'penny',
+    spiked: 'webclaw',
+    tousled: 'nutrimind',
+    swept: 'pc',
+  };
+
+  // The head each sprite carries is in a slightly different place — measured
+  // from the assets, in columns and rows from Penny's. Everything drawn onto a
+  // head (expression, accessory, hair recolour) is shifted by its source's
+  // offset, so the landmarks in PENNY_HEAD stay the single set of coordinates
+  // the whole compositor is written against.
+  const HEAD_OFFSETS = {
+    penny: { dx: 0, dy: 0 },
+    webclaw: { dx: 3, dy: 9 },
+    nutrimind: { dx: 3, dy: 8 },
+    pc: { dx: 2, dy: 5 },
+    studioclaw: { dx: 2, dy: 6 },
+  };
+
+  // How much of the source sprite comes across as "the head": down to the base
+  // of the neck, above where any body's shoulders start.
+  const HEAD_CUT = 52;
+
   // Penny's head, measured off assets/character-demo/penny.png rather than
   // guessed. Every head this compositor draws is hers — the outfit sprite's own
   // head is cleared and Penny's pasted in its place — so hair, expressions and
@@ -60,12 +93,12 @@
   // borrows another sprite's head any more: hair is cut from Penny's own
   // silhouette below, and her head is the only one this compositor ever draws.
 
-  // Penny's hairline: the lowest row hair may reach at a given column. The face
-  // is on the right of a three-quarter view, so the line rises towards it —
-  // level with the top of the ear at the back, above the near brow at the front.
-  // It curves rather than ramps: a straight line across twenty columns reads as
-  // a helmet with a bevelled edge, which is exactly what the first pass looked
-  // like.
+  // The brow line, in Penny's columns: the lowest row hair can reach before it
+  // would be over the face. It is the cut-off for the hair mask, so that the
+  // near-black ink a sprite draws its glasses, lashes and jaw with is never
+  // mistaken for hair and recoloured. The face is on the right of a
+  // three-quarter view, so the line rises towards it — level with the top of the
+  // ear at the back, above the near brow at the front.
   function hairlineAt(x) {
     const front = Math.max(0, x - PENNY_HEAD.ear.x1);
     return 26 - front * 0.62 + Math.min(4, front * front * 0.012);
@@ -242,18 +275,16 @@
     context.putImageData(image, 0, 0);
   }
 
-  // Hair, cut from Penny's own skull.
+  // Recolouring the hair that came in on the head.
   //
-  // It used to be lifted out of WebClaw's, NutriMind's and PC's heads and
-  // stamped onto hers. Those heads sit up to nine rows lower and are shaped
-  // differently, so the borrowed hair landed across her eyes, left holes where
-  // her skull showed through, and hung in the air above her crown. Hair built
-  // from the silhouette it has to sit on cannot be misregistered, so that is
-  // what this does: it reads Penny's outline once, and fills it from the crown
-  // down to a hairline.
-  let headRows = null;
+  // The mass is found by flooding out from the dark pixels along the top of the
+  // sprite, which is what the hair is and what nothing else touches. This is the
+  // same trick an earlier version used, but it ran against a head the hair had
+  // been moved off, so it caught eyes and jaws and left holes. Run against the
+  // sprite the hair was painted on, the registration is exact by construction.
+  const hairMasks = {};
 
-  function measureHeadRows(image) {
+  function buildHairMask(image, sourceKey) {
     const canvas = document.createElement('canvas');
     canvas.width = SPRITE_W;
     canvas.height = SPRITE_H;
@@ -261,74 +292,88 @@
     context.imageSmoothingEnabled = false;
     context.drawImage(image, 0, 0);
     const pixels = context.getImageData(0, 0, SPRITE_W, SPRITE_H).data;
-    const rows = [];
-    for (let y = 0; y <= PENNY_HEAD.chin; y += 1) {
-      let min = -1; let max = -1;
+    const offset = HEAD_OFFSETS[sourceKey] || { dx: 0, dy: 0 };
+
+    const candidate = new Uint8Array(SPRITE_W * HEAD_CUT);
+    for (let y = 0; y < HEAD_CUT; y += 1) {
       for (let x = 0; x < SPRITE_W; x += 1) {
-        if (pixels[(y * SPRITE_W + x) * 4 + 3] > 20) { if (min < 0) min = x; max = x; }
-      }
-      rows[y] = min < 0 ? null : [min, max];
-    }
-    return rows;
-  }
-
-  // How far past the base hairline each style grows, and how ragged its edge is.
-  // `spikes` adds tufts above the crown; `lift` pulls the whole hairline up.
-  const HAIR_STYLES = {
-    spiked: { drop: -1, ragged: 2, spikes: true },
-    tousled: { drop: 2, ragged: 2, spikes: false },
-    swept: { drop: 0, ragged: 1, spikes: false },
-  };
-
-  // A repeatable wobble, so a style's edge is uneven without being noisy from
-  // one render to the next.
-  function edgeWobble(x, amount) {
-    if (!amount) return 0;
-    return (((x * 7 + 3) % 5) - 2) * amount / 2;
-  }
-
-  function hairPixels(style) {
-    const shape = HAIR_STYLES[style];
-    if (!shape || !headRows) return [];
-    const cells = [];
-    const top = PENNY_HEAD.crown - (shape.spikes ? 3 : 0);
-    for (let y = Math.max(0, top); y <= PENNY_HEAD.chin; y += 1) {
-      // Above the crown only the spikes reach, and they follow the crown's own
-      // width so they never float clear of the head.
-      const span = headRows[y] || headRows[PENNY_HEAD.crown];
-      if (!span) continue;
-      const limit = y < PENNY_HEAD.crown ? span : span;
-      for (let x = limit[0]; x <= limit[1]; x += 1) {
-        const line = hairlineAt(x) + shape.drop + edgeWobble(x, shape.ragged);
-        if (y > line) continue;
-        if (y < PENNY_HEAD.crown && !(shape.spikes && (x % 4 === 1 || x % 7 === 3))) continue;
-        cells.push({ x, y, edge: x === limit[0] || x === limit[1] || y >= line - 1 });
+        const index = (y * SPRITE_W + x) * 4;
+        const brightness = Math.max(pixels[index], pixels[index + 1], pixels[index + 2]);
+        // Above the brow only. Below it the same near-black ink draws the
+        // glasses, the lashes and the jaw line, none of which are hair.
+        if (y > hairlineAt(x - offset.dx) + offset.dy) continue;
+        if (pixels[index + 3] > 30 && brightness < 130) candidate[y * SPRITE_W + x] = 1;
       }
     }
-    return cells;
+
+    const seen = new Uint8Array(candidate.length);
+    const queue = [];
+    for (let y = 0; y < 14; y += 1) {
+      for (let x = 0; x < SPRITE_W; x += 1) {
+        const at = y * SPRITE_W + x;
+        if (candidate[at]) { seen[at] = 1; queue.push(at); }
+      }
+    }
+    for (let cursor = 0; cursor < queue.length; cursor += 1) {
+      const at = queue[cursor];
+      const x = at % SPRITE_W;
+      [at - 1, at + 1, at - SPRITE_W, at + SPRITE_W].forEach((next) => {
+        if (next < 0 || next >= candidate.length) return;
+        if (Math.abs((next % SPRITE_W) - x) > 1) return;
+        if (candidate[next] && !seen[next]) { seen[next] = 1; queue.push(next); }
+      });
+    }
+
+    // The outline is the boundary of the mass, not the darkest pixels in it.
+    // Telling them apart by brightness worked on WebClaw, whose hair carries
+    // some light strands, and failed on PC's, which is dark throughout: nearly
+    // every pixel counted as outline and the colour only reached a few spidery
+    // strands. Geometry does not care how dark the style is.
+    const inMask = new Set(queue);
+    let min = 255; let max = 0;
+    const found = queue.map((at) => {
+      const index = at * 4;
+      const x = at % SPRITE_W;
+      const v = Math.max(pixels[index], pixels[index + 1], pixels[index + 2]);
+      const edge = !inMask.has(at - SPRITE_W) || !inMask.has(at + SPRITE_W)
+        || (x > 0 && !inMask.has(at - 1)) || (x < SPRITE_W - 1 && !inMask.has(at + 1));
+      if (!edge) { if (v < min) min = v; if (v > max) max = v; }
+      return { at, v, edge };
+    });
+    if (max <= min) { min = 0; max = 255; }
+    return { pixels: found, range: { min, max }, length: found.length };
   }
 
-  function drawHair(context, style, color) {
-    if (style === 'bald' || !HAIR_STYLES[style]) return;
+  function recolorHair(context, sourceKey, color) {
+    const mask = hairMasks[sourceKey];
+    if (!mask || !mask.length) return;
     const target = parseHex(color);
     const image = context.getImageData(0, 0, SPRITE_W, SPRITE_H);
     const data = image.data;
-    hairPixels(style).forEach((cell) => {
-      if (cell.y < 0 || cell.y >= SPRITE_H || cell.x < 0 || cell.x >= SPRITE_W) return;
-      const index = (cell.y * SPRITE_W + cell.x) * 4;
-      if (cell.edge) {
-        // An ink outline, the same one the source sprites draw around their own
-        // hair, so the cap reads as hair rather than as a painted patch.
-        data[index] = 17; data[index + 1] = 18; data[index + 2] = 24;
-      } else {
-        // Light falls from the top front, which is where this character's other
-        // highlights sit; the back of the head stays in shadow.
-        const lit = 92 + (cell.x - PENNY_HEAD.ear.x0) * 2.6 - (cell.y - PENNY_HEAD.crown) * 1.9;
-        const brightness = Math.max(48, Math.min(190, Math.round(lit)));
-        data[index] = tintChannel(target.r, brightness);
-        data[index + 1] = tintChannel(target.g, brightness);
-        data[index + 2] = tintChannel(target.b, brightness);
+
+    // Habbo hair is painted almost entirely between black and about a third
+    // brightness, so a fixed threshold puts nearly all of it on the "outline"
+    // side and only the few lit strands take the colour — which came out as a
+    // blond fringe over a black mass. Spreading the mask's own range across the
+    // full tint instead keeps the artist's shading and lets the colour read.
+    const span = mask.range;
+    mask.pixels.forEach((pixel) => {
+      const index = pixel.at * 4;
+      // The sprite's own black outline, kept so the silhouette stays as crisp as
+      // the art it came from.
+      if (pixel.edge) {
+        data[index] = 13; data[index + 1] = 14; data[index + 2] = 18;
+        data[index + 3] = 255;
+        return;
       }
+      const shade = Math.max(0, Math.min(1, (pixel.v - span.min) / (span.max - span.min)));
+      // A floor under the darkest strands, so the colour reads across the whole
+      // mass rather than only on the lit ones, and the artist's shading rides on
+      // top of it.
+      const lightness = Math.round(66 + shade * 132);
+      data[index] = tintChannel(target.r, lightness);
+      data[index + 1] = tintChannel(target.g, lightness);
+      data[index + 2] = tintChannel(target.b, lightness);
       data[index + 3] = 255;
     });
     context.putImageData(image, 0, 0);
@@ -431,20 +476,37 @@
     workContext.imageSmoothingEnabled = false;
     workContext.drawImage(spriteImages[OUTFIT_SPRITES[look.outfit]], 0, 0);
 
-    // Every combination starts from the approved Penny head silhouette. The
-    // interchangeable hair, expression, skin and accessory layers sit on top.
-    workContext.clearRect(0, 0, SPRITE_W, 49);
-    workContext.drawImage(spriteImages.penny, 0, 0, SPRITE_W, 49, 0, 0, SPRITE_W, 49);
+    // The head comes from whichever sprite was painted with this hairstyle, and
+    // brings the artist's hair with it. Everything after this is recolouring and
+    // small details drawn on top — no hair is invented.
+    const headKey = HAIR_HEADS[look.hair] || HAIR_HEADS.bald;
+    const head = HEAD_OFFSETS[headKey] || { dx: 0, dy: 0 };
+    workContext.clearRect(0, 0, SPRITE_W, HEAD_CUT);
+    workContext.drawImage(spriteImages[headKey], 0, 0, SPRITE_W, HEAD_CUT, 0, 0, SPRITE_W, HEAD_CUT);
 
-    // After the head, not before it. Recolouring first and then pasting rows
-    // 0..48 over the top put Penny's own un-recoloured collar back on every
-    // character, which is the horizontal band of the wrong shade that ran across
-    // each of them at the shoulders.
+    // After the head, not before it. Recolouring first and then pasting the head
+    // over the top put the head sprite's own un-recoloured collar back on every
+    // character, which is the horizontal band of the wrong shade that used to
+    // run across each of them at the shoulders.
     recolorOutfit(workContext, look.outfitColor);
     recolorSkin(workContext, look.skin);
-    drawHair(workContext, look.hair, look.hairColor);
+    recolorHair(workContext, headKey, look.hairColor);
+
+    // The expression and the accessory are written against Penny's landmarks, so
+    // they travel with the head they are being drawn on rather than staying at
+    // her coordinates while the face sits nine rows lower.
+    //
+    // `source-atop` then clips them to the character. Translating alone gets the
+    // ear close but not exact — these heads are shaped differently, not just
+    // offset — and an earpiece was hanging a pixel or three past the jaw on the
+    // lower-set ones. This makes "nothing is drawn off the head" a property of
+    // the compositor rather than of how well the coordinates were tuned.
+    workContext.save();
+    workContext.globalCompositeOperation = 'source-atop';
+    workContext.translate(head.dx, head.dy);
     drawFace(workContext, look.face, look.skin);
     drawAccessory(workContext, look.accessory, look.outfitColor);
+    workContext.restore();
 
     // Fit rather than stretch. Every canvas the studio hands over is 64x110 —
     // exactly the sprite's own size — so this is a 1:1 blit there and the art
@@ -463,7 +525,9 @@
       image.onerror = () => reject(new Error(`Could not load ${source}`));
       image.src = source;
     }))).then(() => {
-      headRows = measureHeadRows(spriteImages.penny);
+      Object.values(HAIR_HEADS).forEach((key) => {
+        hairMasks[key] = buildHairMask(spriteImages[key], key);
+      });
       assetsReady = true;
     });
   }
