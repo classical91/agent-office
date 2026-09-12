@@ -14,7 +14,8 @@ The 3D office is intended to be an operational view of that system, not a decora
 - **Reminders** — its own two-field panel on the Dropbox page (what to be reminded about, and when) for things you are putting down for later rather than tasks you are working, reached from the **Reminders** item under Planning Tools in the side menu. It comes back when it is due.
 - **Phone inbox** — a token-authenticated API for iOS Shortcuts: send a note or reminder to the Dropbox from your phone, and pull back whatever has come due. See [Phone inbox](#phone-inbox--ios-shortcuts).
 - **Memory** — per-agent memory entries that agents can reference across sessions.
-- **Calendar** — a Google Calendar-backed control surface for the office: agent/project metadata on every block, live run status, an Agent Assistant drawer, agent-timeline filters, and a scored scheduling policy instead of first-available-slot.
+- **Calendar** — a Google Calendar-backed control surface for the office: agent/project metadata on every block, live run status, an Agent Assistant drawer, agent-timeline filters, and a scored scheduling policy instead of first-available-slot. It opens in **Focus Mode** — the chrome steps aside so the grid gets the whole viewport, and the sidebar is one tap away in the focus rail. See [Focus Mode](#focus-mode).
+- **Planning Mode** — the weekly planning checklist you keep by hand, and the list CoachClaw reads before it builds the week. Ticking an item asks CoachClaw to find time for it; it does not mean the item is done, which is a separate state. Unticked items stay on the list and out of the week. See [Planning Mode](#planning-mode).
 - **Countdowns** — everything with a clock on it in one page: deadlines, goals, work shifts, weekly routines and trading dates, grouped into Today / This Week / Later alongside what is next on the Google Calendar. Every card carries the time left, the category and the next action. See [Countdowns](#countdowns-1).
 - **Streaks** — every day you kept a habit up, plotted on a month grid and a year strip. Each streak carries a type (Health, Deep Work, Avoid, …) and a colour, the calendar can be filtered down to one streak or one type, and a day is marked from the day itself or from the streak's **Mark today** button. See [Streaks](#streaks-1).
 - **Visitors** — who is on your websites right now, what they are reading, and whether they have been before. One tracker script goes on any site you run; nothing is looked up against any outside service. See [Visitors](#visitors-1).
@@ -45,6 +46,7 @@ agent-office-deploy/
     index.html                # Office view, served at "/"
     org-chart.html            # Org Chart page
     memory.html                # Memory page
+    planning.html              # Planning Mode page
     calendar.html              # Calendar page
     resets.html                # Resets page
     ai-landscape.html          # AI Landscape page
@@ -71,6 +73,9 @@ agent-office-deploy/
     calendar-agent-assistant.js # Agent Assistant drawer
     calendar-agent-meta.js     # Agent Office event metadata + run lifecycle
     calendar-scheduling.js     # Scheduling preferences, slot scoring, NL parsing
+    planning.js                # Planning Mode records and the CoachClaw brief (server-side)
+    planning-page.js           # Planning Mode page-only logic
+    planning.css               # Planning Mode-only styles
     calendar-google-sync.js    # Incremental Google sync (sync tokens, paging, 410 recovery)
     reminder-time.js           # Parses "tomorrow 9am" / "in 2h" into reminder timestamps
     ai-landscape.{js,css}      # AI Landscape-only logic
@@ -107,7 +112,7 @@ Edit `scripts/shell/shell.html` (topbar + sidebar), `scripts/shell/boot.html`
 re-run it — never the copies inside the pages. Which sidebar row is highlighted
 is worked out from the URL by `markActiveNav()`, so no page marks its own.
 
-> **Note:** the repo also has two pre-existing single-page copies of the old monolithic UI — root `agent-office.html` and `agent-office-deploy/agent-office.html`. Neither is referenced by `server.js` or any build/deploy step, and they were already out of sync with `dist/index.html` before this multi-page split. They're left as-is; treat `agent-office-deploy/dist/` as the only frontend that's actually served.
+> **Note:** `agent-office-deploy/dist/` is the canonical frontend served by the application.
 
 ## Running locally
 
@@ -223,6 +228,11 @@ All endpoints return JSON.
 | GET    | `/api/shortcuts/reset-timers`     | The Countdown Timers on `/resets.html`, as text or JSON |
 | GET    | `/api/reset-timers`               | The stored Countdown Timers (session-authed) |
 | PUT    | `/api/reset-timers`               | Replace the stored Countdown Timers (session-authed) |
+| GET    | `/api/planning`                   | The planning checklist and its counts (session-authed) |
+| POST   | `/api/planning`                   | Add a planning item (session-authed) |
+| PATCH  | `/api/planning/:id`               | Edit, tick, untick or complete a planning item (session-authed) |
+| DELETE | `/api/planning/:id`               | Delete a planning item (session-authed) |
+| GET    | `/api/planning/brief`             | The ticked items, shaped for the scheduler (session-authed) |
 | GET    | `/api/memories`                   | List memory entries              |
 | POST   | `/api/memories`                   | Create a memory entry            |
 | PATCH  | `/api/memories/:id`               | Update a memory entry            |
@@ -238,6 +248,8 @@ All endpoints return JSON.
 | PATCH  | `/api/countdowns/:id`             | Edit, pin or archive a countdown |
 | DELETE | `/api/countdowns/:id`             | Delete a countdown               |
 | GET    | `/api/countdowns/rollup`          | The top countdowns only, as JSON or `?format=text` |
+| GET    | `/api/happy-hour`                 | Today's Happy Hour deal, phase and countdown (open) |
+| GET    | `/api/widgets/today`              | Today's countdowns and the next one, for the Daily Dashboard (open) |
 | POST   | `/api/visits/track`               | Record a page view or a still-here ping (public) |
 | GET    | `/api/visits/summary`             | Live visitors, totals, top pages and referrers |
 | DELETE | `/api/visits`                     | Delete every recorded page view  |
@@ -373,6 +385,47 @@ left, the section, whether a card is urgent — is worked out on the server in
 cards. Adding, editing and deleting sit behind the same `DROPS_PASSPHRASE` as
 the Dropbox and share its session cookie.
 
+### The Daily Dashboard widget
+
+Main Hub's Daily Dashboard shows what is on today and what is next. It used to
+read `/api/countdowns` to get that — this page's entire payload, every bucket,
+notes and all — which coupled a dashboard card to an internal API.
+
+`GET /api/widgets/today` answers the narrower question instead:
+
+```json
+{
+  "now": "2026-09-10T16:00:00.000Z",
+  "timezone": "America/Vancouver",
+  "date": "2026-09-10",
+  "next": {
+    "id": "…", "kind": "countdown", "title": "Rent due",
+    "categoryLabel": "Deadline", "color": "#ef4444",
+    "nextAction": "Send the transfer", "remaining": "5 hrs",
+    "remainingMs": 18000000, "occurrenceAt": "2026-09-10T23:00:00.000Z",
+    "overdue": false, "urgent": true, "inProgress": false
+  },
+  "nextIsLater": false,
+  "items": [],
+  "total": 1,
+  "overdue": 0
+}
+```
+
+`next` follows the two rules this page already follows. **Overdue work leads** —
+something past due is the thing to pay attention to. **A quiet weekend trading
+card never leads**, the same exclusion `formatRollupText()` makes, because
+nudging about a trade on a Saturday is the pressure these pages exist not to
+add; it still appears in `items`. When today is empty, `next` looks ahead to the
+next thing and sets `nextIsLater`, since "nothing until Thursday" beats a blank.
+
+`items` is today only, capped at 6 (`?limit=`, max 20), while `total` reports the
+real count. **`notes` never travels** — it is the free-text field on a countdown,
+so the one most likely to hold something personal, and a dashboard row has
+nowhere to put it.
+
+Open, like `/api/countdowns`: reading countdowns has never needed a session.
+
 ### Countdown Timers and Pushcut
 
 `/resets.html` is the other half of the page: personal reset timers — usage
@@ -384,6 +437,52 @@ separate workflow; the two share the screen and nothing else.
 resets.html  →  /api/reset-timers  →  ┬─ /api/shortcuts/reset-timers  →  iPhone Shortcut
                 (persistent store)    └─ server-side timer processor   →  Pushcut  →  iPhone
 ```
+
+#### Happy Hour
+
+One card on `/resets.html` is not a timer you set: the Happy Hour countdown
+knows the week's deals and rewrites itself as the day moves through the window.
+
+```
+2:30 PM  heads-up     3:00 PM  opens     6:00 PM  closes     after 6  tomorrow's deal
+   upcoming    →    starting    →      open      →                tomorrow
+```
+
+That schedule lives in `happy-hour.js`, which is loaded two ways on purpose:
+`resets.html` pulls it in with a `<script>` tag ahead of `resets.js`, and
+`server.js` `require()`s it. It used to live inside `resets.js`, where only the
+page could reach it — but Main Hub's Daily Dashboard shows the same meal and the
+same countdown, and a second copy of the deal table in another repository would
+be wrong the first week a deal changed.
+
+`GET /api/happy-hour` serves it:
+
+```json
+{
+  "now": "2026-09-10T01:05:39.913Z",
+  "timezone": "America/Vancouver",
+  "phase": "tomorrow",
+  "meal": "Fresh Appetizers",
+  "deal": "50% off Fresh Appetizers",
+  "dayName": "Thursday",
+  "targetAt": "2026-09-10T21:30:00.000Z",
+  "remainingMs": 73460087
+}
+```
+
+The route is open, like `/api/countdowns` — this is a grocery flyer, not a
+personal record. It reads nothing from the reset-timer store, which stays behind
+the passphrase.
+
+**The Pushcut list is what the page opens on.** Every countdown carries a
+**Pushcut** tick box, and the **Show** dropdown opens on **Pushcut**: the cards
+you keep on the phone are the list, and everything else — reference dates,
+holidays, the subscription rows — is one switch to **All timers** away. The tick
+is a label on the card and nothing more. It does not decide whether a
+notification is sent: that is still the webhook URL and the server's processor,
+so a ticked card with no webhook is quiet, and an unticked card with one still
+fires. A timer stored before the box existed opens ticked when it has a webhook,
+because that is what it already was.
 
 **The notification is the server's job.** It used to be the browser's: the page
 fired the webhook itself, which meant nothing arrived unless the page happened
@@ -426,6 +525,90 @@ it and logs that it did.
 id, newest version per record, rather than taking the server's array wholesale.
 Both sides keep timers only they have seen, and a deletion is a tombstone that
 travels with the record instead of an absence the other side would undo.
+
+## Focus Mode
+
+**Focus Mode** is one behaviour shared by every page: the topbar, the sidebar,
+the activity panel and the status bar step aside, the page takes the whole
+viewport, and a small **focus rail** appears in the top-left corner with two
+controls — ☰ opens the sidebar, ⛶ leaves focus. It is the `ao-focus` class on
+`<html>`; `shared.css` owns what it looks like and `app-shared.js` owns when it
+is on.
+
+**The sidebar is not gone in focus, it is a drawer.** The ☰ on the rail opens
+the same drawer the phone hamburger opens — same markup, same scrim, same
+handlers — so there is one navigation system in the app rather than a second
+one for focused pages. Tapping a row navigates, tapping the scrim or pressing
+Escape closes it.
+
+**Which pages open in focus** is a per-page default plus whatever you last
+chose on that page. A page declares its default with `data-focus-default="on"`
+on its `<html>` tag; the Calendar is the page that does, because a week grid is
+worth every pixel of width it can get. Leaving focus on the Calendar is
+remembered for the Calendar and changes nothing anywhere else, and the same the
+other way round — the key is `ao-focus:<pathname>` in `localStorage`. The
+pre-paint boot script in every page's `<head>` reads both before first paint, so
+a focused page never flashes its chrome on the way in.
+
+**On a phone** the sidebar is already a drawer and the topbar is the only chrome
+there is, so focus is the difference between a calendar with a title bar over it
+and a calendar with the screen. The rail is how you get the menu back either
+way.
+
+This replaced the Calendar's own arrangement, which hid the topbar and sidebar
+with a stylesheet of its own and had no way of showing them again — that page
+was the only one in the app you could not navigate away from without the
+browser's Back button.
+
+## Planning Mode
+
+**Planning Mode** is the weekly planning checklist: the list of things you want
+to get done in the coming week, kept by hand, and the list CoachClaw reads
+before it builds a schedule. It is not the Calendar and it is not a to-do list.
+
+**A tick is a request, not a result.** Ticking an item asks CoachClaw to find
+time for it this week. **Done** is a separate control and a separate field:
+ticking *Workout* on a Sunday for a session you intend to do on Wednesday must
+not tell the app you have already worked out. The two states are stored
+separately (`schedule_this_week` and `completed`), and nothing in the app reads
+one for the other. Completing an item does clear its scheduling request — the
+request has been satisfied — and un-completing it does not put it back; that is
+a deliberate tick.
+
+**Unticked items are kept.** An item you do not want in this week stays on the
+list under *Kept for later*, out of the schedule and out of the way, until a
+week you do want it in. Deleting is the only thing that removes an item.
+
+**What an item can carry.** Adding one takes a title and nothing else, which is
+what makes the list usable on a Sunday night. **Edit** opens the rest: how long
+it takes, a priority, preferred days, a preferred time (a clock time, or
+Morning / Afternoon / Evening) and notes. Everything but the title is optional —
+an item with no duration is scheduled as an hour, and the brief says so rather
+than pretending it was told.
+
+**The handoff.** `GET /api/planning/brief` is what CoachClaw reads: the ticked,
+unfinished items, each with a `request` that
+`calendar-scheduling.js`'s `suggestSlots()` takes as-is, plus the preferred days
+and the preferred window resolved to clock times. Unticked and completed items
+are not in it. The page shows the same brief under *What CoachClaw reads*, so
+what the scheduler will be given is visible before it is given.
+
+**Where this sits in the weekly build.** The page lists the whole flow, of which
+steps 2 and 6's inputs are what Planning Mode owns:
+
+1. Work schedule — the days and hours you are at work.
+2. This checklist — every ticked item, with its duration, priority and
+   preferred times.
+3. Existing commitments — calendar events, scheduled tasks, anything fixed.
+4. Free time — realistic windows around all of that, not every empty minute.
+5. The week — ticked items placed into those windows.
+6. Your review — accept it, move something, or send an item back to this list.
+
+Steps 3 to 5 are `calendar-scheduling.js`, which already models working hours,
+sleep, lunch, meeting buffers, recovery time and deep-work windows, and scores
+candidate slots rather than taking the first that fits. Step 1 (reading a photo
+of a work schedule) and step 6 (the proposal-and-review screen) are not built
+yet; the checklist and the brief are the bridge they will plug into.
 
 ## Streaks
 

@@ -847,9 +847,11 @@
       + '</button>';
   }
 
+  // No menu button of its own: the sidebar is reached through the focus rail
+  // in Focus Mode and the topbar hamburger out of it, which is the one drawer
+  // the rest of the app opens.
   function renderToolbar() {
     return '<div class="calendar-toolbar">'
-      + '<button class="calendar-mobile-menu-btn" type="button" aria-label="Open menu" onclick="toggleMobileNav()">☰</button>'
       + '<div><div class="calendar-range-main">' + escapeHtml(currentRangeLabel()) + '</div><div class="calendar-range-sub">' + escapeHtml(timezoneLabel()) + (state.accountEmail ? ' / ' + escapeHtml(state.accountEmail) : '') + '</div></div>'
       + '<div class="calendar-toolbar-controls">'
       + '<div class="calendar-nav">'
@@ -1677,6 +1679,12 @@
   window.addEventListener('resize', () => {
     if (refitTimer) clearTimeout(refitTimer);
     refitTimer = setTimeout(fitMonthCells, 120);
+  });
+  // Entering or leaving Focus Mode changes the board's height by the topbar,
+  // and it fires no resize event. Same refit, different trigger.
+  window.addEventListener('ao-focus-change', () => {
+    if (refitTimer) clearTimeout(refitTimer);
+    refitTimer = setTimeout(fitMonthCells, 160);
   });
   function jumpToDate(value) {
     const date = typeof value === 'string' ? parseDateKey(value) : startOfDay(value);

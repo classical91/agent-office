@@ -20,8 +20,13 @@ window.AOResets = (() => {
   const IPHONE_UPDATE_MIGRATION_KEY = 'agent-office-countdown-iphone-updates-v1';
   const SUBSCRIPTIONS_MIGRATION_KEY = 'agent-office-countdown-subscriptions-bills-v1';
   const HOLIDAYS_MIGRATION_KEY = 'agent-office-countdown-holidays-v1';
+  const TRADINGVIEW_MIGRATION_KEY = 'agent-office-countdown-tradingview-timeframes-v1';
   const SORT_KEY = 'ao-resets-sort';
   const FILTER_KEY = 'ao-resets-filter';
+  // The list opens on the Pushcut cards. Most of what is on this page is a
+  // countdown that pushes a notification to the phone; the rest is reference,
+  // and "Show: All timers" is one control away.
+  const DEFAULT_FILTER = 'pushcut';
   const TICK_MS = 1000;
   // The server advances repeating timers and records Pushcut deliveries, so the
   // page pulls those back periodically instead of only on load.
@@ -29,16 +34,11 @@ window.AOResets = (() => {
   const TOMBSTONE_TTL_MS = 30 * 86400000;
   const DAY_MS = 86400000;
   const DUE_SOON_COLOR = 'var(--yellow)';
-  const HAPPY_HOUR_ID = 'routine-happy-hour-daily';
-  const HAPPY_HOUR_DEALS = [
-    '50% off Burger Patties',
-    '50% off Marinated Chicken Kebobs',
-    '50% off Marinated Chicken Kebobs',
-    '50\u00a2 each Marinated Split Chicken Wings',
-    '50% off Fresh Appetizers',
-    '50% off Fresh Appetizers',
-    '50% off Burger Patties',
-  ];
+  // The Happy Hour schedule lives in happy-hour.js, which the server loads too —
+  // Main Hub's Daily Dashboard shows the same meal and the same countdown, and
+  // one schedule in two places is one schedule too many. This page renders it;
+  // it does not decide it.
+  const { HAPPY_HOUR_ID, atHour, happyHourDetails, happyHourMeal } = window.AOHappyHour;
 
   const REPEAT_OPTIONS = [
     { value: 0, label: 'Does not repeat' },
@@ -63,6 +63,11 @@ window.AOResets = (() => {
   };
 
   const FILTERS = {
+    // First in the list because it is what the page opens on. A card is in
+    // this view because its Pushcut box is ticked, not because it happens to
+    // carry a webhook URL: the tick is the answer to "is this one of my
+    // Pushcut countdowns", and it never decides whether a notification is sent.
+    pushcut: { label: 'Pushcut', keep: view => view.card.pushcut },
     all: { label: 'All timers', keep: () => true },
     'subscriptions-bills': { label: 'Subscriptions/Bills', keep: view => view.card.category === 'subscriptions-bills' },
     holidays: { label: 'Holidays', keep: view => view.card.category === 'holidays' },
@@ -106,7 +111,7 @@ window.AOResets = (() => {
     initialized: false,
     cards: [],
     sort: 'soonest',
-    filter: 'all',
+    filter: DEFAULT_FILTER,
     openId: '',
     savedId: '',
     tickTimer: null,
@@ -135,12 +140,6 @@ window.AOResets = (() => {
     return 'reset-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
   }
 
-  function atHour(date, hour, minute) {
-    const copy = new Date(date);
-    copy.setHours(hour, minute || 0, 0, 0);
-    return copy;
-  }
-
   function daysFromNow(days, hour) {
     const date = new Date();
     date.setDate(date.getDate() + days);
@@ -152,47 +151,6 @@ window.AOResets = (() => {
     const daysAhead = (weekday - date.getDay() + 7) % 7 || 7;
     date.setDate(date.getDate() + daysAhead);
     return atHour(date, hour == null ? 9 : hour, 0).toISOString();
-  }
-
-  function happyHourDetails(now = new Date()) {
-    const current = new Date(now);
-    const reminder = atHour(current, 14, 30);
-    const starts = atHour(current, 15, 0);
-    const ends = atHour(current, 18, 0);
-    let dealDate = current;
-    let target = reminder;
-    let phase = 'upcoming';
-
-    if (current >= ends) {
-      dealDate = new Date(current);
-      dealDate.setDate(dealDate.getDate() + 1);
-      target = atHour(dealDate, 14, 30);
-      phase = 'tomorrow';
-    } else if (current >= starts) {
-      target = ends;
-      phase = 'open';
-    } else if (current >= reminder) {
-      target = starts;
-      phase = 'starting';
-    }
-
-    const dayName = dealDate.toLocaleDateString([], { weekday: 'long' });
-    const deal = HAPPY_HOUR_DEALS[dealDate.getDay()];
-    return {
-      phase,
-      target,
-      dayName,
-      deal,
-      meal: happyHourMeal(deal),
-      title: `Happy Hour ${phase === 'tomorrow' ? 'Tomorrow' : 'Today'} \u2014 ${deal}`,
-      message: `${dayName}: ${deal}. Happy Hour is 3:00\u20136:00 PM; the countdown starts at 2:30 PM. More Rewards card required; while quantities last.`,
-    };
-  }
-
-  function happyHourMeal(deal) {
-    return String(deal || '')
-      .replace(/^50% off\s+/i, '')
-      .replace(/^50\u00a2 each\s+/i, '');
   }
 
   function syncHappyHourCard(card, now = new Date()) {
@@ -371,6 +329,53 @@ window.AOResets = (() => {
     return cards;
   }
 
+  function tradingViewTimeframeCards(now = new Date()) {
+    const weeklyTarget = new Date(now);
+    const daysUntilSunday = (7 - weeklyTarget.getDay()) % 7 || 7;
+    weeklyTarget.setDate(weeklyTarget.getDate() + daysUntilSunday);
+    weeklyTarget.setHours(9, 0, 0, 0);
+    const monthlyTarget = new Date(now.getFullYear(), now.getMonth() + 1, 1, 9, 0, 0, 0);
+    const createdAt = Date.now();
+    return ['Bitcoin', 'TOTAL1', 'TOTAL2', 'TOTAL3'].flatMap(symbol => [
+      {
+        id: `tradingview-weekly-${symbol.toLowerCase()}`,
+        title: `Weekly timeframe review - ${symbol}`,
+        resetAt: weeklyTarget.toISOString(),
+        repeatDays: 7,
+        pushcut: true,
+        status: 'active',
+        createdAt,
+        updatedAt: new Date().toISOString(),
+        message: `Review the ${symbol} weekly chart in TradingView.`,
+      },
+      {
+        id: `tradingview-monthly-${symbol.toLowerCase()}`,
+        title: `Monthly timeframe review - ${symbol}`,
+        resetAt: monthlyTarget.toISOString(),
+        repeatMonths: 1,
+        pushcut: true,
+        status: 'active',
+        createdAt,
+        updatedAt: new Date().toISOString(),
+        message: `Review the ${symbol} monthly chart in TradingView.`,
+      },
+    ]);
+  }
+
+  function applyTradingViewMigration(cards) {
+    try {
+      if (localStorage.getItem(TRADINGVIEW_MIGRATION_KEY) === '1') return cards;
+      const existing = new Set(cards.map(card => card.id));
+      tradingViewTimeframeCards().forEach(card => {
+        if (!existing.has(card.id)) cards.push(normalizeCard(card, cards.length));
+      });
+      localStorage.setItem(TRADINGVIEW_MIGRATION_KEY, '1');
+    } catch (err) {
+      /* A blocked preference store should not prevent the countdown page loading. */
+    }
+    return cards;
+  }
+
   function toIso(value) {
     if (!value) return '';
     const date = new Date(value);
@@ -388,6 +393,11 @@ window.AOResets = (() => {
       title: String(raw.title || 'Untitled countdown').slice(0, 160),
       resetAt: Number.isNaN(target.getTime()) ? daysFromNow(1) : target.toISOString(),
       webhookUrl: String(raw.webhookUrl || ''),
+      // Is this one of the Pushcut countdowns? Set by the tick box on the card
+      // and by nothing else. A record saved before the box existed answers with
+      // the only evidence it has: a card with a webhook was already a Pushcut
+      // card, so it opens ticked.
+      pushcut: raw.pushcut == null ? Boolean(raw.webhookUrl) : Boolean(raw.pushcut),
       repeatDays: Number.isFinite(repeatDays) && repeatDays > 0 ? Math.round(repeatDays) : 0,
       repeatMonths: Number.isFinite(repeatMonths) && repeatMonths > 0 ? Math.round(repeatMonths) : 0,
       category: raw.category === 'subscriptions-bills' || raw.category === 'holidays' ? raw.category : '',
@@ -533,7 +543,7 @@ window.AOResets = (() => {
       if (card.id === HAPPY_HOUR_ID) syncHappyHourCard(card);
       else rollForward(card);
     });
-    return applyHolidaysMigration(applySubscriptionsMigration(cards));
+    return applyTradingViewMigration(applyHolidaysMigration(applySubscriptionsMigration(cards)));
   }
 
   function writeLocalCards() {
@@ -738,6 +748,7 @@ window.AOResets = (() => {
           <span class="rst-head-main">
             <span class="rst-head-top">
               <span class="rst-title" data-role="title">${escHtml(card.title)}</span>
+              ${card.pushcut ? '<span class="rst-pushcut-mark" title="In the Pushcut filter" aria-label="In the Pushcut filter">\u2713</span>' : ''}
               <span class="ao-status ao-status--${meta.tone} rst-state" data-role="status">
                 <span class="ao-dot ao-dot--${meta.dot}"></span>${meta.label}
               </span>
@@ -775,6 +786,11 @@ window.AOResets = (() => {
                 ${optionsHtml(REPEAT_OPTIONS, card.repeatMonths ? -card.repeatMonths : card.repeatDays)}
               </select>
             </div>
+
+            <label class="rst-check">
+              <input type="checkbox" data-field="pushcut" ${card.pushcut ? 'checked' : ''} />
+              <span>Pushcut &mdash; keep this one in the Pushcut list</span>
+            </label>
 
             <div class="ao-field">
               <label class="ao-label" for="rst-hook-${escHtml(card.id)}">Pushcut webhook</label>
@@ -984,12 +1000,17 @@ window.AOResets = (() => {
       const input = node.querySelector(`[data-field="${field}"]`);
       return input ? input.value.trim() : '';
     };
+    const checked = field => {
+      const input = node.querySelector(`[data-field="${field}"]`);
+      return Boolean(input && input.checked);
+    };
     return {
       title: read('title'),
       resetAt: fromDateTime(read('date'), read('time')),
       repeatDays: Math.max(0, Number(read('repeatDays')) || 0),
       repeatMonths: Math.max(0, -(Number(read('repeatDays')) || 0)),
       webhookUrl: read('webhookUrl'),
+      pushcut: checked('pushcut'),
     };
   }
 
@@ -1038,6 +1059,7 @@ window.AOResets = (() => {
     card.repeatDays = draft.repeatDays;
     card.repeatMonths = draft.repeatMonths;
     card.webhookUrl = draft.webhookUrl;
+    card.pushcut = draft.pushcut;
     if (retimed) {
       // A new time is a new occurrence, so the server's record of the last one
       // must not read as "already sent" against it.
@@ -1172,6 +1194,13 @@ window.AOResets = (() => {
     box.hidden = !text;
   }
 
+  // The new-countdown form's Pushcut box. It opens ticked, so a countdown
+  // typed in on a phone lands in the list the page opens on.
+  function readNewPushcut() {
+    const box = el('rst-new-pushcut');
+    return box ? Boolean(box.checked) : true;
+  }
+
   async function addFromForm() {
     const title = el('rst-new-title').value.trim();
     const resetAt = fromDateTime(el('rst-new-date').value, el('rst-new-time').value);
@@ -1188,6 +1217,7 @@ window.AOResets = (() => {
       repeatDays: Math.max(0, Number(el('rst-new-repeat').value) || 0),
       repeatMonths: Math.max(0, -(Number(el('rst-new-repeat').value) || 0)),
       webhookUrl,
+      pushcut: readNewPushcut(),
       status: 'active',
       createdAt: Date.now(),
       updatedAt: new Date().toISOString(),
@@ -1211,7 +1241,7 @@ window.AOResets = (() => {
   }
 
   function setFilter(value) {
-    state.filter = FILTERS[value] ? value : 'all';
+    state.filter = FILTERS[value] ? value : DEFAULT_FILTER;
     writePreference(FILTER_KEY, state.filter);
     render();
   }
@@ -1276,7 +1306,7 @@ window.AOResets = (() => {
   function init() {
     if (!state.initialized) {
       state.sort = readPreference(SORT_KEY, SORTS, 'soonest');
-      state.filter = readPreference(FILTER_KEY, FILTERS, 'all');
+      state.filter = readPreference(FILTER_KEY, FILTERS, DEFAULT_FILTER);
       state.cards = loadCards();
       saveCards();
 
@@ -1303,6 +1333,7 @@ window.AOResets = (() => {
     mergeCardLists,
     normalizeCard,
     holidayCards,
+    tradingViewTimeframeCards,
     setSort,
     setFilter,
     openForm,
@@ -1315,6 +1346,8 @@ window.AOResets = (() => {
     happyHourShortcutTime,
     isListView,
     isDueSoon,
+    FILTERS,
+    DEFAULT_FILTER,
     colorForView,
     webhookTargetError,
   };

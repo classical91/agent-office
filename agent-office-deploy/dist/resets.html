@@ -7,11 +7,12 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>Countdown Timers - Agent Office</title>
-<link rel="stylesheet" href="shared.css?v=sharebot-newsroom-20260831"/>
-<link rel="stylesheet" href="resets.css?v=happy-hour-header-20260828"/>
-<!-- Restores the saved theme and sidebar state before first paint, so no page
-     flashes the default accent or a full-width sidebar on its way in.
-     ACCENTS mirrors THEMES in app-shared.js. -->
+<link rel="stylesheet" href="shared.css?v=calendar-focus-planning-20260908"/>
+<link rel="stylesheet" href="resets.css?v=pushcut-filter-20260906"/>
+<!-- Restores the saved theme, sidebar state and focus mode before first paint,
+     so no page flashes the default accent, a full-width sidebar, or the chrome
+     of a page that opens in Focus Mode. ACCENTS mirrors THEMES in
+     app-shared.js, and the focus key mirrors focusScopeKey() there. -->
 <script>
 (function(){
   // A theme is just an accent; shared.css derives every surface from it.
@@ -20,6 +21,13 @@
     var a=ACCENTS[localStorage.getItem('ao-theme')];
     if(a) document.documentElement.style.setProperty('--accent',a);
     if(localStorage.getItem('ao-nav-compact')==='1') document.documentElement.classList.add('nav-compact');
+    // Focus is remembered per page: this page's own choice, falling back to
+    // whether the page declares data-focus-default="on".
+    var p=location.pathname==='/index.html'?'/':location.pathname;
+    var f=localStorage.getItem('ao-focus:'+p);
+    if(f==='1'||(f===null&&document.documentElement.getAttribute('data-focus-default')==='on')){
+      document.documentElement.classList.add('ao-focus');
+    }
   }catch(e){}
 })();
 </script>
@@ -86,11 +94,17 @@
           <div class="nav-sub">
             <a class="nav-item" href="/?panel=mission-control" data-icon="&#127919;"><span class="nav-item-label">Mission Control</span></a>
             <a class="nav-item" href="/mission-board.html?view=ios" data-icon="&#9200;"><span class="nav-item-label">Reminders</span></a>
-            <a class="nav-item" href="/calendar-v3.html" data-icon="&#128197;"><span class="nav-item-label">Calendar</span></a>
+            <a class="nav-item" href="/planning.html" data-icon="&#9989;"><span class="nav-item-label">Planning Mode</span></a>
             <a class="nav-item" href="/streaks.html" data-icon="&#128293;"><span class="nav-item-label">Streaks</span></a>
             <a class="nav-item" href="/resets.html" data-icon="&#8987;"><span class="nav-item-label">Countdown Timers</span></a>
           </div>
         </div>
+        <!-- Calendar is a workspace, not one more link in a list of fifteen:
+             it sits above Dropbox at the top of the flat rows and is styled as
+             a card so it can be found without reading. It opens in Focus Mode
+             (see data-focus-default in calendar-v3.html), which is why the row
+             says so. -->
+        <a class="nav-item nav-item-feature" href="/calendar-v3.html" data-icon="&#128197;"><span class="nav-item-label">Calendar</span><span class="nav-item-badge">Focus</span></a>
         <a class="nav-item" href="/mission-board.html" data-icon="&#128229;"><span class="nav-item-label">Dropbox</span></a>
         <a class="nav-item" href="/dev.html" data-icon="&#128736;"><span class="nav-item-label">Dev Links</span></a>
         <a class="nav-item" href="https://main-page-production-9927.up.railway.app/ai.html" target="_blank" rel="noopener noreferrer" data-icon="&#127760;"><span class="nav-item-label">AI Portal</span> <span class="link-ext">&#8599;</span></a>
@@ -143,8 +157,9 @@
           <div class="ao-page-title">Countdown Timers</div>
           <div class="ao-page-sub">
             All countdowns in one place: shared Agent Office deadlines plus usage windows, backups and
-            recurring routines. Personal timers are backed up to the Agent Office database after you
-            unlock the office; the browser keeps an offline copy.
+            recurring routines. The list opens on the ones ticked for Pushcut &mdash; switch
+            <strong>Show</strong> to &ldquo;All timers&rdquo; for the rest. Personal timers are backed up to the
+            Agent Office database after you unlock the office; the browser keeps an offline copy.
           </div>
         </div>
         <div class="ao-page-actions">
@@ -247,6 +262,11 @@
       <select class="ao-select" id="rst-new-repeat"></select>
     </div>
 
+    <label class="rst-check">
+      <input type="checkbox" id="rst-new-pushcut" checked />
+      <span>Pushcut &mdash; keep this one in the Pushcut list</span>
+    </label>
+
     <div class="ao-field">
       <label class="ao-label" for="rst-new-webhook">Pushcut webhook (optional)</label>
       <input class="ao-input" id="rst-new-webhook" inputmode="url" placeholder="https://api.pushcut.io/..." />
@@ -264,8 +284,10 @@
 <!-- BOTTOM STATUS BAR -->
 <div class="statusbar" id="statusbar"></div>
 
-<script src="app-shared.js?v=memory-filter-20260831"></script>
-<script src="resets.js?v=holidays-20260901"></script>
+<script src="app-shared.js?v=calendar-focus-planning-20260908"></script>
+<!-- The Happy Hour schedule, shared with the server. Must load before resets.js. -->
+<script src="happy-hour.js?v=happy-hour-shared-20260910"></script>
+<script src="resets.js?v=happy-hour-shared-20260910"></script>
 <script>
 switchView('resets', document.querySelector('.nav-item.active'));
 </script>

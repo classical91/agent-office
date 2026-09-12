@@ -7,7 +7,7 @@ const path = require('node:path');
 const test = require('node:test');
 
 const { startTestServer } = require('./helpers/test-server.js');
-const { redact, memoryItems, buildSnapshot } = require('../scripts/sync-openclaw-memories.js');
+const { redact, memoryItems, buildSnapshot, configuredAgents } = require('../scripts/sync-openclaw-memories.js');
 
 const DIST = path.join(__dirname, '..', 'agent-office-deploy', 'dist');
 const TOKEN = 'memory-sync-token-long-enough';
@@ -36,6 +36,17 @@ test('agents without files get a truthful missing-memory snapshot', async t => {
   const snapshot = await buildSnapshot({ id: 'empty', workspace });
   assert.match(snapshot.content, /No MEMORY\.md or memory\/\*\.md files/);
   assert.equal(snapshot.sourceFileCount, 0);
+});
+
+test('memory sync reads the current OpenClaw agents.entries schema', async t => {
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'openclaw-agent-config-'));
+  t.after(() => fs.rmSync(scratch, { recursive: true, force: true }));
+  const configPath = path.join(scratch, 'openclaw.json');
+  fs.writeFileSync(configPath, JSON.stringify({
+    agents: { entries: { traderclaw: { name: 'TraderClaw', workspace: scratch } } },
+  }));
+
+  assert.deepEqual(await configuredAgents(configPath), [{ id: 'traderclaw', workspace: scratch }]);
 });
 
 test('memory sync endpoint is token-gated and idempotently upserts per agent', async t => {

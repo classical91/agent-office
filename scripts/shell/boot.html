@@ -1,6 +1,7 @@
-<!-- Restores the saved theme and sidebar state before first paint, so no page
-     flashes the default accent or a full-width sidebar on its way in.
-     ACCENTS mirrors THEMES in app-shared.js. -->
+<!-- Restores the saved theme, sidebar state and focus mode before first paint,
+     so no page flashes the default accent, a full-width sidebar, or the chrome
+     of a page that opens in Focus Mode. ACCENTS mirrors THEMES in
+     app-shared.js, and the focus key mirrors focusScopeKey() there. -->
 <script>
 (function(){
   // A theme is just an accent; shared.css derives every surface from it.
@@ -9,6 +10,13 @@
     var a=ACCENTS[localStorage.getItem('ao-theme')];
     if(a) document.documentElement.style.setProperty('--accent',a);
     if(localStorage.getItem('ao-nav-compact')==='1') document.documentElement.classList.add('nav-compact');
+    // Focus is remembered per page: this page's own choice, falling back to
+    // whether the page declares data-focus-default="on".
+    var p=location.pathname==='/index.html'?'/':location.pathname;
+    var f=localStorage.getItem('ao-focus:'+p);
+    if(f==='1'||(f===null&&document.documentElement.getAttribute('data-focus-default')==='on')){
+      document.documentElement.classList.add('ao-focus');
+    }
   }catch(e){}
 })();
 </script>

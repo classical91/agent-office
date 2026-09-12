@@ -6,12 +6,18 @@ const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
 
-const source = fs.readFileSync(
-  path.join(__dirname, '..', 'agent-office-deploy', 'dist', 'resets.js'),
-  'utf8'
-);
-const context = { window: {}, Date, console, setInterval, clearInterval };
-vm.runInNewContext(source, context);
+const distDir = path.join(__dirname, '..', 'agent-office-deploy', 'dist');
+const read = name => fs.readFileSync(path.join(distDir, name), 'utf8');
+
+// resets.js reads the Happy Hour schedule off window.AOHappyHour, the same way
+// the page does — happy-hour.js is a <script> ahead of it on resets.html and a
+// require() in the server. Load it first here for the same reason.
+// `window` points at the sandbox itself, as it does in a browser: happy-hour.js
+// hangs its exports off the global, and resets.js reads them off `window`.
+const context = { Date, console, setInterval, clearInterval };
+context.window = context;
+vm.runInNewContext(read('happy-hour.js'), context);
+vm.runInNewContext(read('resets.js'), context);
 const {
   colorForView,
   happyHourDetails,

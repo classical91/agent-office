@@ -6,8 +6,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
-<title>Project Rooms - Agent Office</title>
+<title>Planning Mode - Agent Office</title>
 <link rel="stylesheet" href="shared.css?v=calendar-focus-planning-20260908"/>
+<link rel="stylesheet" href="planning.css?v=calendar-focus-planning-20260908"/>
 <!-- Restores the saved theme, sidebar state and focus mode before first paint,
      so no page flashes the default accent, a full-width sidebar, or the chrome
      of a page that opens in Focus Mode. ACCENTS mirrors THEMES in
@@ -30,7 +31,6 @@
   }catch(e){}
 })();
 </script>
-<link rel="stylesheet" href="workspace-systems.css?v=template-v2-followup-20260809"/>
 </head>
 <body>
 
@@ -137,8 +137,56 @@
 
   </nav>
 
-  <div class="view" id="view-projects">
-    <div id="project-rooms-app" class="ops-view"></div>
+  <div class="view view--scroll ao-scroll" id="view-planning">
+    <section class="planning-view">
+
+      <div class="planning-hero">
+        <div class="planning-kicker">Planning Mode</div>
+        <h2>What I want to get done this week</h2>
+        <div class="planning-sub">
+          The list you keep by hand, and the one CoachClaw reads before it builds the week.
+          A ticked box asks CoachClaw to find time for something. It does <b>not</b> mean the thing
+          is finished — that is what <b>Done</b> is for. Untick an item and it stays here, out of this
+          week's schedule, waiting for a week you want it in.
+        </div>
+        <div class="planning-summary" id="planning-summary"></div>
+      </div>
+
+      <div class="planning-panel">
+        <div class="planning-panel-title">Add to the list</div>
+        <div class="planning-add">
+          <input class="planning-input" id="planning-new-title" type="text" maxlength="200"
+            placeholder="e.g. Workout 3 times" autocomplete="off"/>
+          <button class="planning-btn planning-btn--primary" onclick="AOPlanning.addItem()">Add</button>
+        </div>
+      </div>
+
+      <div class="planning-panel">
+        <div id="planning-list"></div>
+      </div>
+
+      <div class="planning-panel">
+        <div class="planning-panel-title">What CoachClaw reads</div>
+        <div class="planning-sub">
+          Step 2 of the weekly build, exactly as it leaves this page. Items with no duration are
+          scheduled as an hour until you give them one.
+        </div>
+        <div id="planning-brief"></div>
+      </div>
+
+      <div class="planning-panel">
+        <div class="planning-panel-title">How the week gets built</div>
+        <ol class="planning-steps">
+          <li>Work schedule — the days and hours you are at work, so nothing is planned over them.</li>
+          <li>This checklist — every ticked item, with its duration, priority and preferred times.</li>
+          <li>Existing commitments — calendar events, scheduled tasks and anything else already fixed.</li>
+          <li>Free time — realistic windows around all of that, not every empty minute.</li>
+          <li>The week — ticked items placed in those windows.</li>
+          <li>Your review — accept it, move something, or send an item back to this list.</li>
+        </ol>
+      </div>
+
+    </section>
   </div>
 
   <!-- ACTIVITY FEED -->
@@ -154,26 +202,10 @@
 <!-- BOTTOM STATUS BAR -->
 <div class="statusbar" id="statusbar"></div>
 
-
-  <!-- PASSPHRASE MODAL -->
-  <div id="passphrase-modal" class="ao-modal" hidden>
-  <div class="ao-modal-sheet" role="dialog" aria-modal="true" aria-labelledby="passphrase-title">
-    <div class="ao-modal-title" id="passphrase-title">🔒 Agent Office Login</div>
-    <div class="ao-modal-desc">Enter the passphrase to access your drops.</div>
-    <input id="passphrase-input" class="ao-input" type="password" placeholder="Passphrase..."
-      autocomplete="current-password" autocorrect="off" autocapitalize="none" spellcheck="false"/>
-    <div id="passphrase-error" class="ao-modal-error" hidden></div>
-    <div class="ao-modal-actions">
-      <button id="passphrase-cancel" class="ao-btn">Cancel</button>
-      <button id="passphrase-submit" class="ao-btn ao-btn--primary">Unlock</button>
-    </div>
-  </div>
-</div>
-
 <script src="app-shared.js?v=calendar-focus-planning-20260908"></script>
-<script src="project-rooms.js"></script>
+<script src="planning-page.js?v=calendar-focus-planning-20260908"></script>
 <script>
-switchView('projects', document.querySelector('.nav-item.active'));
+switchView('planning', document.querySelector('.nav-item.active'));
 </script>
 
 </body>

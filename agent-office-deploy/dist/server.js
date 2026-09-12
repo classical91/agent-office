@@ -9,7 +9,9 @@ const googleSync = require('./calendar-google-sync.js');
 const reminderTime = require('./reminder-time.js');
 const countdowns = require('./countdowns.js');
 const resetTimers = require('./reset-timers.js');
+const planning = require('./planning.js');
 const sharebotNewsroom = require('./sharebot-newsroom.js');
+const happyHour = require('./happy-hour.js');
 
 process.env.TZ = process.env.APP_TIMEZONE || 'America/Vancouver';
 
@@ -3283,6 +3285,16 @@ async function ensureShareBotCountdowns(storage, now = new Date()) {
   await storage.setAppSetting(migrationKey, createdAt);
 }
 
+async function removeLegacyTradingViewTimeframeCountdowns(storage, now = new Date()) {
+  const migrationKey = 'countdowns.tradingview-timeframes.removed.v1';
+  if (await storage.getAppSetting(migrationKey)) return;
+  for (const symbol of ['bitcoin', 'total1', 'total2', 'total3']) {
+    await storage.deleteCountdown(`tradingview-weekly-${symbol}`);
+    await storage.deleteCountdown(`tradingview-monthly-${symbol}`);
+  }
+  await storage.setAppSetting(migrationKey, now.toISOString());
+}
+
 /**
  * Everything the Countdowns page draws, in one payload.
  *
@@ -3293,6 +3305,7 @@ async function ensureShareBotCountdowns(storage, now = new Date()) {
 async function buildCountdownsPayload(options = {}) {
   const storage = await storageReady;
   const now = options.now instanceof Date ? options.now : new Date();
+  await removeLegacyTradingViewTimeframeCountdowns(storage, now);
   if (options.includeShareBotReports) await ensureShareBotCountdowns(storage, now);
   const stored = await storage.listCountdowns();
 
@@ -4473,6 +4486,13 @@ async function handleShortcutsRequest(req, res, url, storage) {
   const pathname = url.pathname;
   const now = new Date();
 
+  // Read-only machine access for CoachClaw. Authentication is handled by the
+  // shared /api/shortcuts gate before this dispatcher runs.
+  if (req.method === 'GET' && pathname === '/api/shortcuts/planning/brief') {
+    sendJson(res, 200, planning.buildSchedulingBrief(await loadPlanningItems(storage)));
+    return true;
+  }
+
   if (req.method === 'GET' && pathname === '/api/shortcuts/status') {
     const drops = await storage.listDrops();
     const due = selectShortcutDrops(drops, 'now', now);
@@ -4691,6 +4711,23 @@ let resetTimerCycleRunning = false;
 
 async function loadResetTimers(storage) {
   return resetTimers.parseStoredTimers(await storage.getAppSetting(resetTimers.STORAGE_KEY));
+}
+
+// Planning Mode's checklist lives in one app_settings row, the same way the
+// reset timers do: it is a personal list of a few dozen lines, not a table
+// anything joins against.
+async function loadPlanningItems(storage) {
+  return planning.parseStoredItems(await storage.getAppSetting(planning.STORAGE_KEY));
+}
+
+// Returns an error string instead of throwing, because every caller here turns
+// it straight into a status code.
+async function savePlanningItems(storage, items) {
+  if (items.length > planning.MAX_ITEMS) return `A planning list holds at most ${planning.MAX_ITEMS} items.`;
+  const encoded = planning.encodeItems(items);
+  if (encoded.length > planning.MAX_ENCODED_LENGTH) return 'The planning list is too large to store.';
+  await storage.setAppSetting(planning.STORAGE_KEY, encoded);
+  return null;
 }
 
 /**
@@ -5275,7 +5312,10 @@ function sessionStatusFromRecords(records, now = Date.now()) {
 async function readLocalOpenClawAgents() {
   const configPath = process.env.OPENCLAW_CONFIG_PATH || homePath('.openclaw', 'openclaw.json');
   const config = await readJsonFileSafe(configPath, {});
-  const configured = Array.isArray(config && config.agents && config.agents.list) ? config.agents.list : [];
+  const agentConfig = config && config.agents;
+  const configured = Array.isArray(agentConfig && agentConfig.list)
+    ? agentConfig.list
+    : Object.entries((agentConfig && agentConfig.entries) || {}).map(([id, agent]) => ({ id, ...agent }));
   const now = Date.now();
 
   const agents = [];
@@ -6214,6 +6254,93 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // -- PLANNING MODE API --------------------------------------
+    // The weekly planning checklist. Two states per item and they never stand
+    // in for each other: `schedule_this_week` is a request to CoachClaw to find
+    // time for something, `completed` is a record that it happened. See
+    // planning.js for why that matters.
+    if (req.method === 'GET' && pathname === '/api/planning') {
+      if (!requireDropsAuth(res, req)) return;
+      const items = await loadPlanningItems(storage);
+      sendJson(res, 200, { items, counts: planning.summarize(items) });
+      return;
+    }
+
+    // Step 2 of the weekly build: what CoachClaw should try to schedule, in the
+    // shape calendar-scheduling.js reads. Unticked items are not in here and
+    // have not been deleted either - they are next week's list.
+    if (req.method === 'GET' && pathname === '/api/planning/brief') {
+      if (!requireDropsAuth(res, req)) return;
+      sendJson(res, 200, planning.buildSchedulingBrief(await loadPlanningItems(storage)));
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/planning') {
+      if (!requireDropsAuth(res, req)) return;
+
+      const payload = planning.validateInput(await readJsonBody(req));
+      if (!payload.ok) {
+        sendJson(res, 400, { error: payload.error });
+        return;
+      }
+
+      const items = await loadPlanningItems(storage);
+      const item = planning.createItem(payload.value);
+      const failure = await savePlanningItems(storage, [...items, item]);
+      if (failure) {
+        sendJson(res, 400, { error: failure });
+        return;
+      }
+
+      sendJson(res, 201, item);
+      return;
+    }
+
+    if ((req.method === 'PATCH' || req.method === 'DELETE') && pathname.startsWith('/api/planning/')) {
+      if (!requireDropsAuth(res, req)) return;
+
+      const id = decodeURIComponent(pathname.slice('/api/planning/'.length)).trim();
+      if (!id) {
+        sendJson(res, 400, { error: 'Planning item id is required.' });
+        return;
+      }
+
+      const items = await loadPlanningItems(storage);
+      const index = items.findIndex(entry => entry.id === id);
+      if (index === -1) {
+        sendJson(res, 404, { error: 'Planning item not found.' });
+        return;
+      }
+
+      if (req.method === 'DELETE') {
+        const failure = await savePlanningItems(storage, items.filter(entry => entry.id !== id));
+        if (failure) {
+          sendJson(res, 400, { error: failure });
+          return;
+        }
+        sendJson(res, 200, { ok: true });
+        return;
+      }
+
+      const payload = planning.validateInput(await readJsonBody(req), true);
+      if (!payload.ok) {
+        sendJson(res, 400, { error: payload.error });
+        return;
+      }
+
+      const updated = planning.applyUpdate(items[index], payload.value);
+      const next = items.slice();
+      next[index] = updated;
+      const failure = await savePlanningItems(storage, next);
+      if (failure) {
+        sendJson(res, 400, { error: failure });
+        return;
+      }
+
+      sendJson(res, 200, updated);
+      return;
+    }
+
     // -- COUNTDOWNS API -----------------------------------------
     // Reading is open, the same as the calendar this page shows alongside the
     // cards; writing sits behind the Dropbox passphrase like every other
@@ -6249,6 +6376,67 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       sendJson(res, 200, { now: payload.now, counts: payload.counts, items });
+      return;
+    }
+
+    // Happy Hour, for anything that shows it outside resets.html — Main Hub's
+    // Daily Dashboard is the first. The schedule lives in happy-hour.js, which
+    // the page loads too, so there is one deal table rather than two.
+    //
+    // Open, like the countdowns below it: this is a grocery flyer, not a
+    // personal record. Nothing from the reset-timer store is touched, and that
+    // store stays behind requireDropsAuth where it belongs.
+    if (pathname === '/api/happy-hour') {
+      if (req.method !== 'GET' && req.method !== 'HEAD') {
+        sendJson(res, 405, { error: 'Only GET is supported for Happy Hour.' });
+        return;
+      }
+      const now = new Date();
+      const details = happyHour.happyHourDetails(now);
+      sendJson(res, 200, {
+        now: now.toISOString(),
+        timezone: process.env.TZ,
+        phase: details.phase,
+        meal: details.meal,
+        deal: details.deal,
+        dayName: details.dayName,
+        title: details.title,
+        message: details.message,
+        targetAt: details.target.toISOString(),
+        remainingMs: Math.max(0, details.target.getTime() - now.getTime()),
+      });
+      return;
+    }
+
+    // The Daily Dashboard's Today and Next Up cards.
+    //
+    // Deliberately not /api/countdowns. That route is this page's whole payload
+    // — every bucket, notes and all — and a dashboard card had no business
+    // depending on it. This one answers the narrower question and hands back
+    // only the fields a row draws, so the page here can grow without moving
+    // anything on the dashboard.
+    //
+    // Open, like /api/countdowns: reading countdowns has never needed a session.
+    if (pathname === '/api/widgets/today') {
+      if (req.method !== 'GET' && req.method !== 'HEAD') {
+        sendJson(res, 405, { error: 'Only GET is supported for the today widget.' });
+        return;
+      }
+
+      const now = new Date();
+      const payload = await buildCountdownsPayload({ now });
+      const limit = Number.parseInt(parsedUrl.searchParams.get('limit') || '', 10);
+      const month = `${now.getMonth() + 1}`.padStart(2, '0');
+      const day = `${now.getDate()}`.padStart(2, '0');
+
+      sendJson(res, 200, {
+        now: now.toISOString(),
+        // This server pins TZ to APP_TIMEZONE at boot, so "today" here is the
+        // same day the dashboard means without either side converting anything.
+        timezone: process.env.TZ,
+        date: `${now.getFullYear()}-${month}-${day}`,
+        ...countdowns.selectWidgetToday(payload, { limit }),
+      });
       return;
     }
 
