@@ -98,27 +98,37 @@ before(async () => {
     canvas.height = A.SPRITE_H;
     const context = canvas.getContext('2d', { willReadFrequently: true });
 
-    const penny = await new Promise(resolve => {
-      const image = new Image();
-      image.onload = () => resolve(image);
-      image.src = 'assets/character-demo/penny.png';
-    });
     const reference = document.createElement('canvas');
     reference.width = A.SPRITE_W;
     reference.height = A.SPRITE_H;
     const refContext = reference.getContext('2d', { willReadFrequently: true });
-    refContext.imageSmoothingEnabled = false;
-    refContext.drawImage(penny, 0, 0);
-    const refData = refContext.getImageData(0, 0, A.SPRITE_W, A.SPRITE_H).data;
 
-    window.__headSpans = [];
-    for (let y = 0; y < A.SPRITE_H; y += 1) {
-      let min = -1; let max = -1;
-      for (let x = 0; x < A.SPRITE_W; x += 1) {
-        if (refData[(y * A.SPRITE_W + x) * 4 + 3] > 20) { if (min < 0) min = x; max = x; }
+    // Every source sprite's own outline, read from the asset. A hairstyle now
+    // brings its whole head across, so containment has to be judged against the
+    // head that was actually pasted rather than always against Penny's.
+    window.__spans = {};
+    for (const name of ['penny', 'webclaw', 'nutrimind', 'pc', 'studioclaw']) {
+      const image = await new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.src = `assets/character-demo/${name}.png`;
+      });
+      refContext.setTransform(1, 0, 0, 1, 0, 0);
+      refContext.clearRect(0, 0, A.SPRITE_W, A.SPRITE_H);
+      refContext.imageSmoothingEnabled = false;
+      refContext.drawImage(image, 0, 0);
+      const data = refContext.getImageData(0, 0, A.SPRITE_W, A.SPRITE_H).data;
+      const spans = [];
+      for (let y = 0; y < A.SPRITE_H; y += 1) {
+        let min = -1; let max = -1;
+        for (let x = 0; x < A.SPRITE_W; x += 1) {
+          if (data[(y * A.SPRITE_W + x) * 4 + 3] > 20) { if (min < 0) min = x; max = x; }
+        }
+        spans[y] = min < 0 ? null : [min, max];
       }
-      window.__headSpans[y] = min < 0 ? null : [min, max];
+      window.__spans[name] = spans;
     }
+    window.__headSpans = window.__spans.penny;
 
     window.__render = (look) => {
       context.setTransform(1, 0, 0, 1, 0, 0);
@@ -150,6 +160,10 @@ const BASE = {
 
 const render = look => page.evaluate(l => window.__render(l), look);
 const headSpans = () => page.evaluate(() => window.__headSpans);
+const spansFor = name => page.evaluate(n => window.__spans[n], name);
+
+// Which sprite each hairstyle's head comes from.
+const HAIR_HEADS = { bald: 'penny', spiked: 'webclaw', tousled: 'nutrimind', swept: 'pc' };
 
 // The chin. Below it the shoulders start and the body sprite takes over, so
 // containment against the head only means anything above this row.
@@ -218,62 +232,109 @@ test('every expression puts its features on the eyes the head actually has', asy
   );
 });
 
-test('hair sits on the skull rather than above it or through it', async t => {
+test('each hairstyle is the artist\'s own, pixel for pixel', async t => {
   if (skipReason) return t.skip(skipReason);
 
-  const spans = await headSpans();
-  const bald = await render(BASE);
-  const baldAt = new Map(bald.map(p => [`${p.x},${p.y}`, p]));
-  const CROWN = 2;
-
-  for (const hair of ['spiked', 'tousled', 'swept']) {
-    const pixels = await render({ ...BASE, hair });
-    // Covered, not merely opaque: the scalp underneath is opaque too, so what
-    // matters is whether the pixel changed from the bald head.
-    const covered = new Set(pixels
-      .filter(p => {
-        const before = baldAt.get(`${p.x},${p.y}`);
-        return !before || before.r !== p.r || before.g !== p.g || before.b !== p.b;
-      })
-      .map(p => `${p.x},${p.y}`));
-
-    // The crown is covered edge to edge. A mask cut from a different skull left
-    // holes here for the bare scalp to show through.
-    for (const y of [6, 9, 12]) {
-      const [min, max] = spans[y];
-      const gaps = [];
-      for (let x = min; x <= max; x += 1) if (!covered.has(`${x},${y}`)) gaps.push(`${x},${y}`);
-      assert.deepEqual(gaps, [], `${hair} leaves ${gaps.length} bare pixel(s) across row ${y} of the head`);
+  // The strongest thing that can be said about hair here: its silhouette is
+  // identical to the sprite it was painted on. Hair was generated for a while,
+  // built up from Penny's skull, and it could not be made to look like the
+  // originals — she is drawn high on the canvas because she is bald, and the
+  // sprites with hair sit lower precisely to leave room for it. Comparing
+  // outlines is what stops anyone quietly going back to approximating it.
+  for (const [style, source] of Object.entries(HAIR_HEADS)) {
+    const spans = await spansFor(source);
+    const pixels = await render({ ...BASE, hair: style });
+    const drawn = [];
+    pixels.forEach(({ x, y }) => {
+      if (y > CHIN) return;
+      if (!drawn[y]) drawn[y] = [x, x];
+      else { drawn[y][0] = Math.min(drawn[y][0], x); drawn[y][1] = Math.max(drawn[y][1], x); }
+    });
+    const mismatched = [];
+    for (let y = 0; y <= CHIN; y += 1) {
+      const want = spans[y] ? `${spans[y][0]}-${spans[y][1]}` : '-';
+      const got = drawn[y] ? `${drawn[y][0]}-${drawn[y][1]}` : '-';
+      if (want !== got) mismatched.push(`row ${y}: ${source} has ${want}, ${style} drew ${got}`);
     }
+    assert.deepEqual(mismatched, [], `${style} is not ${source}'s hair any more`);
+  }
+});
 
-    // Hair changes the head; it does not float clear of it. Above the crown
-    // only tufts reach, and only over the crown's own width — borrowed hair used
-    // to hang out to x9 and x54, well past the sides of the head.
-    const [crownMin, crownMax] = spans[CROWN];
-    const aboveCrown = pixels.filter(p => p.y < CROWN && !baldAt.has(`${p.x},${p.y}`));
-    const floating = aboveCrown.filter(p => p.x < crownMin - 1 || p.x > crownMax + 1);
-    assert.deepEqual(
-      floating.map(p => `${p.x},${p.y}`),
-      [],
-      `${hair} hangs in the air beside the head, above the crown`
-    );
+test('every hairstyle is a different head, and none of them is the bald one', async t => {
+  if (skipReason) return t.skip(skipReason);
 
-    // Hair must not reach the mouth, which is where the borrowed masks landed.
-    const overMouth = pixels.filter(p => p.y >= 33 && p.y <= 35 && p.x >= 30 && p.x <= 39 && !baldAt.has(`${p.x},${p.y}`));
-    assert.deepEqual(overMouth.map(p => `${p.x},${p.y}`), [], `${hair} is drawn across the mouth`);
+  const signature = async (hair) => {
+    const pixels = await render({ ...BASE, hair });
+    return pixels.filter(p => p.y <= CHIN).map(p => `${p.x},${p.y},${p.r},${p.g},${p.b}`).join('|');
+  };
+  const seen = new Map();
+  for (const style of Object.keys(HAIR_HEADS)) seen.set(style, await signature(style));
 
-    // And the character still has eyes. Hair cut for a head that sits nine rows
-    // lower came down over them: a fringe may cross an eye, but not blind both.
-    const isWhite = ({ r, g, b }) => r > 220 && g > 220 && b > 210;
-    const eyesLeft = [
-      pixels.some(p => isWhite(p) && p.x >= 29 && p.x <= 34 && p.y >= 23 && p.y <= 28),
-      pixels.some(p => isWhite(p) && p.x >= 38 && p.x <= 42 && p.y >= 19 && p.y <= 23),
-    ].filter(Boolean).length;
-    assert.ok(eyesLeft >= 1, `${hair} covers both of the character's eyes`);
+  const styles = [...seen.keys()];
+  for (let i = 0; i < styles.length; i += 1) {
+    for (let j = i + 1; j < styles.length; j += 1) {
+      assert.notEqual(
+        seen.get(styles[i]), seen.get(styles[j]),
+        `${styles[i]} and ${styles[j]} render the same head`
+      );
+    }
+  }
+});
+
+test('the hair colour reaches the whole mass, and stops at the hair', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  // Recolouring keyed on brightness looked right on WebClaw, whose hair carries
+  // some lit strands, and failed on PC's, which is dark throughout: almost every
+  // pixel was treated as outline and the colour reached a few spidery strands
+  // over a black mass. So this asks for the colour across the mass, on the style
+  // that broke.
+  const isNear = (p, hex) => {
+    const r = parseInt(hex.slice(1, 3), 16); const g = parseInt(hex.slice(3, 5), 16); const b = parseInt(hex.slice(5, 7), 16);
+    const sum = p.r + p.g + p.b;
+    if (sum < 40) return false;
+    // Same hue family: compare the channel ordering and rough ratios rather than
+    // exact values, since the art's shading rides on top of the tint.
+    const near = (a, c) => Math.abs(a / Math.max(1, sum) - c / Math.max(1, r + g + b)) < 0.09;
+    return near(p.r, r) && near(p.g, g) && near(p.b, b);
+  };
+
+  for (const style of ['spiked', 'tousled', 'swept']) {
+    const violet = await render({ ...BASE, hair: style, hairColor: '#72519b' });
+    const coloured = violet.filter(p => p.y <= 24 && isNear(p, '#72519b'));
     assert.ok(
-      pixels.some(p => isWhite(p) && p.x >= 38 && p.x <= 42 && p.y >= 19 && p.y <= 23),
-      `${hair} is drawn over the near eye`
+      coloured.length >= 90,
+      `${style} took the hair colour on only ${coloured.length} pixels — the mass is still black underneath`
     );
+
+    // The face is not hair. Eye whites and skin must come through untouched.
+    const white = violet.filter(p => p.r > 220 && p.g > 220 && p.b > 210);
+    assert.ok(white.length > 0, `${style} lost the eye whites to the hair recolour`);
+  }
+});
+
+test('an expression and an accessory follow the head the hairstyle brought', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  // The head moves when the hairstyle changes — WebClaw's sits nine rows below
+  // Penny's. Anything drawn onto it has to move with it, or the earpiece ends up
+  // on a forehead.
+  for (const [style, source] of Object.entries(HAIR_HEADS)) {
+    const spans = await spansFor(source);
+    for (const accessory of ['earpiece', 'headset', 'glasses']) {
+      const pixels = await render({ ...BASE, hair: style, accessory });
+      const strays = pixels.filter(({ x, y }) => {
+        if (y > CHIN) return false;
+        const span = spans[y];
+        if (!span) return true;
+        return x < span[0] - 1 || x > span[1] + 1;
+      });
+      assert.deepEqual(
+        strays.map(({ x, y }) => `${x},${y}`),
+        [],
+        `with ${style} hair the ${accessory} is drawn off ${source}'s head`
+      );
+    }
   }
 });
 
@@ -300,15 +361,17 @@ test('the outfit is one garment, not two shades meeting at the shoulders', async
   );
 });
 
-test('the compositor no longer borrows another sprite head for hair', () => {
-  // The registration bug had one cause: hair cut out of WebClaw's, NutriMind's
-  // and PC's heads and stamped onto Penny's, which sits up to nine rows higher.
-  // Hair is built from her own silhouette now, so there is no second head in
-  // play and nothing left to misregister.
-  assert.doesNotMatch(avatars, /HAIR_SPRITES/, 'hair is being taken from another sprite again');
-  assert.doesNotMatch(avatars, /buildHairMask/);
-  assert.match(avatars, /function measureHeadRows/);
-  assert.match(avatars, /function hairPixels/);
+test('hair is taken from the art, not built', () => {
+  // The mechanism, pinned at the source as well as in the pixels above: a
+  // hairstyle picks a head, and the head carries the hair that was painted on
+  // it. The generated version that stood here briefly — a silhouette measured
+  // off Penny's skull and filled in — is what this is written against.
+  assert.match(avatars, /const HAIR_HEADS = \{/);
+  assert.match(avatars, /const HEAD_OFFSETS = \{/);
+  assert.match(avatars, /function recolorHair/);
+  assert.doesNotMatch(avatars, /function hairCells/, 'hair is being generated again');
+  assert.doesNotMatch(avatars, /function measureHeadRows/);
+  assert.doesNotMatch(avatars, /const HAIR_STYLES/);
   // The measurements every layer is placed against, kept in one place.
   assert.match(avatars, /const PENNY_HEAD = \{/);
   for (const landmark of ['crown', 'chin', 'farEye', 'nearEye', 'ear']) {
