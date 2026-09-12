@@ -116,8 +116,33 @@ after(async () => {
 
 // Every page is opened in a fresh context so one page's localStorage — a theme,
 // a folder layout, a pin — cannot decide how the next one renders.
-async function openPage(t, { authenticated = true } = {}) {
+async function openPage(t, { authenticated = true, watchGate = false } = {}) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+
+  // A flash is a state a page passes through, not one it ends in: by the time a
+  // test can look, the login panel that was up for a moment is hidden again. So
+  // when a test cares, every moment the gate was closed is recorded from the
+  // first script the page runs.
+  if (watchGate) {
+    await context.addInitScript(() => {
+      window.__gateClosed = [];
+      const look = () => {
+        const root = document.documentElement;
+        const modal = document.getElementById('ao-login-modal');
+        if (modal && !modal.hidden && !window.__gateClosed.includes('panel')) window.__gateClosed.push('panel');
+        if (root && root.classList.contains('ao-site-locked') && !window.__gateClosed.includes('locked')) {
+          window.__gateClosed.push('locked');
+        }
+      };
+      // document, not documentElement: this runs before the page has one.
+      new MutationObserver(look).observe(document, {
+        attributes: true,
+        attributeFilter: ['hidden', 'class'],
+        childList: true,
+        subtree: true,
+      });
+    });
+  }
 
   // Nothing leaves the machine. These tests are about this app, not about
   // whether Google's font CDN is up — and shared.css opens with an @import of
@@ -534,4 +559,52 @@ test('a planning item can be added, ticked, done and deleted from the page', asy
   await page.locator('.planning-item', { hasText: 'Workout 3 times' }).getByText('Delete', { exact: true }).click();
   await page.waitForSelector('.planning-item', { state: 'detached' });
   assert.deepEqual(problems, []);
+});
+
+// One password opens the whole Office, and every page used to check it the
+// same way: lock itself, raise the login panel, then unlock once /api/session
+// answered. The answer is quick but not instant, and what that looked like
+// from a chair was the login screen flashing on every page you opened while
+// already logged in. The session cookie is HttpOnly and cannot be read here,
+// so the server sets a tokenless one beside it that can be — which is how the
+// page knows which side of the gate to paint before it paints anything.
+test('a page opened with a session never flashes the login screen', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  const { page, problems } = await openPage(t, { watchGate: true });
+  await page.goto(`${server.origin}/mission-board.html`, { waitUntil: 'domcontentloaded' });
+
+  // Long enough for /api/session to have answered and, before this fix, for the
+  // panel to have been up and taken down again.
+  await page.waitForTimeout(600);
+
+  assert.equal(
+    await page.locator('#ao-login-trigger').textContent(),
+    'Logged in',
+    'the page should have settled on being logged in'
+  );
+  assert.deepEqual(
+    await page.evaluate(() => window.__gateClosed),
+    [],
+    'the login gate should never have closed over a page this session could open'
+  );
+  assert.deepEqual(problems, []);
+});
+
+// The other direction matters just as much: the guess the cookie allows must
+// never be the one that opens the Office. Without a session the page still
+// locks and asks, and the server turns the page away before that anyway.
+test('a page opened without a session is still gated', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  const { page } = await openPage(t, { authenticated: false, watchGate: true });
+  await page.goto(`${server.origin}/mission-board.html`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(600);
+
+  const landedOnLogin = new URL(page.url()).pathname === '/login.html';
+  const closed = await page.evaluate(() => window.__gateClosed || []);
+  assert.ok(
+    landedOnLogin || closed.includes('panel'),
+    'a visitor with no session should meet a login, not the Office'
+  );
 });

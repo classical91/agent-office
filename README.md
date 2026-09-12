@@ -1101,6 +1101,18 @@ address buy a five-minute timeout, during which even the correct passphrase is
 refused. A successful login clears the count. This is the same treatment the
 phone inbox gives a bad token.
 
+**Two cookies, one session.** `agent_office_session` carries the token and is
+`HttpOnly`, so no script can read it — which left a page with no way to know
+whether it was logged in except to ask. It asked on every load, and while it
+waited it locked itself and raised the login panel, so opening any page while
+already logged in flashed the login screen for the length of a round trip.
+`agent_office_signed_in` is set beside it to close that gap: same path, same
+lifetime, no `HttpOnly`, and a value of `1` that says only *a session exists*.
+The page reads it to paint the gate on the first try. It authorises nothing —
+every route still checks the real session — and it is cleared wherever that
+session ends: on logout, on a `401`, and on the next `/api/session` check after
+a restart has emptied the session map.
+
 ### Database TLS
 
 The connection's TLS policy is decided per host and announced at startup as

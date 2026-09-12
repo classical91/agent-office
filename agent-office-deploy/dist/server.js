@@ -34,6 +34,13 @@ const JOURNAL_TOKEN_MIN_LENGTH = 24;
 const TRADERCLAW_JOURNAL_KEY = 'traderclaw-journal-v1';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const SESSION_COOKIE = 'agent_office_session';
+// The session cookie is HttpOnly, so a page cannot tell whether it is logged in
+// without asking the server - and while it asked, every load painted the login
+// panel and then took it back. This second cookie is the answer to that: it
+// carries no token, only the fact that a session exists, and it is deliberately
+// readable so the gate can be painted right on the first try. It is always set
+// and cleared alongside the real one, so it can never outlive it by itself.
+const SESSION_HINT_COOKIE = 'agent_office_signed_in';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
 const ALLOWED_PRIORITIES = new Set(['normal', 'high', 'urgent']);
 const ALLOWED_STATUSES = new Set(['inbox', 'idea', 'researching', 'coding', 'reviewing', 'ready_to_deploy', 'done', 'archived']);
@@ -205,32 +212,32 @@ function recordLoginFailure(key) {
   entry.count += 1;
 }
 
+// The session cookie and its readable hint always travel together, in one
+// Set-Cookie pair, so the browser is never left believing in a session the
+// server has already forgotten.
+function setSessionCookies(res, token, maxAge) {
+  const shared = {
+    maxAge,
+    path: '/',
+    sameSite: 'Strict',
+    secure: process.env.NODE_ENV === 'production',
+  };
+  res.setHeader('Set-Cookie', [
+    serializeCookie(SESSION_COOKIE, token, { ...shared, httpOnly: true }),
+    // No HttpOnly here on purpose: this one exists to be read by the page. It
+    // is a flag, not a credential - nothing is authorised by holding it.
+    serializeCookie(SESSION_HINT_COOKIE, token ? '1' : '', shared),
+  ]);
+}
+
 function clearSessionCookie(res) {
-  res.setHeader(
-    'Set-Cookie',
-    serializeCookie(SESSION_COOKIE, '', {
-      maxAge: 0,
-      path: '/',
-      httpOnly: true,
-      sameSite: 'Strict',
-      secure: process.env.NODE_ENV === 'production',
-    })
-  );
+  setSessionCookies(res, '', 0);
 }
 
 function issueSession(res) {
   const token = crypto.randomBytes(32).toString('hex');
   sessions.set(token, { expiresAt: Date.now() + SESSION_TTL_MS });
-  res.setHeader(
-    'Set-Cookie',
-    serializeCookie(SESSION_COOKIE, token, {
-      maxAge: Math.floor(SESSION_TTL_MS / 1000),
-      path: '/',
-      httpOnly: true,
-      sameSite: 'Strict',
-      secure: process.env.NODE_ENV === 'production',
-    })
-  );
+  setSessionCookies(res, token, Math.floor(SESSION_TTL_MS / 1000));
 }
 
 async function readJsonBody(req) {
@@ -707,20 +714,15 @@ function requireDropsAuth(res, req) {
 
   const activeSession = getSession(req);
   if (!activeSession) {
+    // Take the hint cookie back on the way out. Left behind, it would have the
+    // next page load paint itself unlocked and then lock again a moment later -
+    // the flash this pair exists to stop, only in the other direction.
+    clearSessionCookie(res);
     sendJson(res, 401, { error: 'Dropbox is locked.' });
     return null;
   }
 
-  res.setHeader(
-    'Set-Cookie',
-    serializeCookie(SESSION_COOKIE, activeSession.token, {
-      maxAge: Math.floor(SESSION_TTL_MS / 1000),
-      path: '/',
-      httpOnly: true,
-      sameSite: 'Strict',
-      secure: process.env.NODE_ENV === 'production',
-    })
-  );
+  setSessionCookies(res, activeSession.token, Math.floor(SESSION_TTL_MS / 1000));
 
   return activeSession;
 }
@@ -5474,8 +5476,13 @@ const server = http.createServer(async (req, res) => {
     const storage = await storageReady;
 
     if (req.method === 'GET' && pathname === '/api/session') {
+      const activeSession = getSession(req);
+      // Sessions live in memory, so a restart forgets them all while the
+      // browser still holds both cookies. Clearing the hint here is what keeps
+      // that from costing a flash on every load until the cookie expires.
+      if (!activeSession && parseCookies(req)[SESSION_HINT_COOKIE]) clearSessionCookie(res);
       sendJson(res, 200, {
-        authenticated: Boolean(getSession(req)),
+        authenticated: Boolean(activeSession),
         configured: Boolean(PASSPHRASE_HASH),
       });
       return;

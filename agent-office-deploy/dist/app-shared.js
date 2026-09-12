@@ -2165,6 +2165,18 @@ function toggleNavCompact() {
 
 let officeSessionAuthenticated = false;
 let officeLoginWaiters = [];
+// Resolves once /api/session has answered. Until then the state below is the
+// cookie's guess, and anything gated has to wait for the real answer.
+let officeSessionChecked = Promise.resolve();
+
+// Set beside the HttpOnly session cookie by server.js, carrying no token - just
+// the fact that a session exists. Reading it is how a page knows which side of
+// the gate to paint before it has asked.
+const OFFICE_SESSION_HINT_COOKIE = 'agent_office_signed_in';
+
+function officeSessionHinted() {
+  return document.cookie.split(';').some(part => part.trim() === `${OFFICE_SESSION_HINT_COOKIE}=1`);
+}
 
 function setOfficeGateState(authenticated) {
   document.documentElement.classList.toggle('ao-site-locked', !authenticated);
@@ -2207,8 +2219,11 @@ function openOfficeLogin() {
   setTimeout(() => password?.focus(), 0);
 }
 
-function requestOfficeLogin() {
-  if (officeSessionAuthenticated) return Promise.resolve(true);
+async function requestOfficeLogin() {
+  // The state a page loads with is the cookie's guess; a gated action waits for
+  // the server to confirm it rather than riding on it.
+  await officeSessionChecked;
+  if (officeSessionAuthenticated) return true;
   openOfficeLogin();
   return new Promise(resolve => officeLoginWaiters.push(resolve));
 }
@@ -2253,8 +2268,13 @@ function initOfficeLogin() {
   const modal = document.getElementById('ao-login-modal');
   if (!form || !modal) return;
   form.addEventListener('submit', submitOfficeLogin);
-  setOfficeGateState(false);
-  fetch('/api/session', { cache: 'no-store' })
+  // Start from what the cookie says. Locking the page and raising the panel
+  // unconditionally meant every load flashed the login screen at someone who
+  // was already logged in, for as long as /api/session took to answer. The
+  // cookie only decides what to paint first - the fetch below still has the
+  // last word, and the server checks every request either way.
+  setOfficeLoginState(officeSessionHinted());
+  officeSessionChecked = fetch('/api/session', { cache: 'no-store' })
     .then(response => response.ok ? response.json() : { authenticated: false })
     .then(state => setOfficeLoginState(state.authenticated))
     .catch(() => setOfficeLoginState(false));
