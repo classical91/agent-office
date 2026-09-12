@@ -54,10 +54,18 @@ test('one general login gates the entire Agent Office site', () => {
   assert.match(shared, /JSON\.stringify\(\{ passphrase:/);
   assert.match(shared, /dropsAuthState = \{ configured: true, authenticated: true/);
   assert.match(shared, /return requestOfficeLogin\(\)/);
-  assert.match(shared, /setOfficeGateState\(false\)/);
+  // The gate used to be closed on every load and reopened once /api/session
+  // answered, which flashed the login panel at someone who was already logged
+  // in. It is painted from the readable hint cookie now, and the server still
+  // has the last word on it.
+  assert.match(shared, /setOfficeLoginState\(officeSessionHinted\(\)\)/);
   assert.match(shared, /classList\.toggle\('ao-site-locked', !authenticated\)/);
   assert.match(sharedCss, /\.ao-site-locked body > :not\(\.ao-login-modal\)/);
   const server = fs.readFileSync(path.join(DIST, 'server.js'), 'utf8');
+  // The page and the server have to mean the same cookie, or the gate paints
+  // from something nobody sets.
+  assert.match(shared, /const OFFICE_SESSION_HINT_COOKIE = 'agent_office_signed_in'/);
+  assert.match(server, /const SESSION_HINT_COOKIE = 'agent_office_signed_in'/);
   const login = fs.readFileSync(path.join(DIST, 'login.html'), 'utf8');
   assert.match(server, /pathname !== '\/login\.html'.*!getSession\(req\)/s);
   assert.match(server, /Location: `\/login\.html\?next=/);
