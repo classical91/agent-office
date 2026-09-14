@@ -139,6 +139,28 @@ test('a Mission Control goal can be completed on PostgreSQL', { skip }, async t 
   assert.equal(stored.orchestration_error, 'Could not reach the host.');
 });
 
+test('deleting a Mission Control goal works on PostgreSQL and refuses a live claim', { skip }, async t => {
+  const api = await startServer(t);
+
+  const saved = await (await api.as('POST', '/api/orchestration/goals', {
+    goal: 'A saved idea that is no longer wanted.', priority: 'normal',
+  })).json();
+  assert.equal((await api.as('DELETE', `/api/orchestration/goals/${encodeURIComponent(saved.id)}`)).status, 200);
+  assert.deepEqual(await (await api.as('GET', '/api/orchestration/goals')).json(), []);
+
+  const running = await (await api.as('POST', '/api/orchestration/goals', {
+    goal: 'Something Penny is working on.', priority: 'urgent',
+  })).json();
+  await api.relay('POST', '/api/orchestration/goals/claim');
+  assert.equal((await api.as('DELETE', `/api/orchestration/goals/${encodeURIComponent(running.id)}`)).status, 409);
+
+  await api.relay('PATCH', `/api/orchestration/goals/${encodeURIComponent(running.id)}`, {
+    status: 'completed', result: 'Finished.',
+  });
+  assert.equal((await api.as('DELETE', `/api/orchestration/goals/${encodeURIComponent(running.id)}`)).status, 200);
+  assert.equal((await api.as('DELETE', '/api/orchestration/goals/never-existed')).status, 404);
+});
+
 test('the calendar execution bridge round-trips through PostgreSQL', { skip }, async t => {
   const api = await startServer(t);
   const eventId = await createAgentBlock(api);

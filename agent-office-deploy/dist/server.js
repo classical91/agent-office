@@ -796,6 +796,11 @@ function toClientDrop(row) {
 // asking OpenClaw. A completed or failed goal releases the block for a retry.
 const LIVE_ORCHESTRATION_STATES = ['queued', 'running', 'needs_approval'];
 
+// A claim older than this is one the relay never came back from, so the goal is
+// free to be claimed again - and free to be deleted, which is the difference
+// between "Penny is working on this" and "Penny died holding this".
+const STALE_CLAIM_MS = 20 * 60 * 1000;
+
 async function loadDropsFromFile() {
   try {
     const raw = await fs.readFile(DROPS_FILE, 'utf8');
@@ -1199,7 +1204,7 @@ function createFileStorage() {
       const goal = drops
         .filter(drop => {
           const stale = drop.orchestration_status === 'running' &&
-            Date.now() - new Date(drop.orchestration_claimed_at || 0).getTime() > 20 * 60 * 1000;
+            Date.now() - new Date(drop.orchestration_claimed_at || 0).getTime() > STALE_CLAIM_MS;
           return drop.agent === 'oss' && drop.subject === 'Mission Control' &&
             drop.priority === 'urgent' &&
             (drop.orchestration_status === 'queued' || stale) && (Number(drop.orchestration_attempts) || 0) < 3;
@@ -1235,6 +1240,19 @@ function createFileStorage() {
       Object.assign(goal, patch, { updated_at: new Date().toISOString() });
       await saveDropsToFile(drops);
       return toClientDrop(goal);
+    },
+    // Removing a goal is Jason's call at any state except one Penny is actually
+    // working on: deleting a live claim would leave a running session reporting
+    // back to a row that no longer exists. An abandoned claim is not live.
+    async deleteMissionGoal(id) {
+      const drops = await loadDropsFromFile();
+      const goal = drops.find(drop => drop.id === id && drop.agent === 'oss' && drop.subject === 'Mission Control');
+      if (!goal) return { deleted: false, reason: 'missing' };
+      const claimIsLive = goal.orchestration_status === 'running' &&
+        Date.now() - new Date(goal.orchestration_claimed_at || 0).getTime() <= STALE_CLAIM_MS;
+      if (claimIsLive) return { deleted: false, reason: 'running' };
+      await saveDropsToFile(drops.filter(drop => drop.id !== id));
+      return { deleted: true, goal: toClientDrop(goal) };
     },
     async reorderMissionGoals(ids) {
       const drops = await loadDropsFromFile();
@@ -2120,6 +2138,27 @@ async function createPostgresStorage() {
                   orchestration_build_approved, orchestration_approved_at, orchestration_calendar_event_id
       `, [id, patch.title, patch.content, JSON.stringify(patch.links || []), patch.priority]);
       return result.rows[0] ? toClientDrop(result.rows[0]) : null;
+    },
+    async deleteMissionGoal(id) {
+      const result = await pool.query(`
+        DELETE FROM drops
+        WHERE id = $1 AND agent = 'oss' AND subject = 'Mission Control'
+          AND (orchestration_status <> 'running'
+               OR COALESCE(orchestration_claimed_at, 'epoch'::timestamptz) < NOW() - INTERVAL '20 minutes')
+        RETURNING id, title, subject, category, project, agent, status, tags, links,
+                  content, priority, done, remind_at, created_at AS date, updated_at,
+                  orchestration_status, orchestration_result, orchestration_error,
+                  orchestration_session_key, orchestration_claimed_at,
+                  orchestration_completed_at, orchestration_attempts, orchestration_rank,
+                  orchestration_build_approved, orchestration_approved_at, orchestration_calendar_event_id
+      `, [id]);
+      if (result.rows[0]) return { deleted: true, goal: toClientDrop(result.rows[0]) };
+      // Nothing deleted is either "no such goal" or "Penny is holding it", and
+      // the caller answers those differently.
+      const existing = await pool.query(
+        `SELECT id FROM drops WHERE id = $1 AND agent = 'oss' AND subject = 'Mission Control'`, [id]
+      );
+      return { deleted: false, reason: existing.rows[0] ? 'running' : 'missing' };
     },
     async reorderMissionGoals(ids) {
       if (!ids.length) return true;
@@ -5697,6 +5736,36 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       sendJson(res, 200, goal);
+      return;
+    }
+
+    if (req.method === 'DELETE' && pathname.startsWith('/api/orchestration/goals/')) {
+      if (!requireDropsAuth(res, req)) return;
+      const id = pathname.slice('/api/orchestration/goals/'.length).trim();
+      if (!id) {
+        sendJson(res, 400, { error: 'Goal id is required.' });
+        return;
+      }
+      const removal = await storage.deleteMissionGoal(id);
+      if (!removal.deleted) {
+        sendJson(res, removal.reason === 'running' ? 409 : 404, {
+          error: removal.reason === 'running'
+            ? 'Penny is working on this goal. Wait for the run to finish or fail before deleting it.'
+            : 'Goal not found.',
+        });
+        return;
+      }
+      // A dispatched calendar block reads its state from its goal, so a deleted
+      // goal has to leave the block somewhere final rather than stuck on
+      // "queued" with nothing left to run it.
+      if (removal.goal.orchestration_calendar_event_id) {
+        await mirrorGoalOntoCalendar({
+          ...removal.goal,
+          orchestration_status: 'failed',
+          orchestration_error: 'Goal deleted from Mission Control.',
+        }).catch(error => console.error('Could not release the calendar block.', error.message));
+      }
+      sendJson(res, 200, { ok: true, goal: removal.goal });
       return;
     }
 

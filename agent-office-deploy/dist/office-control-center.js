@@ -266,7 +266,7 @@
         ${Object.entries(counts).map(([name, count]) => `<div><span>${escape(name.replace(/^./, char => char.toUpperCase()))}</span><strong>${count}</strong></div>`).join('<i>→</i>')}
       </div>
       <section class="mission-results" aria-live="polite">
-        <div class="mission-results-heading"><div><strong>Goals and Outbox</strong><span>Drag active goals in edit mode to set Penny's order.</span></div><button class="ao-btn mission-order-toggle" type="button">Edit order</button></div>
+        <div class="mission-results-heading"><div><strong>Goals and Outbox</strong><span>In edit mode, drag active goals to set Penny's order or delete the ones you no longer want.</span></div><button class="ao-btn mission-order-toggle" type="button">Edit order</button></div>
         <div id="mission-results-list"><div class="control-unavailable">Loading goals…</div></div>
       </section>
       <div class="control-actions"><a class="ao-btn" href="/mission-board.html">Open Mission Board</a><a class="ao-btn" href="/project-rooms.html">Project rooms</a><a class="ao-btn" href="/agent-registry.html">Agent registry</a></div>`;
@@ -298,7 +298,7 @@
           ${goal.links && goal.links[0] ? `<a class="mission-source-link" href="${escape(goal.links[0])}" target="_blank" rel="noopener noreferrer">Open ChatGPT context ↗</a>` : ''}
           ${goal.orchestration_error ? `<p class="mission-result-error">${escape(goal.orchestration_error)}</p>` : ''}
           ${goal.orchestration_status === 'needs_approval' ? `<button class="ao-btn ao-btn--primary mission-approve" type="button" data-goal-id="${escape(goal.id)}">Approve build</button>` : ''}
-          ${missionEditMode && goal.orchestration_status !== 'completed' ? `<div class="mission-edit-actions"><button class="ao-btn mission-move" type="button" data-direction="up" data-goal-id="${escape(goal.id)}" aria-label="Move goal up">↑</button><button class="ao-btn mission-move" type="button" data-direction="down" data-goal-id="${escape(goal.id)}" aria-label="Move goal down">↓</button>${goal.orchestration_status !== 'running' ? `<button class="ao-btn mission-edit" type="button" data-goal-id="${escape(goal.id)}">Edit goal</button>` : ''}</div>` : ''}
+          ${missionEditMode ? `<div class="mission-edit-actions">${goal.orchestration_status !== 'completed' ? `<button class="ao-btn mission-move" type="button" data-direction="up" data-goal-id="${escape(goal.id)}" aria-label="Move goal up">↑</button><button class="ao-btn mission-move" type="button" data-direction="down" data-goal-id="${escape(goal.id)}" aria-label="Move goal down">↓</button>${goal.orchestration_status !== 'running' ? `<button class="ao-btn mission-edit" type="button" data-goal-id="${escape(goal.id)}">Edit goal</button>` : ''}` : ''}<button class="ao-btn ao-btn--danger mission-delete" type="button" data-goal-id="${escape(goal.id)}" aria-label="Delete goal">Delete goal</button></div>` : ''}
           <small>${escape(new Date(goal.updated_at || goal.date).toLocaleString())}</small>
         </article>`;
       list.innerHTML = `${active.length ? '<div class="mission-list-label">Active goals</div>' + active.slice(0, 10).map(renderGoal).join('') : '<div class="control-unavailable">No active goals.</div>'}${history.length ? '<div class="mission-list-label">Completed history</div>' + history.slice(0, 10).map(renderGoal).join('') : ''}`;
@@ -310,6 +310,9 @@
       });
       list.querySelectorAll('.mission-move').forEach(button => {
         button.addEventListener('click', () => moveMissionGoal(button.dataset.goalId, button.dataset.direction));
+      });
+      list.querySelectorAll('.mission-delete').forEach(button => {
+        button.addEventListener('click', () => deleteMissionGoal(button.dataset.goalId));
       });
       wireMissionDragging(list);
     } catch (error) {
@@ -398,6 +401,25 @@
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || 'The goal could not be updated.');
+      refreshMissionGoals();
+    } catch (error) {
+      window.alert(error.message);
+    }
+  }
+
+  // A goal Jason no longer wants should leave the board entirely rather than
+  // sit in the queue as noise. The server refuses one Penny is mid-run on.
+  async function deleteMissionGoal(id) {
+    const goal = missionGoals.find(item => item.id === id);
+    if (!window.confirm(`Delete "${goal ? goal.title : 'this goal'}" from Mission Control? This cannot be undone.`)) return;
+    try {
+      const response = await fetch(`/api/orchestration/goals/${encodeURIComponent(id)}`, {
+        method: 'DELETE', credentials: 'same-origin'
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (response.status === 401) throw new Error('Log in to Agent Office, then try again.');
+      if (!response.ok) throw new Error(payload.error || 'The goal could not be deleted.');
+      missionGoals = missionGoals.filter(item => item.id !== id);
       refreshMissionGoals();
     } catch (error) {
       window.alert(error.message);
