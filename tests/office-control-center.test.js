@@ -47,6 +47,18 @@ test('Mission Control sends goals to Penny through the authenticated board', () 
   assert.match(control, /\/edit/);
 });
 
+test('Mission Control goals can be deleted, including completed history', () => {
+  const server = fs.readFileSync(path.join(DIST, 'server.js'), 'utf8');
+  assert.match(control, /Delete goal/);
+  assert.match(control, /mission-delete/);
+  assert.match(control, /method: 'DELETE'/);
+  assert.match(control, /This cannot be undone/);
+  assert.match(server, /req\.method === 'DELETE' && pathname\.startsWith\('\/api\/orchestration\/goals\/'\)/);
+  assert.match(server, /deleteMissionGoal/);
+  // The relay token is for Penny's own writes; removing a goal is Jason's.
+  assert.match(server, /storage\.deleteMissionGoal/);
+});
+
 test('one general login gates the entire Agent Office site', () => {
   assert.match(index, /id="ao-login-trigger"[^>]*>Login</);
   assert.match(index, /id="ao-login-password"[^>]*type="password"/);

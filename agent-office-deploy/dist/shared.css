@@ -2220,8 +2220,10 @@
   .mission-result--moveable { cursor: grab; border-style: dashed; }
   .mission-result--moveable .mission-drag-handle { display: inline-block; }
   .mission-result--moveable.is-dragging { opacity: .5; transform: scale(.99); }
-  .mission-edit-actions { display: flex; gap: 6px; margin-top: 10px; }
+  .mission-edit-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .mission-edit-actions .mission-move { min-width: var(--tap-target); padding-inline: 10px; }
+  /* Destructive action sits away from the ordering controls it shares a row with. */
+  .mission-edit-actions .mission-delete { margin-left: auto; }
   .mission-approve { margin: 0 0 10px; }
   @media (max-width: 700px) {
     .control-center { grid-template-columns: 1fr; }
