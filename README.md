@@ -226,6 +226,7 @@ All endpoints return JSON.
 | GET    | `/api/shortcuts/status`           | Due/upcoming counts and the next reminder |
 | GET    | `/api/shortcuts/countdowns`       | The top countdowns as text, for the evening roll-up |
 | GET    | `/api/shortcuts/reset-timers`     | The Countdown Timers on `/resets.html`, as text or JSON |
+| GET    | `/api/shortcuts/traderclaw-journal` | The TraderClaw journal roll-up, as text or JSON |
 | GET    | `/api/reset-timers`               | The stored Countdown Timers (session-authed) |
 | PUT    | `/api/reset-timers`               | Replace the stored Countdown Timers (session-authed) |
 | GET    | `/api/planning`                   | The planning checklist and its counts (session-authed) |
@@ -973,6 +974,29 @@ and `status`. The Pushcut webhook URL is never among them.
 Set the URL up in Shortcuts as **Get Contents of URL** → Method `GET`, one
 header `X-Shortcuts-Token` = your token → **Show Result**. The exact URL is on
 **Settings → Phone Inbox** as `reset_timers_url`.
+
+**Shortcut: the TraderClaw roll-up.**
+`GET /api/shortcuts/traderclaw-journal?limit=5&format=text` returns the journal's
+latest entries behind the same token, newest first:
+
+```
+12 entries · 4 validated · 2 rejected
+• ETHUSDT SHORT — win · 1.8R · validated
+• BTCUSDT LONG — loss · -1.0R · rejected
+```
+
+Drop `format=text` for JSON: each entry carries `record_id`, `record_type`,
+`timestamp_utc`, `asset`, `direction`, `timeframe`, `strategy`, `result_status`,
+`r_multiple` and `gate_status`, alongside the journal's `counts` and `synced_at`.
+
+**This is the summary, not the journal.** `/api/traderclaw-journal` stays
+session-authenticated, because an entry's substance is its thesis, its
+invalidation and the lesson drawn from it — the things you open the journal page
+to read. None of those is in this projection. What it carries is what a roll-up
+says out loud: which asset, which way, how it went, and whether the promotion
+gate let the strategy through. The same split the reset timers make, and for the
+same reason: a machine-readable route hands back a view built for the answer,
+never the stored record.
 
 There is also a no-Shortcut version: bookmark
 `/mission-board.html?reminder=due` on the phone's Home Screen and the Dropbox

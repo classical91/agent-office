@@ -4595,6 +4595,72 @@ async function handleShortcutsRequest(req, res, url, storage) {
     return true;
   }
 
+  // The TraderClaw learning journal, for anything that cannot hold a web
+  // session — the evening roll-up Shortcut, and Main Hub's dashboard card.
+  //
+  // `/api/traderclaw-journal` above is session-authenticated, which is right for
+  // the page that renders the whole journal: entries carry a thesis, a lesson
+  // and quality notes, and those are the journal's substance rather than a
+  // summary of it. This route is the summary. It carries what a roll-up says
+  // out loud — which asset, which way, how it went, and whether the gate let it
+  // through — and nothing else, the same way the reset timers above hand back a
+  // projection rather than the record that holds a Pushcut webhook.
+  if (req.method === 'GET' && pathname === '/api/shortcuts/traderclaw-journal') {
+    const stored = await storage.getAppSetting(TRADERCLAW_JOURNAL_KEY);
+    let journal = null;
+    try { journal = stored ? JSON.parse(stored) : null; } catch { journal = null; }
+
+    const requestedLimit = Number.parseInt(url.searchParams.get('limit') || '', 10);
+    const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
+      ? Math.min(requestedLimit, SHORTCUTS_MAX_LIMIT)
+      : SHORTCUTS_DEFAULT_LIMIT;
+
+    // Already newest first when it was stored, so this is a slice and not a sort.
+    const entries = (Array.isArray(journal && journal.entries) ? journal.entries : [])
+      .slice(0, limit)
+      .map(entry => ({
+        record_id: entry.record_id || '',
+        record_type: entry.record_type || '',
+        timestamp_utc: entry.timestamp_utc || '',
+        asset: entry.asset || '',
+        direction: entry.direction || '',
+        timeframe: entry.timeframe || '',
+        strategy: (entry.strategy && entry.strategy.name) || '',
+        // The two verdicts a roll-up is actually read for: how the trade ended,
+        // and whether the promotion gate let the strategy through.
+        result_status: (entry.result && entry.result.status) || '',
+        r_multiple: (entry.result && entry.result.r_multiple) || '',
+        gate_status: (entry.promotion_gate && entry.promotion_gate.status) || '',
+      }));
+
+    const counts = (journal && journal.counts) || { entries: 0, validated: 0, rejected: 0 };
+
+    if (String(url.searchParams.get('format') || 'json').toLowerCase() === 'text') {
+      const lines = entries.length
+        ? entries.map(entry => {
+            const head = [entry.asset, entry.direction].filter(Boolean).join(' ') || entry.record_id;
+            const tail = [entry.result_status, entry.r_multiple && `${entry.r_multiple}R`, entry.gate_status]
+              .filter(Boolean).join(' · ');
+            return `\u2022 ${head}${tail ? ` \u2014 ${tail}` : ''}`;
+          })
+        : ['Nothing in the journal yet.'];
+      sendText(res, 200, [
+        `${counts.entries} entries · ${counts.validated} validated · ${counts.rejected} rejected`,
+        ...lines,
+      ].join('\n'));
+      return true;
+    }
+
+    sendJson(res, 200, {
+      generated_at: now.toISOString(),
+      synced_at: (journal && journal.synced_at) || null,
+      counts,
+      count: entries.length,
+      entries,
+    });
+    return true;
+  }
+
   if (req.method === 'POST' && pathname === '/api/shortcuts/drops') {
     const input = await readShortcutsInput(req, url);
     const built = buildShortcutDropPayload(input);
