@@ -59,7 +59,7 @@ test('a countdown saved before the tick existed answers from its webhook', () =>
 
 test('the editor and the new-countdown form both offer the tick', () => {
   assert.match(read('resets.js'), /data-field="pushcut"/);
-  const html = fs.readFileSync(path.join(DIST, 'resets.html'), 'utf8');
+  const html = fs.readFileSync(path.join(DIST, 'countdowns.html'), 'utf8');
   assert.match(html, /id="rst-new-pushcut" checked/);
 });
 

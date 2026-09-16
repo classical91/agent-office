@@ -23,6 +23,7 @@ window.AOResets = (() => {
   const TRADINGVIEW_MIGRATION_KEY = 'agent-office-countdown-tradingview-timeframes-v1';
   const SORT_KEY = 'ao-resets-sort';
   const FILTER_KEY = 'ao-resets-filter';
+  const CATEGORY_FILTER_KEY = 'ao-resets-category-filter';
   // The list opens on the Pushcut cards. Most of what is on this page is a
   // countdown that pushes a notification to the phone; the rest is reference,
   // and "Show: All timers" is one control away.
@@ -69,12 +70,41 @@ window.AOResets = (() => {
     // Pushcut countdowns", and it never decides whether a notification is sent.
     pushcut: { label: 'Pushcut', keep: view => view.card.pushcut },
     all: { label: 'All timers', keep: () => true },
-    'subscriptions-bills': { label: 'Subscriptions/Bills', keep: view => view.card.category === 'subscriptions-bills' },
-    holidays: { label: 'Holidays', keep: view => view.card.category === 'holidays' },
     active: { label: 'Active only', keep: view => view.state === 'active' },
     paused: { label: 'Paused', keep: view => view.state === 'paused' },
     finished: { label: 'Finished', keep: view => view.state === 'expired' || view.state === 'completed' },
   };
+
+  const CATEGORY_OPTIONS = [
+    { value: '', label: 'Uncategorized' },
+    { value: 'subscriptions-bills', label: 'Subscriptions / Bills' },
+    { value: 'ai-usage', label: 'AI / Usage resets' },
+    { value: 'deadline', label: 'Deadlines' },
+    { value: 'goal', label: 'Goals' },
+    { value: 'work', label: 'Work' },
+    { value: 'personal', label: 'Personal' },
+    { value: 'routine', label: 'Routines' },
+    { value: 'trading', label: 'Trading' },
+    { value: 'holidays', label: 'Holidays' },
+    { value: 'other', label: 'Other' },
+  ];
+
+  const CATEGORY_FILTERS = {
+    all: { label: 'All categories', keep: () => true },
+    uncategorized: { label: 'Uncategorized', keep: view => !view.card.category },
+    'subscriptions-bills': { label: 'Subscriptions / Bills', keep: view => view.card.category === 'subscriptions-bills' },
+    'ai-usage': { label: 'AI / Usage resets', keep: view => view.card.category === 'ai-usage' },
+    deadline: { label: 'Deadlines', keep: view => view.card.category === 'deadline' },
+    goal: { label: 'Goals', keep: view => view.card.category === 'goal' },
+    work: { label: 'Work', keep: view => view.card.category === 'work' },
+    personal: { label: 'Personal', keep: view => view.card.category === 'personal' },
+    routine: { label: 'Routines', keep: view => view.card.category === 'routine' },
+    trading: { label: 'Trading', keep: view => view.card.category === 'trading' },
+    holidays: { label: 'Holidays', keep: view => view.card.category === 'holidays' },
+    other: { label: 'Other', keep: view => view.card.category === 'other' },
+  };
+
+  const CATEGORY_LABELS = Object.fromEntries(CATEGORY_OPTIONS.map(item => [item.value, item.label]));
 
   // The same destination rule the server enforces in reset-timers.js, so a URL
   // the processor will refuse to send to cannot be saved here in the first
@@ -112,6 +142,7 @@ window.AOResets = (() => {
     cards: [],
     sort: 'soonest',
     filter: DEFAULT_FILTER,
+    categoryFilter: 'all',
     openId: '',
     savedId: '',
     tickTimer: null,
@@ -342,6 +373,7 @@ window.AOResets = (() => {
         title: `Weekly timeframe review - ${symbol}`,
         resetAt: weeklyTarget.toISOString(),
         repeatDays: 7,
+        category: 'trading',
         pushcut: true,
         status: 'active',
         createdAt,
@@ -353,6 +385,7 @@ window.AOResets = (() => {
         title: `Monthly timeframe review - ${symbol}`,
         resetAt: monthlyTarget.toISOString(),
         repeatMonths: 1,
+        category: 'trading',
         pushcut: true,
         status: 'active',
         createdAt,
@@ -382,6 +415,11 @@ window.AOResets = (() => {
     return Number.isNaN(date.getTime()) ? '' : date.toISOString();
   }
 
+  function normalizeCategory(value) {
+    const category = String(value || '').trim().toLowerCase();
+    return Object.prototype.hasOwnProperty.call(CATEGORY_LABELS, category) ? category : '';
+  }
+
   function normalizeCard(raw, index) {
     if (!raw || typeof raw !== 'object') return null;
     const target = new Date(raw.resetAt);
@@ -400,7 +438,7 @@ window.AOResets = (() => {
       pushcut: raw.pushcut == null ? Boolean(raw.webhookUrl) : Boolean(raw.pushcut),
       repeatDays: Number.isFinite(repeatDays) && repeatDays > 0 ? Math.round(repeatDays) : 0,
       repeatMonths: Number.isFinite(repeatMonths) && repeatMonths > 0 ? Math.round(repeatMonths) : 0,
-      category: raw.category === 'subscriptions-bills' || raw.category === 'holidays' ? raw.category : '',
+      category: normalizeCategory(raw.category),
       status,
       fired: Boolean(raw.fired),
       message: String(raw.message || ''),
@@ -646,6 +684,7 @@ window.AOResets = (() => {
         title: item.title,
         resetAt: item.occurs_at || item.target_at,
         repeatDays: repeatDays[item.repeat] || 0,
+        category: item.category,
         status: item.archived ? 'completed' : 'active',
         message: item.next_action || 'Managed in Agent Office.',
         notes: item.notes || '',
@@ -693,9 +732,11 @@ window.AOResets = (() => {
   function sortedViews() {
     const sort = SORTS[state.sort] || SORTS.soonest;
     const filter = FILTERS[state.filter] || FILTERS.all;
+    const categoryFilter = CATEGORY_FILTERS[state.categoryFilter] || CATEGORY_FILTERS.all;
     return liveCards()
       .map(viewOf)
       .filter(filter.keep)
+      .filter(categoryFilter.keep)
       .sort((a, b) => {
         // Finished timers sink under the live ones for the two time-based
         // sorts; within that group the most recently finished comes first.
@@ -729,12 +770,13 @@ window.AOResets = (() => {
     const color = colorForView(view);
     const open = state.openId === card.id;
     const bodyId = `rst-body-${escHtml(card.id)}`;
+    const categoryLabel = CATEGORY_LABELS[card.category] || CATEGORY_LABELS[''];
 
     if (card.source === 'office') return `
       <article class="rst-card${open ? ' is-open' : ''}${isDueSoon(view) ? ' is-due-soon' : ''}" data-id="${escHtml(card.id)}" data-state="${view.state}" style="--rst-color: ${color}">
         <button type="button" class="rst-head" data-action="toggle" aria-expanded="${open}" aria-controls="${bodyId}">
           <span class="rst-icon" aria-hidden="true">${icon.glyph}</span>
-          <span class="rst-head-main"><span class="rst-head-top"><span class="rst-title">${escHtml(card.title)}</span><span class="ao-status ao-status--info rst-state">Shared</span></span><span class="rst-time" data-role="time">${escHtml(timeLabel(view))}</span><span class="rst-when" data-role="when">${escHtml(whenLabel(view))}</span></span>
+          <span class="rst-head-main"><span class="rst-head-top"><span class="rst-title">${escHtml(card.title)}</span><span class="ao-status ao-status--info rst-state">Shared</span></span><span class="rst-category">${escHtml(categoryLabel)}</span><span class="rst-time" data-role="time">${escHtml(timeLabel(view))}</span><span class="rst-when" data-role="when">${escHtml(whenLabel(view))}</span></span>
           <span class="rst-chevron" aria-hidden="true">â–¾</span>
         </button>
         <div class="rst-body" id="${bodyId}"><div class="rst-body-inner"><div class="rst-message">${escHtml(card.message)}</div>${card.notes ? `<p>${escHtml(card.notes)}</p>` : ''}<div class="rst-footnote">Shared Agent Office countdown · managed by Penny</div></div></div>
@@ -753,6 +795,7 @@ window.AOResets = (() => {
                 <span class="ao-dot ao-dot--${meta.dot}"></span>${meta.label}
               </span>
             </span>
+            <span class="rst-category" data-role="category">${escHtml(categoryLabel)}</span>
             <span class="rst-time" data-role="time">${escHtml(timeLabel(view))}</span>
             <span class="rst-when" data-role="when">${escHtml(whenLabel(view))}</span>
           </span>
@@ -784,6 +827,13 @@ window.AOResets = (() => {
               <label class="ao-label" for="rst-repeat-${escHtml(card.id)}">Repeats</label>
               <select class="ao-select" id="rst-repeat-${escHtml(card.id)}" data-field="repeatDays">
                 ${optionsHtml(REPEAT_OPTIONS, card.repeatMonths ? -card.repeatMonths : card.repeatDays)}
+              </select>
+            </div>
+
+            <div class="ao-field">
+              <label class="ao-label" for="rst-category-${escHtml(card.id)}">Category</label>
+              <select class="ao-select" id="rst-category-${escHtml(card.id)}" data-field="category">
+                ${optionsHtml(CATEGORY_OPTIONS, card.category)}
               </select>
             </div>
 
@@ -1009,6 +1059,7 @@ window.AOResets = (() => {
       resetAt: fromDateTime(read('date'), read('time')),
       repeatDays: Math.max(0, Number(read('repeatDays')) || 0),
       repeatMonths: Math.max(0, -(Number(read('repeatDays')) || 0)),
+      category: normalizeCategory(read('category')),
       webhookUrl: read('webhookUrl'),
       pushcut: checked('pushcut'),
     };
@@ -1058,6 +1109,7 @@ window.AOResets = (() => {
     card.resetAt = draft.resetAt;
     card.repeatDays = draft.repeatDays;
     card.repeatMonths = draft.repeatMonths;
+    card.category = draft.category;
     card.webhookUrl = draft.webhookUrl;
     card.pushcut = draft.pushcut;
     if (retimed) {
@@ -1176,6 +1228,7 @@ window.AOResets = (() => {
     el('rst-new-date').value = toDateValue(atHour(tomorrow, 9, 0).toISOString());
     el('rst-new-time').value = '09:00';
     el('rst-new-repeat').value = '0';
+    el('rst-new-category').value = '';
     el('rst-new-webhook').value = '';
     showFormError('');
     modal.hidden = false;
@@ -1216,6 +1269,7 @@ window.AOResets = (() => {
       resetAt,
       repeatDays: Math.max(0, Number(el('rst-new-repeat').value) || 0),
       repeatMonths: Math.max(0, -(Number(el('rst-new-repeat').value) || 0)),
+      category: normalizeCategory(el('rst-new-category').value),
       webhookUrl,
       pushcut: readNewPushcut(),
       status: 'active',
@@ -1246,6 +1300,12 @@ window.AOResets = (() => {
     render();
   }
 
+  function setCategoryFilter(value) {
+    state.categoryFilter = CATEGORY_FILTERS[value] ? value : 'all';
+    writePreference(CATEGORY_FILTER_KEY, state.categoryFilter);
+    render();
+  }
+
   function fillToolbar() {
     const sort = el('rst-sort');
     if (sort && !sort.options.length) {
@@ -1261,8 +1321,18 @@ window.AOResets = (() => {
     }
     if (filter) filter.value = state.filter;
 
+    const categoryFilter = el('rst-category-filter');
+    if (categoryFilter && !categoryFilter.options.length) {
+      categoryFilter.innerHTML = Object.entries(CATEGORY_FILTERS)
+        .map(([value, item]) => `<option value="${value}">${escHtml(item.label)}</option>`).join('');
+    }
+    if (categoryFilter) categoryFilter.value = state.categoryFilter;
+
     const repeat = el('rst-new-repeat');
     if (repeat && !repeat.options.length) repeat.innerHTML = optionsHtml(REPEAT_OPTIONS, 0);
+
+    const category = el('rst-new-category');
+    if (category && !category.options.length) category.innerHTML = optionsHtml(CATEGORY_OPTIONS, '');
   }
 
   // ─── Wiring ────────────────────────────────────────────────────────────
@@ -1307,6 +1377,7 @@ window.AOResets = (() => {
     if (!state.initialized) {
       state.sort = readPreference(SORT_KEY, SORTS, 'soonest');
       state.filter = readPreference(FILTER_KEY, FILTERS, DEFAULT_FILTER);
+      state.categoryFilter = readPreference(CATEGORY_FILTER_KEY, CATEGORY_FILTERS, 'all');
       state.cards = loadCards();
       saveCards();
 
@@ -1336,6 +1407,7 @@ window.AOResets = (() => {
     tradingViewTimeframeCards,
     setSort,
     setFilter,
+    setCategoryFilter,
     openForm,
     closeForm,
     addFromForm,
@@ -1347,6 +1419,8 @@ window.AOResets = (() => {
     isListView,
     isDueSoon,
     FILTERS,
+    CATEGORY_FILTERS,
+    CATEGORY_OPTIONS,
     DEFAULT_FILTER,
     colorForView,
     webhookTargetError,

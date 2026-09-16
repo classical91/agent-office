@@ -168,13 +168,13 @@ test('the page still gets the schedule through window, as the browser gives it',
   assert.equal(context.window.AOResets.happyHourDetails, context.window.AOHappyHour.happyHourDetails);
 });
 
-test('resets.html loads the schedule before the page that reads it', () => {
-  const html = fs.readFileSync(path.join(DIST, 'resets.html'), 'utf8');
+test('countdowns.html loads the schedule before the page that reads it', () => {
+  const html = fs.readFileSync(path.join(DIST, 'countdowns.html'), 'utf8');
   const schedule = html.indexOf('<script src="happy-hour.js');
   const page = html.indexOf('<script src="resets.js');
 
-  assert.ok(schedule !== -1, 'resets.html does not load happy-hour.js');
-  assert.ok(page !== -1, 'resets.html does not load resets.js');
+  assert.ok(schedule !== -1, 'countdowns.html does not load happy-hour.js');
+  assert.ok(page !== -1, 'countdowns.html does not load resets.js');
   assert.ok(schedule < page, 'happy-hour.js must load before resets.js');
 });
 

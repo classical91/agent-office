@@ -34,7 +34,6 @@ const PAGES = [
   'visitors.html',
   'ai-landscape.html',
   'settings.html',
-  'resets.html',
   'dev.html',
   'calendar-v3.html',
   'countdowns.html',
