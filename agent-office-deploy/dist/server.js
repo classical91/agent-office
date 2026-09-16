@@ -6654,6 +6654,48 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // Private category registry. Deleted entries remain as tombstones so older
+    // clients cannot bring a removed category back through a timer record.
+    if (pathname === '/api/countdown-categories') {
+      if (!requireDropsAuth(res, req)) return;
+      const key = 'countdown-categories.v1';
+      if (req.method === 'GET') {
+        const saved = await storage.getAppSetting(key);
+        sendJson(res, 200, { items: saved ? JSON.parse(saved) : null });
+        return;
+      }
+      if (req.method === 'PUT') {
+        const body = await readJsonBody(req);
+        const items = body.items;
+        if (!Array.isArray(items) || items.length > 200 || items.some(item =>
+          !item || typeof item.id !== 'string' || !/^[a-z0-9][a-z0-9-]{0,79}$/.test(item.id)
+          || ['all', 'uncategorized'].includes(item.id)
+          || typeof item.label !== 'string' || !item.label.trim() || item.label.trim().length > 60
+          || typeof item.deleted !== 'boolean')
+          || new Set(items.map(item => item.id)).size !== items.length) {
+          sendJson(res, 400, { error: 'Provide unique categories with names of 1–60 characters.' });
+          return;
+        }
+        const saved = await storage.getAppSetting(key);
+        const previous = saved ? JSON.parse(saved) : null;
+        if (JSON.stringify(body.previous ?? null) !== JSON.stringify(previous)) {
+          sendJson(res, 409, { error: 'Categories changed in another browser. Reopen Manage categories and try again.' });
+          return;
+        }
+        const clean = items.map(({ id, label, deleted }) => ({ id, label: label.trim(), deleted }));
+        const activeNames = clean.filter(item => !item.deleted).map(item => item.label.toLowerCase());
+        if (new Set(activeNames).size !== activeNames.length || activeNames.includes('uncategorized')) {
+          sendJson(res, 400, { error: 'Each category needs a different name.' });
+          return;
+        }
+        await storage.setAppSetting(key, JSON.stringify(clean));
+        sendJson(res, 200, { items: clean });
+        return;
+      }
+      sendJson(res, 405, { error: 'Only GET and PUT are supported.' });
+      return;
+    }
+
     // -- APP SETTINGS API ----------------------------------------
     if (pathname.startsWith('/api/settings/')) {
       const key = decodeURIComponent(pathname.slice('/api/settings/'.length).trim());

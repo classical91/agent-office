@@ -105,6 +105,113 @@ window.AOResets = (() => {
   };
 
   const CATEGORY_LABELS = Object.fromEntries(CATEGORY_OPTIONS.map(item => [item.value, item.label]));
+  const CATEGORY_CACHE_KEY = 'ao-countdown-categories-v1';
+  const DEFAULT_CATEGORIES = CATEGORY_OPTIONS.filter(item => item.value)
+    .map(item => ({ id: item.value, label: item.label, deleted: false }));
+  let categoryRegistry = DEFAULT_CATEGORIES.map(item => ({ ...item }));
+  let remoteCategories = null;
+  let categoryDraft = [];
+  let categorySaving = false;
+
+  function applyCategories(items) {
+    categoryRegistry = items || DEFAULT_CATEGORIES.map(item => ({ ...item }));
+    CATEGORY_OPTIONS.splice(0, CATEGORY_OPTIONS.length, { value: '', label: 'Uncategorized' },
+      ...categoryRegistry.filter(item => !item.deleted).map(item => ({ value: item.id, label: item.label })));
+    Object.keys(CATEGORY_LABELS).forEach(key => delete CATEGORY_LABELS[key]);
+    Object.assign(CATEGORY_LABELS, Object.fromEntries(CATEGORY_OPTIONS.map(item => [item.value, item.label])));
+    Object.keys(CATEGORY_FILTERS).forEach(key => delete CATEGORY_FILTERS[key]);
+    CATEGORY_FILTERS.all = { label: 'All categories', keep: () => true };
+    CATEGORY_OPTIONS.forEach(item => {
+      CATEGORY_FILTERS[item.value || 'uncategorized'] = {
+        label: item.label, keep: view => normalizeCategory(view.card.category) === item.value,
+      };
+    });
+    if (!CATEGORY_FILTERS[state.categoryFilter]) state.categoryFilter = 'all';
+    try { localStorage.setItem(CATEGORY_CACHE_KEY, JSON.stringify(categoryRegistry)); } catch {}
+    fillToolbar();
+    render();
+  }
+
+  async function loadCategories() {
+    const response = await fetch('/api/countdown-categories', { credentials: 'same-origin' });
+    if (!response.ok) throw new Error('Could not load categories. Sign in and try again.');
+    const payload = await response.json();
+    remoteCategories = payload.items;
+    applyCategories(payload.items);
+  }
+
+  function renderCategoryManager() {
+    el('rst-category-rows').innerHTML = categoryDraft.filter(item => !item.deleted).map(item => `
+      <div class="rst-category-row">
+        <input class="ao-input" aria-label="Category name" maxlength="60" data-category-id="${escHtml(item.id)}" value="${escHtml(item.label)}" />
+        <button type="button" class="ao-btn ao-btn--danger" data-delete-category="${escHtml(item.id)}" aria-label="Delete ${escHtml(item.label)}">Delete</button>
+      </div>`).join('');
+  }
+
+  function readCategoryDraft() {
+    document.querySelectorAll('#rst-category-rows [data-category-id]').forEach(input => {
+      const item = categoryDraft.find(entry => entry.id === input.dataset.categoryId);
+      if (item) item.label = input.value.trim();
+    });
+  }
+
+  async function openCategories() {
+    if (typeof ensureDropsSession === 'function' && !(await ensureDropsSession(true))) return;
+    const modal = el('rst-categories-modal');
+    modal.hidden = false;
+    el('rst-categories-error').textContent = 'Loading categories…';
+    el('rst-categories-save').disabled = true;
+    el('rst-categories-add').disabled = true;
+    el('rst-category-rows').innerHTML = '';
+    try {
+      await loadCategories();
+      categoryDraft = categoryRegistry.map(item => ({ ...item }));
+      renderCategoryManager();
+      el('rst-categories-error').textContent = '';
+      el('rst-categories-save').disabled = false;
+      el('rst-categories-add').disabled = false;
+    } catch (error) { el('rst-categories-error').textContent = error.message; }
+  }
+
+  function closeCategories() {
+    if (!categorySaving) el('rst-categories-modal').hidden = true;
+  }
+
+  function addCategory() {
+    readCategoryDraft();
+    if (categoryDraft.length >= 200) {
+      el('rst-categories-error').textContent = 'The category limit has been reached.';
+      return;
+    }
+    categoryDraft.push({ id: 'custom-' + randomId().replace(/[^a-z0-9-]/gi, '').toLowerCase().slice(0, 60), label: '', deleted: false });
+    renderCategoryManager();
+    el('rst-category-rows').lastElementChild.querySelector('input').focus();
+  }
+
+  async function saveCategories() {
+    if (categorySaving) return;
+    readCategoryDraft();
+    const names = categoryDraft.filter(item => !item.deleted).map(item => item.label.toLowerCase());
+    if (categoryDraft.some(item => !item.label || item.label.length > 60)
+      || new Set(names).size !== names.length || names.includes('uncategorized')) {
+      el('rst-categories-error').textContent = 'Use unique names of 1–60 characters. Uncategorized is reserved.';
+      return;
+    }
+    categorySaving = true;
+    el('rst-categories-save').disabled = true;
+    try {
+      const response = await fetch('/api/countdown-categories', {
+        method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: categoryDraft, previous: remoteCategories }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || 'Could not save categories.');
+      remoteCategories = payload.items;
+      applyCategories(payload.items);
+      el('rst-categories-modal').hidden = true;
+    } catch (error) { el('rst-categories-error').textContent = error.message; }
+    finally { categorySaving = false; el('rst-categories-save').disabled = false; }
+  }
 
   // The same destination rule the server enforces in reset-timers.js, so a URL
   // the processor will refuse to send to cannot be saved here in the first
@@ -417,7 +524,8 @@ window.AOResets = (() => {
 
   function normalizeCategory(value) {
     const category = String(value || '').trim().toLowerCase();
-    return Object.prototype.hasOwnProperty.call(CATEGORY_LABELS, category) ? category : '';
+    if (categoryRegistry.some(item => item.id === category && item.deleted)) return '';
+    return /^[a-z0-9][a-z0-9-]{0,79}$/.test(category) ? category : '';
   }
 
   function normalizeCard(raw, index) {
@@ -768,7 +876,7 @@ window.AOResets = (() => {
     const color = colorForView(view);
     const open = state.openId === card.id;
     const bodyId = `rst-body-${escHtml(card.id)}`;
-    const categoryLabel = CATEGORY_LABELS[card.category] || CATEGORY_LABELS[''];
+    const categoryLabel = CATEGORY_LABELS[normalizeCategory(card.category)] || CATEGORY_LABELS[''];
 
     if (card.source === 'office') return `
       <article class="rst-card${open ? ' is-open' : ''}${isDueSoon(view) ? ' is-due-soon' : ''}" data-id="${escHtml(card.id)}" data-state="${view.state}" style="--rst-color: ${color}">
@@ -831,7 +939,7 @@ window.AOResets = (() => {
             <div class="ao-field">
               <label class="ao-label" for="rst-category-${escHtml(card.id)}">Category</label>
               <select class="ao-select" id="rst-category-${escHtml(card.id)}" data-field="category">
-                ${optionsHtml(CATEGORY_OPTIONS, card.category)}
+                ${optionsHtml(CATEGORY_OPTIONS, normalizeCategory(card.category))}
               </select>
             </div>
 
@@ -1320,7 +1428,7 @@ window.AOResets = (() => {
     if (filter) filter.value = state.filter;
 
     const categoryFilter = el('rst-category-filter');
-    if (categoryFilter && !categoryFilter.options.length) {
+    if (categoryFilter) {
       categoryFilter.innerHTML = Object.entries(CATEGORY_FILTERS)
         .map(([value, item]) => `<option value="${value}">${escHtml(item.label)}</option>`).join('');
     }
@@ -1330,7 +1438,10 @@ window.AOResets = (() => {
     if (repeat && !repeat.options.length) repeat.innerHTML = optionsHtml(REPEAT_OPTIONS, 0);
 
     const category = el('rst-new-category');
-    if (category && !category.options.length) category.innerHTML = optionsHtml(CATEGORY_OPTIONS, '');
+    if (category) {
+      const selected = normalizeCategory(category.value);
+      category.innerHTML = optionsHtml(CATEGORY_OPTIONS, selected);
+    }
   }
 
   // ─── Wiring ────────────────────────────────────────────────────────────
@@ -1366,6 +1477,7 @@ window.AOResets = (() => {
 
   function onKeyDown(event) {
     if (event.key !== 'Escape') return;
+    if (!el('rst-categories-modal').hidden) return closeCategories();
     if (isHappyHourOpen()) return closeHappyHour();
     if (isFormOpen()) return closeForm();
     closeCard();
@@ -1376,6 +1488,12 @@ window.AOResets = (() => {
       state.sort = readPreference(SORT_KEY, SORTS, 'soonest');
       state.filter = readPreference(FILTER_KEY, FILTERS, DEFAULT_FILTER);
       state.categoryFilter = readPreference(CATEGORY_FILTER_KEY, CATEGORY_FILTERS, 'all');
+      try {
+        const cached = JSON.parse(localStorage.getItem(CATEGORY_CACHE_KEY) || 'null');
+        if (Array.isArray(cached)) applyCategories(cached);
+      } catch {}
+      const savedCategory = readPreference(CATEGORY_FILTER_KEY, CATEGORY_FILTERS, 'all');
+      state.categoryFilter = savedCategory;
       state.cards = loadCards();
       saveCards();
 
@@ -1384,6 +1502,21 @@ window.AOResets = (() => {
       document.addEventListener('click', onDocumentClick);
       document.addEventListener('keydown', onKeyDown);
       state.initialized = true;
+      el('rst-category-rows').addEventListener('click', event => {
+        const button = event.target.closest('[data-delete-category]');
+        if (!button || categorySaving) return;
+        readCategoryDraft();
+        const item = categoryDraft.find(entry => entry.id === button.dataset.deleteCategory);
+        if (!item) return;
+        const savedItem = categoryRegistry.find(entry => entry.id === item.id);
+        if (!savedItem) categoryDraft = categoryDraft.filter(entry => entry !== item);
+        else {
+          item.label = savedItem.label;
+          item.deleted = true;
+        }
+        renderCategoryManager();
+      });
+      loadCategories().catch(() => {});
       loadOfficeCards();
       syncServerCards(false);
     }
@@ -1394,10 +1527,14 @@ window.AOResets = (() => {
     // Repeating timers are advanced by the server once Pushcut has taken the
     // notification, so the page has to come back and look rather than assume
     // its own copy is the current one.
-    if (!state.syncTimer) state.syncTimer = setInterval(() => syncServerCards(false), SYNC_MS);
+    if (!state.syncTimer) state.syncTimer = setInterval(() => {
+      syncServerCards(false);
+      if (el('rst-categories-modal').hidden && !state.openId && !isFormOpen()) loadCategories().catch(() => {});
+    }, SYNC_MS);
   }
 
   return {
+    openCategories, closeCategories, addCategory, saveCategories,
     init,
     mergeCardLists,
     normalizeCard,

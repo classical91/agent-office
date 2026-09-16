@@ -8,7 +8,7 @@
 <meta http-equiv="Expires" content="0"/>
 <title>Countdowns - Agent Office</title>
 <link rel="stylesheet" href="shared.css?v=calendar-focus-planning-20260908"/>
-<link rel="stylesheet" href="resets.css?v=countdown-categories-20260916"/>
+<link rel="stylesheet" href="resets.css?v=manage-categories-20260916"/>
 <!-- Restores the saved theme, sidebar state and focus mode before first paint,
      so no page flashes the default accent, a full-width sidebar, or the chrome
      of a page that opens in Focus Mode. ACCENTS mirrors THEMES in
@@ -176,6 +176,7 @@
                   onchange="AOResets.setCategoryFilter(this.value)"></select>
         </div>
         <div class="rst-spacer"></div>
+        <button type="button" class="ao-btn" onclick="AOResets.openCategories()">Manage categories</button>
         <span class="rst-count" id="rst-count"></span>
       </div>
 
@@ -228,6 +229,20 @@
     <div class="ao-modal-actions rst-happy-modal-actions">
       <button class="ao-btn ao-btn--primary" data-action="close-happy-hour"
               onclick="AOResets.closeHappyHour()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="rst-categories-modal" class="ao-modal" hidden onclick="if (event.target === this) AOResets.closeCategories()">
+  <div class="ao-modal-sheet rst-modal-sheet" role="dialog" aria-modal="true" aria-labelledby="rst-categories-title">
+    <h2 class="ao-modal-title" id="rst-categories-title">Manage categories</h2>
+    <p class="ao-modal-desc">Add or rename categories below. Deleted categories move their countdowns to Uncategorized when you save.</p>
+    <div id="rst-category-rows" class="rst-category-rows"></div>
+    <button type="button" class="ao-btn" id="rst-categories-add" onclick="AOResets.addCategory()">+ Add category</button>
+    <p id="rst-categories-error" role="status" aria-live="polite"></p>
+    <div class="ao-modal-actions">
+      <button type="button" class="ao-btn" onclick="AOResets.closeCategories()">Cancel</button>
+      <button type="button" class="ao-btn ao-btn--primary" id="rst-categories-save" onclick="AOResets.saveCategories()">Save categories</button>
     </div>
   </div>
 </div>
@@ -289,7 +304,7 @@
 <script src="app-shared.js?v=calendar-focus-planning-20260908"></script>
 <!-- The Happy Hour schedule, shared with the server. Must load before resets.js. -->
 <script src="happy-hour.js?v=happy-hour-shared-20260910"></script>
-<script src="resets.js?v=countdown-categories-20260916"></script>
+<script src="resets.js?v=manage-categories-20260916"></script>
 <script>
 switchView('resets', document.querySelector('.nav-item.active'));
 </script>

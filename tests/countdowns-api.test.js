@@ -88,6 +88,28 @@ async function listCountdowns(server, query = '') {
   return response.json();
 }
 
+test('category registry requires login, persists edits and rejects stale saves', async t => {
+  const server = await startServer();
+  t.after(() => stop(server));
+  assert.equal((await fetch(`${server.origin}/api/countdown-categories`)).status, 401);
+  const initial = await (await call(server, '/api/countdown-categories')).json();
+  assert.equal(initial.items, null);
+  const write = (items, previous) => call(server, '/api/countdown-categories', {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items, previous }),
+  });
+  const first = [{ id: 'custom-house', label: 'House', deleted: false }];
+  assert.equal((await write(first, null)).status, 200);
+  assert.deepEqual((await (await call(server, '/api/countdown-categories')).json()).items, first);
+  const renamed = [{ ...first[0], label: 'Home bills' }];
+  assert.equal((await write(renamed, first)).status, 200);
+  assert.equal((await write(first, first)).status, 409);
+  assert.equal((await write([{ ...renamed[0], label: '' }], renamed)).status, 400);
+  const deleted = [{ ...renamed[0], deleted: true }];
+  assert.equal((await write(deleted, renamed)).status, 200);
+  assert.deepEqual((await (await call(server, '/api/countdown-categories')).json()).items, deleted);
+});
+
 function inHours(count) {
   return new Date(Date.now() + count * 3600000).toISOString();
 }

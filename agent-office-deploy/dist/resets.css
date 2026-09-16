@@ -9,6 +9,12 @@
 
 .rst-view { --ao-page-max: 900px; }
 
+.rst-category-rows { display: grid; gap: 10px; margin-bottom: 16px; }
+.rst-category-row { display: flex; gap: 8px; align-items: center; }
+.rst-category-row .ao-input { flex: 1; min-width: 0; }
+#rst-categories-modal .ao-modal-sheet { max-height: 90dvh; overflow-y: auto; }
+#rst-categories-error { color: var(--red); }
+
 /* ─── Toolbar ─────────────────────────────────────────────────────────── */
 
 .rst-toolbar { gap: var(--space-3); flex-wrap: wrap; }
