@@ -6,10 +6,9 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
-<script>window.location.replace('/resets.html');</script>
 <title>Countdowns - Agent Office</title>
 <link rel="stylesheet" href="shared.css?v=calendar-focus-planning-20260908"/>
-<link rel="stylesheet" href="countdowns.css?v=template-v2-followup-20260809"/>
+<link rel="stylesheet" href="resets.css?v=countdown-categories-20260916"/>
 <!-- Restores the saved theme, sidebar state and focus mode before first paint,
      so no page flashes the default accent, a full-width sidebar, or the chrome
      of a page that opens in Focus Mode. ACCENTS mirrors THEMES in
@@ -97,7 +96,7 @@
             <a class="nav-item" href="/mission-board.html?view=ios" data-icon="&#9200;"><span class="nav-item-label">Reminders</span></a>
             <a class="nav-item" href="/planning.html" data-icon="&#9989;"><span class="nav-item-label">Planning Mode</span></a>
             <a class="nav-item" href="/streaks.html" data-icon="&#128293;"><span class="nav-item-label">Streaks</span></a>
-            <a class="nav-item" href="/resets.html" data-icon="&#8987;"><span class="nav-item-label">Countdown Timers</span></a>
+            <a class="nav-item" href="/countdowns.html" data-icon="&#8987;"><span class="nav-item-label">Countdowns</span></a>
           </div>
         </div>
         <!-- Calendar is a workspace, not one more link in a list of fifteen:
@@ -138,33 +137,66 @@
 
   </nav>
 
-  <div class="view view--scroll ao-scroll" id="view-countdowns">
-    <section class="ao-page cd-view">
+  <div class="view view--scroll ao-scroll" id="view-resets">
+    <section class="ao-page rst-view">
 
-      <div class="ao-page-heading">
-        <div class="ao-eyebrow">⏳ COUNTDOWNS</div>
-        <div class="ao-page-sub">
-          Everything with a clock on it, in one place — deadlines, goals, work shifts, weekly routines
-          and trading dates, alongside what is next on the calendar. Each card carries the time left
-          and the next action, so the answer to "what now" is on the card rather than in your head.
+      <div class="ao-page-head">
+        <div class="ao-page-heading">
+          <div class="rst-eyebrow-row">
+            <div class="ao-eyebrow">&#9203; COUNTDOWNS</div>
+            <button type="button" class="rst-happy-shortcut" id="rst-happy-shortcut" hidden
+                    aria-haspopup="dialog" aria-controls="rst-happy-modal"
+                    onclick="AOResets.openHappyHour(this)">
+              <span class="rst-happy-shortcut-icon" aria-hidden="true">&#127869;&#65039;</span>
+              <span class="rst-happy-shortcut-copy">
+                <span class="rst-happy-shortcut-meal" data-role="happy-shortcut-meal"></span>
+                <span class="rst-happy-shortcut-time" data-role="happy-shortcut-time"></span>
+              </span>
+            </button>
+          </div>
+          <div class="ao-page-title">Countdowns</div>
+          <div class="ao-page-sub">
+            All countdowns in one place: shared Agent Office deadlines plus usage windows, backups and
+            recurring routines. The list opens on the ones ticked for Pushcut &mdash; switch
+            <strong>Show</strong> to &ldquo;All timers&rdquo; for the rest. Personal timers are backed up to the
+            Agent Office database after you unlock the office; the browser keeps an offline copy.
+          </div>
+        </div>
+        <div class="ao-page-actions">
+          <button class="ao-btn ao-btn--primary" onclick="AOResets.openForm()">+ New Countdown</button>
         </div>
       </div>
 
-      <!-- The same tiles as the office's operations summary: a count of things
-           that need you is a count of things that need you, wherever it is. -->
-      <div class="ops-summary cd-summary" id="cd-summary" aria-label="Countdown summary"></div>
-
-      <div class="cd-banner" id="cd-banner" hidden></div>
-
-      <div class="ao-toolbar cd-toolbar">
-        <select class="ao-select cd-select" id="cd-filter-category" onchange="AOCountdowns.setCategoryFilter(this.value)" aria-label="Filter by category"></select>
-        <button class="ao-btn" id="cd-toggle-events" onclick="AOCountdowns.toggleEvents()">Hide calendar events</button>
-        <div class="spacer"></div>
-        <button class="ao-btn" onclick="AOCountdowns.refresh()">Refresh</button>
-        <button class="ao-btn ao-btn--primary" onclick="AOCountdowns.openForm('')">+ New countdown</button>
+      <div class="ao-toolbar rst-toolbar">
+        <div class="rst-control">
+          <label class="ao-label" for="rst-sort">Sort</label>
+          <select class="ao-select rst-select" id="rst-sort" aria-label="Sort countdowns"
+                  onchange="AOResets.setSort(this.value)"></select>
+        </div>
+        <div class="rst-control">
+          <label class="ao-label" for="rst-filter">Show</label>
+          <select class="ao-select rst-select" id="rst-filter" aria-label="Filter countdowns"
+                  onchange="AOResets.setFilter(this.value)"></select>
+        </div>
+        <div class="rst-control">
+          <label class="ao-label" for="rst-category-filter">Category</label>
+          <select class="ao-select rst-select" id="rst-category-filter" aria-label="Filter countdowns by category"
+                  onchange="AOResets.setCategoryFilter(this.value)"></select>
+        </div>
+        <div class="rst-spacer"></div>
+        <span class="rst-count" id="rst-count"></span>
       </div>
 
-      <div id="cd-sections"></div>
+      <main class="rst-list" id="reset-cards"></main>
+
+      <div class="rst-empty" id="rst-empty" hidden>
+        <div class="rst-empty-art" aria-hidden="true">&#9200;</div>
+        <div class="rst-empty-title" data-role="empty-title">No countdowns yet</div>
+        <div class="rst-empty-body" data-role="empty-body">Create your first countdown and it will show up here, ticking.</div>
+        <button class="ao-btn ao-btn--primary" data-role="empty-new" onclick="AOResets.openForm()">+ New Countdown</button>
+      </div>
+
+      <div class="rst-footnote">All times are in your local timezone.</div>
 
     </section>
   </div>
@@ -179,62 +211,82 @@
 
 </div>
 
-<!-- ADD / EDIT -->
-<div id="cd-modal" class="cd-modal-backdrop" onclick="if (event.target === this) AOCountdowns.closeForm()">
-  <div class="cd-modal">
-    <div class="cd-modal-title" id="cd-modal-title">New countdown</div>
-
-    <div class="cd-field">
-      <label class="cd-label" for="cd-form-title-input">What are you counting down to?</label>
-      <input type="text" class="cd-input" id="cd-form-title-input" placeholder="e.g. Instagram download review" maxlength="160" />
+<!-- HAPPY HOUR DETAILS -->
+<div id="rst-happy-modal" class="ao-modal rst-happy-modal" hidden
+     onclick="if (event.target === this) AOResets.closeHappyHour()">
+  <div class="ao-modal-sheet rst-happy-modal-sheet" role="dialog" aria-modal="true"
+       aria-labelledby="rst-happy-modal-title">
+    <div class="rst-happy-modal-head">
+      <span class="rst-icon" aria-hidden="true">&#127869;&#65039;</span>
+      <div class="rst-happy-modal-heading">
+        <div class="rst-happy-kicker" data-role="happy-day">Happy Hour Today</div>
+        <div class="rst-happy-offer" id="rst-happy-modal-title" data-role="happy-offer"></div>
+      </div>
     </div>
+    <div class="rst-happy-modal-time" data-role="happy-modal-time"></div>
 
-    <div class="cd-field">
-      <label class="cd-label" for="cd-form-target">Date and time</label>
-      <input type="datetime-local" class="cd-input" id="cd-form-target" />
-    </div>
+    <dl class="rst-happy-facts">
+      <div class="rst-happy-fact"><dt>Day</dt><dd data-role="happy-weekday"></dd></div>
+      <div class="rst-happy-fact"><dt>Hours</dt><dd>3:00&ndash;6:00 PM</dd></div>
+      <div class="rst-happy-fact"><dt>Heads-up</dt><dd>Begins at 2:30 PM</dd></div>
+      <div class="rst-happy-fact"><dt>Required</dt><dd>More Rewards card</dd></div>
+      <div class="rst-happy-fact"><dt>Availability</dt><dd>While quantities last</dd></div>
+    </dl>
 
-    <div class="cd-field">
-      <label class="cd-label">Category</label>
-      <div class="cd-picker" id="cd-form-category"></div>
-    </div>
-
-    <div class="cd-field">
-      <label class="cd-label">Repeats</label>
-      <div class="cd-picker" id="cd-form-repeat"></div>
-      <div class="cd-card-notes" id="cd-form-hint"></div>
-    </div>
-
-    <div class="cd-field">
-      <label class="cd-label" for="cd-form-action">Next action</label>
-      <input type="text" class="cd-input" id="cd-form-action" placeholder="The one thing to do about it next" maxlength="300" />
-    </div>
-
-    <div class="cd-field">
-      <label class="cd-label" for="cd-form-notes">Notes (optional)</label>
-      <input type="text" class="cd-input" id="cd-form-notes" placeholder="Anything else worth remembering" maxlength="600" />
-    </div>
-
-    <div class="ao-modal-error" id="cd-form-error" hidden></div>
-
-    <div class="cd-modal-actions">
-      <button class="ao-btn" onclick="AOCountdowns.closeForm()">Cancel</button>
-      <button class="ao-btn ao-btn--primary" id="cd-form-save" onclick="AOCountdowns.save()">Add countdown</button>
+    <div class="ao-modal-actions rst-happy-modal-actions">
+      <button class="ao-btn ao-btn--primary" data-action="close-happy-hour"
+              onclick="AOResets.closeHappyHour()">Close</button>
     </div>
   </div>
 </div>
 
-<!-- PASSPHRASE MODAL -->
-<div id="passphrase-modal" class="ao-modal" hidden>
-  <div class="ao-modal-sheet" role="dialog" aria-modal="true" aria-labelledby="passphrase-title">
-    <div class="ao-modal-title" id="passphrase-title">🔒 Unlock Countdowns</div>
-    <div class="ao-modal-desc">Adding and editing countdowns sits behind the same passphrase as the Dropbox.</div>
-    <input id="passphrase-input" class="ao-input" type="password" placeholder="Passphrase..."
-      autocomplete="current-password" autocorrect="off" autocapitalize="none" spellcheck="false"/>
-    <div id="passphrase-error" class="ao-modal-error" hidden></div>
+<!-- ADD COUNTDOWN -->
+<div id="rst-modal" class="ao-modal" hidden onclick="if (event.target === this) AOResets.closeForm()">
+  <div class="ao-modal-sheet rst-modal-sheet" role="dialog" aria-modal="true" aria-labelledby="rst-modal-title">
+    <div class="ao-modal-title" id="rst-modal-title">Add New Countdown</div>
+    <div class="ao-modal-desc">Name it, say when it lands, and point it at a Pushcut webhook if you want a nudge.</div>
+
+    <div class="ao-field">
+      <label class="ao-label" for="rst-new-title">Countdown name</label>
+      <input class="ao-input" id="rst-new-title" maxlength="160" placeholder="e.g. Gemini API Reset" />
+    </div>
+
+    <div class="rst-field-row">
+      <div class="ao-field">
+        <label class="ao-label" for="rst-new-date">Reset date</label>
+        <input class="ao-input" id="rst-new-date" type="date" />
+      </div>
+      <div class="ao-field">
+        <label class="ao-label" for="rst-new-time">Time</label>
+        <input class="ao-input" id="rst-new-time" type="time" />
+      </div>
+    </div>
+
+    <div class="ao-field">
+      <label class="ao-label" for="rst-new-repeat">Repeats</label>
+      <select class="ao-select" id="rst-new-repeat"></select>
+    </div>
+
+    <div class="ao-field">
+      <label class="ao-label" for="rst-new-category">Category</label>
+      <select class="ao-select" id="rst-new-category"></select>
+    </div>
+
+    <label class="rst-check">
+      <input type="checkbox" id="rst-new-pushcut" checked />
+      <span>Pushcut &mdash; keep this one in the Pushcut list</span>
+    </label>
+
+    <div class="ao-field">
+      <label class="ao-label" for="rst-new-webhook">Pushcut webhook (optional)</label>
+      <input class="ao-input" id="rst-new-webhook" inputmode="url" placeholder="https://api.pushcut.io/..." />
+    </div>
+
+    <div class="ao-modal-error" id="rst-form-error" hidden></div>
+
     <div class="ao-modal-actions">
-      <button id="passphrase-cancel" class="ao-btn">Cancel</button>
-      <button id="passphrase-submit" class="ao-btn ao-btn--primary">Unlock</button>
+      <button class="ao-btn" onclick="AOResets.closeForm()">Cancel</button>
+      <button class="ao-btn ao-btn--primary" onclick="AOResets.addFromForm()">Add Countdown</button>
     </div>
   </div>
 </div>
@@ -243,9 +295,11 @@
 <div class="statusbar" id="statusbar"></div>
 
 <script src="app-shared.js?v=calendar-focus-planning-20260908"></script>
-<script src="countdowns-page.js?v=countdowns-20260809"></script>
+<!-- The Happy Hour schedule, shared with the server. Must load before resets.js. -->
+<script src="happy-hour.js?v=happy-hour-shared-20260910"></script>
+<script src="resets.js?v=countdown-categories-20260916"></script>
 <script>
-switchView('countdowns', document.querySelector('.nav-item.active'));
+switchView('resets', document.querySelector('.nav-item.active'));
 </script>
 
 </body>

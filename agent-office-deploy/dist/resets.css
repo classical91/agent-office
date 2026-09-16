@@ -11,12 +11,21 @@
 
 /* ─── Toolbar ─────────────────────────────────────────────────────────── */
 
-.rst-toolbar { gap: var(--space-3); }
+.rst-toolbar { gap: var(--space-3); flex-wrap: wrap; }
 .rst-control { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
 .rst-control .ao-label { margin: 0; white-space: nowrap; }
 .rst-select { width: auto; min-width: 170px; height: var(--control-h); font-size: var(--fs-md); }
 .rst-spacer { flex: 1 1 auto; }
 .rst-count { font-size: var(--fs-sm); color: var(--text-dim); white-space: nowrap; }
+
+.rst-category {
+  width: fit-content;
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
 
 /* ─── The list ────────────────────────────────────────────────────────── */
 

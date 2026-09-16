@@ -250,7 +250,7 @@ All endpoints return JSON.
 | DELETE | `/api/countdowns/:id`             | Delete a countdown               |
 | GET    | `/api/countdowns/rollup`          | The top countdowns only, as JSON or `?format=text` |
 | GET    | `/api/happy-hour`                 | Today's Happy Hour deal, phase and countdown (open) |
-| GET    | `/api/widgets/today`              | Today's countdowns and the next one, for the Daily Dashboard (open) |
+| GET    | `/api/widgets/today`              | Today's countdowns and the next one, for the Daily Dashboard (machine token) |
 | POST   | `/api/visits/track`               | Record a page view or a still-here ping (public) |
 | GET    | `/api/visits/summary`             | Live visitors, totals, top pages and referrers |
 | DELETE | `/api/visits`                     | Delete every recorded page view  |
@@ -394,6 +394,11 @@ read `/api/countdowns` to get that — this page's entire payload, every bucket,
 notes and all — which coupled a dashboard card to an internal API.
 
 `GET /api/widgets/today` answers the narrower question instead:
+
+This endpoint contains personal titles and next actions, so callers must use
+`SHORTCUTS_TOKEN` machine authentication. Main Hub sends it server-to-server;
+the token must never be exposed to dashboard browsers. `/api/happy-hour` stays
+public because it contains no personal information.
 
 ```json
 {
