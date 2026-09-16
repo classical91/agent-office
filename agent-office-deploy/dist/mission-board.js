@@ -37,6 +37,8 @@
     const view = document.getElementById('dropbox-view');
     const title = document.querySelector('#dropbox-view .dropbox-toolbar h2');
     if (title) title.textContent = view && view.classList.contains('ios-mode') ? 'Reminders' : 'Dropbox';
+    document.title = `${view?.classList.contains('ios-mode') ? 'Reminders' : 'Dropbox'} - Agent Office`;
+    if (view?.classList.contains('ios-mode')) document.getElementById('drop-search').placeholder = 'Search reminders…';
     const save = document.getElementById('save-drop-btn');
     if (save) save.textContent = 'Save Note';
     const newBtn = document.getElementById('new-drop-btn');
@@ -127,13 +129,14 @@
     const iosMode = Boolean(document.getElementById('dropbox-view')?.classList.contains('ios-mode'));
     if (filters.search) {
       const q = filters.search.toLowerCase();
-      items = items.filter(drop => [drop.title, drop.subject, drop.project, drop.agent, drop.content, ...(drop.tags || []), ...(drop.links || [])].join(' ').toLowerCase().includes(q));
+      items = items.filter(drop => [drop.title, iosMode ? ReminderCategories.label(drop) : drop.subject, drop.project, drop.agent, drop.content, ...(drop.tags || []), ...(drop.links || [])].join(' ').toLowerCase().includes(q));
     }
-    if (filters.subject) items = items.filter(drop => (drop.subject || '') === filters.subject);
-    if (filters.status) items = items.filter(drop => (drop.status || '') === filters.status);
-    if (filters.project) items = items.filter(drop => (drop.project || '') === filters.project);
+    if (filters.subject) items = items.filter(drop => (iosMode ? ReminderCategories.key(drop) : (drop.subject || '')) === filters.subject);
+    if (!iosMode && filters.status) items = items.filter(drop => (drop.status || '') === filters.status);
+    if (iosMode) items = items.filter(drop => drop.project === 'iOS');
+    else if (filters.project) items = items.filter(drop => (drop.project || '') === filters.project);
     else items = items.filter(drop => iosMode ? (drop.project || '') === 'iOS' : (drop.project || '') !== 'iOS');
-    if (filters.agent) items = items.filter(drop => (drop.agent || '') === filters.agent);
+    if (!iosMode && filters.agent) items = items.filter(drop => (drop.agent || '') === filters.agent);
     items = applyDropboxFolderFilter(items);
     items = applyReminderFilter(items, filters.reminder);
     items.sort((a, b) => {
@@ -211,27 +214,39 @@
     section.style.cssText = 'width:100%;max-width:720px;margin:0 auto;padding:24px 20px 60px;box-sizing:border-box;';
     section.innerHTML = `
       <div class="drop-detail">
-        <button type="button" id="mission-detail-back" class="drop-detail-back">← All tasks</button>
+        <button type="button" id="mission-detail-back" class="drop-detail-back">← ${iosMode ? 'All reminders' : 'All tasks'}</button>
         <div class="drop-detail-header">
           <h2 class="drop-detail-title">${escHTML(drop.title || 'Untitled task')}</h2>
           <div class="drop-detail-meta-row">
             <span>${dropFormatDate(drop.updated_at || drop.date)}</span>
             <span class="sep">·</span>
-            ${dropBadge(statusLabel(drop.status), 'status')}
+            ${iosMode ? dropBadge(ReminderCategories.label(drop), 'subject') + dropReminderBadge(drop) : dropBadge(statusLabel(drop.status), 'status')}
             ${iosMode || !drop.subject ? '' : dropBadge(drop.subject, 'subject')}
-            <span>${escHTML(drop.project || 'No project')} / ${escHTML(agentLabel(drop.agent))}</span>
+            ${iosMode ? '' : `<span>${escHTML(drop.project || 'No project')} / ${escHTML(agentLabel(drop.agent))}</span>`}
           </div>
         </div>
         <button type="button" id="mission-detail-edit" class="btn btn-secondary mission-edit-toggle">Edit</button>
         <div id="mission-detail-edit-fields" class="mission-edit-fields is-collapsed">
-          <h4>Move Task</h4>
-          ${selectHtml('mission-detail-status', drop.status || 'idea', STATUSES)}
+          ${iosMode ? `<div class="reminder-edit-fields">
+            <label for="mission-reminder-title">Title</label>
+            <input id="mission-reminder-title" maxlength="200" value="${escAttr(drop.title || '')}">
+            <label for="mission-reminder-content">Reminder</label>
+            <textarea id="mission-reminder-content" rows="4">${escHTML(drop.content || '')}</textarea>
+            <label for="mission-reminder-category">Category</label>
+            ${selectHtml('mission-reminder-category', ReminderCategories.key(drop), ReminderCategories.options())}
+            <button type="button" id="mission-reminder-manage" class="btn btn-secondary">Manage categories</button>
+            <label for="mission-reminder-when">Remind me</label>
+            <input id="mission-reminder-when" value="${escAttr(drop.remind_at || '')}" placeholder="tomorrow 9am, in 2h, or leave empty">
+            <p>Leave the time empty to remove the reminder time.</p>
+            <p id="mission-reminder-error" class="reminder-category-error" role="status"></p>
+            <button type="button" id="mission-reminder-save" class="btn btn-primary">Save reminder</button>
+          </div>` : `<h4>Move Task</h4>${selectHtml('mission-detail-status', drop.status || 'idea', STATUSES)}`}
         </div>
         <div class="drop-detail-content">${escHTML(drop.content || '')}</div>
         ${(drop.tags || []).length ? `<div class="drop-detail-section-label">Tags</div><div class="detail-tags">${drop.tags.map(t => dropBadge(t, 'tag')).join(' ')}</div>` : ''}
         <p><strong>Created:</strong> ${dropFormatDate(drop.date)}</p>
         <div class="detail-actions">
-          <button id="mission-done-btn" class="btn btn-primary">Mark Done</button>
+          <button id="mission-done-btn" class="btn btn-primary">${iosMode && drop.done ? 'Mark incomplete' : 'Mark Done'}</button>
           <button id="mission-archive-btn" class="btn btn-secondary">Archive</button>
           <button id="delete-drop-btn" class="btn btn-danger">Delete</button>
         </div>
@@ -252,11 +267,27 @@
       const open = fields.classList.toggle('is-collapsed') === false;
       editToggle.textContent = open ? 'Done editing' : 'Edit';
     });
-    document.getElementById('mission-detail-status').addEventListener('change', e => patchDrop(drop.id, { status: e.target.value }));
-    document.getElementById('mission-done-btn').addEventListener('click', () => patchDrop(drop.id, { status: 'done' }));
-    document.getElementById('mission-archive-btn').addEventListener('click', () => patchDrop(drop.id, { status: 'archived' }));
+    const update = patch => patchDrop(drop.id, patch).catch(error => handleDropboxRequestError(error, 'Could not save changes.'));
+    document.getElementById('mission-detail-status')?.addEventListener('change', e => update({ status: e.target.value }));
+    document.getElementById('mission-reminder-manage')?.addEventListener('click', () => ReminderCategories.open());
+    document.getElementById('mission-reminder-save')?.addEventListener('click', async event => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      try {
+        await patchDrop(drop.id, {
+          title: document.getElementById('mission-reminder-title').value,
+          content: document.getElementById('mission-reminder-content').value,
+          category: document.getElementById('mission-reminder-category').value,
+          remind_at: document.getElementById('mission-reminder-when').value.trim(),
+        });
+      } catch (error) {
+        document.getElementById('mission-reminder-error').textContent = error.message;
+      } finally { button.disabled = false; }
+    });
+    document.getElementById('mission-done-btn').addEventListener('click', () => update({ status: iosMode && drop.done ? 'inbox' : 'done' }));
+    document.getElementById('mission-archive-btn').addEventListener('click', () => update({ status: 'archived' }));
     document.getElementById('delete-drop-btn').addEventListener('click', async () => {
-      if (!confirm('Delete this task?')) return;
+      if (!confirm(iosMode ? 'Delete this reminder?' : 'Delete this task?')) return;
       try {
         await requestJson(`${DROPS_API}/${drop.id}`, { method: 'DELETE' });
         dropboxState.selectedId = null;
@@ -280,7 +311,8 @@
     const baseRender = renderDropbox;
     window.renderDropbox = renderDropbox = function () {
       ensureMissionControls();
-      populateSubjectFilter();
+      if (document.getElementById('dropbox-view')?.classList.contains('ios-mode')) ReminderCategories.refresh();
+      else populateSubjectFilter();
       populateProjectFilter();
       syncDropboxChrome();
       // The folder wall comes before any of the three note views: nothing is

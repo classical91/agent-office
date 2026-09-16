@@ -110,6 +110,42 @@ test('category registry requires login, persists edits and rejects stale saves',
   assert.deepEqual((await (await call(server, '/api/countdown-categories')).json()).items, deleted);
 });
 
+test('reminder categories are private and independent; reminder edits preserve task status', async t => {
+  const server = await startServer();
+  t.after(() => stop(server));
+  assert.equal((await fetch(`${server.origin}/api/reminder-categories`)).status, 401);
+  const write = (items, previous) => call(server, '/api/reminder-categories', {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items, previous }),
+  });
+  const first = [{ id: 'Existing category', label: 'Work', deleted: false }];
+  assert.equal((await write(first, null)).status, 200);
+  const changed = [{ ...first[0], label: 'Office' }];
+  assert.equal((await write(changed, first)).status, 200);
+  assert.equal((await write(first, first)).status, 409);
+  assert.equal((await write([{ ...first[0], label: '' }], changed)).status, 400);
+  assert.equal((await (await call(server, '/api/countdown-categories')).json()).items, null);
+  const created = await call(server, '/api/drops', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: 'Pay bill', content: 'Pay bill', project: 'iOS', category: 'Existing category', status: 'inbox', priority: 'normal' }),
+  });
+  assert.equal(created.status, 201);
+  const drop = await created.json();
+  const patch = body => call(server, `/api/drops/${drop.id}`, {
+    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  const updated = await (await patch({ category: 'Existing category', remind_at: 'in 2h', content: 'Updated bill', title: 'Updated bill' })).json();
+  assert.equal(updated.status, 'inbox');
+  assert.equal(updated.content, 'Updated bill');
+  assert.ok(updated.remind_at);
+  assert.equal((await patch({ remind_at: 'not a time' })).status, 400);
+  assert.equal((await (await patch({ remind_at: '' })).json()).remind_at, '');
+  const deleted = [{ ...changed[0], deleted: true }];
+  assert.equal((await write(deleted, changed)).status, 200);
+  assert.deepEqual((await (await call(server, '/api/reminder-categories')).json()).items, deleted);
+  assert.equal((await (await call(server, '/api/drops')).json()).length, 1, 'deleting a category keeps its reminder');
+});
+
 function inHours(count) {
   return new Date(Date.now() + count * 3600000).toISOString();
 }
