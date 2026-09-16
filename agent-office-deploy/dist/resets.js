@@ -731,11 +731,9 @@ window.AOResets = (() => {
 
   function sortedViews() {
     const sort = SORTS[state.sort] || SORTS.soonest;
-    const filter = FILTERS[state.filter] || FILTERS.all;
     const categoryFilter = CATEGORY_FILTERS[state.categoryFilter] || CATEGORY_FILTERS.all;
     return liveCards()
       .map(viewOf)
-      .filter(filter.keep)
       .filter(categoryFilter.keep)
       .sort((a, b) => {
         // Finished timers sink under the live ones for the two time-based
@@ -909,7 +907,7 @@ window.AOResets = (() => {
       empty.querySelector('[data-role="empty-body"]').textContent =
         nothingAtAll
           ? 'Create your first countdown and it will show up here, ticking.'
-          : 'Try "All timers" to see the rest of the list.';
+          : 'Choose "All categories" to see the rest of the list.';
       empty.querySelector('[data-role="empty-new"]').hidden = !nothingAtAll;
     }
 
