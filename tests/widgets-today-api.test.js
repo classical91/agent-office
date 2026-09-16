@@ -21,6 +21,7 @@ const SERVER_PATH = path.join(DIST, 'server.js');
 const countdowns = require(path.join(DIST, 'countdowns.js'));
 
 const PASSPHRASE = 'open-the-widgets';
+const SHORTCUTS_TOKEN = 'widgets-machine-token-1234567890';
 
 // ─── The pure selection ──────────────────────────────────────────────────────
 
@@ -202,6 +203,7 @@ async function startServer() {
       STREAK_DAYS_FILE: path.join(scratch, 'streak-days.json'),
       COUNTDOWNS_FILE: path.join(scratch, 'countdowns.json'),
       DROPS_PASSPHRASE: PASSPHRASE,
+      SHORTCUTS_TOKEN,
     };
     ['DATABASE_URL', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'DROPS_PASSPHRASE_HASH']
       .forEach(key => { delete environment[key]; });
@@ -227,11 +229,21 @@ async function unlock(origin) {
   return String(response.headers.get('set-cookie') || '').split(';')[0];
 }
 
-test('GET /api/widgets/today answers, and answers without a session', async t => {
+test('GET /api/widgets/today rejects anonymous access', async t => {
   const server = await startServer();
   t.after(() => stop(server));
 
   const response = await fetch(`${server.origin}/api/widgets/today`);
+  assert.equal(response.status, 401);
+});
+
+test('GET /api/widgets/today answers with correct machine auth', async t => {
+  const server = await startServer();
+  t.after(() => stop(server));
+
+  const response = await fetch(`${server.origin}/api/widgets/today`, {
+    headers: { Authorization: `Bearer ${SHORTCUTS_TOKEN}` },
+  });
   assert.equal(response.status, 200);
 
   const payload = await response.json();
@@ -263,7 +275,9 @@ test('a countdown created today shows up as next up', async t => {
   });
   assert.equal(created.status, 201);
 
-  const response = await fetch(`${server.origin}/api/widgets/today`);
+  const response = await fetch(`${server.origin}/api/widgets/today`, {
+    headers: { Authorization: `Bearer ${SHORTCUTS_TOKEN}` },
+  });
   const payload = await response.json();
 
   assert.equal(payload.next.title, 'Rent due');
@@ -271,7 +285,9 @@ test('a countdown created today shows up as next up', async t => {
   assert.ok(payload.total >= 1);
 
   // The note was stored, and did not travel.
-  const body = await (await fetch(`${server.origin}/api/widgets/today`)).text();
+  const body = await (await fetch(`${server.origin}/api/widgets/today`, {
+    headers: { Authorization: `Bearer ${SHORTCUTS_TOKEN}` },
+  })).text();
   assert.equal(body.includes('PRIVATE NOTE'), false);
 });
 

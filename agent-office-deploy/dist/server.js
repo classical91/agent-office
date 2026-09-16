@@ -6558,12 +6558,15 @@ const server = http.createServer(async (req, res) => {
     // only the fields a row draws, so the page here can grow without moving
     // anything on the dashboard.
     //
-    // Open, like /api/countdowns: reading countdowns has never needed a session.
+    // This projection includes personal titles and next actions. It is consumed
+    // server-to-server by Main Hub, so reuse the existing machine token rather
+    // than exposing it as an anonymous read.
     if (pathname === '/api/widgets/today') {
       if (req.method !== 'GET' && req.method !== 'HEAD') {
         sendJson(res, 405, { error: 'Only GET is supported for the today widget.' });
         return;
       }
+      if (!requireShortcutsAuth(req, res, parsedUrl)) return;
 
       const now = new Date();
       const payload = await buildCountdownsPayload({ now });
