@@ -3011,7 +3011,9 @@ function renderDropTable() {
   const iosMode = Boolean(document.getElementById('dropbox-view')?.classList.contains('ios-mode'));
 
   if (!dropboxState.drops.length) {
-    wrap.innerHTML = '<div class="drop-empty"><div class="drop-empty-title">Dropbox is clear.</div><div class="drop-empty-copy">Save your first drop using the form above.</div></div>';
+    wrap.innerHTML = iosMode
+      ? '<div class="drop-empty"><div class="drop-empty-title">No reminders yet.</div><div class="drop-empty-copy">Choose New Reminder to add one.</div></div>'
+      : '<div class="drop-empty"><div class="drop-empty-title">Dropbox is clear.</div><div class="drop-empty-copy">Save your first drop using the form above.</div></div>';
     return;
   }
   if (!items.length) {
@@ -3038,7 +3040,7 @@ function renderDropTable() {
       <tbody>
         ${items.map(drop => `
           <tr data-drop-id="${escAttr(drop.id)}" class="${drop.id === dropboxState.selectedId ? 'selected' : ''}">
-            <td>${escHTML(drop.title || 'Untitled drop')}</td>
+            <td>${escHTML(drop.title || 'Untitled drop')}${iosMode && window.ReminderCategories ? `<div>${dropBadge(ReminderCategories.label(drop), 'subject')}</div>` : ''}</td>
             ${iosMode
               ? `<td class="col-reminder">${dropReminderBadge(drop)}</td>`
               : showSubject ? `<td class="col-subject">${dropBadge(drop.subject, 'subject')}</td>` : ''}
@@ -3081,7 +3083,7 @@ function renderDropCards() {
       ${preview ? `<p class="drop-card-preview">${escHTML(preview)}</p>` : ''}
       ${hasMeta ? `<div class="drop-card-meta">
         ${dropReminderBadge(drop)}
-        ${dropBadge(drop.status, 'status')}
+        ${iosMode && window.ReminderCategories ? dropBadge(ReminderCategories.label(drop), 'subject') : dropBadge(drop.status, 'status')}
         ${showSubject ? dropBadge(drop.subject, 'subject') : ''}
       </div>` : ''}
     </article>`;
@@ -3268,7 +3270,7 @@ async function saveReminder() {
       // reminder would be called "Reminder".
       title: (content.split('\n').find(Boolean) || content).slice(0, 120),
       subject: '',
-      category: 'Reminder',
+      category: document.getElementById('reminder-category')?.value || 'Reminder',
       project: 'iOS',
       status: 'inbox',
       priority: 'normal',

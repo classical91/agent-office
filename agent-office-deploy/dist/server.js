@@ -6656,9 +6656,10 @@ const server = http.createServer(async (req, res) => {
 
     // Private category registry. Deleted entries remain as tombstones so older
     // clients cannot bring a removed category back through a timer record.
-    if (pathname === '/api/countdown-categories') {
+    if (pathname === '/api/countdown-categories' || pathname === '/api/reminder-categories') {
       if (!requireDropsAuth(res, req)) return;
-      const key = 'countdown-categories.v1';
+      const reminders = pathname === '/api/reminder-categories';
+      const key = reminders ? 'reminder-categories.v1' : 'countdown-categories.v1';
       if (req.method === 'GET') {
         const saved = await storage.getAppSetting(key);
         sendJson(res, 200, { items: saved ? JSON.parse(saved) : null });
@@ -6668,7 +6669,9 @@ const server = http.createServer(async (req, res) => {
         const body = await readJsonBody(req);
         const items = body.items;
         if (!Array.isArray(items) || items.length > 200 || items.some(item =>
-          !item || typeof item.id !== 'string' || !/^[a-z0-9][a-z0-9-]{0,79}$/.test(item.id)
+          !item || typeof item.id !== 'string' || !(reminders
+            ? item.id.trim() === item.id && item.id.length > 0 && item.id.length <= 100 && !/[\u0000-\u001f]/.test(item.id)
+            : /^[a-z0-9][a-z0-9-]{0,79}$/.test(item.id))
           || ['all', 'uncategorized'].includes(item.id)
           || typeof item.label !== 'string' || !item.label.trim() || item.label.trim().length > 60
           || typeof item.deleted !== 'boolean')

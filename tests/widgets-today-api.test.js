@@ -260,7 +260,9 @@ test('a countdown created today shows up as next up', async t => {
 
   const cookie = await unlock(server.origin);
   const target = new Date();
-  target.setHours(target.getHours() + 2);
+  // This server uses UTC. Keep the fixture on today even in late-night CI;
+  // adding two hours can put it in tomorrow's bucket, whose today total is 0.
+  target.setUTCHours(12, 0, 0, 0);
 
   const created = await fetch(`${server.origin}/api/countdowns`, {
     method: 'POST',

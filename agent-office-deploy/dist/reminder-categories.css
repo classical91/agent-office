@@ -1,0 +1,26 @@
+.reminder-category-dialog {
+  width: min(520px, calc(100vw - 32px));
+  max-height: 85dvh;
+  box-sizing: border-box;
+  overflow: auto;
+  background: var(--bg-panel, #17171c);
+  color: var(--text, #eee);
+  border: 1px solid var(--border, #45454b);
+  border-radius: 16px;
+  padding: 24px;
+}
+.reminder-category-dialog::backdrop { background: #000a; }
+.reminder-category-row { display: flex; gap: 8px; margin: 10px 0; }
+.reminder-category-row input { min-width: 0; flex: 1; }
+.reminder-category-dialog input, .reminder-edit-fields input,
+.reminder-edit-fields textarea, #reminder-category {
+  box-sizing: border-box; padding: 12px; border-radius: 8px;
+  background: var(--bg-input, #202027); color: inherit;
+  border: 1px solid var(--border, #45454b); font: inherit;
+}
+.reminder-edit-fields label { display: block; margin-top: 14px; }
+.reminder-edit-fields input, .reminder-edit-fields textarea,
+.reminder-edit-fields select { width: 100%; margin: 6px 0 12px; }
+.reminder-category-error { color: #ff9696; min-height: 1.5em; }
+.ios-mode #drop-filter-status, .ios-mode #drop-filter-project,
+.ios-mode #drop-filter-agent, .ios-mode #dropbox-view-board { display: none; }
