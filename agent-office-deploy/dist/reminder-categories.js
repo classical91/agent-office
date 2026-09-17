@@ -37,6 +37,20 @@
   function options() {
     return [['uncategorized', 'Uncategorized'], ...items().filter(item => !item.deleted).map(item => [item.id, item.label])];
   }
+  function filterOptions(reminders) {
+    const categories = items();
+    const deleted = new Set(categories.filter(item => item.deleted).map(item => item.id));
+    const counts = new Map();
+    let total = 0;
+    for (const drop of reminders) {
+      if (drop.project !== 'iOS') continue;
+      const raw = rawKey(drop);
+      const id = deleted.has(raw) ? 'uncategorized' : raw;
+      counts.set(id, (counts.get(id) || 0) + 1);
+      total += 1;
+    }
+    return [['', `All categories (${total})`], ...options().map(([id, name]) => [id, `${name} (${counts.get(id) || 0})`])];
+  }
   function fill(select, choices, selected) {
     select.innerHTML = choices.map(([id, name]) => `<option value="${escAttr(id)}">${escHTML(name)}</option>`).join('');
     select.value = choices.some(([id]) => id === selected) ? selected : choices[0][0];
@@ -50,7 +64,7 @@
     if (!ios()) return;
     const select = el('drop-filter-subject');
     select.setAttribute('aria-label', 'Filter reminders by category');
-    fill(select, [['', 'All categories'], ...options()], dropboxState.filters.subject);
+    fill(select, filterOptions(getFilteredDrops({ ignoreCategory: true })), dropboxState.filters.subject);
     dropboxState.filters.subject = select.value;
     if (!el('reminder-category-manage')) {
       const button = document.createElement('button');
@@ -163,5 +177,5 @@
       el('reminder-category-fields').disabled = false;
     }
   }
-  window.ReminderCategories = { refresh, key, label, options, open };
+  window.ReminderCategories = { refresh, key, label, options, filterOptions, open };
 })();
