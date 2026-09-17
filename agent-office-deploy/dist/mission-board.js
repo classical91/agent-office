@@ -123,7 +123,7 @@
     select.value = projects.includes(current) ? current : '';
   }
 
-  function filteredDrops() {
+  function filteredDrops({ ignoreCategory = false } = {}) {
     let items = [...dropboxState.drops];
     const filters = dropboxState.filters || {};
     const iosMode = Boolean(document.getElementById('dropbox-view')?.classList.contains('ios-mode'));
@@ -131,7 +131,7 @@
       const q = filters.search.toLowerCase();
       items = items.filter(drop => [drop.title, iosMode ? ReminderCategories.label(drop) : drop.subject, drop.project, drop.agent, drop.content, ...(drop.tags || []), ...(drop.links || [])].join(' ').toLowerCase().includes(q));
     }
-    if (filters.subject) items = items.filter(drop => (iosMode ? ReminderCategories.key(drop) : (drop.subject || '')) === filters.subject);
+    if (!ignoreCategory && filters.subject) items = items.filter(drop => (iosMode ? ReminderCategories.key(drop) : (drop.subject || '')) === filters.subject);
     if (!iosMode && filters.status) items = items.filter(drop => (drop.status || '') === filters.status);
     if (iosMode) items = items.filter(drop => drop.project === 'iOS');
     else if (filters.project) items = items.filter(drop => (drop.project || '') === filters.project);
