@@ -47,6 +47,7 @@ async function startServer(options = {}) {
       'RAILWAY_ENVIRONMENT_NAME',
       'RAILWAY_PROJECT_ID',
       'RAILWAY_SERVICE_ID',
+      'SESSION_SECRET',
     ].forEach(key => {
       delete environment[key];
     });
@@ -229,6 +230,53 @@ test('logging in sets a readable hint beside the HttpOnly session cookie', async
   assert.match(hint, /Path=\//);
 });
 
+test('Railway deployment markers make both session cookies Secure', async t => {
+  const server = await startServer({
+    env: {
+      DROPS_PASSPHRASE: PASSPHRASE,
+      RAILWAY_SERVICE_ID: 'svc-cookie-test',
+      SESSION_SECRET: 'office-auth-session-secret-at-least-32-characters',
+    },
+  });
+  t.after(() => server.child.kill());
+
+  const response = await login(server.origin, PASSPHRASE, '203.0.113.52');
+  assert.equal(response.status, 200);
+  const real = findCookie(response, 'agent_office_session');
+  const hint = findCookie(response, 'agent_office_signed_in');
+  assert.match(real, /(?:^|; )Secure(?:;|$)/);
+  assert.match(hint, /(?:^|; )Secure(?:;|$)/);
+});
+
+test('a session issued by one process works in another process', async t => {
+  const env = {
+    DROPS_PASSPHRASE: PASSPHRASE,
+    SESSION_SECRET: 'shared-office-session-secret-at-least-32-characters',
+  };
+  const first = await startServer({ env });
+  const second = await startServer({ env });
+  t.after(() => first.child.kill());
+  t.after(() => second.child.kill());
+
+  const loginResponse = await login(first.origin, PASSPHRASE, '203.0.113.53');
+  const cookie = findCookie(loginResponse, 'agent_office_session').split(';')[0];
+  const response = await fetch(`${second.origin}/api/config-files`, {
+    headers: { Cookie: cookie },
+  });
+  assert.equal(response.status, 200, 'signed sessions must not depend on one process memory map');
+});
+
+test('a deployed host refuses session auth without a dedicated signing secret', async t => {
+  const server = await startServer({
+    env: { DROPS_PASSPHRASE: PASSPHRASE, RAILWAY_SERVICE_ID: 'svc-no-session-secret' },
+  });
+  t.after(() => server.child.kill());
+
+  const response = await login(server.origin, PASSPHRASE, '203.0.113.54');
+  assert.equal(response.status, 503);
+  assert.match((await response.json()).error, /SESSION_SECRET/);
+});
+
 test('the hint alone unlocks nothing', async t => {
   const server = await startServer({ env: { DROPS_PASSPHRASE: PASSPHRASE } });
   t.after(() => server.child.kill());
@@ -264,10 +312,7 @@ test('logging out takes the hint back with the session', async t => {
   assert.match(hint, /Max-Age=0/);
 });
 
-test('a hint left over from a forgotten session is cleared on the next check', async t => {
-  // Sessions live in memory, so a restart forgets them while the browser still
-  // holds both cookies. Left alone, the stale hint would have every load paint
-  // itself unlocked and then lock again.
+test('a hint left over without a valid signed session is cleared on the next check', async t => {
   const server = await startServer({ env: { DROPS_PASSPHRASE: PASSPHRASE } });
   t.after(() => server.child.kill());
 

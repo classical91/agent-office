@@ -244,11 +244,11 @@ All endpoints return JSON.
 | DELETE | `/api/streaks/:id`                | Delete a streak and its days     |
 | PUT    | `/api/streaks/:id/days/:day`      | Mark a day as kept               |
 | DELETE | `/api/streaks/:id/days/:day`      | Clear a marked day               |
-| GET    | `/api/countdowns`                 | Countdowns and upcoming events, grouped Today / This Week / Later |
+| GET    | `/api/countdowns`                 | Countdowns and upcoming events, grouped Today / This Week / Later (session-authenticated) |
 | POST   | `/api/countdowns`                 | Create a countdown               |
 | PATCH  | `/api/countdowns/:id`             | Edit, pin or archive a countdown |
 | DELETE | `/api/countdowns/:id`             | Delete a countdown               |
-| GET    | `/api/countdowns/rollup`          | The top countdowns only, as JSON or `?format=text` |
+| GET    | `/api/countdowns/rollup`          | The top countdowns only, as JSON or `?format=text` (session-authenticated) |
 | GET    | `/api/happy-hour`                 | Today's Happy Hour deal, phase and countdown (open) |
 | GET    | `/api/widgets/today`              | Today's countdowns and the next one, for the Daily Dashboard (machine token) |
 | POST   | `/api/visits/track`               | Record a page view or a still-here ping (public) |
@@ -284,13 +284,15 @@ The calendar is not only a view of Google Calendar; every block can carry Agent
 Office metadata, launch work, report live status, and keep its result.
 
 **Sync status.** `/api/calendar/status` returns one canonical object —
-`configured`, `connected`, `accountEmail`, `lastSyncedAt`, `syncState`, `error`
+`configured`, `connected`, `lastSyncedAt`, `syncState`, `error`
 (the older `googleConfigured` / `tokenValid` keys are still returned for
 compatibility). `syncState` is one of `unconfigured`, `disconnected`,
 `auth-error`, `healthy`. `/api/calendar/events` adds an explicit
 `calendarState`: `disconnected`, `local-only`, `connected-empty`,
 `connected-with-events` or `sync-error`, so a connected but empty calendar can
-never be confused with a broken sync. No demo events are ever seeded.
+never be confused with a broken sync. The OAuth request asks only for Calendar
+event access; Agent Office does not request, store, or return the Google account
+email/profile. No demo events are ever seeded.
 
 **Event metadata** (`agent-office-deploy/dist/calendar-agent-meta.js`). Events
 accept a `meta` object with `agentId`, `projectId`, `taskId`, `eventKind`,
@@ -363,10 +365,10 @@ dimmed, never marked urgent, and left out of the roll-up. It stays on the page,
 because knowing it is there is not the same as being pushed to act on it. The
 Weekdays repeat rule does the same for Mon–Fri routines.
 
-**The evening roll-up.** `GET /api/countdowns/rollup?format=text` returns the
-top cards as plain text, and `/api/shortcuts/countdowns` serves the same thing
-behind the phone-inbox token, so an evening Shortcut can paste them straight
-into a note:
+**The evening roll-up.** For authenticated browser clients,
+`GET /api/countdowns/rollup?format=text` returns the top cards as plain text.
+`/api/shortcuts/countdowns` serves the same thing behind the phone-inbox token,
+so an evening Shortcut can paste them straight into a note:
 
 ```
 Countdowns — Sat, Aug 8
@@ -383,9 +385,10 @@ left, the section, whether a card is urgent — is worked out on the server in
 `countdowns.js`, so a phone and a browser agree. The page re-counts only the
 "time left" label between refreshes so the clock keeps moving.
 
-**Access.** Reading is open, like the calendar the page shows alongside the
-cards. Adding, editing and deleting sit behind the same `DROPS_PASSPHRASE` as
-the Dropbox and share its session cookie.
+**Access.** Reading, adding, editing and deleting sit behind the same
+`DROPS_PASSPHRASE` as the rest of Agent Office and share its signed session
+cookie. The phone roll-up remains available through `/api/shortcuts/countdowns`
+with `SHORTCUTS_TOKEN` machine authentication.
 
 ### The Daily Dashboard widget
 
@@ -430,8 +433,6 @@ next thing and sets `nextIsLater`, since "nothing until Thursday" beats a blank.
 real count. **`notes` never travels** — it is the free-text field on a countdown,
 so the one most likely to hold something personal, and a dashboard row has
 nowhere to put it.
-
-Open, like `/api/countdowns`: reading countdowns has never needed a session.
 
 ### Countdown Timers and Pushcut
 
@@ -663,7 +664,8 @@ site. On each page load it posts one row — the page, its title, the page that
 linked there, the screen size — to `POST /api/visits/track`, and then pings
 every 30 seconds while the tab is visible so the live list can let someone drop
 off when they leave. The endpoint is open by necessity (the browsers reporting
-in are strangers), returns nothing at all, and is capped per address.
+in are strangers), returns nothing at all, is capped per address, accepts only
+configured site hosts on deployed instances, and has a hard stored-row ceiling.
 
 **What identifies a visitor.** A random id the browser generates about itself
 and keeps in that site's own `localStorage`, plus a per-tab session id in
@@ -685,13 +687,15 @@ with this deployment's host filled in:
 <script src="https://your-agent-office-host/visit-tracker.js" defer></script>
 ```
 
-Paste it before `</body>`. The site appears in the filter on its first visitor;
-no configuration or registration step. Single-page sites are handled — a
-`pushState` that changes the URL counts as the next page view.
+Paste it before `</body>`. Add every permitted hostname to the comma-separated
+`VISITS_ALLOWED_HOSTS` deployment variable first; Agent Office's own public host
+is included automatically. Single-page sites are handled — a `pushState` that
+changes the URL counts as the next page view.
 
 **Retention.** Page views are kept for 90 days and then deleted on an hourly
-sweep. Set `VISITS_RETENTION_DAYS` to change that. *Delete all visits* on the
-page clears everything immediately.
+sweep. Set `VISITS_RETENTION_DAYS` to change that. Storage is also capped at
+100,000 rows; set `VISITS_MAX_STORED_ROWS` to choose a smaller limit. *Delete
+all visits* on the page clears everything immediately.
 
 Bots are filtered by user agent, though the real filter is that the tracker is
 a script — most crawlers never run it.
@@ -1096,10 +1100,16 @@ Dropbox-related variables:
 
 - `DROPS_PASSPHRASE` / `DROPS_PASSPHRASE_HASH` — gates the web Dropbox and the
   calendar; **required on any deployed host** (see below)
+- `SESSION_SECRET` — at least 32 random characters used to sign process-independent
+  Office sessions; **required on any deployed host**
 - `SHORTCUTS_TOKEN` — enables the phone inbox; 16 characters minimum, and the
   server logs `Phone inbox: on` at startup once it is set
 - `APP_TIMEZONE` — the timezone reminder phrases like "tomorrow 9am" are read
   in (defaults to `America/Vancouver`)
+- `VISITS_ALLOWED_HOSTS` — comma-separated hostnames allowed to submit public
+  visitor beacons; required for external tracked sites on a deployed instance
+- `VISITS_MAX_STORED_ROWS` / `VISITS_TRACK_LIMIT` — hard visitor-storage ceiling
+  and per-address five-minute intake ceiling (defaults: `100000` / `300`)
 - `RESET_TIMER_INTERVAL_MS` — how often the server checks whether a Countdown
   Timer has landed and needs its Pushcut webhook sent (defaults to `45000`;
   `0` turns server-side delivery off). Nothing else is needed to switch this
@@ -1131,17 +1141,20 @@ address buy a five-minute timeout, during which even the correct passphrase is
 refused. A successful login clears the count. This is the same treatment the
 phone inbox gives a bad token.
 
-**Two cookies, one session.** `agent_office_session` carries the token and is
-`HttpOnly`, so no script can read it — which left a page with no way to know
+**Two cookies, one session.** `agent_office_session` carries a signed,
+time-limited token and is `HttpOnly`, so no script can read it — which left a
+page with no way to know
 whether it was logged in except to ask. It asked on every load, and while it
 waited it locked itself and raised the login panel, so opening any page while
 already logged in flashed the login screen for the length of a round trip.
 `agent_office_signed_in` is set beside it to close that gap: same path, same
 lifetime, no `HttpOnly`, and a value of `1` that says only *a session exists*.
 The page reads it to paint the gate on the first try. It authorises nothing —
-every route still checks the real session — and it is cleared wherever that
-session ends: on logout, on a `401`, and on the next `/api/session` check after
-a restart has emptied the session map.
+every route still checks the real session — and it is cleared on logout and on
+any `401`. Because the token is signed with deployment-stable key material, it
+survives restarts and works across multiple server processes. Both cookies use
+`Secure` whenever any supported Railway deployment marker is present, not only
+when `NODE_ENV=production`.
 
 ### Database TLS
 

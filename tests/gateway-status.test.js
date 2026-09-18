@@ -254,6 +254,27 @@ test('the heartbeat needs the token, and the status needs the passphrase', async
   }
 });
 
+test('saved gateway addresses need the passphrase to read or change', async () => {
+  const server = await startServer();
+  try {
+    const path = '/api/settings/ao-gateway-local';
+    assert.equal((await fetch(`${server.origin}${path}`)).status, 401);
+
+    const saved = await fetch(`${server.origin}${path}`, {
+      method: 'PUT',
+      headers: { cookie: server.cookie, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value: 'http://127.0.0.1:18789' }),
+    });
+    assert.equal(saved.status, 200);
+
+    const read = await fetch(`${server.origin}${path}`, { headers: { cookie: server.cookie } });
+    assert.equal(read.status, 200);
+    assert.equal((await read.json()).value, 'http://127.0.0.1:18789');
+  } finally {
+    stop(server);
+  }
+});
+
 test('a URL that is not http is refused rather than fetched', async () => {
   const server = await startServer();
   try {

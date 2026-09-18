@@ -299,7 +299,6 @@
       calendarState: 'loading',
       syncState: 'loading',
       lastSyncedAt: null,
-      accountEmail: null,
       // Agent Timeline lanes: which slice of the calendar is on screen.
       lane: 'all',
       agentFilter: '',
@@ -838,7 +837,7 @@
       error: { tone: 'bad', label: 'Sync failed' }
     };
     const chip = map[state.syncState] || map.loading;
-    const title = state.gcalError || (state.accountEmail || '');
+    const title = state.gcalError || '';
     return '<button class="calendar-sync-chip is-' + chip.tone + '" type="button"'
       + (title ? ' title="' + escapeHtml(title) + '"' : '')
       + ' onclick="CAL.openSyncPanel()">'
@@ -852,7 +851,7 @@
   // the rest of the app opens.
   function renderToolbar() {
     return '<div class="calendar-toolbar">'
-      + '<div><div class="calendar-range-main">' + escapeHtml(currentRangeLabel()) + '</div><div class="calendar-range-sub">' + escapeHtml(timezoneLabel()) + (state.accountEmail ? ' / ' + escapeHtml(state.accountEmail) : '') + '</div></div>'
+      + '<div><div class="calendar-range-main">' + escapeHtml(currentRangeLabel()) + '</div><div class="calendar-range-sub">' + escapeHtml(timezoneLabel()) + '</div></div>'
       + '<div class="calendar-toolbar-controls">'
       + '<div class="calendar-nav">'
       + '<button class="calendar-nav-btn" onclick="CAL.navigate(-1)">Prev</button>'
@@ -2251,7 +2250,6 @@
       }
       const status = await statusResp.json();
       state.syncState = status.syncState || (status.connected ? 'healthy' : 'disconnected');
-      state.accountEmail = status.accountEmail || null;
       state.lastSyncedAt = status.lastSyncedAt || null;
       state.gcalConfigured = Boolean(status.connected);
 

@@ -637,8 +637,7 @@ switchView('calendar-v3', document.querySelector('.nav-item.active'));
       if (needsReconnect) {
         setConnectionState('error', data.tokenError || 'Google token expired - reconnect', '');
       } else if (data.connected) {
-        var email = data.account && data.account.email || '';
-        setConnectionState('connected', 'Google Calendar connected', email);
+        setConnectionState('connected', 'Google Calendar connected', '');
         if (refreshEvents && window.CAL) await window.CAL.loadGoogleEvents();
       } else {
         setConnectionState('', 'Google Calendar not connected', '');
