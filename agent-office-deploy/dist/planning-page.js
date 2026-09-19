@@ -38,6 +38,12 @@ window.AOPlanning = (() => {
     loaded: false,
     locked: false,
     initialized: false,
+    // The proposed week lives here and nowhere else until it is accepted.
+    // Dropping a block, sending one back to the list or rescheduling it all
+    // happen against this copy, which is what makes "review before it is final"
+    // mean something.
+    week: null,
+    building: false,
   };
 
   function el(id) { return document.getElementById(id); }
@@ -68,6 +74,14 @@ window.AOPlanning = (() => {
     if (!value) return '';
     const choice = TIME_CHOICES.find(entry => entry.value === value);
     return choice ? choice.label : value;
+  }
+
+  function formatClock(date) {
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+
+  function formatDayHeading(date) {
+    return date.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
   }
 
   // ─── Server ────────────────────────────────────────────────────────────
@@ -218,6 +232,106 @@ window.AOPlanning = (() => {
     }, 'Could not save that planning item.');
   }
 
+  // ─── The week ──────────────────────────────────────────────────────────
+
+  // Steps 4 and 5. The server does the placing; this only asks for it, and the
+  // answer is a proposal — nothing here has touched the calendar.
+  async function buildWeek() {
+    if (state.building) return;
+    state.building = true;
+    render();
+    await withErrors(async () => {
+      state.week = await requestJson('/api/planning/week', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+    }, 'Could not build the week.');
+    state.building = false;
+    render();
+  }
+
+  function blockFor(planningItemId) {
+    if (!state.week) return null;
+    return (state.week.blocks || []).find(block => block.planning_item_id === planningItemId) || null;
+  }
+
+  function dropBlockLocally(planningItemId) {
+    if (!state.week) return;
+    state.week = {
+      ...state.week,
+      blocks: (state.week.blocks || []).filter(block => block.planning_item_id !== planningItemId),
+    };
+  }
+
+  // Dropping a block leaves the item ticked: it is this placement that did not
+  // work, not the intention behind it.
+  function dropBlock(planningItemId) {
+    dropBlockLocally(planningItemId);
+    render();
+  }
+
+  // Sending something back to the list unticks it, which is the honest record of
+  // "not this week" — and it stays on the list for the next one.
+  async function sendBack(planningItemId) {
+    dropBlockLocally(planningItemId);
+    await patch(planningItemId, { schedule_this_week: false });
+  }
+
+  // Move one block without disturbing the rest: the others go back as pinned
+  // commitments, so the new slot has to fit around the week you have already
+  // agreed to.
+  async function rescheduleBlock(planningItemId) {
+    const current = blockFor(planningItemId);
+    if (!current) return;
+    await withErrors(async () => {
+      const pinned = (state.week.blocks || [])
+        .filter(block => block.planning_item_id !== planningItemId)
+        .map(block => ({ title: block.title, start: block.start, end: block.end }));
+      // The slot it is in now is pinned too, so "reschedule" cannot hand back
+      // the same time it just gave.
+      pinned.push({ title: current.title, start: current.start, end: current.end });
+
+      const replacement = await requestJson('/api/planning/week', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ only: [planningItemId], pinned }),
+      });
+
+      const placed = (replacement.blocks || [])[0];
+      const blocks = (state.week.blocks || []).filter(block => block.planning_item_id !== planningItemId);
+      const unscheduled = (state.week.unscheduled || []).filter(entry => entry.planning_item_id !== planningItemId);
+      if (placed) blocks.push(placed);
+      else unscheduled.push(...(replacement.unscheduled || []));
+
+      blocks.sort((a, b) => new Date(a.start) - new Date(b.start));
+      state.week = { ...state.week, blocks, unscheduled };
+      render();
+    }, 'Could not find another slot for that.');
+  }
+
+  function discardWeek() {
+    state.week = null;
+    render();
+  }
+
+  // Step 6's other half: the blocks that survived the review become real, through
+  // the same endpoint every other scheduled block goes through.
+  async function acceptWeek() {
+    if (!state.week || !(state.week.blocks || []).length) return;
+    await withErrors(async () => {
+      await requestJson('/api/calendar/schedule/commit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ blocks: state.week.blocks }),
+      });
+      state.week = null;
+      await load();
+      render();
+      alert('The week is on your calendar.');
+    }, 'Could not add the week to your calendar.');
+  }
+
   // ─── Render ────────────────────────────────────────────────────────────
 
   function chipsFor(item) {
@@ -346,9 +460,93 @@ window.AOPlanning = (() => {
     }).join('')}</div>`;
   }
 
+  function renderWeek() {
+    const wrap = el('planning-week');
+    const build = el('planning-build');
+    if (build) {
+      build.disabled = state.building || state.locked;
+      build.textContent = state.building ? 'Building…' : (state.week ? 'Rebuild' : 'Build my week');
+    }
+    if (!wrap) return;
+
+    if (state.building) {
+      wrap.innerHTML = '<div class="planning-empty">Looking for time around everything else…</div>';
+      return;
+    }
+    if (!state.week) {
+      wrap.innerHTML = `<div class="planning-empty">${escHtml(
+        state.counts.scheduled
+          ? 'Nothing proposed yet. Build the week to see where the ticked items would go.'
+          : 'Nothing is ticked, so there is nothing to place yet.'
+      )}</div>`;
+      return;
+    }
+
+    const blocks = state.week.blocks || [];
+    const unscheduled = state.week.unscheduled || [];
+
+    if (!blocks.length && !unscheduled.length) {
+      wrap.innerHTML = '<div class="planning-empty">Nothing was ticked when this week was built.</div>';
+      return;
+    }
+
+    const days = [];
+    blocks.forEach(block => {
+      const start = new Date(block.start);
+      const key = start.toDateString();
+      const day = days.find(entry => entry.key === key);
+      if (day) day.blocks.push(block);
+      else days.push({ key, date: start, blocks: [block] });
+    });
+
+    const dayMarkup = days.map(day => `<div class="planning-day-group">
+      <div class="planning-day-head">${escHtml(formatDayHeading(day.date))}</div>
+      ${day.blocks.map(block => {
+        const id = escHtml(block.planning_item_id);
+        const notes = [
+          ...(block.reasons || []),
+          block.duration_is_estimated ? 'Duration assumed — set one to place it better' : '',
+        ].filter(Boolean);
+        return `<div class="planning-block">
+          <div class="planning-block-time">${escHtml(formatClock(new Date(block.start)))} – ${escHtml(formatClock(new Date(block.end)))}</div>
+          <div class="planning-block-body">
+            <div class="planning-block-title">${escHtml(block.title)}</div>
+            ${notes.length ? `<div class="planning-block-why">${escHtml(notes.join(' · '))}</div>` : ''}
+            ${(block.warnings || []).length ? `<div class="planning-block-warn">${escHtml(block.warnings.join(' · '))}</div>` : ''}
+          </div>
+          <div class="planning-item-actions">
+            <button class="planning-btn planning-btn--sm" onclick="AOPlanning.rescheduleBlock('${id}')">Move</button>
+            <button class="planning-btn planning-btn--sm" onclick="AOPlanning.dropBlock('${id}')">Not this week</button>
+            <button class="planning-btn planning-btn--sm" onclick="AOPlanning.sendBack('${id}')">Back to list</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`).join('');
+
+    const leftOver = unscheduled.length ? `<div class="planning-day-group">
+      <div class="planning-day-head">No room found</div>
+      ${unscheduled.map(entry => `<div class="planning-block planning-block--unplaced">
+        <div class="planning-block-time">—</div>
+        <div class="planning-block-body">
+          <div class="planning-block-title">${escHtml(entry.title)}</div>
+          <div class="planning-block-warn">${escHtml(entry.reason)}</div>
+        </div>
+      </div>`).join('')}
+    </div>` : '';
+
+    wrap.innerHTML = `${dayMarkup}${leftOver}
+      <div class="planning-week-actions">
+        <button class="planning-btn planning-btn--ghost planning-btn--sm" onclick="AOPlanning.discardWeek()">Discard</button>
+        <button class="planning-btn planning-btn--primary planning-btn--sm"
+          ${blocks.length ? '' : 'disabled'}
+          onclick="AOPlanning.acceptWeek()">Accept &amp; add to calendar</button>
+      </div>`;
+  }
+
   function render() {
     const list = el('planning-list');
     renderSummary();
+    renderWeek();
     if (!list) return;
 
     if (state.locked) {
@@ -409,6 +607,7 @@ window.AOPlanning = (() => {
     init, unlock, render,
     addItem, toggleSchedule, toggleCompleted, removeItem,
     openEditor, closeEditor, saveEditor, toggleDraftDay,
+    buildWeek, rescheduleBlock, dropBlock, sendBack, discardWeek, acceptWeek,
   };
 })();
 

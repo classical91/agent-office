@@ -271,3 +271,161 @@ test('the list survives a restart', async () => {
     stop(server);
   }
 });
+
+// ─── The week ────────────────────────────────────────────────────────────────
+//
+// Steps 4 to 6 over HTTP: the proposal is built from the ticked items and the
+// calendar, it is locked like everything else here, and — the part that matters
+// most — it writes nothing until it is accepted.
+
+async function buildWeek(server, body = {}) {
+  const response = await call(server, '/api/planning/week', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  assert.equal(response.status, 200, await response.clone().text());
+  return response.json();
+}
+
+async function listCalendarEvents(server) {
+  const response = await call(server, '/api/calendar/events');
+  assert.equal(response.status, 200);
+  const payload = await response.json();
+  return Array.isArray(payload) ? payload : (payload.events || []);
+}
+
+test('the week is built from the ticked items only', async () => {
+  const server = await startServer();
+  try {
+    await addItem(server, { title: 'Workout', estimated_duration: 60 });
+    await addItem(server, { title: 'Reporter Room', estimated_duration: 120 });
+    await addItem(server, { title: 'Clean garage', schedule_this_week: false });
+
+    const week = await buildWeek(server);
+    assert.equal(week.counts.considered, 2);
+    assert.equal(week.blocks.length + week.unscheduled.length, 2);
+    assert.ok(!week.blocks.some(block => block.title === 'Clean garage'));
+    week.blocks.forEach(block => {
+      assert.ok(block.start && block.end, 'a block needs a start and an end');
+      assert.equal(block.meta.eventKind, 'task');
+    });
+  } finally {
+    stop(server);
+  }
+});
+
+test('building a week writes nothing to the calendar', async () => {
+  const server = await startServer();
+  try {
+    await addItem(server, { title: 'Workout' });
+    await buildWeek(server);
+    await buildWeek(server);
+    assert.deepEqual(await listCalendarEvents(server), [], 'a proposal must not become events on its own');
+  } finally {
+    stop(server);
+  }
+});
+
+test('accepting the week is what puts it on the calendar', async () => {
+  const server = await startServer();
+  try {
+    await addItem(server, { title: 'Workout', estimated_duration: 60 });
+    const week = await buildWeek(server);
+    assert.ok(week.blocks.length, 'expected something to accept');
+
+    const commit = await call(server, '/api/calendar/schedule/commit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ blocks: week.blocks }),
+    });
+    assert.equal(commit.status, 201, await commit.clone().text());
+
+    const events = await listCalendarEvents(server);
+    assert.equal(events.length, week.blocks.length);
+    // The events API answers in Google's shape, so the title comes back as
+    // `summary` whether or not an account is connected.
+    assert.ok(events.some(event => (event.summary || event.title) === 'Workout'));
+    const planned = events.find(event => (event.summary || event.title) === 'Workout');
+    assert.equal(
+      planned.meta.planningItemId,
+      week.blocks[0].planning_item_id,
+      'a committed block should still know which planning item it came from'
+    );
+  } finally {
+    stop(server);
+  }
+});
+
+test('a block is never planned over an event already on the calendar', async () => {
+  const server = await startServer();
+  try {
+    // A day that is entirely spoken for, starting tomorrow so "now" cannot
+    // make this flaky.
+    const day = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const busyStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0);
+    const busyEnd = new Date(busyStart.getTime() + 24 * 60 * 60 * 1000);
+
+    const created = await call(server, '/api/calendar/events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Away all day',
+        start: busyStart.toISOString(),
+        end: busyEnd.toISOString(),
+      }),
+    });
+    assert.ok(created.status < 400, await created.clone().text());
+
+    await addItem(server, { title: 'Workout', estimated_duration: 60 });
+    const week = await buildWeek(server);
+
+    week.blocks.forEach(block => {
+      const start = Date.parse(block.start);
+      const end = Date.parse(block.end);
+      assert.ok(
+        end <= busyStart.getTime() || start >= busyEnd.getTime(),
+        'a block was planned over an existing calendar event'
+      );
+    });
+  } finally {
+    stop(server);
+  }
+});
+
+test('a work schedule keeps the week off your shifts', async () => {
+  const server = await startServer();
+  try {
+    await addItem(server, { title: 'Workout', estimated_duration: 60 });
+    const week = await buildWeek(server, {
+      workSchedule: { shifts: [{ label: 'Work', days: [1, 2, 3, 4, 5, 6, 7], start: '12:30', end: '21:00' }] },
+    });
+
+    assert.ok(week.blocks.length, 'the item should still find a slot outside the shift');
+    week.blocks.forEach(block => {
+      const start = new Date(block.start);
+      const end = new Date(block.end);
+      const minutes = date => date.getHours() * 60 + date.getMinutes();
+      assert.ok(
+        minutes(end) <= 12 * 60 + 30 || minutes(start) >= 21 * 60,
+        `a block was planned inside a work shift: ${block.start} – ${block.end}`
+      );
+    });
+  } finally {
+    stop(server);
+  }
+});
+
+test('the week is locked like the rest of the planning list', async () => {
+  const server = await startServer();
+  try {
+    const response = await fetch(`${server.origin}/api/planning/week`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    assert.equal(response.status, 401);
+  } finally {
+    stop(server);
+  }
+});
