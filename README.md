@@ -1126,6 +1126,16 @@ and it says so at startup (`Agent Office auth: off`). A deployed host with the
 passphrase missing logs `Agent Office auth: NOT CONFIGURED` — look for that line
 first if the app comes up answering `503` to everything.
 
+**Off means off, on a dev box.** The other half of that policy is that an
+undeployed machine with no passphrase is genuinely ungated: no `503`, no lock,
+no login panel. Two places used to disagree with it — the Dropbox guard
+answered `503` on a dev machine as well as a deployed one, and the page locked
+itself behind a login whose password did not exist and whose submit answered
+`503` — so a dev box was sealed behind a door with no key while the calendar
+beside it worked. `/api/session` now answers `gated`, which is what the page
+paints from: false only where there is no passphrase *and* the host does not
+look deployed.
+
 **Guessing the passphrase is rate-limited.** Five wrong attempts from one
 address buy a five-minute timeout, during which even the correct passphrase is
 refused. A successful login clears the count. This is the same treatment the
@@ -1142,6 +1152,11 @@ The page reads it to paint the gate on the first try. It authorises nothing —
 every route still checks the real session — and it is cleared wherever that
 session ends: on logout, on a `401`, and on the next `/api/session` check after
 a restart has emptied the session map.
+
+It carries one more value, `open`, set only on an ungated host: it says *there
+is no gate here*, so a dev box does not flash a login panel while it waits to
+be told there is nothing to log into. A configured instance never sets it, and
+takes it back on the next check if a browser turns up holding one.
 
 ### Database TLS
 

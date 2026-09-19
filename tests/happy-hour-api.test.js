@@ -24,7 +24,7 @@ const SERVER_PATH = path.join(DIST, 'server.js');
 
 const happyHour = require(path.join(DIST, 'happy-hour.js'));
 
-async function startServer() {
+async function startServer(options = {}) {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-office-happy-hour-'));
 
   const buildEnv = port => {
@@ -45,8 +45,15 @@ async function startServer() {
       // Deliberately no DROPS_PASSPHRASE: this route is open, and a suite that
       // sets one could pass without proving that.
     };
-    ['DATABASE_URL', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'DROPS_PASSPHRASE', 'DROPS_PASSPHRASE_HASH']
-      .forEach(key => { delete environment[key]; });
+    [
+      'DATABASE_URL', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET',
+      'DROPS_PASSPHRASE', 'DROPS_PASSPHRASE_HASH',
+      // Whether the host looks deployed decides what an unset passphrase means,
+      // so it is pinned here rather than inherited from whoever runs the suite.
+      'NODE_ENV', 'RAILWAY_ENVIRONMENT', 'RAILWAY_ENVIRONMENT_NAME',
+      'RAILWAY_PROJECT_ID', 'RAILWAY_SERVICE_ID',
+    ].forEach(key => { delete environment[key]; });
+    Object.assign(environment, options.env || {});
     return environment;
   };
 
@@ -102,8 +109,7 @@ test('the endpoint agrees with the page for the same moment', async () => {
 test('the endpoint is open, and carries nothing from the timer store', async () => {
   const server = await startServer();
   try {
-    // No passphrase is set at all, so a route behind requireDropsAuth would 503
-    // here. This one is a grocery flyer and answers anyone.
+    // This one is a grocery flyer: no session, no passphrase, it answers anyone.
     const response = await fetch(`${server.origin}/api/happy-hour`);
     assert.equal(response.status, 200);
 
@@ -111,8 +117,19 @@ test('the endpoint is open, and carries nothing from the timer store', async () 
     for (const leak of ['webhook', 'pushcut', 'passphrase', 'token']) {
       assert.equal(body.toLowerCase().includes(leak), false, `payload mentions ${leak}`);
     }
+  } finally {
+    stop(server);
+  }
+});
 
-    // The protected reset-timer store is still protected.
+test('the timer store behind it is not open the same way', async () => {
+  // The contrast this draws needs a passphrase to mean anything. Without one an
+  // undeployed machine is unlocked on purpose - `Agent Office auth: off` - so
+  // the store answering there says nothing about whether it is guarded.
+  const server = await startServer({ env: { DROPS_PASSPHRASE: 'happy-hour-test-passphrase' } });
+  try {
+    assert.equal((await fetch(`${server.origin}/api/happy-hour`)).status, 200, 'the flyer is still open');
+
     const timers = await fetch(`${server.origin}/api/reset-timers`);
     assert.ok(timers.status >= 400, 'the reset-timer store answered without auth');
   } finally {

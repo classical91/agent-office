@@ -41,6 +41,12 @@ const SESSION_COOKIE = 'agent_office_session';
 // readable so the gate can be painted right on the first try. It is always set
 // and cleared alongside the real one, so it can never outlive it by itself.
 const SESSION_HINT_COOKIE = 'agent_office_signed_in';
+// The hint has three answers, matching the three the server can give: a session
+// exists, no session exists, and this instance has no gate at all. That last one
+// is an undeployed machine running without a passphrase, where painting a login
+// the page can never satisfy is just a flash of the wrong screen.
+const SESSION_HINT_SIGNED_IN = '1';
+const SESSION_HINT_NO_GATE = 'open';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
 const ALLOWED_PRIORITIES = new Set(['normal', 'high', 'urgent']);
 const ALLOWED_STATUSES = new Set(['inbox', 'idea', 'researching', 'coding', 'reviewing', 'ready_to_deploy', 'done', 'archived']);
@@ -226,12 +232,29 @@ function setSessionCookies(res, token, maxAge) {
     serializeCookie(SESSION_COOKIE, token, { ...shared, httpOnly: true }),
     // No HttpOnly here on purpose: this one exists to be read by the page. It
     // is a flag, not a credential - nothing is authorised by holding it.
-    serializeCookie(SESSION_HINT_COOKIE, token ? '1' : '', shared),
+    serializeCookie(SESSION_HINT_COOKIE, token ? SESSION_HINT_SIGNED_IN : '', shared),
   ]);
 }
 
 function clearSessionCookie(res) {
   setSessionCookies(res, '', 0);
+}
+
+// Says "there is no gate here" to the next page load, so a machine running
+// without a passphrase does not paint a login panel for the length of a round
+// trip before finding out there is nothing to log into. It stands for no
+// session and authorises nothing: a configured instance ignores this value and
+// clears it, and every route decides for itself either way.
+function setOpenGateCookie(res) {
+  res.setHeader(
+    'Set-Cookie',
+    serializeCookie(SESSION_HINT_COOKIE, SESSION_HINT_NO_GATE, {
+      maxAge: Math.floor(SESSION_TTL_MS / 1000),
+      path: '/',
+      sameSite: 'Strict',
+      secure: process.env.NODE_ENV === 'production',
+    })
+  );
 }
 
 function issueSession(res) {
@@ -704,12 +727,22 @@ function validateAgentInput(input, partial = false) {
   return { ok: true, value };
 }
 
+// Truthy when the request may proceed. The drops routes only ever test that, so
+// the undeployed case below returns true rather than a session there is none of.
 function requireDropsAuth(res, req) {
   if (!PASSPHRASE_HASH) {
-    sendJson(res, 503, {
-      error: 'Dropbox auth is not configured. Set DROPS_PASSPHRASE_HASH or DROPS_PASSPHRASE.',
-    });
-    return null;
+    // The same policy requireOfficeAuth applies, which this did not: an
+    // unconfigured passphrase is a misconfiguration on a deployed host and is
+    // refused there, but an undeployed developer machine is allowed to run
+    // without one. Answering 503 either way left a dev box unable to read its
+    // own notes while the calendar sitting beside them worked fine.
+    if (IS_DEPLOYED) {
+      sendJson(res, 503, {
+        error: 'Dropbox auth is not configured. Set DROPS_PASSPHRASE_HASH or DROPS_PASSPHRASE.',
+      });
+      return null;
+    }
+    return true;
   }
 
   const activeSession = getSession(req);
@@ -5582,13 +5615,30 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'GET' && pathname === '/api/session') {
       const activeSession = getSession(req);
-      // Sessions live in memory, so a restart forgets them all while the
-      // browser still holds both cookies. Clearing the hint here is what keeps
-      // that from costing a flash on every load until the cookie expires.
-      if (!activeSession && parseCookies(req)[SESSION_HINT_COOKIE]) clearSessionCookie(res);
+      const hint = parseCookies(req)[SESSION_HINT_COOKIE];
+      // Whether this instance gates the page at all. A deployed host with no
+      // passphrase is a misconfiguration rather than an open house: it stays
+      // gated, and its data routes go on answering 503.
+      const gated = Boolean(PASSPHRASE_HASH) || IS_DEPLOYED;
+      if (!gated) {
+        if (hint !== SESSION_HINT_NO_GATE) setOpenGateCookie(res);
+      } else if (activeSession && hint !== SESSION_HINT_SIGNED_IN) {
+        // A hint that disagrees with the session it stands for - a no-gate one
+        // left from before a passphrase was set, say - would paint the next
+        // load from the wrong answer. Put it back in step.
+        setSessionCookies(res, activeSession.token, Math.floor(SESSION_TTL_MS / 1000));
+      } else if (!activeSession && hint) {
+        // Sessions live in memory, so a restart forgets them all while the
+        // browser still holds both cookies. Clearing the hint here is what
+        // keeps that from costing a flash on every load until it expires - and
+        // it takes back a no-gate hint left over from before a passphrase was
+        // set, which would otherwise paint this page unlocked.
+        clearSessionCookie(res);
+      }
       sendJson(res, 200, {
         authenticated: Boolean(activeSession),
         configured: Boolean(PASSPHRASE_HASH),
+        gated,
       });
       return;
     }

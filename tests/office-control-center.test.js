@@ -70,7 +70,10 @@ test('one general login gates the entire Agent Office site', () => {
   // answered, which flashed the login panel at someone who was already logged
   // in. It is painted from the readable hint cookie now, and the server still
   // has the last word on it.
-  assert.match(shared, /setOfficeLoginState\(officeSessionHinted\(\)\)/);
+  assert.match(shared, /applyOfficeSessionState\(\{\s*gated: hint !== OFFICE_HINT_NO_GATE/);
+  // And it is three answers, not two: an instance with no passphrase has no
+  // gate to paint and no password to ask for.
+  assert.match(shared, /officeLoginGated = state\.gated !== false/);
   assert.match(shared, /classList\.toggle\('ao-site-locked', !authenticated\)/);
   assert.match(sharedCss, /\.ao-site-locked body > :not\(\.ao-login-modal\)/);
   const server = fs.readFileSync(path.join(DIST, 'server.js'), 'utf8');
