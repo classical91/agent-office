@@ -15,7 +15,7 @@ The 3D office is intended to be an operational view of that system, not a decora
 - **Phone inbox** — a token-authenticated API for iOS Shortcuts: send a note or reminder to the Dropbox from your phone, and pull back whatever has come due. See [Phone inbox](#phone-inbox--ios-shortcuts).
 - **Memory** — per-agent memory entries that agents can reference across sessions.
 - **Calendar** — a Google Calendar-backed control surface for the office: agent/project metadata on every block, live run status, an Agent Assistant drawer, agent-timeline filters, and a scored scheduling policy instead of first-available-slot. It opens in **Focus Mode** — the chrome steps aside so the grid gets the whole viewport, and the sidebar is one tap away in the focus rail. See [Focus Mode](#focus-mode).
-- **Planning Mode** — the weekly planning checklist you keep by hand, and the list CoachClaw reads before it builds the week. Ticking an item asks CoachClaw to find time for it; it does not mean the item is done, which is a separate state. Unticked items stay on the list and out of the week. See [Planning Mode](#planning-mode).
+- **Planning Mode** — the weekly planning checklist you keep by hand, and the list CoachClaw reads before it builds the week. Ticking an item asks CoachClaw to find time for it; it does not mean the item is done, which is a separate state. Unticked items stay on the list and out of the week. **Build my week** places the ticked items in the time that is actually free around your calendar, your work schedule and everything else fixed, and shows the result for review — nothing reaches the calendar until you accept it. See [Planning Mode](#planning-mode).
 - **Countdowns** — everything with a clock on it in one page: deadlines, goals, work shifts, weekly routines and trading dates, grouped into Today / This Week / Later alongside what is next on the Google Calendar. Every card carries the time left, the category and the next action. See [Countdowns](#countdowns-1).
 - **Streaks** — every day you kept a habit up, plotted on a month grid and a year strip. Each streak carries a type (Health, Deep Work, Avoid, …) and a colour, the calendar can be filtered down to one streak or one type, and a day is marked from the day itself or from the streak's **Mark today** button. See [Streaks](#streaks-1).
 - **Visitors** — who is on your websites right now, what they are reading, and whether they have been before. One tracker script goes on any site you run; nothing is looked up against any outside service. See [Visitors](#visitors-1).
@@ -74,6 +74,7 @@ agent-office-deploy/
     calendar-agent-meta.js     # Agent Office event metadata + run lifecycle
     calendar-scheduling.js     # Scheduling preferences, slot scoring, NL parsing
     planning.js                # Planning Mode records and the CoachClaw brief (server-side)
+    planning-week.js           # Places the ticked items in free time; the proposed week (server-side)
     planning-page.js           # Planning Mode page-only logic
     planning.css               # Planning Mode-only styles
     calendar-google-sync.js    # Incremental Google sync (sync tokens, paging, 410 recovery)
@@ -234,6 +235,7 @@ All endpoints return JSON.
 | PATCH  | `/api/planning/:id`               | Edit, tick, untick or complete a planning item (session-authed) |
 | DELETE | `/api/planning/:id`               | Delete a planning item (session-authed) |
 | GET    | `/api/planning/brief`             | The ticked items, shaped for the scheduler (session-authed) |
+| POST   | `/api/planning/week`              | The proposed week, built but not written (session-authenticated) |
 | GET    | `/api/memories`                   | List memory entries              |
 | POST   | `/api/memories`                   | Create a memory entry            |
 | PATCH  | `/api/memories/:id`               | Update a memory entry            |
@@ -600,8 +602,7 @@ and the preferred window resolved to clock times. Unticked and completed items
 are not in it. The page shows the same brief under *What CoachClaw reads*, so
 what the scheduler will be given is visible before it is given.
 
-**Where this sits in the weekly build.** The page lists the whole flow, of which
-steps 2 and 6's inputs are what Planning Mode owns:
+**Where this sits in the weekly build.** The page lists the whole flow:
 
 1. Work schedule — the days and hours you are at work.
 2. This checklist — every ticked item, with its duration, priority and
@@ -611,11 +612,68 @@ steps 2 and 6's inputs are what Planning Mode owns:
 5. The week — ticked items placed into those windows.
 6. Your review — accept it, move something, or send an item back to this list.
 
-Steps 3 to 5 are `calendar-scheduling.js`, which already models working hours,
-sleep, lunch, meeting buffers, recovery time and deep-work windows, and scores
-candidate slots rather than taking the first that fits. Step 1 (reading a photo
-of a work schedule) and step 6 (the proposal-and-review screen) are not built
-yet; the checklist and the brief are the bridge they will plug into.
+### Building the week
+
+**Build my week** on the page is steps 4 and 5. `POST /api/planning/week` takes
+the brief, reads your calendar and your scheduling preferences, and returns a
+proposal. It writes nothing.
+
+`planning-week.js` does the placing, and leans on `calendar-scheduling.js` for
+everything a slot has to respect — sleep, lunch, commutes declared as
+commitments, meeting buffers, recovery time, deep-work windows — rather than
+deciding any of that again. What it adds is the part a planning item knows and a
+calendar request does not:
+
+- **Packing order.** Items are placed hardest-and-most-urgent first, and each
+  block is fed back in as a commitment before the next item is placed. The
+  second workout cannot land on top of the first, and the gap between two blocks
+  is the gap the calendar leaves everywhere else.
+- **Preferred days.** Honoured when there is room. When there is not, the item
+  is placed on the next best day *and the block says so* — a preference is not a
+  reason to drop something.
+- **Preferred times.** Scored, not enforced: worth about as much as the
+  scheduler's own conflict penalty, so "sometime in the evening" is not answered
+  with nine in the morning, and a slot nothing else fits around does not win for
+  being at the right hour.
+- **Waking hours, seven days.** A personal week is not planned against office
+  hours. *Visit grandmother* is a Saturday and *stretching* is half nine at
+  night, so the day is widened to your waking hours and the whole week, with
+  everything else left exactly as you set it. Pass `respectWorkingHours: true`
+  to plan inside working hours instead.
+- **Nothing is silently dropped.** An item with nowhere to go comes back under
+  `unscheduled`, with the reason.
+
+### Reviewing it
+
+Step 6 is the point of not writing anything. The proposed week is shown day by
+day, with what each slot was chosen for, and each block can be:
+
+- **Moved** — re-placed around the rest of the week, which goes back to the
+  builder as `pinned` blocks so nothing else shifts, and the slot it is leaving
+  is pinned too so "move" cannot hand back the same time.
+- **Not this week** — dropped from the proposal. The item stays ticked: it was
+  the placement that did not work.
+- **Back to list** — dropped *and* unticked, which is the honest record of "not
+  this week", and it is on the list for the next one.
+
+**Accept & add to calendar** posts the surviving blocks to
+`POST /api/calendar/schedule/commit`, the same endpoint every other scheduled
+block goes through. Each committed event keeps `meta.planningItemId`, so a block
+on the calendar still knows which intention it came from.
+
+### The work schedule
+
+Step 1 is the piece that is not built. The seam for it is: `POST
+/api/planning/week` takes a `workSchedule` of shifts and turns them into
+commitments nothing can be planned over.
+
+```jsonc
+{ "workSchedule": { "shifts": [{ "label": "Work", "days": [1,2,3,4,5], "start": "12:30", "end": "21:00" }] } }
+```
+
+Reading a photograph into that shape — and showing what was read so an obvious
+mistake can be corrected before anything is planned — is what still has to be
+written. Everything downstream of it already works.
 
 ## Streaks
 
