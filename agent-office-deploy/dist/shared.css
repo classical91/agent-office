@@ -770,16 +770,15 @@
     position: relative;
   }
 
-  /* The icon column is a fixed width so labels line up whether or not a row
-     has one, and so the compact rail can keep only this column. */
+  /* data-icon is the row's rail monogram, not decoration: the expanded sidebar
+     reads by label alone, so the column is only drawn once the rail is up and
+     the labels are gone. */
   .nav-item::before {
     content: attr(data-icon);
-    width: 18px;
+    display: none;
     flex-shrink: 0;
     text-align: center;
-    font-size: var(--fs-md);
     line-height: 1;
-    opacity: 0.85;
   }
   .nav-item:not([data-icon])::before { content: none; }
 
@@ -840,7 +839,6 @@
     font-size: var(--fs-xs);
     border-radius: 0 var(--radius-md) var(--radius-md) 0;
   }
-  .nav-sub .nav-item::before { width: 15px; font-size: var(--fs-sm); }
   .nav-sub .nav-item.active::after { left: -1px; }
   .nav-sub .nav-item .icon { font-size: var(--fs-sm); }
 
@@ -912,7 +910,14 @@
     margin: 0 var(--space-2);
     gap: 0;
   }
-  html.nav-compact .nav-item::before { width: auto; font-size: var(--fs-lg); }
+  html.nav-compact .nav-item::before {
+    display: block;
+    width: auto;
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    opacity: 0.85;
+  }
   html.nav-compact .nav-item.active::after { left: calc(var(--space-2) * -1); }
   /* Rows with no icon would collapse to an empty strip, so they keep a
      monogram taken from their label. */
@@ -2374,7 +2379,7 @@
       padding: var(--space-2) var(--space-4);
       gap: var(--space-3);
     }
-    html.nav-compact .nav-item::before { width: 18px; font-size: var(--fs-md); }
+    html.nav-compact .nav-item::before { display: none; }
     .office-shell { gap: var(--space-2); }
     .office-bar { gap: var(--space-2); }
     /* A row of tap targets, not a row of text links. */
@@ -2471,7 +2476,7 @@
     padding: var(--space-2) var(--space-4);
     gap: var(--space-3);
   }
-  html.nav-compact .nav.mobile-open .nav-item::before { width: 18px; font-size: var(--fs-md); }
+  html.nav-compact .nav.mobile-open .nav-item::before { display: none; }
   /* Collapsing a drawer to icons collapses nothing, so the control that does
      it is not offered there. */
   html.ao-focus .nav.mobile-open .nav-footer { display: none; }
@@ -3011,14 +3016,44 @@
   .dropbox-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
   .dropbox-filters input[type="search"],
   .dropbox-filters select {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.12);
+    background: var(--surface-raised);
+    border: 1px solid var(--border-strong);
     border-radius: 8px;
     padding: 8px 12px;
     font-size: 13px;
-    color: var(--text);
+    color: var(--text-strong);
     outline: none;
     font-family: inherit;
+  }
+  /* A filter select is the only control in this row that opens something, and
+     it was drawn as a flat 5%-white strip with no arrow, so it read as a
+     label. It is raised off the row now and carries a chevron. color-scheme is
+     the part that matters: without it the browser paints the open list as a
+     light menu and puts our light --text on it, which is what made the
+     category list all but unreadable. */
+  .dropbox-filters select {
+    color-scheme: dark;
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 30px;
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--text-quiet) 50%),
+      linear-gradient(135deg, var(--text-quiet) 50%, transparent 50%);
+    background-position: calc(100% - 16px) center, calc(100% - 11px) center;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    cursor: pointer;
+  }
+  .dropbox-filters select:hover { border-color: var(--accent); }
+  .dropbox-filters select:focus-visible {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+  /* Firefox and Windows paint the list from the control's own colours rather
+     than from color-scheme, so the options carry an opaque ground of their own. */
+  .dropbox-filters select option {
+    background: #1b1f24;
+    color: var(--text-strong);
   }
   .dropbox-filters input[type="search"] { flex: 1 1 240px; min-width: 180px; max-width: 420px; }
   /* Search is the row. Status, project, agent, reminder and sort fold away
