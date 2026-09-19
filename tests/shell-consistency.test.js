@@ -46,15 +46,35 @@ test('no page hand-marks its own active nav row', () => {
   });
 });
 
+// `nav-item`, not `nav-items-wrap`: the lookahead keeps the wrapper out.
+function sidebarRows() {
+  const shell = readTemplate('shell.html');
+  const rows = [...shell.matchAll(/<(?:a|div) class="nav-item(?=[ "])[^"]*"[^>]*>/g)].map(match => match[0]);
+  assert.ok(rows.length >= 15, 'expected the full sidebar in the template');
+  return rows;
+}
+
 test('every sidebar row can be told apart in the compact rail', () => {
   // The rail hides labels, so a row with no data-icon collapses to an empty
   // strip. The template is the only place this can be got wrong.
-  const shell = readTemplate('shell.html');
-  // `nav-item`, not `nav-items-wrap`: the lookahead keeps the wrapper out.
-  const rows = [...shell.matchAll(/<(?:a|div) class="nav-item(?=[ "])[^"]*"[^>]*>/g)].map(match => match[0]);
-  assert.ok(rows.length >= 15, 'expected the full sidebar in the template');
-  const iconless = rows.filter(row => !row.includes('data-icon='));
+  const iconless = sidebarRows().filter(row => !row.includes('data-icon='));
   assert.deepStrictEqual(iconless, [], 'these sidebar rows have no data-icon');
+});
+
+test('the rail monograms are short letter tags, not emoji', () => {
+  // data-icon used to hold an emoji per row. The sidebar reads by label now
+  // and the tag is only drawn in the collapsed rail, so anything but a couple
+  // of letters is either an emoji creeping back in or too wide for a 56px rail.
+  const bad = sidebarRows()
+    .map(row => row.match(/data-icon="([^"]*)"/)[1])
+    .filter(icon => !/^[A-Z]{1,3}$/.test(icon));
+  assert.deepStrictEqual(bad, [], 'these rail monograms are not plain letter tags');
+});
+
+test('the rail monograms are unique', () => {
+  // Two rows sharing a tag are indistinguishable once the rail hides labels.
+  const icons = sidebarRows().map(row => row.match(/data-icon="([^"]*)"/)[1]);
+  assert.strictEqual(new Set(icons).size, icons.length, 'two sidebar rows share a monogram');
 });
 
 test('the shell templates cover every region the sync script replaces', () => {

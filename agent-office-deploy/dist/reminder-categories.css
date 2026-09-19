@@ -18,9 +18,36 @@
   background: var(--bg-input, #202027); color: inherit;
   border: 1px solid var(--border, #45454b); font: inherit;
 }
+/* Dark ground for the native popup, and for the options on the browsers that
+   paint the list from the control rather than from color-scheme. */
+#reminder-category, .reminder-edit-fields select { color-scheme: dark; }
+#reminder-category option, .reminder-edit-fields select option {
+  background: #1b1f24; color: var(--text-strong, #f4f6f8);
+}
 .reminder-edit-fields label { display: block; margin-top: 14px; }
 .reminder-edit-fields input, .reminder-edit-fields textarea,
 .reminder-edit-fields select { width: 100%; margin: 6px 0 12px; }
 .reminder-category-error { color: #ff9696; min-height: 1.5em; }
 .ios-mode #drop-filter-status, .ios-mode #drop-filter-project,
 .ios-mode #drop-filter-agent, .ios-mode #dropbox-view-board { display: none; }
+
+/* On Reminders the category picker is not a filter tucked in beside search —
+   it is how you move between categories, the job the folder wall does on the
+   Dropbox view. So it is sized and coloured as the primary control of the row
+   instead of as one more grey box you have to hunt for. */
+.ios-mode #drop-filter-subject {
+  flex: 1 1 260px;
+  min-width: 220px;
+  max-width: 420px;
+  padding: 11px 34px 11px 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-strong, #f4f6f8);
+  background-color: var(--surface-raised, #1b1f24);
+  border: 1px solid color-mix(in srgb, var(--accent, #6366f1) 45%, transparent);
+  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.32));
+}
+.ios-mode #drop-filter-subject:hover,
+.ios-mode #drop-filter-subject:focus {
+  border-color: var(--accent, #6366f1);
+}
