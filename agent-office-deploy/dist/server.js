@@ -10,6 +10,7 @@ const reminderTime = require('./reminder-time.js');
 const countdowns = require('./countdowns.js');
 const resetTimers = require('./reset-timers.js');
 const planning = require('./planning.js');
+const planningWeek = require('./planning-week.js');
 const sharebotNewsroom = require('./sharebot-newsroom.js');
 const happyHour = require('./happy-hour.js');
 
@@ -3264,6 +3265,34 @@ function toSchedulingEvent(event) {
   };
 }
 
+// Steps 4 and 5 of the weekly build: the ticked planning items, placed in the
+// free time left around the calendar, the work schedule and everything else
+// already committed. Nothing is written - the caller shows the week, the user
+// drops or reschedules what does not work, and the blocks that survive go
+// through /api/calendar/schedule/commit like any other scheduled block.
+async function buildPlanningWeek(body = {}) {
+  const storage = await storageReady;
+  const [items, preferences, events] = await Promise.all([
+    loadPlanningItems(storage),
+    getSchedulingPreferences(),
+    currentCalendarEvents(),
+  ]);
+
+  return planningWeek.buildWeek({
+    items,
+    events,
+    preferences,
+    now: new Date(),
+    horizonDays: body.horizonDays,
+    // A rota read off a photograph arrives here already corrected. Until that
+    // step exists, a caller can pass one by hand.
+    workSchedule: body.workSchedule,
+    respectWorkingHours: body.respectWorkingHours === true,
+    only: body.only,
+    pinned: body.pinned,
+  });
+}
+
 async function currentCalendarEvents() {
   const storage = await storageReady;
   const source = await isGcalConnected()
@@ -6414,6 +6443,15 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && pathname === '/api/planning/brief') {
       if (!requireDropsAuth(res, req)) return;
       sendJson(res, 200, planning.buildSchedulingBrief(await loadPlanningItems(storage)));
+      return;
+    }
+
+    // Steps 4 to 6: the proposed week. This reads the calendar and writes
+    // nothing; accepting the week posts its blocks to
+    // /api/calendar/schedule/commit, which is where they become real.
+    if (req.method === 'POST' && pathname === '/api/planning/week') {
+      if (!requireDropsAuth(res, req)) return;
+      sendJson(res, 200, await buildPlanningWeek(await readJsonBody(req)));
       return;
     }
 

@@ -58,6 +58,10 @@ const FIELDS = {
   runFindings: { kind: 'int', min: 0, max: 9999 },
   dependsOn: { kind: 'list' },
   energy: { kind: 'enum', values: ['low', 'medium', 'high'], fallback: '' },
+  // The planning item this block was built from, when it came out of Planning
+  // Mode. Without it a committed week is just events, and nothing can tell
+  // later that "Workout" on Tuesday is the "Workout 3 times" you ticked.
+  planningItemId: { kind: 'text' },
   // Orchestration identifiers. A block never runs anything itself - it submits a
   // Mission Control goal to Penny and then mirrors that goal's state, so these
   // three point at the real execution rather than duplicating it.

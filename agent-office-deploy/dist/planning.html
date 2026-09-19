@@ -8,7 +8,7 @@
 <meta http-equiv="Expires" content="0"/>
 <title>Planning Mode - Agent Office</title>
 <link rel="stylesheet" href="shared.css?v=calendar-focus-planning-20260908"/>
-<link rel="stylesheet" href="planning.css?v=calendar-focus-planning-20260908"/>
+<link rel="stylesheet" href="planning.css?v=planning-week-20260919"/>
 <!-- Restores the saved theme, sidebar state and focus mode before first paint,
      so no page flashes the default accent, a full-width sidebar, or the chrome
      of a page that opens in Focus Mode. ACCENTS mirrors THEMES in
@@ -175,6 +175,24 @@
       </div>
 
       <div class="planning-panel">
+        <div class="planning-panel-head">
+          <div>
+            <div class="planning-panel-title">The week</div>
+            <div class="planning-sub">
+              Steps 4 and 5: every ticked item placed in time that is actually free, around your
+              calendar, your work schedule and everything else already fixed. Nothing is on the
+              calendar until you accept it.
+            </div>
+          </div>
+          <div class="planning-panel-actions">
+            <button class="planning-btn planning-btn--primary" id="planning-build"
+              onclick="AOPlanning.buildWeek()">Build my week</button>
+          </div>
+        </div>
+        <div id="planning-week"></div>
+      </div>
+
+      <div class="planning-panel">
         <div class="planning-panel-title">How the week gets built</div>
         <ol class="planning-steps">
           <li>Work schedule — the days and hours you are at work, so nothing is planned over them.</li>
@@ -203,7 +221,7 @@
 <div class="statusbar" id="statusbar"></div>
 
 <script src="app-shared.js?v=reminder-categories-20260916"></script>
-<script src="planning-page.js?v=calendar-focus-planning-20260908"></script>
+<script src="planning-page.js?v=planning-week-20260919"></script>
 <script>
 switchView('planning', document.querySelector('.nav-item.active'));
 </script>
