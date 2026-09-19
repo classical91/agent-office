@@ -608,3 +608,76 @@ test('a page opened without a session is still gated', async t => {
     'a visitor with no session should meet a login, not the Office'
   );
 });
+
+// The Office may run without a passphrase on an undeployed machine — that is
+// the documented policy, and the calendar honoured it. The page did not: it
+// locked itself and raised a login panel whose password did not exist, and
+// whose submit answered 503, so a dev box was sealed behind a door with no key.
+// Nothing here is gated, so nothing should be painted as if it were.
+test('a machine with no passphrase is not locked behind a login it cannot pass', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  // Its own server: the shared one above is deliberately passphrase-protected.
+  const open = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-office-ungated-'));
+  t.after(() => fs.rmSync(open, { recursive: true, force: true }));
+  const ungated = await startTestServer({
+    serverPath: SERVER_PATH,
+    cwd: DIST,
+    buildEnv: port => {
+      const environment = {
+        ...process.env,
+        PORT: String(port),
+        APP_TIMEZONE: 'UTC',
+        APP_SETTINGS_FILE: path.join(open, 'settings.json'),
+        CALENDAR_EVENTS_FILE: path.join(open, 'calendar-events.json'),
+        AGENTS_FILE: path.join(open, 'agents.json'),
+        MEMORIES_FILE: path.join(open, 'memories.json'),
+        DROPS_FILE: path.join(open, 'drops.json'),
+        PROJECTS_FILE: path.join(open, 'projects.json'),
+      };
+      // No passphrase, and nothing that makes this look like a deployment.
+      [
+        'DROPS_PASSPHRASE', 'DROPS_PASSPHRASE_HASH', 'DATABASE_URL',
+        'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'NODE_ENV',
+        'RAILWAY_ENVIRONMENT', 'RAILWAY_ENVIRONMENT_NAME',
+        'RAILWAY_PROJECT_ID', 'RAILWAY_SERVICE_ID',
+      ].forEach(key => { delete environment[key]; });
+      return environment;
+    },
+  });
+  t.after(() => ungated.child.kill());
+
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  t.after(() => context.close());
+  await context.route('**/*', route => {
+    const sameOrigin = new URL(route.request().url()).origin === ungated.origin;
+    return sameOrigin ? route.continue() : route.abort();
+  });
+  const page = await context.newPage();
+
+  await page.goto(`${ungated.origin}/mission-board.html`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(600);
+
+  assert.equal(new URL(page.url()).pathname, '/mission-board.html', 'no login to be sent to');
+  assert.equal(
+    await page.locator('#ao-login-modal:not([hidden])').count(),
+    0,
+    'the page raised a login panel on an instance with no password'
+  );
+  assert.equal(
+    await page.evaluate(() => document.documentElement.classList.contains('ao-site-locked')),
+    false,
+    'and locked a site that has no gate'
+  );
+  // Nothing to log into, so nothing offering it.
+  assert.equal(await page.locator('#ao-login-trigger').isVisible(), false);
+
+  // The real proof it is usable: the page's own data loaded.
+  await page.waitForSelector('#drop-wall, #drop-list, .drop-card, .folder-card', { timeout: 5000 })
+    .catch(() => {});
+  assert.equal(
+    await page.evaluate(() => document.body.innerText.includes('Unlock the dropbox first')),
+    false,
+    'the page still thinks it is locked'
+  );
+});
