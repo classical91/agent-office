@@ -105,6 +105,43 @@ window.AOResets = (() => {
     other: { label: 'Other', keep: view => view.card.category === 'other' },
   };
 
+  // The shared Agent Office countdowns behind /api/countdowns keep their own
+  // small vocabulary — six categories and seven repeats, fixed in countdowns.js
+  // — and an office card's editor has to offer that vocabulary rather than this
+  // page's private one, or a save would quietly rewrite the card's category.
+  // /api/countdowns sends both lists with the payload; these are the fallback
+  // for a load that answered without them.
+  const OFFICE_CATEGORY_OPTIONS = [
+    { value: 'deadline', label: 'Deadline' },
+    { value: 'goal', label: 'Goal' },
+    { value: 'shift', label: 'Work Shift' },
+    { value: 'routine', label: 'Routine' },
+    { value: 'trading', label: 'Trading' },
+    { value: 'personal', label: 'Personal' },
+  ];
+
+  const OFFICE_REPEAT_LABELS = {
+    none: 'Does not repeat',
+    daily: 'Every day',
+    every2days: 'Every 2 days',
+    weekday: 'Every weekday',
+    weekly: 'Every week',
+    biweekly: 'Every 2 weeks',
+    monthly: 'Every month',
+  };
+
+  const OFFICE_REPEAT_OPTIONS = Object.entries(OFFICE_REPEAT_LABELS)
+    .map(([value, label]) => ({ value, label }));
+
+  let officeCategoryOptions = OFFICE_CATEGORY_OPTIONS.map(item => ({ ...item }));
+  let officeRepeatOptions = OFFICE_REPEAT_OPTIONS.map(item => ({ ...item }));
+
+  function officeCategoryLabel(value) {
+    const found = officeCategoryOptions.find(item => item.value === value);
+    return found ? found.label : (OFFICE_CATEGORY_OPTIONS.find(item => item.value === value) || {}).label
+      || 'Deadline';
+  }
+
   const CATEGORY_LABELS = Object.fromEntries(CATEGORY_OPTIONS.map(item => [item.value, item.label]));
   const CATEGORY_CACHE_KEY = 'ao-countdown-categories-v1';
   const DEFAULT_CATEGORIES = CATEGORY_OPTIONS.filter(item => item.value)
@@ -555,6 +592,18 @@ window.AOResets = (() => {
       message: String(raw.message || ''),
       source: raw.source === 'office' ? 'office' : 'browser',
       notes: String(raw.notes || ''),
+      // An office card counts down to its next occurrence, but an edit has to
+      // move the record's own target — saving the occurrence back would walk a
+      // repeating countdown forward one step every time it was opened. These
+      // three carry the shared record as it is stored, next to the display copy.
+      targetAt: toIso(raw.targetAt) || '',
+      officeRepeat: String(raw.officeRepeat || ''),
+      // The shared record's own category, kept raw. `category` above is run
+      // through this page's private registry, which can rename or retire an id
+      // the office still uses — saving that back would change the card's
+      // category for everyone as a side effect of an unrelated edit.
+      officeCategory: String(raw.officeCategory || ''),
+      nextAction: String(raw.nextAction || ''),
       createdAt: Number(raw.createdAt) || 0,
       // A deleted card is kept as a tombstone rather than dropped, so the
       // deletion can win a merge instead of the other side handing the card
@@ -790,13 +839,26 @@ window.AOResets = (() => {
         .flatMap(group => (payload.groups && payload.groups[group]) || [])
         .filter(item => item.kind === 'countdown');
       const repeatDays = { daily: 1, every2days: 2, weekday: 1, weekly: 7, biweekly: 14, monthly: 30 };
+      if (Array.isArray(payload.categories) && payload.categories.length) {
+        officeCategoryOptions = payload.categories
+          .filter(item => item && item.id)
+          .map(item => ({ value: item.id, label: item.label || item.id }));
+      }
+      if (Array.isArray(payload.repeats) && payload.repeats.length) {
+        officeRepeatOptions = payload.repeats
+          .map(value => ({ value, label: OFFICE_REPEAT_LABELS[value] || value }));
+      }
       const shared = items.map((item, index) => normalizeCard({
         id: item.id,
         title: item.title,
         resetAt: item.occurs_at || item.target_at,
+        targetAt: item.target_at,
+        officeRepeat: item.repeat,
         repeatDays: repeatDays[item.repeat] || 0,
         category: item.category,
+        officeCategory: item.category,
         status: item.archived ? 'completed' : 'active',
+        nextAction: item.next_action || '',
         message: item.next_action || 'Managed in Agent Office.',
         notes: item.notes || '',
         source: 'office',
@@ -881,15 +943,87 @@ window.AOResets = (() => {
     const bodyId = `rst-body-${escHtml(card.id)}`;
     const categoryLabel = CATEGORY_LABELS[normalizeCategory(card.category)] || CATEGORY_LABELS[''];
 
-    if (card.source === 'office') return `
-      <article class="rst-card${open ? ' is-open' : ''}${isDueSoon(view) ? ' is-due-soon' : ''}" data-id="${escHtml(card.id)}" data-state="${view.state}" style="--rst-color: ${color}">
+    // A shared card expands into the same editor an ordinary card does, only
+    // wired to /api/countdowns: name, when it lands, how it repeats, its
+    // category, its next action and its notes. It used to be read-only, which
+    // left the only way to fix a shared countdown's time or title somewhere
+    // other than the page showing it. Pushcut and the webhook stay off it — the
+    // shared record has no such field, and the notification for one is not this
+    // page's to send.
+    if (card.source === 'office') {
+      const officeCategory = card.officeCategory || card.category || 'deadline';
+      const officeRepeat = card.officeRepeat || 'none';
+      // The editor moves the stored target, not the occurrence on the front of
+      // the card: saving the occurrence back would walk a repeating countdown
+      // one step forward every time it was opened.
+      const editedAt = card.targetAt || card.resetAt;
+      return `
+      <article class="rst-card${open ? ' is-open' : ''}${state.savedId === card.id ? ' is-saved' : ''}${isDueSoon(view) ? ' is-due-soon' : ''}" data-id="${escHtml(card.id)}" data-state="${view.state}" style="--rst-color: ${color}">
         <button type="button" class="rst-head" data-action="toggle" aria-expanded="${open}" aria-controls="${bodyId}">
           <span class="rst-icon" aria-hidden="true">${icon.glyph}</span>
-          <span class="rst-head-main"><span class="rst-head-top"><span class="rst-title">${escHtml(card.title)}</span><span class="ao-status ao-status--info rst-state">Shared</span></span><span class="rst-category">${escHtml(categoryLabel)}</span><span class="rst-time" data-role="time">${escHtml(timeLabel(view))}</span><span class="rst-when" data-role="when">${escHtml(whenLabel(view))}</span></span>
-          <span class="rst-chevron" aria-hidden="true">â–¾</span>
+          <span class="rst-head-main"><span class="rst-head-top"><span class="rst-title" data-role="title">${escHtml(card.title)}</span><span class="ao-status ao-status--info rst-state">Shared</span></span><span class="rst-category">${escHtml(officeCategoryLabel(officeCategory))}</span><span class="rst-time" data-role="time">${escHtml(timeLabel(view))}</span><span class="rst-when" data-role="when">${escHtml(whenLabel(view))}</span></span>
+          <span class="rst-chevron" aria-hidden="true">▾</span>
         </button>
-        <div class="rst-body" id="${bodyId}"><div class="rst-body-inner"><div class="rst-message">${escHtml(card.message)}</div>${card.notes ? `<p>${escHtml(card.notes)}</p>` : ''}<div class="rst-footnote">Shared Agent Office countdown · managed by Penny</div></div></div>
+
+        <div class="rst-body" id="${bodyId}">
+          <div class="rst-body-inner">
+            <div class="ao-field">
+              <label class="ao-label" for="rst-name-${escHtml(card.id)}">Countdown name</label>
+              <input class="ao-input" id="rst-name-${escHtml(card.id)}" data-field="title"
+                     maxlength="160" value="${escHtml(card.title)}" />
+            </div>
+
+            <div class="rst-field-row">
+              <div class="ao-field">
+                <label class="ao-label" for="rst-date-${escHtml(card.id)}">Due date</label>
+                <input class="ao-input" id="rst-date-${escHtml(card.id)}" type="date" data-field="date"
+                       value="${escHtml(toDateValue(editedAt))}" />
+              </div>
+              <div class="ao-field">
+                <label class="ao-label" for="rst-time-${escHtml(card.id)}">Time</label>
+                <input class="ao-input" id="rst-time-${escHtml(card.id)}" type="time" data-field="time"
+                       value="${escHtml(toTimeValue(editedAt))}" />
+              </div>
+            </div>
+
+            <div class="ao-field">
+              <label class="ao-label" for="rst-repeat-${escHtml(card.id)}">Repeats</label>
+              <select class="ao-select" id="rst-repeat-${escHtml(card.id)}" data-field="officeRepeat">
+                ${optionsHtml(officeRepeatOptions, officeRepeat)}
+              </select>
+            </div>
+
+            <div class="ao-field">
+              <label class="ao-label" for="rst-category-${escHtml(card.id)}">Category</label>
+              <select class="ao-select" id="rst-category-${escHtml(card.id)}" data-field="officeCategory">
+                ${optionsHtml(officeCategoryOptions, officeCategory)}
+              </select>
+            </div>
+
+            <div class="ao-field">
+              <label class="ao-label" for="rst-action-${escHtml(card.id)}">Next action</label>
+              <input class="ao-input" id="rst-action-${escHtml(card.id)}" data-field="nextAction"
+                     maxlength="300" value="${escHtml(card.nextAction)}" />
+            </div>
+
+            <div class="ao-field">
+              <label class="ao-label" for="rst-notes-${escHtml(card.id)}">Notes</label>
+              <textarea class="ao-textarea" id="rst-notes-${escHtml(card.id)}" data-field="notes"
+                        maxlength="600" rows="3">${escHtml(card.notes)}</textarea>
+            </div>
+
+            <div class="rst-message" data-role="message">${escHtml(card.message)}</div>
+
+            <div class="rst-actions">
+              <button type="button" class="ao-btn ao-btn--danger" data-action="delete">Delete</button>
+              <button type="button" class="ao-btn ao-btn--primary" data-action="save">Save changes</button>
+            </div>
+
+            <div class="rst-footnote">Shared Agent Office countdown · managed by Penny</div>
+          </div>
+        </div>
       </article>`;
+    }
 
     return `
       <article class="rst-card${open ? ' is-open' : ''}${state.savedId === card.id ? ' is-saved' : ''}${isDueSoon(view) ? ' is-due-soon' : ''}"
@@ -1282,9 +1416,97 @@ window.AOResets = (() => {
 
   // ─── Card actions ──────────────────────────────────────────────────────
 
+  // ─── Shared (Agent Office) card actions ────────────────────────────────
+  //
+  // A shared card is not in localStorage and is not in /api/reset-timers: it
+  // lives behind /api/countdowns, which every other office client reads too.
+  // So its edits go straight to that API and the list is reloaded from the
+  // answer, rather than being merged into the browser's own copy.
+
+  function officeDraftFrom(node) {
+    const read = field => {
+      const input = node.querySelector(`[data-field="${field}"]`);
+      return input ? input.value.trim() : '';
+    };
+    return {
+      title: read('title').slice(0, 160),
+      targetAt: fromDateTime(read('date'), read('time')),
+      repeat: read('officeRepeat'),
+      category: read('officeCategory'),
+      nextAction: read('nextAction').slice(0, 300),
+      notes: read('notes').slice(0, 600),
+    };
+  }
+
+  // Writes to /api/countdowns need the office passphrase, the same as every
+  // other write on this page. Asking before the request beats a 401 landing on
+  // a card the user has just finished typing into.
+  async function writeOfficeCountdown(id, options) {
+    if (typeof ensureDropsSession === 'function' && !(await ensureDropsSession(true))) return null;
+    const response = await fetch(`/api/countdowns/${encodeURIComponent(id)}`, {
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      ...options,
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      throw new Error((payload && payload.error) || 'Could not save the shared countdown.');
+    }
+    return response.json().catch(() => ({}));
+  }
+
+  // The draft as /api/countdowns wants it. The API speaks snake_case and keeps
+  // the target as an instant, which is the only translation between the two.
+  function officePatchBody(draft) {
+    return {
+      title: draft.title,
+      target_at: draft.targetAt,
+      repeat: draft.repeat,
+      category: draft.category,
+      next_action: draft.nextAction,
+      notes: draft.notes,
+    };
+  }
+
+  async function saveOfficeCard(card, node) {
+    const draft = officeDraftFrom(node);
+    if (!draft.title) return setMessage(card.id, 'Give the countdown a name before saving.');
+    if (!draft.targetAt) return setMessage(card.id, 'Pick a date and time before saving.');
+
+    setMessage(card.id, 'Saving to Agent Office...');
+    try {
+      const saved = await writeOfficeCountdown(card.id, {
+        method: 'PATCH',
+        body: JSON.stringify(officePatchBody(draft)),
+      });
+      // null means the passphrase prompt was cancelled: the card stays open
+      // with everything still typed into it.
+      if (!saved) return setMessage(card.id, 'Unlock the office to save this countdown.');
+      state.savedId = card.id;
+      await loadOfficeCards();
+      setMessage(card.id, 'Saved to Agent Office.');
+    } catch (error) {
+      setMessage(card.id, error.message || 'Could not save the shared countdown.');
+    }
+  }
+
+  async function deleteOfficeCard(card) {
+    if (!window.confirm(`Delete "${card.title}" for everyone in Agent Office?`)) return;
+    setMessage(card.id, 'Deleting...');
+    try {
+      const removed = await writeOfficeCountdown(card.id, { method: 'DELETE' });
+      if (!removed) return setMessage(card.id, 'Unlock the office to delete this countdown.');
+      if (state.openId === card.id) state.openId = '';
+      await loadOfficeCards();
+    } catch (error) {
+      setMessage(card.id, error.message || 'Could not delete the shared countdown.');
+    }
+  }
+
   function saveCard(id, node) {
     const card = state.cards.find(item => item.id === id);
     if (!card) return;
+    if (card.source === 'office') return saveOfficeCard(card, node);
     const draft = draftFrom(node);
     if (!draft.title) return setMessage(id, 'Give the countdown a name before saving.');
     if (!draft.resetAt) return setMessage(id, 'Pick a date and time before saving.');
@@ -1324,6 +1546,7 @@ window.AOResets = (() => {
   function deleteCard(id) {
     const card = state.cards.find(item => item.id === id);
     if (!card) return;
+    if (card.source === 'office') return deleteOfficeCard(card);
     if (!window.confirm(`Delete "${card.title}"?`)) return;
     card.deleted = true;
     card.status = 'completed';
@@ -1635,6 +1858,10 @@ window.AOResets = (() => {
     happyHourShortcutTime,
     isListView,
     isDueSoon,
+    cardHtml,
+    officeDraftFrom,
+    officePatchBody,
+    viewOf,
     FILTERS,
     CATEGORY_FILTERS,
     CATEGORY_OPTIONS,
