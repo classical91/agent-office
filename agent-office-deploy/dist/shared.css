@@ -2230,11 +2230,30 @@
   /* Destructive action sits away from the ordering controls it shares a row with. */
   .mission-edit-actions .mission-delete { margin-left: auto; }
   .mission-approve { margin: 0 0 10px; }
+  .mission-crons { margin: 24px 0 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+  .cron-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 12px 0; }
+  #mission-cron-list { display: grid; gap: 8px; }
+  .cron-job { padding: 12px; border: 1px solid var(--border); border-left: 3px solid var(--state-active); border-radius: 10px; background: var(--view-bg); }
+  .cron-job--paused { border-left-color: var(--state-idle); opacity: .82; }
+  .cron-job--failed { border-left-color: var(--state-blocked); }
+  .cron-job--running { border-left-color: var(--cyan); }
+  .cron-job-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+  .cron-job-head strong { overflow-wrap: anywhere; }
+  .cron-state { flex-shrink: 0; border: 1px solid var(--border); border-radius: 999px; padding: 3px 8px; color: var(--state-active); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+  .cron-state--paused { color: var(--state-idle); }
+  .cron-state--failed { color: var(--state-blocked); }
+  .cron-state--running { color: var(--cyan); }
+  .cron-job p { margin: 8px 0; color: var(--text-dim); font-size: 12px; line-height: 1.45; }
+  .cron-job-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 12px; margin-top: 10px; }
+  .cron-job-meta span { min-width: 0; color: var(--text-dim); font-size: 11px; overflow-wrap: anywhere; }
+  .cron-job-meta b { display: block; margin-bottom: 2px; color: var(--muted); font-size: 9px; letter-spacing: .06em; text-transform: uppercase; }
+  .cron-job-error { margin-top: 10px; padding: 8px 10px; border-radius: 8px; background: color-mix(in srgb, var(--state-blocked) 10%, transparent); color: var(--state-blocked); font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
   @media (max-width: 700px) {
     .control-center { grid-template-columns: 1fr; }
     .control-center-backdrop { display: none; }
     .control-center-panel { border-left: 0; padding: 18px; }
     .control-stats { grid-template-columns: 1fr; }
+    .cron-summary, .cron-job-meta { grid-template-columns: 1fr 1fr; }
     .newsroom-row { flex-direction: column; align-items: flex-start; }
     .newsroom-row strong { text-align: left; }
     .office-bar-meta { flex-shrink: 0; }

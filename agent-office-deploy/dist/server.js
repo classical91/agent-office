@@ -5272,6 +5272,32 @@ const DEFAULT_GATEWAY_URL = 'http://localhost:18789';
 // write, and a restart is corrected by the next one.
 let lastGatewayHeartbeat = null;
 
+function normalizeCronJob(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const id = cleanText(raw.id, 120);
+  if (!id) return null;
+  const schedule = raw.schedule && typeof raw.schedule === 'object' ? raw.schedule : {};
+  return {
+    id,
+    name: cleanText(raw.name, 180) || 'Unnamed cron job',
+    internal_name: cleanText(raw.internal_name, 180),
+    description: cleanText(raw.description, 500),
+    agent_id: cleanText(raw.agent_id, 80),
+    enabled: raw.enabled !== false,
+    schedule: {
+      kind: cleanText(schedule.kind, 20),
+      expr: cleanText(schedule.expr, 120),
+      tz: cleanText(schedule.tz, 80),
+      every_ms: Number(schedule.every_ms) || null,
+      at: cleanText(schedule.at, 60),
+    },
+    next_run_at_ms: Number(raw.next_run_at_ms) || null,
+    last_run_at_ms: Number(raw.last_run_at_ms) || null,
+    last_run_status: cleanText(raw.last_run_status, 40),
+    last_run_error: cleanText(raw.last_run_error, 500),
+  };
+}
+
 // "localhost:18789" is a host and a port; "file:///etc/passwd" is a scheme.
 // Both have a colon, so the two have to be told apart before anything is
 // prepended - otherwise a rejected scheme becomes a fetchable http address.
@@ -5950,14 +5976,27 @@ const server = http.createServer(async (req, res) => {
 
       const body = await readJsonBody(req);
       const rawAgents = Array.isArray(body.agents) ? body.agents.slice(0, 100) : [];
+      const rawCronJobs = Array.isArray(body.cron_jobs) ? body.cron_jobs.slice(0, 1000) : [];
       lastGatewayHeartbeat = {
         at: Date.now(),
         host: String(body.host || '').trim().slice(0, 120),
         version: String(body.version || '').trim().slice(0, 60),
         agents: rawAgents.filter(agent => agent && typeof agent === 'object').map(toGatewayAgent),
+        cron_jobs: rawCronJobs.map(normalizeCronJob).filter(Boolean),
       };
 
-      sendJson(res, 200, { ok: true, agents: lastGatewayHeartbeat.agents.length });
+      sendJson(res, 200, { ok: true, agents: lastGatewayHeartbeat.agents.length, cron_jobs: lastGatewayHeartbeat.cron_jobs.length });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/api/cron-jobs') {
+      if (!requireDropsAuth(res, req)) return;
+      const heartbeat = describeGatewayHeartbeat();
+      sendJson(res, 200, {
+        jobs: lastGatewayHeartbeat ? lastGatewayHeartbeat.cron_jobs || [] : [],
+        updated_at: lastGatewayHeartbeat ? new Date(lastGatewayHeartbeat.at).toISOString() : null,
+        fresh: heartbeat.fresh,
+      });
       return;
     }
 

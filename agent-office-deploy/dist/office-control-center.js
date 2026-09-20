@@ -12,6 +12,7 @@
   let selectedId = null;
   let missionGoals = [];
   let missionEditMode = false;
+  let cronJobs = [];
 
   // -- ShareBot67 newsroom health ------------------------------
   //
@@ -269,11 +270,77 @@
         <div class="mission-results-heading"><div><strong>Goals and Outbox</strong><span>In edit mode, drag active goals to set Penny's order or delete the ones you no longer want.</span></div><button class="ao-btn mission-order-toggle" type="button">Edit order</button></div>
         <div id="mission-results-list"><div class="control-unavailable">Loading goals…</div></div>
       </section>
+      <section class="mission-crons" aria-live="polite">
+        <div class="mission-results-heading"><div><strong>Scheduled jobs</strong><span>Complete OpenClaw cron inventory, including paused jobs.</span></div><button class="ao-btn cron-refresh" type="button">Refresh</button></div>
+        <div id="mission-cron-summary" class="cron-summary"></div>
+        <div id="mission-cron-list"><div class="control-unavailable">Loading cron jobs...</div></div>
+      </section>
       <div class="control-actions"><a class="ao-btn" href="/mission-board.html">Open Mission Board</a><a class="ao-btn" href="/project-rooms.html">Project rooms</a><a class="ao-btn" href="/agent-registry.html">Agent registry</a></div>`;
     body.querySelector('#mission-goal-form').addEventListener('submit', submitGoal);
     body.querySelector('.mission-order-toggle').addEventListener('click', toggleMissionEditMode);
+    body.querySelector('.cron-refresh').addEventListener('click', refreshCronJobs);
     openShell();
     refreshMissionGoals();
+    refreshCronJobs();
+  }
+
+  function cronDate(value) {
+    if (!value) return 'Not scheduled';
+    const at = new Date(Number(value));
+    return Number.isNaN(at.getTime()) ? 'Not scheduled' : at.toLocaleString();
+  }
+
+  function cronSchedule(job) {
+    const schedule = job.schedule || {};
+    if (schedule.kind === 'cron') return `${schedule.expr || 'Cron'}${schedule.tz ? ` - ${schedule.tz}` : ''}`;
+    if (schedule.kind === 'every' && schedule.every_ms) {
+      const minutes = Math.round(schedule.every_ms / 60000);
+      return minutes >= 1440 && minutes % 1440 === 0 ? `Every ${minutes / 1440} day(s)` : `Every ${minutes} minute(s)`;
+    }
+    if (schedule.kind === 'at') return schedule.at ? `Once - ${cronDate(Date.parse(schedule.at))}` : 'One time';
+    return schedule.kind || 'Schedule unavailable';
+  }
+
+  function cronState(job) {
+    if (!job.enabled) return 'paused';
+    if (job.last_run_status === 'error' || job.last_run_status === 'failed') return 'failed';
+    if (job.last_run_status === 'running') return 'running';
+    return 'active';
+  }
+
+  async function refreshCronJobs() {
+    const list = body.querySelector('#mission-cron-list');
+    const summary = body.querySelector('#mission-cron-summary');
+    if (!list || !summary) return;
+    try {
+      const response = await fetch('/api/cron-jobs', { credentials: 'same-origin' });
+      if (response.status === 401) throw new Error('Log in to Agent Office to see cron jobs.');
+      if (!response.ok) throw new Error('Cron inventory is unavailable.');
+      const payload = await response.json();
+      cronJobs = Array.isArray(payload.jobs) ? payload.jobs : [];
+      const active = cronJobs.filter(job => job.enabled).length;
+      const paused = cronJobs.length - active;
+      const failing = cronJobs.filter(job => job.enabled && ['error', 'failed'].includes(job.last_run_status)).length;
+      summary.innerHTML = `${stat('All jobs', String(cronJobs.length))}${stat('Active', String(active))}${stat('Paused', String(paused))}${stat('Failing', String(failing), payload.fresh ? 'Live gateway snapshot' : 'Last known snapshot')}`;
+      if (!cronJobs.length) {
+        list.innerHTML = '<div class="control-unavailable">No cron inventory has been received from the OpenClaw gateway yet.</div>';
+        return;
+      }
+      const ordered = cronJobs.slice().sort((a, b) => Number(b.enabled) - Number(a.enabled) || (a.next_run_at_ms || Infinity) - (b.next_run_at_ms || Infinity) || a.name.localeCompare(b.name));
+      list.innerHTML = ordered.map(job => {
+        const state = cronState(job);
+        const last = job.last_run_at_ms ? `${job.last_run_status || 'unknown'} - ${cronDate(job.last_run_at_ms)}` : 'No run recorded';
+        return `<article class="cron-job cron-job--${escape(state)}">
+          <div class="cron-job-head"><strong>${escape(job.name)}</strong><span class="cron-state cron-state--${escape(state)}">${escape(state)}</span></div>
+          ${job.description ? `<p>${escape(job.description)}</p>` : ''}
+          <div class="cron-job-meta"><span><b>Owner</b>${escape(job.agent_id || 'Unassigned')}</span><span><b>Schedule</b>${escape(cronSchedule(job))}</span><span><b>Next run</b>${escape(job.enabled ? cronDate(job.next_run_at_ms) : 'Paused')}</span><span><b>Last run</b>${escape(last)}</span></div>
+          ${job.last_run_error ? `<div class="cron-job-error">${escape(job.last_run_error)}</div>` : ''}
+        </article>`;
+      }).join('');
+    } catch (error) {
+      summary.innerHTML = '';
+      list.innerHTML = `<div class="control-unavailable">${escape(error.message)}</div>`;
+    }
   }
 
   async function refreshMissionGoals() {

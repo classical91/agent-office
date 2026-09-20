@@ -47,6 +47,20 @@ test('Mission Control sends goals to Penny through the authenticated board', () 
   assert.match(control, /\/edit/);
 });
 
+test('Mission Control shows the complete OpenClaw cron inventory', () => {
+  const server = fs.readFileSync(path.join(DIST, 'server.js'), 'utf8');
+  assert.match(control, /Scheduled jobs/);
+  assert.match(control, /fetch\('\/api\/cron-jobs'/);
+  assert.match(control, /All jobs/);
+  assert.match(control, /Paused/);
+  assert.match(control, /Last run/);
+  assert.match(server, /pathname === '\/api\/cron-jobs'/);
+  assert.match(server, /requireDropsAuth\(res, req\)/);
+  assert.match(relay, /\['cron', 'list', '--all', '--json'\]/);
+  assert.match(relay, /cron_jobs: cronJobs/);
+  assert.doesNotMatch(relay, /payload:\s*job\.payload/);
+});
+
 test('Mission Control goals can be deleted, including completed history', () => {
   const server = fs.readFileSync(path.join(DIST, 'server.js'), 'utf8');
   assert.match(control, /Delete goal/);

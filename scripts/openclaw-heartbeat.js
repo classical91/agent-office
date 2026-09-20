@@ -51,6 +51,9 @@ const AGENT_TIMEOUT_MS = Math.max(60, Number(process.env.PENNY_GOAL_TIMEOUT_SECO
 let cycleRunning = false;
 const MEMORY_SYNC_MS = Math.max(1, Number(process.env.MEMORY_SYNC_MINUTES) || 15) * 60 * 1000;
 let lastMemorySyncAt = 0;
+let lastCronJobs = [];
+let lastCronReadAt = 0;
+const CRON_SYNC_MS = Math.max(1, Number(process.env.CRON_SYNC_MINUTES) || 1) * 60 * 1000;
 
 if (!OFFICE_URL || !TOKEN) {
   console.error('Set OFFICE_URL and GATEWAY_TOKEN. See the comment at the top of this file.');
@@ -86,6 +89,52 @@ async function readGateway() {
   return { up, agents: [], from: '' };
 }
 
+// Mission Control only needs an operational summary. Payload prompts, command
+// arguments, delivery destinations, and private scheduler configuration stay
+// on the OpenClaw machine.
+function summarizeCronJob(job) {
+  const schedule = job && job.schedule && typeof job.schedule === 'object' ? job.schedule : {};
+  const state = job && job.state && typeof job.state === 'object' ? job.state : {};
+  return {
+    id: String(job.id || '').slice(0, 120),
+    name: String(job.displayName || job.name || 'Unnamed cron job').slice(0, 180),
+    internal_name: String(job.name || '').slice(0, 180),
+    description: String(job.description || '').slice(0, 500),
+    agent_id: String(job.agentId || (job.owner && job.owner.agentId) || '').slice(0, 80),
+    enabled: job.enabled !== false,
+    schedule: {
+      kind: String(schedule.kind || '').slice(0, 20),
+      expr: String(schedule.expr || '').slice(0, 120),
+      tz: String(schedule.tz || '').slice(0, 80),
+      every_ms: Number(schedule.everyMs) || null,
+      at: String(schedule.at || '').slice(0, 60),
+    },
+    next_run_at_ms: Number(job.nextRunAtMs || state.nextRunAtMs) || null,
+    last_run_at_ms: Number(job.lastRunAtMs || state.lastRunAtMs) || null,
+    last_run_status: String(job.lastRunStatus || state.lastRunStatus || job.status || '').slice(0, 40),
+    last_run_error: String(job.lastRunError || state.lastError || '').slice(0, 500),
+  };
+}
+
+async function readCronJobs() {
+  if (lastCronReadAt && Date.now() - lastCronReadAt < CRON_SYNC_MS) return lastCronJobs;
+  try {
+    const command = process.platform === 'win32' ? 'openclaw.cmd' : 'openclaw';
+    const { stdout } = await execFileAsync(command, ['cron', 'list', '--all', '--json'], {
+      timeout: 20000,
+      maxBuffer: 5 * 1024 * 1024,
+      windowsHide: true,
+      shell: process.platform === 'win32',
+    });
+    const parsed = JSON.parse(String(stdout || '{}'));
+    lastCronJobs = (Array.isArray(parsed.jobs) ? parsed.jobs : []).map(summarizeCronJob).filter(job => job.id);
+    lastCronReadAt = Date.now();
+  } catch (error) {
+    console.error(`${new Date().toISOString()} cron inventory read failed: ${error.message}`);
+  }
+  return lastCronJobs;
+}
+
 async function beat() {
   const gateway = await readGateway();
   if (!gateway.up) {
@@ -96,6 +145,7 @@ async function beat() {
   }
 
   try {
+    const cronJobs = await readCronJobs();
     const response = await fetch(`${OFFICE_URL}/api/gateway/heartbeat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Gateway-Token': TOKEN },
@@ -103,6 +153,7 @@ async function beat() {
         host: os.hostname(),
         version: process.version,
         agents: gateway.agents,
+        cron_jobs: cronJobs,
       }),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
@@ -114,7 +165,7 @@ async function beat() {
     }
 
     const label = gateway.agents.length ? `${gateway.agents.length} agent(s) from ${gateway.from}` : 'no agent list';
-    console.log(`${new Date().toISOString()} reported gateway up - ${label}`);
+    console.log(`${new Date().toISOString()} reported gateway up - ${label}; ${cronJobs.length} cron job(s)`);
     return true;
   } catch (error) {
     console.error(`${new Date().toISOString()} could not reach ${OFFICE_URL}: ${error.message}`);
