@@ -2217,7 +2217,17 @@
   .mission-result--completed { border-left-color: #22c55e; }
   .mission-result--failed { border-left-color: var(--state-blocked); }
   .mission-result > div { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+  .mission-result-head { align-items: flex-start !important; }
+  /* A long goal title wraps onto as many lines as it needs; the status stays put. */
+  .mission-result-title { min-width: 0; overflow-wrap: anywhere; line-height: 1.35; }
+  .mission-result-head .control-state { flex: none; white-space: nowrap; }
   .mission-result p { white-space: pre-wrap; max-height: 180px; overflow: auto; color: var(--text-dim); line-height: 1.45; }
+  /* Collapsed cards clamp the description so the list stays scannable; the
+     "Read full goal" button opens it in place instead of cutting the text off. */
+  .mission-result-description { margin-top: 8px; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; max-height: none; }
+  .mission-result--expanded .mission-result-description { display: block; -webkit-line-clamp: none; line-clamp: none; overflow: visible; }
+  .mission-result--expanded p { max-height: none; overflow: visible; }
+  .mission-expand { margin: 8px 0 0; padding: 4px 10px; font-size: 12px; }
   .mission-result .mission-result-error { color: var(--state-blocked); }
   .mission-source-link { width: fit-content; color: var(--accent); font-size: 12px; text-decoration: none; }
   .mission-result small { color: var(--muted); }
