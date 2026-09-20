@@ -257,6 +257,7 @@ window.AOResets = (() => {
     order: '',
     happyHourTrigger: null,
   };
+  let cronJobs = [];
 
   // ─── Helpers ───────────────────────────────────────────────────────────
 
@@ -997,6 +998,77 @@ window.AOResets = (() => {
     );
   }
 
+  function cronDate(value) {
+    if (!value) return 'Not scheduled';
+    const at = new Date(Number(value));
+    return Number.isNaN(at.getTime()) ? 'Not scheduled' : at.toLocaleString();
+  }
+
+  function cronSchedule(job) {
+    const schedule = job.schedule || {};
+    if (schedule.kind === 'cron') return `${schedule.expr || 'Cron'}${schedule.tz ? ` - ${schedule.tz}` : ''}`;
+    if (schedule.kind === 'every' && schedule.every_ms) {
+      const minutes = Math.round(schedule.every_ms / 60000);
+      return minutes >= 1440 && minutes % 1440 === 0 ? `Every ${minutes / 1440} day(s)` : `Every ${minutes} minute(s)`;
+    }
+    if (schedule.kind === 'at') return schedule.at ? `Once - ${cronDate(Date.parse(schedule.at))}` : 'One time';
+    return schedule.kind || 'Schedule unavailable';
+  }
+
+  function cronState(job) {
+    if (!job.enabled) return 'paused';
+    if (job.last_run_status === 'error' || job.last_run_status === 'failed') return 'failed';
+    if (job.last_run_status === 'running') return 'running';
+    return 'active';
+  }
+
+  function renderCronJobs(payload = {}) {
+    const list = el('rst-cron-list');
+    const summary = el('rst-cron-summary');
+    if (!list || !summary) return;
+    const active = cronJobs.filter(job => job.enabled).length;
+    const paused = cronJobs.length - active;
+    const failing = cronJobs.filter(job => job.enabled && ['error', 'failed'].includes(job.last_run_status)).length;
+    const snapshot = payload.fresh ? 'Live snapshot' : 'Last known snapshot';
+    summary.innerHTML = [
+      ['All jobs', cronJobs.length], ['Active', active], ['Paused', paused], ['Failing', failing],
+    ].map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join('')
+      + `<small>${escHtml(snapshot)}</small>`;
+    if (!cronJobs.length) {
+      list.innerHTML = '<div class="rst-cron-empty">No cron inventory has been received from the OpenClaw gateway yet.</div>';
+      return;
+    }
+    const ordered = cronJobs.slice().sort((a, b) => Number(b.enabled) - Number(a.enabled)
+      || (a.next_run_at_ms || Infinity) - (b.next_run_at_ms || Infinity)
+      || a.name.localeCompare(b.name));
+    list.innerHTML = ordered.map(job => {
+      const status = cronState(job);
+      const last = job.last_run_at_ms ? `${job.last_run_status || 'unknown'} - ${cronDate(job.last_run_at_ms)}` : 'No run recorded';
+      return `<article class="rst-cron-job rst-cron-job--${escHtml(status)}">
+        <div class="rst-cron-job-head"><strong>${escHtml(job.name)}</strong><span>${escHtml(status)}</span></div>
+        ${job.description ? `<p>${escHtml(job.description)}</p>` : ''}
+        <div class="rst-cron-meta"><span><b>Owner</b>${escHtml(job.agent_id || 'Unassigned')}</span><span><b>Schedule</b>${escHtml(cronSchedule(job))}</span><span><b>Next run</b>${escHtml(job.enabled ? cronDate(job.next_run_at_ms) : 'Paused')}</span><span><b>Last run</b>${escHtml(last)}</span></div>
+        ${job.last_run_error ? `<div class="rst-cron-error">${escHtml(job.last_run_error)}</div>` : ''}
+      </article>`;
+    }).join('');
+  }
+
+  async function refreshCronJobs() {
+    const list = el('rst-cron-list');
+    if (!list) return;
+    try {
+      const response = await fetch('/api/cron-jobs', { credentials: 'same-origin' });
+      if (response.status === 401) throw new Error('Log in to Agent Office to see cron jobs.');
+      if (!response.ok) throw new Error('Cron inventory is unavailable.');
+      const payload = await response.json();
+      cronJobs = Array.isArray(payload.jobs) ? payload.jobs : [];
+      renderCronJobs(payload);
+    } catch (error) {
+      el('rst-cron-summary').innerHTML = '';
+      list.innerHTML = `<div class="rst-cron-empty">${escHtml(error.message)}</div>`;
+    }
+  }
+
   function render() {
     const list = el('reset-cards');
     if (!list) return;
@@ -1519,6 +1591,7 @@ window.AOResets = (() => {
       loadCategories().catch(() => {});
       loadOfficeCards();
       syncServerCards(false);
+      refreshCronJobs();
     }
 
     fillToolbar();
@@ -1534,7 +1607,7 @@ window.AOResets = (() => {
   }
 
   return {
-    openCategories, closeCategories, addCategory, saveCategories,
+    openCategories, closeCategories, addCategory, saveCategories, refreshCronJobs,
     init,
     mergeCardLists,
     normalizeCard,

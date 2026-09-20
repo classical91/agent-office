@@ -6,7 +6,8 @@ const path = require('node:path');
 const test = require('node:test');
 const vm = require('node:vm');
 
-const DIST = path.join(__dirname, '..', 'agent-office-deploy', 'dist');
+const ROOT = path.join(__dirname, '..');
+const DIST = path.join(ROOT, 'agent-office-deploy', 'dist');
 const read = name => fs.readFileSync(path.join(DIST, name), 'utf8');
 const context = { Date, console, setInterval, clearInterval };
 context.window = context;
@@ -37,6 +38,23 @@ test('category filters select only countdowns assigned to that category', () => 
   assert.equal(CATEGORY_FILTERS['subscriptions-bills'].keep(haircut), false);
   assert.equal(CATEGORY_FILTERS.personal.keep(haircut), true);
   assert.equal(CATEGORY_FILTERS.other.keep(loose), true);
+});
+
+test('Countdowns shows the complete read-only OpenClaw cron inventory', () => {
+  const html = read('countdowns.html');
+  const script = read('resets.js');
+  const server = read('server.js');
+  const relay = fs.readFileSync(path.join(ROOT, 'scripts', 'openclaw-heartbeat.js'), 'utf8');
+  assert.match(html, /id="rst-crons-title">Cron jobs/);
+  assert.match(html, /including active and paused jobs/);
+  assert.match(script, /fetch\('\/api\/cron-jobs'/);
+  assert.match(script, /All jobs/);
+  assert.match(script, /Last run/);
+  assert.match(server, /pathname === '\/api\/cron-jobs'/);
+  assert.match(server, /requireDropsAuth\(res, req\)/);
+  assert.match(relay, /\['cron', 'list', '--all', '--json'\]/);
+  assert.match(relay, /cron_jobs: cronJobs/);
+  assert.doesNotMatch(relay, /payload:\s*job\.payload/);
 });
 
 test('the canonical navigation name and URL are Countdowns', () => {

@@ -24,6 +24,36 @@
 .rst-spacer { flex: 1 1 auto; }
 .rst-count { font-size: var(--fs-sm); color: var(--text-dim); white-space: nowrap; }
 
+/* OpenClaw cron inventory is operational context on this page, not another
+   editable countdown source. */
+.rst-crons { margin-top: var(--space-8); padding-top: var(--space-6); border-top: 1px solid var(--border); }
+.rst-crons-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); }
+.rst-crons-head h2 { margin: 4px 0; font-size: var(--fs-xl); }
+.rst-crons-head p { margin: 0; color: var(--text-dim); font-size: var(--fs-sm); }
+.rst-cron-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); margin: var(--space-4) 0; }
+.rst-cron-summary > div { padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); }
+.rst-cron-summary span, .rst-cron-summary small { display: block; color: var(--text-dim); font-size: var(--fs-xs); }
+.rst-cron-summary strong { display: block; margin-top: 3px; font-size: var(--fs-lg); }
+.rst-cron-summary small { grid-column: 1 / -1; }
+.rst-cron-list { display: grid; gap: var(--space-3); }
+.rst-cron-job { padding: var(--space-4); border: 1px solid var(--border); border-left: 3px solid var(--green); border-radius: var(--radius-lg); background: var(--surface); }
+.rst-cron-job--paused { border-left-color: var(--text-dim); opacity: .8; }
+.rst-cron-job--failed { border-left-color: var(--red); }
+.rst-cron-job--running { border-left-color: var(--cyan); }
+.rst-cron-job-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3); }
+.rst-cron-job-head strong { overflow-wrap: anywhere; }
+.rst-cron-job-head span { flex-shrink: 0; padding: 3px 8px; border: 1px solid var(--border); border-radius: var(--radius-pill); color: var(--text-dim); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+.rst-cron-job p { margin: var(--space-2) 0; color: var(--text-dim); font-size: var(--fs-sm); line-height: 1.45; }
+.rst-cron-meta { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2) var(--space-4); margin-top: var(--space-3); }
+.rst-cron-meta span { color: var(--text-dim); font-size: var(--fs-xs); overflow-wrap: anywhere; }
+.rst-cron-meta b { display: block; margin-bottom: 2px; color: var(--muted); font-size: 9px; letter-spacing: .06em; text-transform: uppercase; }
+.rst-cron-error { margin-top: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: color-mix(in srgb, var(--red) 10%, transparent); color: var(--red); font-size: var(--fs-xs); overflow-wrap: anywhere; }
+.rst-cron-empty { padding: var(--space-4); border: 1px dashed var(--border); border-radius: var(--radius-md); color: var(--text-dim); }
+
+@media (max-width: 640px) {
+  .rst-cron-summary, .rst-cron-meta { grid-template-columns: 1fr 1fr; }
+}
+
 .rst-category {
   width: fit-content;
   color: var(--text-dim);
