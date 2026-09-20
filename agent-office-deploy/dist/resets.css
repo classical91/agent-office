@@ -27,6 +27,7 @@
 /* OpenClaw cron inventory is operational context on this page, not another
    editable countdown source. */
 .rst-crons { margin-top: var(--space-8); padding-top: var(--space-6); border-top: 1px solid var(--border); }
+.rst-crons[hidden] { display: none; }
 .rst-crons-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); }
 .rst-crons-head h2 { margin: 4px 0; font-size: var(--fs-xl); }
 .rst-crons-head p { margin: 0; color: var(--text-dim); font-size: var(--fs-sm); }

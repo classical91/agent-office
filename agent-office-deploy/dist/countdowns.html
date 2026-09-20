@@ -165,7 +165,7 @@
       </div>
 
       <div class="ao-toolbar rst-toolbar">
-        <div class="rst-control">
+        <div class="rst-control" id="rst-sort-control">
           <label class="ao-label" for="rst-sort">Sort</label>
           <select class="ao-select rst-select" id="rst-sort" aria-label="Sort countdowns"
                   onchange="AOResets.setSort(this.value)"></select>
@@ -189,9 +189,9 @@
         <button class="ao-btn ao-btn--primary" data-role="empty-new" onclick="AOResets.openForm()">+ New Countdown</button>
       </div>
 
-      <div class="rst-footnote">All times are in your local timezone.</div>
+      <div class="rst-footnote" id="rst-footnote">All times are in your local timezone.</div>
 
-      <section class="rst-crons" aria-labelledby="rst-crons-title">
+      <section class="rst-crons" id="rst-crons" aria-labelledby="rst-crons-title" hidden>
         <div class="rst-crons-head">
           <div>
             <div class="ao-eyebrow">OPENCLAW SCHEDULE</div>

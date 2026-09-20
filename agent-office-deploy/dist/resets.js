@@ -91,6 +91,7 @@ window.AOResets = (() => {
 
   const CATEGORY_FILTERS = {
     all: { label: 'All categories', keep: () => true },
+    'cron-jobs': { label: 'Cron jobs', keep: () => false },
     uncategorized: { label: 'Uncategorized', keep: view => !view.card.category },
     'subscriptions-bills': { label: 'Subscriptions / Bills', keep: view => view.card.category === 'subscriptions-bills' },
     'ai-usage': { label: 'AI / Usage resets', keep: view => view.card.category === 'ai-usage' },
@@ -126,6 +127,7 @@ window.AOResets = (() => {
         label: item.label, keep: view => normalizeCategory(view.card.category) === item.value,
       };
     });
+    CATEGORY_FILTERS['cron-jobs'] = { label: 'Cron jobs', keep: () => false };
     if (!CATEGORY_FILTERS[state.categoryFilter]) state.categoryFilter = 'all';
     try { localStorage.setItem(CATEGORY_CACHE_KEY, JSON.stringify(categoryRegistry)); } catch {}
     fillToolbar();
@@ -1063,6 +1065,7 @@ window.AOResets = (() => {
       const payload = await response.json();
       cronJobs = Array.isArray(payload.jobs) ? payload.jobs : [];
       renderCronJobs(payload);
+      if (state.categoryFilter === 'cron-jobs') render();
     } catch (error) {
       el('rst-cron-summary').innerHTML = '';
       list.innerHTML = `<div class="rst-cron-empty">${escHtml(error.message)}</div>`;
@@ -1074,6 +1077,11 @@ window.AOResets = (() => {
     if (!list) return;
 
     renderHappyHourShortcut();
+    const cronView = state.categoryFilter === 'cron-jobs';
+    list.hidden = cronView;
+    el('rst-crons').hidden = !cronView;
+    el('rst-sort-control').hidden = cronView;
+    el('rst-footnote').hidden = cronView;
     const views = listedViews();
     state.order = views.map(view => view.card.id).join('|');
     list.innerHTML = views.map(cardHtml).join('');
@@ -1081,7 +1089,7 @@ window.AOResets = (() => {
     const empty = el('rst-empty');
     if (empty) {
       const nothingAtAll = !liveCards().some(card => card.id !== HAPPY_HOUR_ID);
-      empty.hidden = views.length > 0;
+      empty.hidden = cronView || views.length > 0;
       empty.querySelector('[data-role="empty-title"]').textContent =
         nothingAtAll ? 'No countdowns yet' : 'Nothing matches this filter';
       empty.querySelector('[data-role="empty-body"]').textContent =
@@ -1092,7 +1100,8 @@ window.AOResets = (() => {
     }
 
     const count = el('rst-count');
-    if (count) {
+    if (count && cronView) count.textContent = `${cronJobs.length} cron job${cronJobs.length === 1 ? '' : 's'}`;
+    if (count && !cronView) {
       const live = liveCards().map(viewOf).filter(view => isListView(view) && view.state === 'active').length;
       count.textContent = liveCards().some(card => card.id !== HAPPY_HOUR_ID)
         ? `${views.length} shown · ${live} counting down`

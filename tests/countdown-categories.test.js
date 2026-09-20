@@ -46,8 +46,11 @@ test('Countdowns shows the complete read-only OpenClaw cron inventory', () => {
   const server = read('server.js');
   const relay = fs.readFileSync(path.join(ROOT, 'scripts', 'openclaw-heartbeat.js'), 'utf8');
   assert.match(html, /id="rst-crons-title">Cron jobs/);
+  assert.match(html, /id="rst-crons"[^>]*hidden/);
   assert.match(html, /including active and paused jobs/);
   assert.match(script, /fetch\('\/api\/cron-jobs'/);
+  assert.match(script, /'cron-jobs': \{ label: 'Cron jobs'/);
+  assert.match(script, /state\.categoryFilter === 'cron-jobs'/);
   assert.match(script, /All jobs/);
   assert.match(script, /Last run/);
   assert.match(server, /pathname === '\/api\/cron-jobs'/);
