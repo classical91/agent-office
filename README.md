@@ -274,7 +274,7 @@ All endpoints return JSON.
 | POST   | `/api/calendar/quick-add`         | Natural-language event entry (session-authenticated) |
 | GET    | `/api/config-files/:agent`        | Read snapshots only from a private runtime CONFIG_FILES_DIR (session-authenticated) |
 | GET    | `/api/orchestration/goals`        | List Penny goals and Outbox results (session-authenticated) |
-| POST   | `/api/orchestration/goals`        | Queue a goal for Penny (session-authenticated) |
+| POST   | `/api/orchestration/goals`        | Queue a goal for Penny, as a `title` plus a `goal` description (session-authenticated) |
 | DELETE | `/api/orchestration/goals/:id`    | Remove a goal from Mission Control; refused while Penny holds a live claim (session-authenticated) |
 | GET    | `/api/sharebot/newsroom-health`   | ShareBot67's live newsroom health, read server-side from Market Dashboard (session-authed) |
 | POST   | `/api/orchestration/goals/claim`  | Atomically claim the next goal (gateway-token authenticated) |
