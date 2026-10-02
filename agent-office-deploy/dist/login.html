@@ -39,7 +39,9 @@
     const next = requested.startsWith('/') && !requested.startsWith('//') ? requested : '/';
     fetch('/api/session', { cache: 'no-store' })
       .then(response => response.ok ? response.json() : null)
-      .then(state => { if (state && state.authenticated) location.replace(next); })
+      // gated === false is a machine running without a passphrase: there is no
+      // password to type here, so sending someone on is the only useful answer.
+      .then(state => { if (state && (state.authenticated || state.gated === false)) location.replace(next); })
       .catch(() => {});
     document.getElementById('login-form').addEventListener('submit', async event => {
       event.preventDefault();

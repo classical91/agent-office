@@ -184,3 +184,239 @@ test('config files are sealed on a deployed host with no passphrase', async t =>
   const response = await fetch(`${server.origin}/api/config-files`);
   assert.equal(response.status, 503);
 });
+
+// -- The readable session hint -------------------------------------
+//
+// The real session cookie is HttpOnly, so a page cannot read it and used to
+// lock itself and raise the login panel on every load, unlocking again only
+// once /api/session answered — a login screen flashing at someone who was
+// already logged in. The hint cookie is what the page reads instead. It has to
+// be readable to be worth anything, so what matters here is that it carries no
+// token and that it never outlives the session it stands for.
+
+function setCookies(response) {
+  return typeof response.headers.getSetCookie === 'function'
+    ? response.headers.getSetCookie()
+    : [response.headers.get('set-cookie')].filter(Boolean);
+}
+
+function findCookie(response, name) {
+  return setCookies(response).find(cookie => cookie.startsWith(`${name}=`)) || null;
+}
+
+function cookieValue(cookie) {
+  return cookie.slice(cookie.indexOf('=') + 1).split(';')[0];
+}
+
+test('logging in sets a readable hint beside the HttpOnly session cookie', async t => {
+  const server = await startServer({ env: { DROPS_PASSPHRASE: PASSPHRASE } });
+  t.after(() => server.child.kill());
+
+  const session = await login(server.origin, PASSPHRASE, '203.0.113.50');
+  assert.equal(session.status, 200);
+
+  const real = findCookie(session, 'agent_office_session');
+  const hint = findCookie(session, 'agent_office_signed_in');
+  assert.ok(real, 'the session cookie should still be set');
+  assert.ok(hint, 'the hint cookie should be set alongside it');
+
+  assert.match(real, /HttpOnly/, 'the token must stay out of reach of scripts');
+  assert.doesNotMatch(hint, /HttpOnly/, 'the hint is only useful if the page can read it');
+
+  // A flag, not a credential: there is nothing in it to stand in for the token.
+  assert.equal(cookieValue(hint), '1');
+  assert.match(hint, /SameSite=Strict/);
+  assert.match(hint, /Path=\//);
+});
+
+test('the hint alone unlocks nothing', async t => {
+  const server = await startServer({ env: { DROPS_PASSPHRASE: PASSPHRASE } });
+  t.after(() => server.child.kill());
+
+  const response = await fetch(`${server.origin}/api/config-files`, {
+    headers: { Cookie: 'agent_office_signed_in=1' },
+  });
+  assert.equal(response.status, 401, 'the hint is not a credential');
+
+  const page = await fetch(`${server.origin}/mission-board.html`, {
+    headers: { Cookie: 'agent_office_signed_in=1' },
+    redirect: 'manual',
+  });
+  assert.equal(page.status, 302, 'and it does not open a page either');
+});
+
+test('logging out takes the hint back with the session', async t => {
+  const server = await startServer({ env: { DROPS_PASSPHRASE: PASSPHRASE } });
+  t.after(() => server.child.kill());
+
+  const session = await login(server.origin, PASSPHRASE, '203.0.113.51');
+  const cookie = cookieValue(findCookie(session, 'agent_office_session'));
+
+  const out = await fetch(`${server.origin}/api/session`, {
+    method: 'DELETE',
+    headers: { Cookie: `agent_office_session=${cookie}; agent_office_signed_in=1` },
+  });
+  assert.equal(out.status, 200);
+
+  const hint = findCookie(out, 'agent_office_signed_in');
+  assert.ok(hint, 'the hint should be cleared, not left behind');
+  assert.equal(cookieValue(hint), '');
+  assert.match(hint, /Max-Age=0/);
+});
+
+test('a hint left over from a forgotten session is cleared on the next check', async t => {
+  // Sessions live in memory, so a restart forgets them while the browser still
+  // holds both cookies. Left alone, the stale hint would have every load paint
+  // itself unlocked and then lock again.
+  const server = await startServer({ env: { DROPS_PASSPHRASE: PASSPHRASE } });
+  t.after(() => server.child.kill());
+
+  const stale = await fetch(`${server.origin}/api/session`, {
+    headers: { Cookie: 'agent_office_signed_in=1' },
+  });
+  assert.equal(stale.status, 200);
+  assert.equal((await stale.json()).authenticated, false);
+
+  const hint = findCookie(stale, 'agent_office_signed_in');
+  assert.ok(hint, 'the stale hint should be taken back');
+  assert.equal(cookieValue(hint), '');
+});
+
+test('a check with no cookies at all sets nothing', async t => {
+  const server = await startServer({ env: { DROPS_PASSPHRASE: PASSPHRASE } });
+  t.after(() => server.child.kill());
+
+  const response = await fetch(`${server.origin}/api/session`);
+  assert.equal(response.status, 200);
+  assert.deepEqual(setCookies(response), [], 'nothing to clear, nothing to send');
+});
+
+test('an expired session answering an API call takes the hint back', async t => {
+  const server = await startServer({ env: { DROPS_PASSPHRASE: PASSPHRASE } });
+  t.after(() => server.child.kill());
+
+  const response = await fetch(`${server.origin}/api/drops`, {
+    headers: { Cookie: 'agent_office_session=not-a-real-token; agent_office_signed_in=1' },
+  });
+  assert.equal(response.status, 401);
+
+  const hint = findCookie(response, 'agent_office_signed_in');
+  assert.ok(hint, 'a 401 should stop the page believing it is logged in');
+  assert.equal(cookieValue(hint), '');
+});
+
+// -- Running without a passphrase ----------------------------------
+//
+// The policy is already written down: a deployed host with no passphrase is a
+// misconfiguration and every route holding personal data answers 503, while an
+// undeployed developer machine may run without one. requireOfficeAuth applied
+// it; requireDropsAuth answered 503 either way, and the page locked itself
+// behind a login whose password did not exist — so a dev box could not read its
+// own notes, and could not get past the panel to try.
+
+test('a dev machine with no passphrase can read its own data', async t => {
+  const server = await startServer();
+  t.after(() => server.child.kill());
+
+  const drops = await fetch(`${server.origin}/api/drops`);
+  assert.equal(drops.status, 200, 'the drops routes should not demand a passphrase that cannot exist');
+  assert.ok(Array.isArray(await drops.json()));
+
+  const config = await fetch(`${server.origin}/api/config-files`);
+  assert.equal(config.status, 200, 'and neither should the config-file reader');
+});
+
+test('a dev machine with no passphrase serves its pages ungated', async t => {
+  const server = await startServer();
+  t.after(() => server.child.kill());
+
+  const page = await fetch(`${server.origin}/mission-board.html`, { redirect: 'manual' });
+  assert.equal(page.status, 200, 'there is no login to redirect to');
+
+  const session = await fetch(`${server.origin}/api/session`);
+  const state = await session.json();
+  assert.equal(state.configured, false);
+  assert.equal(state.gated, false, 'the page is told there is no gate to paint');
+
+  // And told it in a cookie too, so the next load knows before it asks.
+  const hint = findCookie(session, 'agent_office_signed_in');
+  assert.ok(hint, 'the no-gate hint should be set');
+  assert.equal(cookieValue(hint), 'open');
+});
+
+test('a deployed host with no passphrase stays shut, not open', async t => {
+  // The dangerous reading of "no passphrase" is "no gate". On a deployed host
+  // it means the opposite: someone forgot to set it, and the answer is 503.
+  const server = await startServer({ env: { RAILWAY_SERVICE_ID: 'svc-test' } });
+  t.after(() => server.child.kill());
+
+  assert.equal((await fetch(`${server.origin}/api/drops`)).status, 503);
+  assert.equal((await fetch(`${server.origin}/api/config-files`)).status, 503);
+
+  const session = await fetch(`${server.origin}/api/session`);
+  const state = await session.json();
+  assert.equal(state.configured, false);
+  assert.equal(state.gated, true, 'a misconfigured deployment is not an open house');
+  assert.equal(findCookie(session, 'agent_office_signed_in'), null, 'and it is never told otherwise');
+});
+
+test('a no-gate hint opens nothing once a passphrase is set', async t => {
+  const server = await startServer({ env: { DROPS_PASSPHRASE: PASSPHRASE } });
+  t.after(() => server.child.kill());
+
+  const cookie = { Cookie: 'agent_office_signed_in=open' };
+
+  assert.equal((await fetch(`${server.origin}/api/drops`, { headers: cookie })).status, 401);
+  const page = await fetch(`${server.origin}/mission-board.html`, { headers: cookie, redirect: 'manual' });
+  assert.equal(page.status, 302, 'a forged hint is not a session');
+
+  // And the stale hint is taken back, so the page stops painting itself open.
+  const session = await fetch(`${server.origin}/api/session`, { headers: cookie });
+  const state = await session.json();
+  assert.equal(state.gated, true);
+  const hint = findCookie(session, 'agent_office_signed_in');
+  assert.ok(hint, 'the leftover no-gate hint should be cleared');
+  assert.equal(cookieValue(hint), '');
+});
+
+test('a configured host still reports itself gated', async t => {
+  const server = await startServer({ env: { DROPS_PASSPHRASE: PASSPHRASE } });
+  t.after(() => server.child.kill());
+
+  const state = await (await fetch(`${server.origin}/api/session`)).json();
+  assert.deepEqual(
+    { authenticated: state.authenticated, configured: state.configured, gated: state.gated },
+    { authenticated: false, configured: true, gated: true }
+  );
+});
+
+test('the login page sends you on when there is no password to type', async t => {
+  const server = await startServer();
+  t.after(() => server.child.kill());
+
+  const page = await (await fetch(`${server.origin}/login.html`)).text();
+  assert.match(
+    page,
+    /state\.authenticated \|\| state\.gated === false/,
+    'the login page should step aside on an instance with no passphrase'
+  );
+});
+
+test('a hint that disagrees with a live session is put back in step', async t => {
+  const server = await startServer({ env: { DROPS_PASSPHRASE: PASSPHRASE } });
+  t.after(() => server.child.kill());
+
+  const session = await login(server.origin, PASSPHRASE, '203.0.113.60');
+  const token = cookieValue(findCookie(session, 'agent_office_session'));
+
+  // A no-gate hint left over from before the passphrase was set, carried in
+  // alongside a session that is perfectly good.
+  const checked = await fetch(`${server.origin}/api/session`, {
+    headers: { Cookie: `agent_office_session=${token}; agent_office_signed_in=open` },
+  });
+  assert.equal((await checked.json()).authenticated, true);
+
+  const hint = findCookie(checked, 'agent_office_signed_in');
+  assert.ok(hint, 'the stale hint should be corrected, not left to paint the next load');
+  assert.equal(cookieValue(hint), '1');
+});

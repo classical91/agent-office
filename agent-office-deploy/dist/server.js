@@ -10,7 +10,9 @@ const reminderTime = require('./reminder-time.js');
 const countdowns = require('./countdowns.js');
 const resetTimers = require('./reset-timers.js');
 const planning = require('./planning.js');
+const planningWeek = require('./planning-week.js');
 const sharebotNewsroom = require('./sharebot-newsroom.js');
+const happyHour = require('./happy-hour.js');
 
 process.env.TZ = process.env.APP_TIMEZONE || 'America/Vancouver';
 
@@ -33,6 +35,19 @@ const JOURNAL_TOKEN_MIN_LENGTH = 24;
 const TRADERCLAW_JOURNAL_KEY = 'traderclaw-journal-v1';
 const DAY_MS = 24 * 60 * 60 * 1000;
 const SESSION_COOKIE = 'agent_office_session';
+// The session cookie is HttpOnly, so a page cannot tell whether it is logged in
+// without asking the server - and while it asked, every load painted the login
+// panel and then took it back. This second cookie is the answer to that: it
+// carries no token, only the fact that a session exists, and it is deliberately
+// readable so the gate can be painted right on the first try. It is always set
+// and cleared alongside the real one, so it can never outlive it by itself.
+const SESSION_HINT_COOKIE = 'agent_office_signed_in';
+// The hint has three answers, matching the three the server can give: a session
+// exists, no session exists, and this instance has no gate at all. That last one
+// is an undeployed machine running without a passphrase, where painting a login
+// the page can never satisfy is just a flash of the wrong screen.
+const SESSION_HINT_SIGNED_IN = '1';
+const SESSION_HINT_NO_GATE = 'open';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
 const ALLOWED_PRIORITIES = new Set(['normal', 'high', 'urgent']);
 const ALLOWED_STATUSES = new Set(['inbox', 'idea', 'researching', 'coding', 'reviewing', 'ready_to_deploy', 'done', 'archived']);
@@ -204,13 +219,39 @@ function recordLoginFailure(key) {
   entry.count += 1;
 }
 
+// The session cookie and its readable hint always travel together, in one
+// Set-Cookie pair, so the browser is never left believing in a session the
+// server has already forgotten.
+function setSessionCookies(res, token, maxAge) {
+  const shared = {
+    maxAge,
+    path: '/',
+    sameSite: 'Strict',
+    secure: process.env.NODE_ENV === 'production',
+  };
+  res.setHeader('Set-Cookie', [
+    serializeCookie(SESSION_COOKIE, token, { ...shared, httpOnly: true }),
+    // No HttpOnly here on purpose: this one exists to be read by the page. It
+    // is a flag, not a credential - nothing is authorised by holding it.
+    serializeCookie(SESSION_HINT_COOKIE, token ? SESSION_HINT_SIGNED_IN : '', shared),
+  ]);
+}
+
 function clearSessionCookie(res) {
+  setSessionCookies(res, '', 0);
+}
+
+// Says "there is no gate here" to the next page load, so a machine running
+// without a passphrase does not paint a login panel for the length of a round
+// trip before finding out there is nothing to log into. It stands for no
+// session and authorises nothing: a configured instance ignores this value and
+// clears it, and every route decides for itself either way.
+function setOpenGateCookie(res) {
   res.setHeader(
     'Set-Cookie',
-    serializeCookie(SESSION_COOKIE, '', {
-      maxAge: 0,
+    serializeCookie(SESSION_HINT_COOKIE, SESSION_HINT_NO_GATE, {
+      maxAge: Math.floor(SESSION_TTL_MS / 1000),
       path: '/',
-      httpOnly: true,
       sameSite: 'Strict',
       secure: process.env.NODE_ENV === 'production',
     })
@@ -220,16 +261,7 @@ function clearSessionCookie(res) {
 function issueSession(res) {
   const token = crypto.randomBytes(32).toString('hex');
   sessions.set(token, { expiresAt: Date.now() + SESSION_TTL_MS });
-  res.setHeader(
-    'Set-Cookie',
-    serializeCookie(SESSION_COOKIE, token, {
-      maxAge: Math.floor(SESSION_TTL_MS / 1000),
-      path: '/',
-      httpOnly: true,
-      sameSite: 'Strict',
-      secure: process.env.NODE_ENV === 'production',
-    })
-  );
+  setSessionCookies(res, token, Math.floor(SESSION_TTL_MS / 1000));
 }
 
 async function readJsonBody(req) {
@@ -696,30 +728,35 @@ function validateAgentInput(input, partial = false) {
   return { ok: true, value };
 }
 
+// Truthy when the request may proceed. The drops routes only ever test that, so
+// the undeployed case below returns true rather than a session there is none of.
 function requireDropsAuth(res, req) {
   if (!PASSPHRASE_HASH) {
-    sendJson(res, 503, {
-      error: 'Dropbox auth is not configured. Set DROPS_PASSPHRASE_HASH or DROPS_PASSPHRASE.',
-    });
-    return null;
+    // The same policy requireOfficeAuth applies, which this did not: an
+    // unconfigured passphrase is a misconfiguration on a deployed host and is
+    // refused there, but an undeployed developer machine is allowed to run
+    // without one. Answering 503 either way left a dev box unable to read its
+    // own notes while the calendar sitting beside them worked fine.
+    if (IS_DEPLOYED) {
+      sendJson(res, 503, {
+        error: 'Dropbox auth is not configured. Set DROPS_PASSPHRASE_HASH or DROPS_PASSPHRASE.',
+      });
+      return null;
+    }
+    return true;
   }
 
   const activeSession = getSession(req);
   if (!activeSession) {
+    // Take the hint cookie back on the way out. Left behind, it would have the
+    // next page load paint itself unlocked and then lock again a moment later -
+    // the flash this pair exists to stop, only in the other direction.
+    clearSessionCookie(res);
     sendJson(res, 401, { error: 'Dropbox is locked.' });
     return null;
   }
 
-  res.setHeader(
-    'Set-Cookie',
-    serializeCookie(SESSION_COOKIE, activeSession.token, {
-      maxAge: Math.floor(SESSION_TTL_MS / 1000),
-      path: '/',
-      httpOnly: true,
-      sameSite: 'Strict',
-      secure: process.env.NODE_ENV === 'production',
-    })
-  );
+  setSessionCookies(res, activeSession.token, Math.floor(SESSION_TTL_MS / 1000));
 
   return activeSession;
 }
@@ -792,6 +829,11 @@ function toClientDrop(row) {
 // what makes "this calendar block already has an execution" answerable without
 // asking OpenClaw. A completed or failed goal releases the block for a retry.
 const LIVE_ORCHESTRATION_STATES = ['queued', 'running', 'needs_approval'];
+
+// A claim older than this is one the relay never came back from, so the goal is
+// free to be claimed again - and free to be deleted, which is the difference
+// between "Penny is working on this" and "Penny died holding this".
+const STALE_CLAIM_MS = 20 * 60 * 1000;
 
 async function loadDropsFromFile() {
   try {
@@ -1196,7 +1238,7 @@ function createFileStorage() {
       const goal = drops
         .filter(drop => {
           const stale = drop.orchestration_status === 'running' &&
-            Date.now() - new Date(drop.orchestration_claimed_at || 0).getTime() > 20 * 60 * 1000;
+            Date.now() - new Date(drop.orchestration_claimed_at || 0).getTime() > STALE_CLAIM_MS;
           return drop.agent === 'oss' && drop.subject === 'Mission Control' &&
             drop.priority === 'urgent' &&
             (drop.orchestration_status === 'queued' || stale) && (Number(drop.orchestration_attempts) || 0) < 3;
@@ -1232,6 +1274,19 @@ function createFileStorage() {
       Object.assign(goal, patch, { updated_at: new Date().toISOString() });
       await saveDropsToFile(drops);
       return toClientDrop(goal);
+    },
+    // Removing a goal is Jason's call at any state except one Penny is actually
+    // working on: deleting a live claim would leave a running session reporting
+    // back to a row that no longer exists. An abandoned claim is not live.
+    async deleteMissionGoal(id) {
+      const drops = await loadDropsFromFile();
+      const goal = drops.find(drop => drop.id === id && drop.agent === 'oss' && drop.subject === 'Mission Control');
+      if (!goal) return { deleted: false, reason: 'missing' };
+      const claimIsLive = goal.orchestration_status === 'running' &&
+        Date.now() - new Date(goal.orchestration_claimed_at || 0).getTime() <= STALE_CLAIM_MS;
+      if (claimIsLive) return { deleted: false, reason: 'running' };
+      await saveDropsToFile(drops.filter(drop => drop.id !== id));
+      return { deleted: true, goal: toClientDrop(goal) };
     },
     async reorderMissionGoals(ids) {
       const drops = await loadDropsFromFile();
@@ -2117,6 +2172,27 @@ async function createPostgresStorage() {
                   orchestration_build_approved, orchestration_approved_at, orchestration_calendar_event_id
       `, [id, patch.title, patch.content, JSON.stringify(patch.links || []), patch.priority]);
       return result.rows[0] ? toClientDrop(result.rows[0]) : null;
+    },
+    async deleteMissionGoal(id) {
+      const result = await pool.query(`
+        DELETE FROM drops
+        WHERE id = $1 AND agent = 'oss' AND subject = 'Mission Control'
+          AND (orchestration_status <> 'running'
+               OR COALESCE(orchestration_claimed_at, 'epoch'::timestamptz) < NOW() - INTERVAL '20 minutes')
+        RETURNING id, title, subject, category, project, agent, status, tags, links,
+                  content, priority, done, remind_at, created_at AS date, updated_at,
+                  orchestration_status, orchestration_result, orchestration_error,
+                  orchestration_session_key, orchestration_claimed_at,
+                  orchestration_completed_at, orchestration_attempts, orchestration_rank,
+                  orchestration_build_approved, orchestration_approved_at, orchestration_calendar_event_id
+      `, [id]);
+      if (result.rows[0]) return { deleted: true, goal: toClientDrop(result.rows[0]) };
+      // Nothing deleted is either "no such goal" or "Penny is holding it", and
+      // the caller answers those differently.
+      const existing = await pool.query(
+        `SELECT id FROM drops WHERE id = $1 AND agent = 'oss' AND subject = 'Mission Control'`, [id]
+      );
+      return { deleted: false, reason: existing.rows[0] ? 'running' : 'missing' };
     },
     async reorderMissionGoals(ids) {
       if (!ids.length) return true;
@@ -3220,6 +3296,34 @@ function toSchedulingEvent(event) {
     notes: event.description || event.notes || '',
     meta: agentMeta.normalizeMeta(event.meta),
   };
+}
+
+// Steps 4 and 5 of the weekly build: the ticked planning items, placed in the
+// free time left around the calendar, the work schedule and everything else
+// already committed. Nothing is written - the caller shows the week, the user
+// drops or reschedules what does not work, and the blocks that survive go
+// through /api/calendar/schedule/commit like any other scheduled block.
+async function buildPlanningWeek(body = {}) {
+  const storage = await storageReady;
+  const [items, preferences, events] = await Promise.all([
+    loadPlanningItems(storage),
+    getSchedulingPreferences(),
+    currentCalendarEvents(),
+  ]);
+
+  return planningWeek.buildWeek({
+    items,
+    events,
+    preferences,
+    now: new Date(),
+    horizonDays: body.horizonDays,
+    // A rota read off a photograph arrives here already corrected. Until that
+    // step exists, a caller can pass one by hand.
+    workSchedule: body.workSchedule,
+    respectWorkingHours: body.respectWorkingHours === true,
+    only: body.only,
+    pinned: body.pinned,
+  });
 }
 
 async function currentCalendarEvents() {
@@ -4485,6 +4589,13 @@ async function handleShortcutsRequest(req, res, url, storage) {
   const pathname = url.pathname;
   const now = new Date();
 
+  // Read-only machine access for CoachClaw. Authentication is handled by the
+  // shared /api/shortcuts gate before this dispatcher runs.
+  if (req.method === 'GET' && pathname === '/api/shortcuts/planning/brief') {
+    sendJson(res, 200, planning.buildSchedulingBrief(await loadPlanningItems(storage)));
+    return true;
+  }
+
   if (req.method === 'GET' && pathname === '/api/shortcuts/status') {
     const drops = await storage.listDrops();
     const due = selectShortcutDrops(drops, 'now', now);
@@ -4542,6 +4653,72 @@ async function handleShortcutsRequest(req, res, url, storage) {
       state,
       count: items.length,
       items,
+    });
+    return true;
+  }
+
+  // The TraderClaw learning journal, for anything that cannot hold a web
+  // session — the evening roll-up Shortcut, and Main Hub's dashboard card.
+  //
+  // `/api/traderclaw-journal` above is session-authenticated, which is right for
+  // the page that renders the whole journal: entries carry a thesis, a lesson
+  // and quality notes, and those are the journal's substance rather than a
+  // summary of it. This route is the summary. It carries what a roll-up says
+  // out loud — which asset, which way, how it went, and whether the gate let it
+  // through — and nothing else, the same way the reset timers above hand back a
+  // projection rather than the record that holds a Pushcut webhook.
+  if (req.method === 'GET' && pathname === '/api/shortcuts/traderclaw-journal') {
+    const stored = await storage.getAppSetting(TRADERCLAW_JOURNAL_KEY);
+    let journal = null;
+    try { journal = stored ? JSON.parse(stored) : null; } catch { journal = null; }
+
+    const requestedLimit = Number.parseInt(url.searchParams.get('limit') || '', 10);
+    const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
+      ? Math.min(requestedLimit, SHORTCUTS_MAX_LIMIT)
+      : SHORTCUTS_DEFAULT_LIMIT;
+
+    // Already newest first when it was stored, so this is a slice and not a sort.
+    const entries = (Array.isArray(journal && journal.entries) ? journal.entries : [])
+      .slice(0, limit)
+      .map(entry => ({
+        record_id: entry.record_id || '',
+        record_type: entry.record_type || '',
+        timestamp_utc: entry.timestamp_utc || '',
+        asset: entry.asset || '',
+        direction: entry.direction || '',
+        timeframe: entry.timeframe || '',
+        strategy: (entry.strategy && entry.strategy.name) || '',
+        // The two verdicts a roll-up is actually read for: how the trade ended,
+        // and whether the promotion gate let the strategy through.
+        result_status: (entry.result && entry.result.status) || '',
+        r_multiple: (entry.result && entry.result.r_multiple) || '',
+        gate_status: (entry.promotion_gate && entry.promotion_gate.status) || '',
+      }));
+
+    const counts = (journal && journal.counts) || { entries: 0, validated: 0, rejected: 0 };
+
+    if (String(url.searchParams.get('format') || 'json').toLowerCase() === 'text') {
+      const lines = entries.length
+        ? entries.map(entry => {
+            const head = [entry.asset, entry.direction].filter(Boolean).join(' ') || entry.record_id;
+            const tail = [entry.result_status, entry.r_multiple && `${entry.r_multiple}R`, entry.gate_status]
+              .filter(Boolean).join(' · ');
+            return `\u2022 ${head}${tail ? ` \u2014 ${tail}` : ''}`;
+          })
+        : ['Nothing in the journal yet.'];
+      sendText(res, 200, [
+        `${counts.entries} entries · ${counts.validated} validated · ${counts.rejected} rejected`,
+        ...lines,
+      ].join('\n'));
+      return true;
+    }
+
+    sendJson(res, 200, {
+      generated_at: now.toISOString(),
+      synced_at: (journal && journal.synced_at) || null,
+      counts,
+      count: entries.length,
+      entries,
     });
     return true;
   }
@@ -5095,6 +5272,32 @@ const DEFAULT_GATEWAY_URL = 'http://localhost:18789';
 // write, and a restart is corrected by the next one.
 let lastGatewayHeartbeat = null;
 
+function normalizeCronJob(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const id = cleanText(raw.id, 120);
+  if (!id) return null;
+  const schedule = raw.schedule && typeof raw.schedule === 'object' ? raw.schedule : {};
+  return {
+    id,
+    name: cleanText(raw.name, 180) || 'Unnamed cron job',
+    internal_name: cleanText(raw.internal_name, 180),
+    description: cleanText(raw.description, 500),
+    agent_id: cleanText(raw.agent_id, 80),
+    enabled: raw.enabled !== false,
+    schedule: {
+      kind: cleanText(schedule.kind, 20),
+      expr: cleanText(schedule.expr, 120),
+      tz: cleanText(schedule.tz, 80),
+      every_ms: Number(schedule.every_ms) || null,
+      at: cleanText(schedule.at, 60),
+    },
+    next_run_at_ms: Number(raw.next_run_at_ms) || null,
+    last_run_at_ms: Number(raw.last_run_at_ms) || null,
+    last_run_status: cleanText(raw.last_run_status, 40),
+    last_run_error: cleanText(raw.last_run_error, 500),
+  };
+}
+
 // "localhost:18789" is a host and a port; "file:///etc/passwd" is a scheme.
 // Both have a colon, so the two have to be told apart before anything is
 // prepended - otherwise a rejected scheme becomes a fetchable http address.
@@ -5466,9 +5669,31 @@ const server = http.createServer(async (req, res) => {
     const storage = await storageReady;
 
     if (req.method === 'GET' && pathname === '/api/session') {
+      const activeSession = getSession(req);
+      const hint = parseCookies(req)[SESSION_HINT_COOKIE];
+      // Whether this instance gates the page at all. A deployed host with no
+      // passphrase is a misconfiguration rather than an open house: it stays
+      // gated, and its data routes go on answering 503.
+      const gated = Boolean(PASSPHRASE_HASH) || IS_DEPLOYED;
+      if (!gated) {
+        if (hint !== SESSION_HINT_NO_GATE) setOpenGateCookie(res);
+      } else if (activeSession && hint !== SESSION_HINT_SIGNED_IN) {
+        // A hint that disagrees with the session it stands for - a no-gate one
+        // left from before a passphrase was set, say - would paint the next
+        // load from the wrong answer. Put it back in step.
+        setSessionCookies(res, activeSession.token, Math.floor(SESSION_TTL_MS / 1000));
+      } else if (!activeSession && hint) {
+        // Sessions live in memory, so a restart forgets them all while the
+        // browser still holds both cookies. Clearing the hint here is what
+        // keeps that from costing a flash on every load until it expires - and
+        // it takes back a no-gate hint left over from before a passphrase was
+        // set, which would otherwise paint this page unlocked.
+        clearSessionCookie(res);
+      }
       sendJson(res, 200, {
-        authenticated: Boolean(getSession(req)),
+        authenticated: Boolean(activeSession),
         configured: Boolean(PASSPHRASE_HASH),
+        gated,
       });
       return;
     }
@@ -5685,6 +5910,36 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === 'DELETE' && pathname.startsWith('/api/orchestration/goals/')) {
+      if (!requireDropsAuth(res, req)) return;
+      const id = pathname.slice('/api/orchestration/goals/'.length).trim();
+      if (!id) {
+        sendJson(res, 400, { error: 'Goal id is required.' });
+        return;
+      }
+      const removal = await storage.deleteMissionGoal(id);
+      if (!removal.deleted) {
+        sendJson(res, removal.reason === 'running' ? 409 : 404, {
+          error: removal.reason === 'running'
+            ? 'Penny is working on this goal. Wait for the run to finish or fail before deleting it.'
+            : 'Goal not found.',
+        });
+        return;
+      }
+      // A dispatched calendar block reads its state from its goal, so a deleted
+      // goal has to leave the block somewhere final rather than stuck on
+      // "queued" with nothing left to run it.
+      if (removal.goal.orchestration_calendar_event_id) {
+        await mirrorGoalOntoCalendar({
+          ...removal.goal,
+          orchestration_status: 'failed',
+          orchestration_error: 'Goal deleted from Mission Control.',
+        }).catch(error => console.error('Could not release the calendar block.', error.message));
+      }
+      sendJson(res, 200, { ok: true, goal: removal.goal });
+      return;
+    }
+
     if (req.method === 'PATCH' && pathname.startsWith('/api/orchestration/goals/')) {
       if (!requireGatewayToken(res, req)) return;
       const id = pathname.slice('/api/orchestration/goals/'.length).trim();
@@ -5721,14 +5976,27 @@ const server = http.createServer(async (req, res) => {
 
       const body = await readJsonBody(req);
       const rawAgents = Array.isArray(body.agents) ? body.agents.slice(0, 100) : [];
+      const rawCronJobs = Array.isArray(body.cron_jobs) ? body.cron_jobs.slice(0, 1000) : [];
       lastGatewayHeartbeat = {
         at: Date.now(),
         host: String(body.host || '').trim().slice(0, 120),
         version: String(body.version || '').trim().slice(0, 60),
         agents: rawAgents.filter(agent => agent && typeof agent === 'object').map(toGatewayAgent),
+        cron_jobs: rawCronJobs.map(normalizeCronJob).filter(Boolean),
       };
 
-      sendJson(res, 200, { ok: true, agents: lastGatewayHeartbeat.agents.length });
+      sendJson(res, 200, { ok: true, agents: lastGatewayHeartbeat.agents.length, cron_jobs: lastGatewayHeartbeat.cron_jobs.length });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/api/cron-jobs') {
+      if (!requireDropsAuth(res, req)) return;
+      const heartbeat = describeGatewayHeartbeat();
+      sendJson(res, 200, {
+        jobs: lastGatewayHeartbeat ? lastGatewayHeartbeat.cron_jobs || [] : [],
+        updated_at: lastGatewayHeartbeat ? new Date(lastGatewayHeartbeat.at).toISOString() : null,
+        fresh: heartbeat.fresh,
+      });
       return;
     }
 
@@ -6267,6 +6535,15 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // Steps 4 to 6: the proposed week. This reads the calendar and writes
+    // nothing; accepting the week posts its blocks to
+    // /api/calendar/schedule/commit, which is where they become real.
+    if (req.method === 'POST' && pathname === '/api/planning/week') {
+      if (!requireDropsAuth(res, req)) return;
+      sendJson(res, 200, await buildPlanningWeek(await readJsonBody(req)));
+      return;
+    }
+
     if (req.method === 'POST' && pathname === '/api/planning') {
       if (!requireDropsAuth(res, req)) return;
 
@@ -6371,6 +6648,70 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // Happy Hour, for anything that shows it outside resets.html — Main Hub's
+    // Daily Dashboard is the first. The schedule lives in happy-hour.js, which
+    // the page loads too, so there is one deal table rather than two.
+    //
+    // Open, like the countdowns below it: this is a grocery flyer, not a
+    // personal record. Nothing from the reset-timer store is touched, and that
+    // store stays behind requireDropsAuth where it belongs.
+    if (pathname === '/api/happy-hour') {
+      if (req.method !== 'GET' && req.method !== 'HEAD') {
+        sendJson(res, 405, { error: 'Only GET is supported for Happy Hour.' });
+        return;
+      }
+      const now = new Date();
+      const details = happyHour.happyHourDetails(now);
+      sendJson(res, 200, {
+        now: now.toISOString(),
+        timezone: process.env.TZ,
+        phase: details.phase,
+        meal: details.meal,
+        deal: details.deal,
+        dayName: details.dayName,
+        title: details.title,
+        message: details.message,
+        targetAt: details.target.toISOString(),
+        remainingMs: Math.max(0, details.target.getTime() - now.getTime()),
+      });
+      return;
+    }
+
+    // The Daily Dashboard's Today and Next Up cards.
+    //
+    // Deliberately not /api/countdowns. That route is this page's whole payload
+    // — every bucket, notes and all — and a dashboard card had no business
+    // depending on it. This one answers the narrower question and hands back
+    // only the fields a row draws, so the page here can grow without moving
+    // anything on the dashboard.
+    //
+    // This projection includes personal titles and next actions. It is consumed
+    // server-to-server by Main Hub, so reuse the existing machine token rather
+    // than exposing it as an anonymous read.
+    if (pathname === '/api/widgets/today') {
+      if (req.method !== 'GET' && req.method !== 'HEAD') {
+        sendJson(res, 405, { error: 'Only GET is supported for the today widget.' });
+        return;
+      }
+      if (!requireShortcutsAuth(req, res, parsedUrl)) return;
+
+      const now = new Date();
+      const payload = await buildCountdownsPayload({ now });
+      const limit = Number.parseInt(parsedUrl.searchParams.get('limit') || '', 10);
+      const month = `${now.getMonth() + 1}`.padStart(2, '0');
+      const day = `${now.getDate()}`.padStart(2, '0');
+
+      sendJson(res, 200, {
+        now: now.toISOString(),
+        // This server pins TZ to APP_TIMEZONE at boot, so "today" here is the
+        // same day the dashboard means without either side converting anything.
+        timezone: process.env.TZ,
+        date: `${now.getFullYear()}-${month}-${day}`,
+        ...countdowns.selectWidgetToday(payload, { limit }),
+      });
+      return;
+    }
+
     if (req.method === 'GET' && pathname === '/api/countdowns') {
       sendJson(res, 200, await buildCountdownsPayload({
         includeArchived: parsedUrl.searchParams.get('archived') === '1',
@@ -6437,6 +6778,51 @@ const server = http.createServer(async (req, res) => {
       }
 
       sendJson(res, 200, { ok: true });
+      return;
+    }
+
+    // Private category registry. Deleted entries remain as tombstones so older
+    // clients cannot bring a removed category back through a timer record.
+    if (pathname === '/api/countdown-categories' || pathname === '/api/reminder-categories') {
+      if (!requireDropsAuth(res, req)) return;
+      const reminders = pathname === '/api/reminder-categories';
+      const key = reminders ? 'reminder-categories.v1' : 'countdown-categories.v1';
+      if (req.method === 'GET') {
+        const saved = await storage.getAppSetting(key);
+        sendJson(res, 200, { items: saved ? JSON.parse(saved) : null });
+        return;
+      }
+      if (req.method === 'PUT') {
+        const body = await readJsonBody(req);
+        const items = body.items;
+        if (!Array.isArray(items) || items.length > 200 || items.some(item =>
+          !item || typeof item.id !== 'string' || !(reminders
+            ? item.id.trim() === item.id && item.id.length > 0 && item.id.length <= 100 && !/[\u0000-\u001f]/.test(item.id)
+            : /^[a-z0-9][a-z0-9-]{0,79}$/.test(item.id))
+          || ['all', 'uncategorized'].includes(item.id)
+          || typeof item.label !== 'string' || !item.label.trim() || item.label.trim().length > 60
+          || typeof item.deleted !== 'boolean')
+          || new Set(items.map(item => item.id)).size !== items.length) {
+          sendJson(res, 400, { error: 'Provide unique categories with names of 1–60 characters.' });
+          return;
+        }
+        const saved = await storage.getAppSetting(key);
+        const previous = saved ? JSON.parse(saved) : null;
+        if (JSON.stringify(body.previous ?? null) !== JSON.stringify(previous)) {
+          sendJson(res, 409, { error: 'Categories changed in another browser. Reopen Manage categories and try again.' });
+          return;
+        }
+        const clean = items.map(({ id, label, deleted }) => ({ id, label: label.trim(), deleted }));
+        const activeNames = clean.filter(item => !item.deleted).map(item => item.label.toLowerCase());
+        if (new Set(activeNames).size !== activeNames.length || activeNames.includes('uncategorized')) {
+          sendJson(res, 400, { error: 'Each category needs a different name.' });
+          return;
+        }
+        await storage.setAppSetting(key, JSON.stringify(clean));
+        sendJson(res, 200, { items: clean });
+        return;
+      }
+      sendJson(res, 405, { error: 'Only GET and PUT are supported.' });
       return;
     }
 

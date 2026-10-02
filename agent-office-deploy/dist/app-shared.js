@@ -2165,6 +2165,30 @@ function toggleNavCompact() {
 
 let officeSessionAuthenticated = false;
 let officeLoginWaiters = [];
+// Resolves once /api/session has answered. Until then the state below is the
+// cookie's guess, and anything gated has to wait for the real answer.
+let officeSessionChecked = Promise.resolve();
+
+// Set beside the HttpOnly session cookie by server.js, carrying no token - just
+// the fact that a session exists, or that this instance has no gate at all.
+// Reading it is how a page knows which side of the gate to paint before it has
+// asked. The values mirror SESSION_HINT_* in server.js.
+const OFFICE_SESSION_HINT_COOKIE = 'agent_office_signed_in';
+const OFFICE_HINT_SIGNED_IN = '1';
+const OFFICE_HINT_NO_GATE = 'open';
+
+// Whether this instance gates the page at all. False only where the server has
+// said so: an undeployed machine running without a passphrase, which has no
+// password to ask for and nothing to lock.
+let officeLoginGated = true;
+
+function officeHint() {
+  const match = document.cookie
+    .split(';')
+    .map(part => part.trim())
+    .find(part => part.startsWith(`${OFFICE_SESSION_HINT_COOKIE}=`));
+  return match ? match.slice(OFFICE_SESSION_HINT_COOKIE.length + 1) : '';
+}
 
 function setOfficeGateState(authenticated) {
   document.documentElement.classList.toggle('ao-site-locked', !authenticated);
@@ -2178,6 +2202,22 @@ function settleOfficeLogin(success) {
   waiters.forEach(resolve => resolve(Boolean(success)));
 }
 
+// The three answers the server can give, painted. An ungated instance is not
+// "logged out": there is nothing to log into, so the page stays open and the
+// login button goes away rather than offering a password that cannot work.
+function applyOfficeSessionState(state) {
+  officeLoginGated = state.gated !== false;
+  const trigger = document.getElementById('ao-login-trigger');
+  if (!officeLoginGated) {
+    officeSessionAuthenticated = false;
+    setOfficeGateState(true);
+    if (trigger) trigger.hidden = true;
+    return;
+  }
+  if (trigger) trigger.hidden = false;
+  setOfficeLoginState(Boolean(state.authenticated));
+}
+
 function setOfficeLoginState(authenticated) {
   officeSessionAuthenticated = Boolean(authenticated);
   setOfficeGateState(officeSessionAuthenticated);
@@ -2189,6 +2229,8 @@ function setOfficeLoginState(authenticated) {
 }
 
 function openOfficeLogin() {
+  // Nothing to open on an instance with no passphrase, and no way to satisfy it.
+  if (!officeLoginGated) return;
   if (officeSessionAuthenticated) {
     fetch('/api/session', { method: 'DELETE' })
       .then(() => {
@@ -2207,8 +2249,12 @@ function openOfficeLogin() {
   setTimeout(() => password?.focus(), 0);
 }
 
-function requestOfficeLogin() {
-  if (officeSessionAuthenticated) return Promise.resolve(true);
+async function requestOfficeLogin() {
+  // The state a page loads with is the cookie's guess; a gated action waits for
+  // the server to confirm it rather than riding on it.
+  await officeSessionChecked;
+  if (!officeLoginGated) return true;
+  if (officeSessionAuthenticated) return true;
   openOfficeLogin();
   return new Promise(resolve => officeLoginWaiters.push(resolve));
 }
@@ -2253,11 +2299,22 @@ function initOfficeLogin() {
   const modal = document.getElementById('ao-login-modal');
   if (!form || !modal) return;
   form.addEventListener('submit', submitOfficeLogin);
-  setOfficeGateState(false);
-  fetch('/api/session', { cache: 'no-store' })
+  // Start from what the cookie says. Locking the page and raising the panel
+  // unconditionally meant every load flashed the login screen at someone who
+  // was already logged in, for as long as /api/session took to answer, and
+  // flashed it for good at a machine with no passphrase to type. The cookie
+  // only decides what to paint first - the fetch below still has the last
+  // word, and the server checks every request either way.
+  const hint = officeHint();
+  applyOfficeSessionState({
+    gated: hint !== OFFICE_HINT_NO_GATE,
+    authenticated: hint === OFFICE_HINT_SIGNED_IN,
+  });
+  // An answer that never came, or came back broken, leaves the gate closed.
+  officeSessionChecked = fetch('/api/session', { cache: 'no-store' })
     .then(response => response.ok ? response.json() : { authenticated: false })
-    .then(state => setOfficeLoginState(state.authenticated))
-    .catch(() => setOfficeLoginState(false));
+    .then(state => applyOfficeSessionState(state))
+    .catch(() => applyOfficeSessionState({ authenticated: false }));
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -2991,7 +3048,9 @@ function renderDropTable() {
   const iosMode = Boolean(document.getElementById('dropbox-view')?.classList.contains('ios-mode'));
 
   if (!dropboxState.drops.length) {
-    wrap.innerHTML = '<div class="drop-empty"><div class="drop-empty-title">Dropbox is clear.</div><div class="drop-empty-copy">Save your first drop using the form above.</div></div>';
+    wrap.innerHTML = iosMode
+      ? '<div class="drop-empty"><div class="drop-empty-title">No reminders yet.</div><div class="drop-empty-copy">Choose New Reminder to add one.</div></div>'
+      : '<div class="drop-empty"><div class="drop-empty-title">Dropbox is clear.</div><div class="drop-empty-copy">Save your first drop using the form above.</div></div>';
     return;
   }
   if (!items.length) {
@@ -3018,7 +3077,7 @@ function renderDropTable() {
       <tbody>
         ${items.map(drop => `
           <tr data-drop-id="${escAttr(drop.id)}" class="${drop.id === dropboxState.selectedId ? 'selected' : ''}">
-            <td>${escHTML(drop.title || 'Untitled drop')}</td>
+            <td>${escHTML(drop.title || 'Untitled drop')}${iosMode && window.ReminderCategories ? `<div>${dropBadge(ReminderCategories.label(drop), 'subject')}</div>` : ''}</td>
             ${iosMode
               ? `<td class="col-reminder">${dropReminderBadge(drop)}</td>`
               : showSubject ? `<td class="col-subject">${dropBadge(drop.subject, 'subject')}</td>` : ''}
@@ -3061,7 +3120,7 @@ function renderDropCards() {
       ${preview ? `<p class="drop-card-preview">${escHTML(preview)}</p>` : ''}
       ${hasMeta ? `<div class="drop-card-meta">
         ${dropReminderBadge(drop)}
-        ${dropBadge(drop.status, 'status')}
+        ${iosMode && window.ReminderCategories ? dropBadge(ReminderCategories.label(drop), 'subject') : dropBadge(drop.status, 'status')}
         ${showSubject ? dropBadge(drop.subject, 'subject') : ''}
       </div>` : ''}
     </article>`;
@@ -3248,7 +3307,7 @@ async function saveReminder() {
       // reminder would be called "Reminder".
       title: (content.split('\n').find(Boolean) || content).slice(0, 120),
       subject: '',
-      category: 'Reminder',
+      category: document.getElementById('reminder-category')?.value || 'Reminder',
       project: 'iOS',
       status: 'inbox',
       priority: 'normal',

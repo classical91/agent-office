@@ -152,6 +152,54 @@ test('saved queued mission goals can be edited by Jason', async () => {
   }
 });
 
+test('goals can be deleted from Mission Control unless Penny is mid-run', async () => {
+  const server = await startServer();
+  try {
+    const create = goal => fetch(`${server.origin}/api/orchestration/goals`, {
+      method: 'POST', headers: { Cookie: server.cookie, 'Content-Type': 'application/json' },
+      body: JSON.stringify(goal),
+    }).then(response => response.json());
+    const remove = id => fetch(`${server.origin}/api/orchestration/goals/${encodeURIComponent(id)}`, {
+      method: 'DELETE', headers: { Cookie: server.cookie },
+    });
+
+    const saved = await create({ goal: 'Saved idea nobody wants any more', priority: 'normal' });
+    const deleted = await remove(saved.id);
+    assert.equal(deleted.status, 200);
+    assert.equal((await deleted.json()).ok, true);
+    const remaining = await (await fetch(`${server.origin}/api/orchestration/goals`, {
+      headers: { Cookie: server.cookie },
+    })).json();
+    assert.equal(remaining.find(goal => goal.id === saved.id), undefined, 'the goal leaves the board entirely');
+
+    // A goal the relay is holding stays put: deleting it would leave a live
+    // Penny session reporting back to a row that no longer exists.
+    const running = await create({ goal: 'Something Penny is working on', priority: 'urgent' });
+    const claimed = await (await fetch(`${server.origin}/api/orchestration/goals/claim`, {
+      method: 'POST', headers: { 'X-Gateway-Token': GATEWAY_TOKEN },
+    })).json();
+    assert.equal(claimed.goal.id, running.id);
+    const refused = await remove(running.id);
+    assert.equal(refused.status, 409);
+    assert.match((await refused.json()).error, /working on this goal/);
+
+    // A completed goal is history, and history can be cleared.
+    await fetch(`${server.origin}/api/orchestration/goals/${encodeURIComponent(running.id)}`, {
+      method: 'PATCH', headers: { 'X-Gateway-Token': GATEWAY_TOKEN, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'completed', result: 'Done.' }),
+    });
+    assert.equal((await remove(running.id)).status, 200);
+
+    assert.equal((await remove('not-a-real-goal')).status, 404);
+    const unauthorized = await fetch(`${server.origin}/api/orchestration/goals/${encodeURIComponent(saved.id)}`, {
+      method: 'DELETE',
+    });
+    assert.equal(unauthorized.status, 401);
+  } finally {
+    stop(server);
+  }
+});
+
 test('Penny claims only urgent Mission Control goals', async () => {
   const server = await startServer();
   try {

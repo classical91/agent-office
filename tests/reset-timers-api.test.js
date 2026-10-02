@@ -745,9 +745,14 @@ test('the page refuses the same destinations before anything is saved', () => {
   // resets.js is browser code, evaluated the way reset-timers-sync.test.js does
   // it. The server is where this rule has to hold; the page carries it so a
   // URL the processor would refuse is caught while it is still on screen.
-  const source = fs.readFileSync(path.join(DIST, 'resets.js'), 'utf8');
-  const context = { window: {}, Date, console, setInterval, clearInterval, URL };
-  vm.runInNewContext(source, context);
+  // `window` points at the sandbox itself, as it does in a browser: resets.js
+  // reads the Happy Hour schedule off window.AOHappyHour, which resets.html
+  // loads ahead of it.
+  const read = name => fs.readFileSync(path.join(DIST, name), 'utf8');
+  const context = { Date, console, setInterval, clearInterval, URL };
+  context.window = context;
+  vm.runInNewContext(read('happy-hour.js'), context);
+  vm.runInNewContext(read('resets.js'), context);
   const { webhookTargetError } = context.window.AOResets;
 
   assert.equal(webhookTargetError(FAKE_WEBHOOK), '');

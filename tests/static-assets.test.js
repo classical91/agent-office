@@ -123,10 +123,21 @@ test('every page asks for the same version of app-shared.js', () => {
 test('a real page is served as itself', async () => {
   const server = await startServer();
   try {
-    const response = await fetch(`${server.origin}/resets.html`);
+    const response = await fetch(`${server.origin}/countdowns.html`);
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('content-type'), 'text/html; charset=utf-8');
     assert.match(await response.text(), /id="reset-cards"/);
+  } finally {
+    stop(server);
+  }
+});
+
+test('the old resets page points to Countdowns', async () => {
+  const server = await startServer();
+  try {
+    const response = await fetch(`${server.origin}/resets.html`, { redirect: 'manual' });
+    assert.equal(response.status, 200);
+    assert.match(await response.text(), /window\.location\.replace\('\/countdowns\.html'\)/);
   } finally {
     stop(server);
   }
@@ -138,9 +149,9 @@ test('Dev Links includes the Dropbox Developer Console', () => {
   assert.match(page, />Dropbox Developer Console</);
 });
 
-test('Dev Links Developer Control Center includes the requested consoles', () => {
+test('Dev Links AI Developers includes the requested consoles', () => {
   const page = fs.readFileSync(path.join(DIST, 'dev.html'), 'utf8');
-  assert.match(page, />Developer Control Center</);
+  assert.match(page, />AI Developers</);
   assert.match(page, /https:\/\/console\.x\.ai\//);
   assert.match(page, />Grok Console</);
   assert.match(page, /https:\/\/console\.x\.com\//);

@@ -116,8 +116,33 @@ after(async () => {
 
 // Every page is opened in a fresh context so one page's localStorage — a theme,
 // a folder layout, a pin — cannot decide how the next one renders.
-async function openPage(t, { authenticated = true } = {}) {
+async function openPage(t, { authenticated = true, watchGate = false } = {}) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+
+  // A flash is a state a page passes through, not one it ends in: by the time a
+  // test can look, the login panel that was up for a moment is hidden again. So
+  // when a test cares, every moment the gate was closed is recorded from the
+  // first script the page runs.
+  if (watchGate) {
+    await context.addInitScript(() => {
+      window.__gateClosed = [];
+      const look = () => {
+        const root = document.documentElement;
+        const modal = document.getElementById('ao-login-modal');
+        if (modal && !modal.hidden && !window.__gateClosed.includes('panel')) window.__gateClosed.push('panel');
+        if (root && root.classList.contains('ao-site-locked') && !window.__gateClosed.includes('locked')) {
+          window.__gateClosed.push('locked');
+        }
+      };
+      // document, not documentElement: this runs before the page has one.
+      new MutationObserver(look).observe(document, {
+        attributes: true,
+        attributeFilter: ['hidden', 'class'],
+        childList: true,
+        subtree: true,
+      });
+    });
+  }
 
   // Nothing leaves the machine. These tests are about this app, not about
   // whether Google's font CDN is up — and shared.css opens with an @import of
@@ -534,4 +559,125 @@ test('a planning item can be added, ticked, done and deleted from the page', asy
   await page.locator('.planning-item', { hasText: 'Workout 3 times' }).getByText('Delete', { exact: true }).click();
   await page.waitForSelector('.planning-item', { state: 'detached' });
   assert.deepEqual(problems, []);
+});
+
+// One password opens the whole Office, and every page used to check it the
+// same way: lock itself, raise the login panel, then unlock once /api/session
+// answered. The answer is quick but not instant, and what that looked like
+// from a chair was the login screen flashing on every page you opened while
+// already logged in. The session cookie is HttpOnly and cannot be read here,
+// so the server sets a tokenless one beside it that can be — which is how the
+// page knows which side of the gate to paint before it paints anything.
+test('a page opened with a session never flashes the login screen', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  const { page, problems } = await openPage(t, { watchGate: true });
+  await page.goto(`${server.origin}/mission-board.html`, { waitUntil: 'domcontentloaded' });
+
+  // Long enough for /api/session to have answered and, before this fix, for the
+  // panel to have been up and taken down again.
+  await page.waitForTimeout(600);
+
+  assert.equal(
+    await page.locator('#ao-login-trigger').textContent(),
+    'Logged in',
+    'the page should have settled on being logged in'
+  );
+  assert.deepEqual(
+    await page.evaluate(() => window.__gateClosed),
+    [],
+    'the login gate should never have closed over a page this session could open'
+  );
+  assert.deepEqual(problems, []);
+});
+
+// The other direction matters just as much: the guess the cookie allows must
+// never be the one that opens the Office. Without a session the page still
+// locks and asks, and the server turns the page away before that anyway.
+test('a page opened without a session is still gated', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  const { page } = await openPage(t, { authenticated: false, watchGate: true });
+  await page.goto(`${server.origin}/mission-board.html`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(600);
+
+  const landedOnLogin = new URL(page.url()).pathname === '/login.html';
+  const closed = await page.evaluate(() => window.__gateClosed || []);
+  assert.ok(
+    landedOnLogin || closed.includes('panel'),
+    'a visitor with no session should meet a login, not the Office'
+  );
+});
+
+// The Office may run without a passphrase on an undeployed machine — that is
+// the documented policy, and the calendar honoured it. The page did not: it
+// locked itself and raised a login panel whose password did not exist, and
+// whose submit answered 503, so a dev box was sealed behind a door with no key.
+// Nothing here is gated, so nothing should be painted as if it were.
+test('a machine with no passphrase is not locked behind a login it cannot pass', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  // Its own server: the shared one above is deliberately passphrase-protected.
+  const open = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-office-ungated-'));
+  t.after(() => fs.rmSync(open, { recursive: true, force: true }));
+  const ungated = await startTestServer({
+    serverPath: SERVER_PATH,
+    cwd: DIST,
+    buildEnv: port => {
+      const environment = {
+        ...process.env,
+        PORT: String(port),
+        APP_TIMEZONE: 'UTC',
+        APP_SETTINGS_FILE: path.join(open, 'settings.json'),
+        CALENDAR_EVENTS_FILE: path.join(open, 'calendar-events.json'),
+        AGENTS_FILE: path.join(open, 'agents.json'),
+        MEMORIES_FILE: path.join(open, 'memories.json'),
+        DROPS_FILE: path.join(open, 'drops.json'),
+        PROJECTS_FILE: path.join(open, 'projects.json'),
+      };
+      // No passphrase, and nothing that makes this look like a deployment.
+      [
+        'DROPS_PASSPHRASE', 'DROPS_PASSPHRASE_HASH', 'DATABASE_URL',
+        'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'NODE_ENV',
+        'RAILWAY_ENVIRONMENT', 'RAILWAY_ENVIRONMENT_NAME',
+        'RAILWAY_PROJECT_ID', 'RAILWAY_SERVICE_ID',
+      ].forEach(key => { delete environment[key]; });
+      return environment;
+    },
+  });
+  t.after(() => ungated.child.kill());
+
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  t.after(() => context.close());
+  await context.route('**/*', route => {
+    const sameOrigin = new URL(route.request().url()).origin === ungated.origin;
+    return sameOrigin ? route.continue() : route.abort();
+  });
+  const page = await context.newPage();
+
+  await page.goto(`${ungated.origin}/mission-board.html`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(600);
+
+  assert.equal(new URL(page.url()).pathname, '/mission-board.html', 'no login to be sent to');
+  assert.equal(
+    await page.locator('#ao-login-modal:not([hidden])').count(),
+    0,
+    'the page raised a login panel on an instance with no password'
+  );
+  assert.equal(
+    await page.evaluate(() => document.documentElement.classList.contains('ao-site-locked')),
+    false,
+    'and locked a site that has no gate'
+  );
+  // Nothing to log into, so nothing offering it.
+  assert.equal(await page.locator('#ao-login-trigger').isVisible(), false);
+
+  // The real proof it is usable: the page's own data loaded.
+  await page.waitForSelector('#drop-wall, #drop-list, .drop-card, .folder-card', { timeout: 5000 })
+    .catch(() => {});
+  assert.equal(
+    await page.evaluate(() => document.body.innerText.includes('Unlock the dropbox first')),
+    false,
+    'the page still thinks it is locked'
+  );
 });

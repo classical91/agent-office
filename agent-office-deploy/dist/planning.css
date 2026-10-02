@@ -213,3 +213,61 @@ textarea.planning-input { resize: vertical; min-height: 62px; }
   .planning-item { flex-wrap: wrap; }
   .planning-item-actions { width: 100%; justify-content: flex-start; }
 }
+
+/* ─── The proposed week ───────────────────────────────────────────────────
+   A read-only picture of where the ticked items would go, and the controls
+   that make it a review rather than an announcement. Nothing in here has
+   touched the calendar: the accent stripe is the reminder that these blocks
+   are still a proposal. */
+.planning-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.planning-panel-head .planning-sub { margin-top: 4px; }
+.planning-panel-actions { display: flex; gap: var(--space-2); flex-shrink: 0; }
+
+.planning-day-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-3); }
+.planning-day-head {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.planning-block {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  padding: 10px 12px;
+}
+.planning-block--unplaced { border-left-color: var(--red); }
+.planning-block-time {
+  flex: 0 0 auto;
+  min-width: 124px;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+.planning-block-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.planning-block-title { color: var(--text); font-size: var(--fs-sm); font-weight: 600; word-break: break-word; }
+.planning-block-why { color: var(--muted); font-size: var(--fs-2xs); }
+.planning-block-warn { color: var(--amber, #f59e0b); font-size: var(--fs-2xs); }
+
+.planning-week-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 720px) {
+  .planning-block { flex-wrap: wrap; }
+  .planning-block-time { min-width: 0; }
+  .planning-block .planning-item-actions { width: 100%; }
+}

@@ -49,14 +49,13 @@ test('avatar studio composites the approved detailed sprite assets', () => {
     assert.ok(fs.existsSync(path.join(DIST, 'assets', 'character-demo', sprite)), `${sprite} is missing`);
   }
   assert.match(avatars, /OUTFIT_SPRITES/);
-  // Hair used to be a sixth sprite lookup, HAIR_SPRITES, cutting it out of
-  // WebClaw's, NutriMind's and PC's heads. Those heads sit up to nine rows
-  // lower than the one the compositor actually draws, so the borrowed hair
-  // landed across the eyes and hung above the crown. It is cut from Penny's own
-  // silhouette now — see tests/avatar-compositor.test.js, which measures the
-  // result — and bringing a second head back into hair is the regression.
-  assert.doesNotMatch(avatars, /HAIR_SPRITES/);
-  assert.match(avatars, /function measureHeadRows/);
+  // A hairstyle brings the whole head it was painted on, rather than hair being
+  // cut out of one sprite and stamped onto another — those heads sit up to nine
+  // rows apart, so anything moved between them lands wrong. Generating the hair
+  // instead was tried and could not match the originals. See
+  // tests/avatar-compositor.test.js, which checks the rendered pixels.
+  assert.match(avatars, /const HAIR_HEADS = \{/);
+  assert.match(avatars, /function recolorHair/);
   assert.match(avatars, /drawImage\(spriteImages/);
   // No going back to the blockier procedural renderer this replaced.
   assert.doesNotMatch(avatars, /canvas\.width\s*\/\s*32/);

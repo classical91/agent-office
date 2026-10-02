@@ -15,7 +15,7 @@ The 3D office is intended to be an operational view of that system, not a decora
 - **Phone inbox** — a token-authenticated API for iOS Shortcuts: send a note or reminder to the Dropbox from your phone, and pull back whatever has come due. See [Phone inbox](#phone-inbox--ios-shortcuts).
 - **Memory** — per-agent memory entries that agents can reference across sessions.
 - **Calendar** — a Google Calendar-backed control surface for the office: agent/project metadata on every block, live run status, an Agent Assistant drawer, agent-timeline filters, and a scored scheduling policy instead of first-available-slot. It opens in **Focus Mode** — the chrome steps aside so the grid gets the whole viewport, and the sidebar is one tap away in the focus rail. See [Focus Mode](#focus-mode).
-- **Planning Mode** — the weekly planning checklist you keep by hand, and the list CoachClaw reads before it builds the week. Ticking an item asks CoachClaw to find time for it; it does not mean the item is done, which is a separate state. Unticked items stay on the list and out of the week. See [Planning Mode](#planning-mode).
+- **Planning Mode** — the weekly planning checklist you keep by hand, and the list CoachClaw reads before it builds the week. Ticking an item asks CoachClaw to find time for it; it does not mean the item is done, which is a separate state. Unticked items stay on the list and out of the week. **Build my week** places the ticked items in the time that is actually free around your calendar, your work schedule and everything else fixed, and shows the result for review — nothing reaches the calendar until you accept it. See [Planning Mode](#planning-mode).
 - **Countdowns** — everything with a clock on it in one page: deadlines, goals, work shifts, weekly routines and trading dates, grouped into Today / This Week / Later alongside what is next on the Google Calendar. Every card carries the time left, the category and the next action. See [Countdowns](#countdowns-1).
 - **Streaks** — every day you kept a habit up, plotted on a month grid and a year strip. Each streak carries a type (Health, Deep Work, Avoid, …) and a colour, the calendar can be filtered down to one streak or one type, and a day is marked from the day itself or from the streak's **Mark today** button. See [Streaks](#streaks-1).
 - **Visitors** — who is on your websites right now, what they are reading, and whether they have been before. One tracker script goes on any site you run; nothing is looked up against any outside service. See [Visitors](#visitors-1).
@@ -74,6 +74,7 @@ agent-office-deploy/
     calendar-agent-meta.js     # Agent Office event metadata + run lifecycle
     calendar-scheduling.js     # Scheduling preferences, slot scoring, NL parsing
     planning.js                # Planning Mode records and the CoachClaw brief (server-side)
+    planning-week.js           # Places the ticked items in free time; the proposed week (server-side)
     planning-page.js           # Planning Mode page-only logic
     planning.css               # Planning Mode-only styles
     calendar-google-sync.js    # Incremental Google sync (sync tokens, paging, 410 recovery)
@@ -112,7 +113,7 @@ Edit `scripts/shell/shell.html` (topbar + sidebar), `scripts/shell/boot.html`
 re-run it — never the copies inside the pages. Which sidebar row is highlighted
 is worked out from the URL by `markActiveNav()`, so no page marks its own.
 
-> **Note:** the repo also has two pre-existing single-page copies of the old monolithic UI — root `agent-office.html` and `agent-office-deploy/agent-office.html`. Neither is referenced by `server.js` or any build/deploy step, and they were already out of sync with `dist/index.html` before this multi-page split. They're left as-is; treat `agent-office-deploy/dist/` as the only frontend that's actually served.
+> **Note:** `agent-office-deploy/dist/` is the canonical frontend served by the application.
 
 ## Running locally
 
@@ -226,6 +227,7 @@ All endpoints return JSON.
 | GET    | `/api/shortcuts/status`           | Due/upcoming counts and the next reminder |
 | GET    | `/api/shortcuts/countdowns`       | The top countdowns as text, for the evening roll-up |
 | GET    | `/api/shortcuts/reset-timers`     | The Countdown Timers on `/resets.html`, as text or JSON |
+| GET    | `/api/shortcuts/traderclaw-journal` | The TraderClaw journal roll-up, as text or JSON |
 | GET    | `/api/reset-timers`               | The stored Countdown Timers (session-authed) |
 | PUT    | `/api/reset-timers`               | Replace the stored Countdown Timers (session-authed) |
 | GET    | `/api/planning`                   | The planning checklist and its counts (session-authed) |
@@ -233,6 +235,7 @@ All endpoints return JSON.
 | PATCH  | `/api/planning/:id`               | Edit, tick, untick or complete a planning item (session-authed) |
 | DELETE | `/api/planning/:id`               | Delete a planning item (session-authed) |
 | GET    | `/api/planning/brief`             | The ticked items, shaped for the scheduler (session-authed) |
+| POST   | `/api/planning/week`              | The proposed week, built but not written (session-authenticated) |
 | GET    | `/api/memories`                   | List memory entries              |
 | POST   | `/api/memories`                   | Create a memory entry            |
 | PATCH  | `/api/memories/:id`               | Update a memory entry            |
@@ -248,6 +251,8 @@ All endpoints return JSON.
 | PATCH  | `/api/countdowns/:id`             | Edit, pin or archive a countdown |
 | DELETE | `/api/countdowns/:id`             | Delete a countdown               |
 | GET    | `/api/countdowns/rollup`          | The top countdowns only, as JSON or `?format=text` |
+| GET    | `/api/happy-hour`                 | Today's Happy Hour deal, phase and countdown (open) |
+| GET    | `/api/widgets/today`              | Today's countdowns and the next one, for the Daily Dashboard (machine token) |
 | POST   | `/api/visits/track`               | Record a page view or a still-here ping (public) |
 | GET    | `/api/visits/summary`             | Live visitors, totals, top pages and referrers |
 | DELETE | `/api/visits`                     | Delete every recorded page view  |
@@ -269,7 +274,8 @@ All endpoints return JSON.
 | POST   | `/api/calendar/quick-add`         | Natural-language event entry (session-authenticated) |
 | GET    | `/api/config-files/:agent`        | Read snapshots only from a private runtime CONFIG_FILES_DIR (session-authenticated) |
 | GET    | `/api/orchestration/goals`        | List Penny goals and Outbox results (session-authenticated) |
-| POST   | `/api/orchestration/goals`        | Queue a goal for Penny (session-authenticated) |
+| POST   | `/api/orchestration/goals`        | Queue a goal for Penny, as a `title` plus a `goal` description (session-authenticated) |
+| DELETE | `/api/orchestration/goals/:id`    | Remove a goal from Mission Control; refused while Penny holds a live claim (session-authenticated) |
 | GET    | `/api/sharebot/newsroom-health`   | ShareBot67's live newsroom health, read server-side from Market Dashboard (session-authed) |
 | POST   | `/api/orchestration/goals/claim`  | Atomically claim the next goal (gateway-token authenticated) |
 | PATCH  | `/api/orchestration/goals/:id`    | Complete/fail a claimed goal (gateway-token authenticated) |
@@ -383,6 +389,52 @@ left, the section, whether a card is urgent — is worked out on the server in
 cards. Adding, editing and deleting sit behind the same `DROPS_PASSPHRASE` as
 the Dropbox and share its session cookie.
 
+### The Daily Dashboard widget
+
+Main Hub's Daily Dashboard shows what is on today and what is next. It used to
+read `/api/countdowns` to get that — this page's entire payload, every bucket,
+notes and all — which coupled a dashboard card to an internal API.
+
+`GET /api/widgets/today` answers the narrower question instead:
+
+This endpoint contains personal titles and next actions, so callers must use
+`SHORTCUTS_TOKEN` machine authentication. Main Hub sends it server-to-server;
+the token must never be exposed to dashboard browsers. `/api/happy-hour` stays
+public because it contains no personal information.
+
+```json
+{
+  "now": "2026-09-10T16:00:00.000Z",
+  "timezone": "America/Vancouver",
+  "date": "2026-09-10",
+  "next": {
+    "id": "…", "kind": "countdown", "title": "Rent due",
+    "categoryLabel": "Deadline", "color": "#ef4444",
+    "nextAction": "Send the transfer", "remaining": "5 hrs",
+    "remainingMs": 18000000, "occurrenceAt": "2026-09-10T23:00:00.000Z",
+    "overdue": false, "urgent": true, "inProgress": false
+  },
+  "nextIsLater": false,
+  "items": [],
+  "total": 1,
+  "overdue": 0
+}
+```
+
+`next` follows the two rules this page already follows. **Overdue work leads** —
+something past due is the thing to pay attention to. **A quiet weekend trading
+card never leads**, the same exclusion `formatRollupText()` makes, because
+nudging about a trade on a Saturday is the pressure these pages exist not to
+add; it still appears in `items`. When today is empty, `next` looks ahead to the
+next thing and sets `nextIsLater`, since "nothing until Thursday" beats a blank.
+
+`items` is today only, capped at 6 (`?limit=`, max 20), while `total` reports the
+real count. **`notes` never travels** — it is the free-text field on a countdown,
+so the one most likely to hold something personal, and a dashboard row has
+nowhere to put it.
+
+Open, like `/api/countdowns`: reading countdowns has never needed a session.
+
 ### Countdown Timers and Pushcut
 
 `/resets.html` is the other half of the page: personal reset timers — usage
@@ -394,6 +446,42 @@ separate workflow; the two share the screen and nothing else.
 resets.html  →  /api/reset-timers  →  ┬─ /api/shortcuts/reset-timers  →  iPhone Shortcut
                 (persistent store)    └─ server-side timer processor   →  Pushcut  →  iPhone
 ```
+
+#### Happy Hour
+
+One card on `/resets.html` is not a timer you set: the Happy Hour countdown
+knows the week's deals and rewrites itself as the day moves through the window.
+
+```
+2:30 PM  heads-up     3:00 PM  opens     6:00 PM  closes     after 6  tomorrow's deal
+   upcoming    →    starting    →      open      →                tomorrow
+```
+
+That schedule lives in `happy-hour.js`, which is loaded two ways on purpose:
+`resets.html` pulls it in with a `<script>` tag ahead of `resets.js`, and
+`server.js` `require()`s it. It used to live inside `resets.js`, where only the
+page could reach it — but Main Hub's Daily Dashboard shows the same meal and the
+same countdown, and a second copy of the deal table in another repository would
+be wrong the first week a deal changed.
+
+`GET /api/happy-hour` serves it:
+
+```json
+{
+  "now": "2026-09-10T01:05:39.913Z",
+  "timezone": "America/Vancouver",
+  "phase": "tomorrow",
+  "meal": "Fresh Appetizers",
+  "deal": "50% off Fresh Appetizers",
+  "dayName": "Thursday",
+  "targetAt": "2026-09-10T21:30:00.000Z",
+  "remainingMs": 73460087
+}
+```
+
+The route is open, like `/api/countdowns` — this is a grocery flyer, not a
+personal record. It reads nothing from the reset-timer store, which stays behind
+the passphrase.
 
 **The Pushcut list is what the page opens on.** Every countdown carries a
 **Pushcut** tick box, and the **Show** dropdown opens on **Pushcut**: the cards
@@ -514,8 +602,7 @@ and the preferred window resolved to clock times. Unticked and completed items
 are not in it. The page shows the same brief under *What CoachClaw reads*, so
 what the scheduler will be given is visible before it is given.
 
-**Where this sits in the weekly build.** The page lists the whole flow, of which
-steps 2 and 6's inputs are what Planning Mode owns:
+**Where this sits in the weekly build.** The page lists the whole flow:
 
 1. Work schedule — the days and hours you are at work.
 2. This checklist — every ticked item, with its duration, priority and
@@ -525,11 +612,68 @@ steps 2 and 6's inputs are what Planning Mode owns:
 5. The week — ticked items placed into those windows.
 6. Your review — accept it, move something, or send an item back to this list.
 
-Steps 3 to 5 are `calendar-scheduling.js`, which already models working hours,
-sleep, lunch, meeting buffers, recovery time and deep-work windows, and scores
-candidate slots rather than taking the first that fits. Step 1 (reading a photo
-of a work schedule) and step 6 (the proposal-and-review screen) are not built
-yet; the checklist and the brief are the bridge they will plug into.
+### Building the week
+
+**Build my week** on the page is steps 4 and 5. `POST /api/planning/week` takes
+the brief, reads your calendar and your scheduling preferences, and returns a
+proposal. It writes nothing.
+
+`planning-week.js` does the placing, and leans on `calendar-scheduling.js` for
+everything a slot has to respect — sleep, lunch, commutes declared as
+commitments, meeting buffers, recovery time, deep-work windows — rather than
+deciding any of that again. What it adds is the part a planning item knows and a
+calendar request does not:
+
+- **Packing order.** Items are placed hardest-and-most-urgent first, and each
+  block is fed back in as a commitment before the next item is placed. The
+  second workout cannot land on top of the first, and the gap between two blocks
+  is the gap the calendar leaves everywhere else.
+- **Preferred days.** Honoured when there is room. When there is not, the item
+  is placed on the next best day *and the block says so* — a preference is not a
+  reason to drop something.
+- **Preferred times.** Scored, not enforced: worth about as much as the
+  scheduler's own conflict penalty, so "sometime in the evening" is not answered
+  with nine in the morning, and a slot nothing else fits around does not win for
+  being at the right hour.
+- **Waking hours, seven days.** A personal week is not planned against office
+  hours. *Visit grandmother* is a Saturday and *stretching* is half nine at
+  night, so the day is widened to your waking hours and the whole week, with
+  everything else left exactly as you set it. Pass `respectWorkingHours: true`
+  to plan inside working hours instead.
+- **Nothing is silently dropped.** An item with nowhere to go comes back under
+  `unscheduled`, with the reason.
+
+### Reviewing it
+
+Step 6 is the point of not writing anything. The proposed week is shown day by
+day, with what each slot was chosen for, and each block can be:
+
+- **Moved** — re-placed around the rest of the week, which goes back to the
+  builder as `pinned` blocks so nothing else shifts, and the slot it is leaving
+  is pinned too so "move" cannot hand back the same time.
+- **Not this week** — dropped from the proposal. The item stays ticked: it was
+  the placement that did not work.
+- **Back to list** — dropped *and* unticked, which is the honest record of "not
+  this week", and it is on the list for the next one.
+
+**Accept & add to calendar** posts the surviving blocks to
+`POST /api/calendar/schedule/commit`, the same endpoint every other scheduled
+block goes through. Each committed event keeps `meta.planningItemId`, so a block
+on the calendar still knows which intention it came from.
+
+### The work schedule
+
+Step 1 is the piece that is not built. The seam for it is: `POST
+/api/planning/week` takes a `workSchedule` of shifts and turns them into
+commitments nothing can be planned over.
+
+```jsonc
+{ "workSchedule": { "shifts": [{ "label": "Work", "days": [1,2,3,4,5], "start": "12:30", "end": "21:00" }] } }
+```
+
+Reading a photograph into that shape — and showing what was read so an obvious
+mistake can be corrected before anything is planned — is what still has to be
+written. Everything downstream of it already works.
 
 ## Streaks
 
@@ -894,6 +1038,29 @@ Set the URL up in Shortcuts as **Get Contents of URL** → Method `GET`, one
 header `X-Shortcuts-Token` = your token → **Show Result**. The exact URL is on
 **Settings → Phone Inbox** as `reset_timers_url`.
 
+**Shortcut: the TraderClaw roll-up.**
+`GET /api/shortcuts/traderclaw-journal?limit=5&format=text` returns the journal's
+latest entries behind the same token, newest first:
+
+```
+12 entries · 4 validated · 2 rejected
+• ETHUSDT SHORT — win · 1.8R · validated
+• BTCUSDT LONG — loss · -1.0R · rejected
+```
+
+Drop `format=text` for JSON: each entry carries `record_id`, `record_type`,
+`timestamp_utc`, `asset`, `direction`, `timeframe`, `strategy`, `result_status`,
+`r_multiple` and `gate_status`, alongside the journal's `counts` and `synced_at`.
+
+**This is the summary, not the journal.** `/api/traderclaw-journal` stays
+session-authenticated, because an entry's substance is its thesis, its
+invalidation and the lesson drawn from it — the things you open the journal page
+to read. None of those is in this projection. What it carries is what a roll-up
+says out loud: which asset, which way, how it went, and whether the promotion
+gate let the strategy through. The same split the reset timers make, and for the
+same reason: a machine-readable route hands back a view built for the answer,
+never the stored record.
+
 There is also a no-Shortcut version: bookmark
 `/mission-board.html?reminder=due` on the phone's Home Screen and the Dropbox
 opens filtered to what has come due. The same filter is a dropdown on the
@@ -1017,10 +1184,37 @@ and it says so at startup (`Agent Office auth: off`). A deployed host with the
 passphrase missing logs `Agent Office auth: NOT CONFIGURED` — look for that line
 first if the app comes up answering `503` to everything.
 
+**Off means off, on a dev box.** The other half of that policy is that an
+undeployed machine with no passphrase is genuinely ungated: no `503`, no lock,
+no login panel. Two places used to disagree with it — the Dropbox guard
+answered `503` on a dev machine as well as a deployed one, and the page locked
+itself behind a login whose password did not exist and whose submit answered
+`503` — so a dev box was sealed behind a door with no key while the calendar
+beside it worked. `/api/session` now answers `gated`, which is what the page
+paints from: false only where there is no passphrase *and* the host does not
+look deployed.
+
 **Guessing the passphrase is rate-limited.** Five wrong attempts from one
 address buy a five-minute timeout, during which even the correct passphrase is
 refused. A successful login clears the count. This is the same treatment the
 phone inbox gives a bad token.
+
+**Two cookies, one session.** `agent_office_session` carries the token and is
+`HttpOnly`, so no script can read it — which left a page with no way to know
+whether it was logged in except to ask. It asked on every load, and while it
+waited it locked itself and raised the login panel, so opening any page while
+already logged in flashed the login screen for the length of a round trip.
+`agent_office_signed_in` is set beside it to close that gap: same path, same
+lifetime, no `HttpOnly`, and a value of `1` that says only *a session exists*.
+The page reads it to paint the gate on the first try. It authorises nothing —
+every route still checks the real session — and it is cleared wherever that
+session ends: on logout, on a `401`, and on the next `/api/session` check after
+a restart has emptied the session map.
+
+It carries one more value, `open`, set only on an ungated host: it says *there
+is no gate here*, so a dev box does not flash a login panel while it waits to
+be told there is nothing to log into. A configured instance never sets it, and
+takes it back on the next check if a browser turns up holding one.
 
 ### Database TLS
 
