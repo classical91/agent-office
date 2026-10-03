@@ -8,7 +8,7 @@
 <meta http-equiv="Expires" content="0"/>
 <title>Planning Mode - Agent Office</title>
 <link rel="stylesheet" href="shared.css?v=nav-monograms-filter-contrast-20260919"/>
-<link rel="stylesheet" href="planning.css?v=planning-week-20260919"/>
+<link rel="stylesheet" href="planning.css?v=work-schedule-20261003"/>
 <!-- Restores the saved theme, sidebar state and focus mode before first paint,
      so no page flashes the default accent, a full-width sidebar, or the chrome
      of a page that opens in Focus Mode. ACCENTS mirrors THEMES in
@@ -153,6 +153,16 @@
       </div>
 
       <div class="planning-panel">
+        <div class="planning-panel-title">My work schedule</div>
+        <div class="planning-sub">
+          Step 1: the hours you are at work, so the week is built around them and never over them.
+          Photograph the rota and the shifts are read off it — then check them here, because a
+          misread 8 for a 9 is a week planned an hour wrong. Nothing is saved until you press Save.
+        </div>
+        <div id="planning-work"></div>
+      </div>
+
+      <div class="planning-panel">
         <div class="planning-panel-title">Add to the list</div>
         <div class="planning-add">
           <input class="planning-input" id="planning-new-title" type="text" maxlength="200"
@@ -195,7 +205,7 @@
       <div class="planning-panel">
         <div class="planning-panel-title">How the week gets built</div>
         <ol class="planning-steps">
-          <li>Work schedule — the days and hours you are at work, so nothing is planned over them.</li>
+          <li>Work schedule — the days and hours you are at work, read off a photo of the rota or typed in, so nothing is planned over them.</li>
           <li>This checklist — every ticked item, with its duration, priority and preferred times.</li>
           <li>Existing commitments — calendar events, scheduled tasks and anything else already fixed.</li>
           <li>Free time — realistic windows around all of that, not every empty minute.</li>
@@ -221,7 +231,7 @@
 <div class="statusbar" id="statusbar"></div>
 
 <script src="app-shared.js?v=reminder-categories-20260916"></script>
-<script src="planning-page.js?v=planning-week-20260919"></script>
+<script src="planning-page.js?v=work-schedule-20261003"></script>
 <script>
 switchView('planning', document.querySelector('.nav-item.active'));
 </script>

@@ -15,7 +15,7 @@ The 3D office is intended to be an operational view of that system, not a decora
 - **Phone inbox** — a token-authenticated API for iOS Shortcuts: send a note or reminder to the Dropbox from your phone, and pull back whatever has come due. See [Phone inbox](#phone-inbox--ios-shortcuts).
 - **Memory** — per-agent memory entries that agents can reference across sessions.
 - **Calendar** — a Google Calendar-backed control surface for the office: agent/project metadata on every block, live run status, an Agent Assistant drawer, agent-timeline filters, and a scored scheduling policy instead of first-available-slot. It opens in **Focus Mode** — the chrome steps aside so the grid gets the whole viewport, and the sidebar is one tap away in the focus rail. See [Focus Mode](#focus-mode).
-- **Planning Mode** — the weekly planning checklist you keep by hand, and the list CoachClaw reads before it builds the week. Ticking an item asks CoachClaw to find time for it; it does not mean the item is done, which is a separate state. Unticked items stay on the list and out of the week. **Build my week** places the ticked items in the time that is actually free around your calendar, your work schedule and everything else fixed, and shows the result for review — nothing reaches the calendar until you accept it. See [Planning Mode](#planning-mode).
+- **Planning Mode** — the weekly planning checklist you keep by hand, and the list CoachClaw reads before it builds the week. Ticking an item asks CoachClaw to find time for it; it does not mean the item is done, which is a separate state. Unticked items stay on the list and out of the week. **Build my week** places the ticked items in the time that is actually free around your calendar, your work schedule and everything else fixed, and shows the result for review — nothing reaches the calendar until you accept it. Your work schedule can be read off a photo of the rota and corrected before anything is planned around it. See [Planning Mode](#planning-mode).
 - **Countdowns** — everything with a clock on it in one page: deadlines, goals, work shifts, weekly routines and trading dates, grouped into Today / This Week / Later alongside what is next on the Google Calendar. Every card carries the time left, the category and the next action. See [Countdowns](#countdowns-1).
 - **Streaks** — every day you kept a habit up, plotted on a month grid and a year strip. Each streak carries a type (Health, Deep Work, Avoid, …) and a colour, the calendar can be filtered down to one streak or one type, and a day is marked from the day itself or from the streak's **Mark today** button. See [Streaks](#streaks-1).
 - **Visitors** — who is on your websites right now, what they are reading, and whether they have been before. One tracker script goes on any site you run; nothing is looked up against any outside service. See [Visitors](#visitors-1).
@@ -74,6 +74,8 @@ agent-office-deploy/
     calendar-agent-meta.js     # Agent Office event metadata + run lifecycle
     calendar-scheduling.js     # Scheduling preferences, slot scoring, NL parsing
     planning.js                # Planning Mode records and the CoachClaw brief (server-side)
+    work-schedule.js           # The work schedule record and its scheduler commitments (server-side)
+    work-schedule-reader.js    # Reads a photographed rota into draft shifts (server-side)
     planning-week.js           # Places the ticked items in free time; the proposed week (server-side)
     planning-page.js           # Planning Mode page-only logic
     planning.css               # Planning Mode-only styles
@@ -235,6 +237,10 @@ All endpoints return JSON.
 | PATCH  | `/api/planning/:id`               | Edit, tick, untick or complete a planning item (session-authed) |
 | DELETE | `/api/planning/:id`               | Delete a planning item (session-authed) |
 | GET    | `/api/planning/brief`             | The ticked items, shaped for the scheduler (session-authed) |
+| GET    | `/api/planning/work-schedule`     | The saved work schedule and its days off (session-authed) |
+| PUT    | `/api/planning/work-schedule`     | Save the corrected work schedule (session-authed) |
+| DELETE | `/api/planning/work-schedule`     | Delete the work schedule (session-authed) |
+| POST   | `/api/planning/work-schedule/read`| Read shifts off a photo of a rota — returns a draft, saves nothing (session-authed) |
 | POST   | `/api/planning/week`              | The proposed week, built but not written (session-authenticated) |
 | GET    | `/api/memories`                   | List memory entries              |
 | POST   | `/api/memories`                   | Create a memory entry            |
@@ -663,17 +669,42 @@ on the calendar still knows which intention it came from.
 
 ### The work schedule
 
-Step 1 is the piece that is not built. The seam for it is: `POST
-/api/planning/week` takes a `workSchedule` of shifts and turns them into
-commitments nothing can be planned over.
+Step 1. The hours you are at work are the one part of the week that is not
+negotiable, so they are a record of their own — a weekly pattern of shifts, not
+sixty calendar entries a month — and the week is built around them.
+
+**Photograph the rota, then check it.** *Read a photo of my rota* on the
+Planning page sends the picture to `POST /api/planning/work-schedule/read`,
+which returns the shifts it can see and **saves nothing**. They land in the same
+editable rows a typed schedule uses, under a note saying what the reader was
+unsure about, and `PUT /api/planning/work-schedule` stores whatever is on screen
+when you press Save. That order is the point: "9" and "8" look alike in a phone
+photo of a laser print, and a week planned around a shift that starts an hour
+early is worse than no week at all. A read schedule gets no more trust than a
+typed one until someone has looked at it.
+
+**Days off are whatever is left.** You do not declare one; you simply are not
+rostered that day. `working_days` and `days_off` are derived, so they cannot
+disagree with the shifts.
+
+**Night shifts.** A shift that ends earlier than it starts runs past midnight.
+Read literally that is an end before its start, which the scheduler drops — and
+a dropped shift is not a gap in the record, it is a night the week gets planned
+straight over. `toCommitments()` splits one into the evening of the day you
+clock on and the morning of the day after.
+
+**Reading photos needs `ANTHROPIC_API_KEY`** on the server; `work-schedule-reader.js`
+is the only part of Agent Office that calls a model. Without the key the reader
+is off, the page says so, and typing the schedule in works exactly as it does
+with it — the photo is a shortcut, never the way in.
 
 ```jsonc
-{ "workSchedule": { "shifts": [{ "label": "Work", "days": [1,2,3,4,5], "start": "12:30", "end": "21:00" }] } }
+// PUT /api/planning/work-schedule
+{ "shifts": [{ "label": "Work", "days": [2,3,4,5,6], "start": "12:30", "end": "21:00" }] }
 ```
 
-Reading a photograph into that shape — and showing what was read so an obvious
-mistake can be corrected before anything is planned — is what still has to be
-written. Everything downstream of it already works.
+`POST /api/planning/week` uses the saved schedule with nothing passed; a caller
+can still send a `workSchedule` of its own to plan against a different week.
 
 ## Streaks
 
@@ -1158,6 +1189,10 @@ Dropbox-related variables:
   server logs `Phone inbox: on` at startup once it is set
 - `APP_TIMEZONE` — the timezone reminder phrases like "tomorrow 9am" are read
   in (defaults to `America/Vancouver`)
+- `ANTHROPIC_API_KEY` — lets Planning Mode read a photographed work schedule
+  into shifts (`work-schedule-reader.js`, the only part of this app that calls a
+  model). Optional: without it the reader is off, the page says so, and the
+  schedule is typed in instead. See [the work schedule](#the-work-schedule).
 - `RESET_TIMER_INTERVAL_MS` — how often the server checks whether a Countdown
   Timer has landed and needs its Pushcut webhook sent (defaults to `45000`;
   `0` turns server-side delivery off). Nothing else is needed to switch this
