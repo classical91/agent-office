@@ -20,7 +20,7 @@ const SERVER_PATH = path.join(DIST, 'server.js');
 const PASSPHRASE = 'open-the-visitors';
 const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
 
-async function startServer() {
+async function startServer(options = {}) {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-office-visits-'));
 
   const buildEnv = port => {
@@ -37,11 +37,16 @@ async function startServer() {
       PROJECTS_FILE: path.join(scratch, 'projects.json'),
       STREAKS_FILE: path.join(scratch, 'streaks.json'),
       STREAK_DAYS_FILE: path.join(scratch, 'streak-days.json'),
-      VISITS_FILE: path.join(scratch, 'visits.json'),
+      VISITS_FILE: options.brokenVisitsFile
+        ? path.join(scratch, 'missing-directory', 'visits.json')
+        : path.join(scratch, 'visits.json'),
+      COUNTDOWNS_FILE: path.join(scratch, 'countdowns.json'),
       DROPS_PASSPHRASE: PASSPHRASE,
     };
-    ['DATABASE_URL', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'DROPS_PASSPHRASE_HASH', 'SHORTCUTS_TOKEN']
+    ['DATABASE_URL', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'DROPS_PASSPHRASE_HASH', 'SHORTCUTS_TOKEN',
+      'SESSION_SECRET', 'VISITS_ALLOWED_HOSTS', 'VISITS_MAX_STORED_ROWS', 'VISITS_TRACK_LIMIT', 'RAILWAY_SERVICE_ID']
       .forEach(key => { delete environment[key]; });
+    Object.assign(environment, options.env || {});
     return environment;
   };
 
@@ -205,6 +210,62 @@ test('bots and malformed beacons are dropped without an error', async () => {
 
     const payload = await summary(server);
     assert.equal(payload.totals.pageviews, 0, 'none of those should have been recorded');
+  } finally {
+    stop(server);
+  }
+});
+
+test('production visitor intake accepts only configured site hosts', async () => {
+  const server = await startServer({
+    env: {
+      RAILWAY_SERVICE_ID: 'svc-visits-test',
+      SESSION_SECRET: 'visits-test-session-secret-at-least-32-characters',
+      VISITS_ALLOWED_HOSTS: 'example.com',
+    },
+  });
+  try {
+    assert.equal((await track(server, view())).status, 204);
+    assert.equal((await track(server, view({
+      site: 'https://poison.example',
+      visitor_id: 'visitor00000002',
+      session_id: 'session00000002',
+    }))).status, 204);
+    const payload = await summary(server);
+    assert.equal(payload.totals.pageviews, 1);
+    assert.deepEqual(payload.all_sites, ['example.com']);
+  } finally {
+    stop(server);
+  }
+});
+
+test('visitor storage has a hard row cap', async () => {
+  const server = await startServer({ env: { VISITS_MAX_STORED_ROWS: '2' } });
+  try {
+    for (let index = 1; index <= 3; index += 1) {
+      await track(server, view({
+        visitor_id: `visitor0000000${index}`,
+        session_id: `session0000000${index}`,
+        path: `/page-${index}`,
+      }));
+    }
+    const payload = await summary(server);
+    assert.equal(payload.totals.pageviews, 2);
+    assert.deepEqual(payload.recent.map(item => item.path), ['/page-3', '/page-2']);
+  } finally {
+    stop(server);
+  }
+});
+
+test('a failed visitor-file write does not poison writes to other files', async () => {
+  const server = await startServer({ brokenVisitsFile: true });
+  try {
+    assert.equal((await track(server, view())).status, 500);
+    const created = await fetch(`${server.origin}/api/countdowns`, {
+      method: 'POST',
+      headers: { cookie: server.cookie, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'Queue still works', target_at: new Date(Date.now() + 3600000).toISOString() }),
+    });
+    assert.equal(created.status, 201, await created.clone().text());
   } finally {
     stop(server);
   }

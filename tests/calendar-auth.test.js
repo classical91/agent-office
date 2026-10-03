@@ -200,9 +200,9 @@ test('calendar status stays public so a locked client knows to ask for the passp
   const payload = await response.json();
   assert.equal(payload.authRequired, true);
   assert.equal(payload.authenticated, false);
-  // Lock state is all an anonymous caller may learn - not whose calendar it is.
-  assert.equal(payload.accountEmail, null);
-  assert.equal(payload.account, null);
+  // Identity is not part of the status contract, even as a nullable field.
+  assert.equal('accountEmail' in payload, false);
+  assert.equal('account' in payload, false);
 });
 
 // -- Fail closed when auth is not configured -----------------------

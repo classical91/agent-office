@@ -86,12 +86,13 @@ const DEFAULT_AGENTS = [
 const ALLOWED_ORIGIN = process.env.APP_ORIGIN || process.env.PUBLIC_APP_URL || '';
 const PASSPHRASE_HASH = resolvePassphraseHash();
 const IS_DEPLOYED = isDeployedEnvironment();
-const sessions = new Map();
+const SESSION_SECRET = String(process.env.SESSION_SECRET || '').trim();
+const SESSION_SECRET_MIN_LENGTH = 32;
 // Nothing is hardcoded here any more: the calendar reflects Google only.
 const RECURRING_CALENDAR_EVENTS = [];
 const KNOWN_RECURRING_SERIES = new Set(RECURRING_CALENDAR_EVENTS.map(item => item.seriesId));
 
-let writeQueue = Promise.resolve();
+const fileWriteQueues = new Map();
 const storageReady = createStorage();
 
 function resolvePassphraseHash() {
@@ -166,31 +167,56 @@ function parseCookies(req) {
   }, {});
 }
 
-function cleanupExpiredSessions() {
-  const now = Date.now();
-  for (const [token, session] of sessions.entries()) {
-    if (!session || session.expiresAt <= now) sessions.delete(token);
+function sessionSigningKey() {
+  const material = SESSION_SECRET.length >= SESSION_SECRET_MIN_LENGTH
+    ? SESSION_SECRET
+    : (!IS_DEPLOYED ? PASSPHRASE_HASH : '');
+  if (!material) return null;
+  return crypto.createHash('sha256').update(`agent-office-session:${material}`, 'utf8').digest();
+}
+
+function createSessionToken(expiresAt = Date.now() + SESSION_TTL_MS) {
+  const key = sessionSigningKey();
+  if (!key) {
+    const error = new Error(`Session auth is not configured. Set SESSION_SECRET to at least ${SESSION_SECRET_MIN_LENGTH} characters.`);
+    error.statusCode = 503;
+    throw error;
+  }
+  const payload = Buffer.from(JSON.stringify({ expiresAt, nonce: crypto.randomBytes(16).toString('hex') }), 'utf8')
+    .toString('base64url');
+  const signature = crypto.createHmac('sha256', key).update(payload, 'utf8').digest('base64url');
+  return `${payload}.${signature}`;
+}
+
+function verifySessionToken(token) {
+  if (!PASSPHRASE_HASH || typeof token !== 'string') return null;
+  const key = sessionSigningKey();
+  if (!key) return null;
+  const parts = token.split('.');
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+  const expected = crypto.createHmac('sha256', key).update(parts[0], 'utf8').digest();
+  let actual;
+  try {
+    actual = Buffer.from(parts[1], 'base64url');
+  } catch {
+    return null;
+  }
+  if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) return null;
+  try {
+    const session = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'));
+    if (!Number.isFinite(session.expiresAt) || session.expiresAt <= Date.now()) return null;
+    return session;
+  } catch {
+    return null;
   }
 }
 
 function getSession(req) {
-  cleanupExpiredSessions();
   const token = parseCookies(req)[SESSION_COOKIE];
   if (!token) return null;
-
-  const session = sessions.get(token);
+  const session = verifySessionToken(token);
   if (!session) return null;
-  if (session.expiresAt <= Date.now()) {
-    sessions.delete(token);
-    return null;
-  }
-
-  session.expiresAt = Date.now() + SESSION_TTL_MS;
   return { token, session };
-}
-
-function destroySession(token) {
-  if (token) sessions.delete(token);
 }
 
 // The passphrase is the one credential that opens the whole Office - notes,
@@ -233,7 +259,7 @@ function setSessionCookies(res, token, maxAge) {
     maxAge,
     path: '/',
     sameSite: 'Strict',
-    secure: process.env.NODE_ENV === 'production',
+    secure: IS_DEPLOYED,
   };
   res.setHeader('Set-Cookie', [
     serializeCookie(SESSION_COOKIE, token, { ...shared, httpOnly: true }),
@@ -259,15 +285,24 @@ function setOpenGateCookie(res) {
       maxAge: Math.floor(SESSION_TTL_MS / 1000),
       path: '/',
       sameSite: 'Strict',
-      secure: process.env.NODE_ENV === 'production',
+      secure: IS_DEPLOYED,
     })
   );
 }
 
 function issueSession(res) {
-  const token = crypto.randomBytes(32).toString('hex');
-  sessions.set(token, { expiresAt: Date.now() + SESSION_TTL_MS });
+  const token = createSessionToken();
   setSessionCookies(res, token, Math.floor(SESSION_TTL_MS / 1000));
+}
+
+function queueFileWrite(filePath, task) {
+  const previous = fileWriteQueues.get(filePath) || Promise.resolve();
+  const operation = previous.catch(() => undefined).then(task);
+  const tail = operation.catch(() => undefined);
+  fileWriteQueues.set(filePath, tail);
+  return operation.finally(() => {
+    if (fileWriteQueues.get(filePath) === tail) fileWriteQueues.delete(filePath);
+  });
 }
 
 async function readJsonBody(req, maxBytes = MAX_BODY_BYTES) {
@@ -752,6 +787,13 @@ function requireDropsAuth(res, req) {
     return true;
   }
 
+  if (!sessionSigningKey()) {
+    sendJson(res, 503, {
+      error: `Session auth is not configured. Set SESSION_SECRET to at least ${SESSION_SECRET_MIN_LENGTH} characters.`,
+    });
+    return null;
+  }
+
   const activeSession = getSession(req);
   if (!activeSession) {
     // Take the hint cookie back on the way out. Left behind, it would have the
@@ -853,10 +895,9 @@ async function loadDropsFromFile() {
 }
 
 async function saveDropsToFile(drops) {
-  writeQueue = writeQueue.then(() =>
+  await queueFileWrite(DROPS_FILE, () =>
     fs.writeFile(DROPS_FILE, JSON.stringify(drops, null, 2), 'utf8')
   );
-  await writeQueue;
 }
 
 async function loadMemoriesFromFile() {
@@ -871,10 +912,9 @@ async function loadMemoriesFromFile() {
 }
 
 async function saveMemoriesToFile(memories) {
-  writeQueue = writeQueue.then(() =>
+  await queueFileWrite(MEMORIES_FILE, () =>
     fs.writeFile(MEMORIES_FILE, JSON.stringify(memories, null, 2), 'utf8')
   );
-  await writeQueue;
 }
 
 async function loadProjectsFromFile() {
@@ -889,10 +929,9 @@ async function loadProjectsFromFile() {
 }
 
 async function saveProjectsToFile(projects) {
-  writeQueue = writeQueue.then(() =>
+  await queueFileWrite(PROJECTS_FILE, () =>
     fs.writeFile(PROJECTS_FILE, JSON.stringify(projects, null, 2), 'utf8')
   );
-  await writeQueue;
 }
 
 async function loadStreaksFromFile() {
@@ -907,10 +946,9 @@ async function loadStreaksFromFile() {
 }
 
 async function saveStreaksToFile(streaks) {
-  writeQueue = writeQueue.then(() =>
+  await queueFileWrite(STREAKS_FILE, () =>
     fs.writeFile(STREAKS_FILE, JSON.stringify(streaks, null, 2), 'utf8')
   );
-  await writeQueue;
 }
 
 async function loadCountdownsFromFile() {
@@ -925,10 +963,9 @@ async function loadCountdownsFromFile() {
 }
 
 async function saveCountdownsToFile(rows) {
-  writeQueue = writeQueue.then(() =>
+  await queueFileWrite(COUNTDOWNS_FILE, () =>
     fs.writeFile(COUNTDOWNS_FILE, JSON.stringify(rows, null, 2), 'utf8')
   );
-  await writeQueue;
 }
 
 async function loadStreakDaysFromFile() {
@@ -943,10 +980,9 @@ async function loadStreakDaysFromFile() {
 }
 
 async function saveStreakDaysToFile(days) {
-  writeQueue = writeQueue.then(() =>
+  await queueFileWrite(STREAK_DAYS_FILE, () =>
     fs.writeFile(STREAK_DAYS_FILE, JSON.stringify(days, null, 2), 'utf8')
   );
-  await writeQueue;
 }
 
 async function loadVisitsFromFile() {
@@ -961,10 +997,9 @@ async function loadVisitsFromFile() {
 }
 
 async function saveVisitsToFile(visits) {
-  writeQueue = writeQueue.then(() =>
+  await queueFileWrite(VISITS_FILE, () =>
     fs.writeFile(VISITS_FILE, JSON.stringify(visits, null, 2), 'utf8')
   );
-  await writeQueue;
 }
 
 async function loadAgentsFromFile() {
@@ -979,10 +1014,9 @@ async function loadAgentsFromFile() {
 }
 
 async function saveAgentsToFile(agents) {
-  writeQueue = writeQueue.then(() =>
+  await queueFileWrite(AGENTS_FILE, () =>
     fs.writeFile(AGENTS_FILE, JSON.stringify(agents, null, 2), 'utf8')
   );
-  await writeQueue;
 }
 
 async function loadAppSettingsFromFile() {
@@ -997,13 +1031,12 @@ async function loadAppSettingsFromFile() {
 }
 
 async function saveAppSettingsToFile(settings) {
-  writeQueue = writeQueue.then(() =>
+  await queueFileWrite(APP_SETTINGS_FILE, () =>
     fs.writeFile(APP_SETTINGS_FILE, JSON.stringify(settings, null, 2), {
       encoding: 'utf8',
       mode: 0o600,
     })
   );
-  await writeQueue;
 }
 
 function isValidRecurringSeriesId(seriesId) {
@@ -1121,10 +1154,9 @@ async function loadCalendarEventsFromFile() {
 }
 
 async function saveCalendarEventsToFile(events) {
-  writeQueue = writeQueue.then(() =>
+  await queueFileWrite(CALENDAR_EVENTS_FILE, () =>
     fs.writeFile(CALENDAR_EVENTS_FILE, JSON.stringify(events, null, 2), 'utf8')
   );
-  await writeQueue;
 }
 
 async function loadDisabledRecurringSeriesFromFile() {
@@ -1140,10 +1172,9 @@ async function loadDisabledRecurringSeriesFromFile() {
 
 async function saveDisabledRecurringSeriesToFile(seriesIds) {
   const uniqueSeries = Array.from(new Set((seriesIds || []).filter(isValidRecurringSeriesId))).sort();
-  writeQueue = writeQueue.then(() =>
+  await queueFileWrite(CALENDAR_DISABLED_RECURRING_FILE, () =>
     fs.writeFile(CALENDAR_DISABLED_RECURRING_FILE, JSON.stringify(uniqueSeries, null, 2), 'utf8')
   );
-  await writeQueue;
 }
 
 async function loadRecurringOverridesFromFile() {
@@ -1161,10 +1192,9 @@ async function saveRecurringOverridesToFile(overrides) {
   const normalized = (overrides || [])
     .filter(item => isValidRecurringSeriesId(item.series_id || item.seriesId))
     .map(item => Object.assign({}, item, { series_id: item.series_id || item.seriesId }));
-  writeQueue = writeQueue.then(() =>
+  await queueFileWrite(CALENDAR_RECURRING_OVERRIDES_FILE, () =>
     fs.writeFile(CALENDAR_RECURRING_OVERRIDES_FILE, JSON.stringify(normalized, null, 2), 'utf8')
   );
-  await writeQueue;
 }
 
 function buildRecurringOverridePatch(body) {
@@ -1610,7 +1640,7 @@ function createFileStorage() {
     async recordVisit(visit) {
       const visits = await loadVisitsFromFile();
       visits.unshift(visit);
-      await saveVisitsToFile(visits);
+      await saveVisitsToFile(visits.slice(0, VISIT_MAX_STORED_ROWS));
       return visit;
     },
     async touchVisit(visitorId, sessionId, seenAt) {
@@ -1636,7 +1666,10 @@ function createFileStorage() {
     },
     async pruneVisits(before) {
       const visits = await loadVisitsFromFile();
-      const next = visits.filter(visit => new Date(visit.created_at) >= before);
+      const next = visits
+        .filter(visit => new Date(visit.created_at) >= before)
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, VISIT_MAX_STORED_ROWS);
       const removed = visits.length - next.length;
       if (removed) await saveVisitsToFile(next);
       return removed;
@@ -2719,6 +2752,12 @@ async function createPostgresStorage() {
         [visit.id, visit.site, visit.visitor_id, visit.session_id, visit.path, visit.title, visit.referrer,
           visit.user_agent, visit.ip, visit.screen, visit.is_returning, visit.created_at]
       );
+      await pool.query(
+        `DELETE FROM visits WHERE id IN (
+           SELECT id FROM visits ORDER BY created_at DESC OFFSET $1
+         )`,
+        [VISIT_MAX_STORED_ROWS]
+      );
       return visit;
     },
     async touchVisit(visitorId, sessionId, seenAt) {
@@ -2759,8 +2798,14 @@ async function createPostgresStorage() {
       return result.rows.map(row => row.site);
     },
     async pruneVisits(before) {
-      const result = await pool.query('DELETE FROM visits WHERE created_at < $1', [before.toISOString()]);
-      return result.rowCount;
+      const expired = await pool.query('DELETE FROM visits WHERE created_at < $1', [before.toISOString()]);
+      const overflow = await pool.query(
+        `DELETE FROM visits WHERE id IN (
+           SELECT id FROM visits ORDER BY created_at DESC OFFSET $1
+         )`,
+        [VISIT_MAX_STORED_ROWS]
+      );
+      return expired.rowCount + overflow.rowCount;
     },
     async clearVisits() {
       const result = await pool.query('DELETE FROM visits');
@@ -2776,13 +2821,17 @@ async function createStorage() {
     throw new Error('Persistent PostgreSQL storage is required in production; DATABASE_URL is not set.');
   }
   try {
-    return (await createPostgresStorage()) || createFileStorage();
+    const storage = (await createPostgresStorage()) || createFileStorage();
+    await storage.deleteAppSetting('google_calendar_account');
+    return storage;
   } catch (error) {
     if (isProduction) {
       throw new Error(`Persistent PostgreSQL storage is required in production: ${error.message}`);
     }
     console.error('Failed to initialize PostgreSQL storage. Falling back to file storage outside production.', error);
-    return createFileStorage();
+    const storage = createFileStorage();
+    await storage.deleteAppSetting('google_calendar_account');
+    return storage;
   }
 }
 
@@ -2854,13 +2903,10 @@ async function handleStatic(req, res, pathname) {
 // -- GOOGLE CALENDAR INTEGRATION --------------------------------
 
 const GOOGLE_REFRESH_TOKEN_SETTING = 'google_calendar_refresh_token';
-const GOOGLE_ACCOUNT_SETTING = 'google_calendar_account';
 const CALENDAR_EVENT_META_SETTING = 'calendar_event_meta';
 const CALENDAR_PREFERENCES_SETTING = 'calendar_scheduling_preferences';
 const GOOGLE_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 const GOOGLE_SCOPES = [
-  'openid',
-  'email',
   'https://www.googleapis.com/auth/calendar.events',
 ];
 let gcalToken = null; // { access_token, expires_at }
@@ -3023,15 +3069,6 @@ async function getGcalRefreshToken() {
   } catch (error) {
     console.error('Unable to decrypt the stored Google Calendar refresh token.', error.message);
     return '';
-  }
-}
-
-async function getGcalAccount() {
-  try {
-    const raw = await getStoredGcalSecret(GOOGLE_ACCOUNT_SETTING);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
   }
 }
 
@@ -3218,18 +3255,6 @@ async function gcalApiRequest(pathname, options = {}) {
       ...(body ? { 'Content-Type': 'application/json; charset=utf-8' } : {}),
     },
   }, body);
-}
-
-async function fetchGcalAccount(accessToken) {
-  const profile = await gcalApiRequest('/v1/userinfo', {
-    host: 'openidconnect.googleapis.com',
-    accessToken,
-  });
-  return {
-    email: typeof profile.email === 'string' ? profile.email : '',
-    name: typeof profile.name === 'string' ? profile.name : '',
-    picture: typeof profile.picture === 'string' ? profile.picture : '',
-  };
 }
 
 function toClientGoogleEvent(event, localMeta) {
@@ -5000,9 +5025,16 @@ function startResetTimerProcessor(storage) {
 // from this origin would not survive the trip to a different domain.
 
 const VISIT_LIVE_WINDOW_MS = 5 * 60 * 1000;
-const VISIT_TRACK_LIMIT = 600;
+const VISIT_TRACK_LIMIT = (() => {
+  const configured = Number.parseInt(process.env.VISITS_TRACK_LIMIT || '', 10);
+  return Number.isFinite(configured) && configured >= 10 ? Math.min(configured, 5000) : 300;
+})();
 const VISIT_TRACK_WINDOW_MS = 5 * 60 * 1000;
 const VISIT_MAX_ROWS = 20000;
+const VISIT_MAX_STORED_ROWS = (() => {
+  const configured = Number.parseInt(process.env.VISITS_MAX_STORED_ROWS || '', 10);
+  return Number.isFinite(configured) && configured >= 1 ? Math.min(configured, 1000000) : 100000;
+})();
 const VISIT_DEFAULT_DAYS = 7;
 const VISIT_MAX_DAYS = 365;
 const VISIT_PRUNE_INTERVAL_MS = 60 * 60 * 1000;
@@ -5011,6 +5043,19 @@ const VISIT_ID_PATTERN = /^[A-Za-z0-9_-]{8,64}$/;
 // than being the front line. The front line is that the tracker is a script.
 const BOT_USER_AGENT = /bot|crawl|spider|slurp|headlesschrome|phantomjs|puppeteer|playwright|curl|wget|python-requests|axios|monitor|uptime|pingdom|semrush|ahrefs|facebookexternalhit|scrape/i;
 const visitTrackCounts = new Map();
+const VISIT_RATE_BUCKET_MAX = 10000;
+const VISIT_ALLOWED_HOSTS_CONFIGURED = Boolean(String(process.env.VISITS_ALLOWED_HOSTS || '').trim());
+const VISIT_ALLOWED_HOSTS = (() => {
+  const hosts = new Set(String(process.env.VISITS_ALLOWED_HOSTS || '')
+    .split(',')
+    .map(value => value.trim().toLowerCase())
+    .filter(Boolean));
+  if (IS_DEPLOYED && ALLOWED_ORIGIN) {
+    try { hosts.add(new URL(ALLOWED_ORIGIN).hostname.toLowerCase()); } catch { /* invalid deployment config is handled elsewhere */ }
+  }
+
+  return hosts;
+})();
 
 // An IP address is kept per view so a run of odd traffic can be told apart from
 // a run of real traffic. Ninety days is long enough to compare a month against
@@ -5031,6 +5076,12 @@ function clientIp(req) {
 // that no real browsing session reaches it.
 function visitTrackThrottled(key) {
   const now = Date.now();
+  if (visitTrackCounts.size >= VISIT_RATE_BUCKET_MAX && !visitTrackCounts.has(key)) {
+    for (const [candidate, value] of visitTrackCounts) {
+      if (now - value.first > VISIT_TRACK_WINDOW_MS) visitTrackCounts.delete(candidate);
+    }
+    if (visitTrackCounts.size >= VISIT_RATE_BUCKET_MAX) return true;
+  }
   const entry = visitTrackCounts.get(key);
   if (!entry || now - entry.first > VISIT_TRACK_WINDOW_MS) {
     visitTrackCounts.set(key, { count: 1, first: now });
@@ -5038,6 +5089,11 @@ function visitTrackThrottled(key) {
   }
   entry.count += 1;
   return entry.count > VISIT_TRACK_LIMIT;
+}
+
+function visitSiteAllowed(site) {
+  if (!IS_DEPLOYED && !VISIT_ALLOWED_HOSTS_CONFIGURED) return true;
+  return Boolean(site) && VISIT_ALLOWED_HOSTS.has(String(site).toLowerCase());
 }
 
 function isBotUserAgent(userAgent) {
@@ -5100,6 +5156,7 @@ function normalizeVisitInput(input, req) {
   }
 
   const site = normalizeVisitSite(input, req);
+  if (!visitSiteAllowed(site)) return { ok: false, error: 'Site is not allowed.' };
   const screen = trimTo(input.screen, 32);
 
   return {
@@ -5706,11 +5763,9 @@ const server = http.createServer(async (req, res) => {
         // load from the wrong answer. Put it back in step.
         setSessionCookies(res, activeSession.token, Math.floor(SESSION_TTL_MS / 1000));
       } else if (!activeSession && hint) {
-        // Sessions live in memory, so a restart forgets them all while the
-        // browser still holds both cookies. Clearing the hint here is what
-        // keeps that from costing a flash on every load until it expires - and
-        // it takes back a no-gate hint left over from before a passphrase was
-        // set, which would otherwise paint this page unlocked.
+        // The readable hint is never evidence of authentication. Clear it when
+        // its signed session token is absent, expired, or invalid. This also
+        // takes back a no-gate hint left over from before a passphrase was set.
         clearSessionCookie(res);
       }
       sendJson(res, 200, {
@@ -6129,8 +6184,6 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'DELETE' && pathname === '/api/session') {
-      const activeSession = getSession(req);
-      destroySession(activeSession?.token);
       clearSessionCookie(res);
       sendJson(res, 200, { authenticated: false });
       return;
@@ -6693,9 +6746,9 @@ const server = http.createServer(async (req, res) => {
     }
 
     // -- COUNTDOWNS API -----------------------------------------
-    // Reading is open, the same as the calendar this page shows alongside the
-    // cards; writing sits behind the Dropbox passphrase like every other
-    // personal record in here.
+    // Countdown titles, notes, and next actions are personal records. Browser
+    // reads and writes use the Office session; machine consumers use the
+    // narrower token-authenticated endpoints below.
     if (req.method === 'GET' && pathname === '/api/reset-timers') {
       if (!requireDropsAuth(res, req)) return;
       sendJson(res, 200, { items: await loadResetTimers(storage) });
@@ -6719,6 +6772,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'GET' && pathname === '/api/countdowns/rollup') {
+      if (!requireDropsAuth(res, req)) return;
       const payload = await buildCountdownsPayload();
       const limit = Number.parseInt(parsedUrl.searchParams.get('limit') || '', 10);
       const items = countdowns.selectRollupItems(payload, limit);
@@ -6795,6 +6849,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'GET' && pathname === '/api/countdowns') {
+      if (!requireDropsAuth(res, req)) return;
       sendJson(res, 200, await buildCountdownsPayload({
         includeArchived: parsedUrl.searchParams.get('archived') === '1',
         includeEvents: parsedUrl.searchParams.get('events') !== '0',
@@ -6916,12 +6971,12 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
+      if (!requireDropsAuth(res, req)) return;
+
       if (req.method === 'GET') {
         sendJson(res, 200, { key, value: await storage.getAppSetting(key) });
         return;
       }
-
-      if (!requireDropsAuth(res, req)) return;
 
       if (req.method === 'PUT') {
         const body = await readJsonBody(req);
@@ -7022,12 +7077,6 @@ const server = http.createServer(async (req, res) => {
           access_token: data.access_token,
           expires_at: Date.now() + ((data.expires_in || 3600) - 60) * 1000,
         };
-        try {
-          const account = await fetchGcalAccount(data.access_token);
-          await setStoredGcalSecret(GOOGLE_ACCOUNT_SETTING, JSON.stringify(account));
-        } catch (profileError) {
-          console.warn('Google Calendar connected, but account profile lookup failed.', profileError.message);
-        }
         sendGcalOAuthResult(res, true, 'Authorization is complete. You can return to Calendar.');
       } catch (error) {
         console.error('Google Calendar OAuth callback failed.', error);
@@ -7037,9 +7086,9 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (req.method === 'GET' && pathname === '/api/calendar/status') {
+      const activeSession = getSession(req);
       const googleConfigured = hasGcalClientCredentials();
       const connected = googleConfigured && await isGcalConnected();
-      const account = connected ? await getGcalAccount() : null;
       // A stored refresh token is not proof it still works - check it, so the
       // UI cannot report "connected" while every call is failing.
       let tokenValid = null;
@@ -7065,7 +7114,6 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 200, {
         configured: googleConfigured,
         connected: connected && tokenValid !== false,
-        accountEmail: (account && account.email) || null,
         lastSyncedAt: gcalSync.lastSyncedAt,
         syncState,
         error: tokenError || null,
@@ -7074,9 +7122,8 @@ const server = http.createServer(async (req, res) => {
         googleConfigured,
         tokenValid,
         tokenError,
-        account,
         authRequired: Boolean(PASSPHRASE_HASH),
-        authenticated: !PASSPHRASE_HASH || Boolean(getSession(req)),
+        authenticated: Boolean(activeSession),
         redirectUri: googleConfigured ? getGcalRedirectUri(req) : null,
       });
       return;
@@ -7090,10 +7137,7 @@ const server = http.createServer(async (req, res) => {
         });
         return;
       }
-      await Promise.all([
-        deleteStoredGcalSecret(GOOGLE_REFRESH_TOKEN_SETTING),
-        deleteStoredGcalSecret(GOOGLE_ACCOUNT_SETTING),
-      ]);
+      await deleteStoredGcalSecret(GOOGLE_REFRESH_TOKEN_SETTING);
       gcalToken = null;
       resetGcalSyncCache();
       sendJson(res, 200, { connected: false, syncState: 'disconnected' });
@@ -7458,6 +7502,11 @@ storageReady.then(storage => server.listen(PORT, () => {
     console.warn('Agent Office auth: off (development only — set DROPS_PASSPHRASE before deploying)');
   } else {
     console.log('Agent Office auth: on');
+  }
+  if (PASSPHRASE_HASH && IS_DEPLOYED && SESSION_SECRET.length < SESSION_SECRET_MIN_LENGTH) {
+    console.error(`Agent Office sessions: NOT CONFIGURED — set SESSION_SECRET to at least ${SESSION_SECRET_MIN_LENGTH} characters.`);
+  } else if (PASSPHRASE_HASH && SESSION_SECRET.length >= SESSION_SECRET_MIN_LENGTH) {
+    console.log('Agent Office sessions: signed for multi-process use');
   }
 
   if (!SHORTCUTS_TOKEN) {

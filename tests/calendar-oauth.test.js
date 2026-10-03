@@ -87,7 +87,9 @@ test('Google Calendar OAuth start exposes a signed offline authorization URL', a
   assert.equal(authorizationUrl.searchParams.get('client_id'), 'calendar-oauth-test.apps.googleusercontent.com');
   assert.equal(authorizationUrl.searchParams.get('access_type'), 'offline');
   assert.equal(authorizationUrl.searchParams.get('prompt'), 'consent');
-  assert.match(authorizationUrl.searchParams.get('scope'), /calendar\.events/);
+  const scopes = authorizationUrl.searchParams.get('scope');
+  assert.match(scopes, /calendar\.events/);
+  assert.doesNotMatch(scopes, /(?:^|\s)(?:openid|email)(?:\s|$)/);
   assert.ok(authorizationUrl.searchParams.get('state'));
 
   // Tamper with the payload, not the tail of the signature. The signature is a

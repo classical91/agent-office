@@ -74,9 +74,11 @@ test('the status endpoint returns one canonical shape for every sync state', asy
   t.after(() => configured.child.kill());
   const status = await json(await fetch(`${configured.origin}/api/calendar/status`));
 
-  ['configured', 'connected', 'accountEmail', 'lastSyncedAt', 'syncState', 'error'].forEach(key => {
+  ['configured', 'connected', 'lastSyncedAt', 'syncState', 'error'].forEach(key => {
     assert.ok(key in status, `status is missing the canonical field "${key}"`);
   });
+  assert.equal('accountEmail' in status, false, 'Google identity must not be in the status contract');
+  assert.equal('account' in status, false, 'legacy Google profile data must not be returned');
   assert.equal(status.configured, true);
   assert.equal(status.connected, false);
   assert.equal(status.syncState, 'disconnected');

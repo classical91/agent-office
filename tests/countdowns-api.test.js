@@ -1,8 +1,8 @@
 'use strict';
 
-// The countdowns API against a real server: reading is open so the page and the
-// roll-up work without a prompt, writing sits behind the Dropbox passphrase,
-// and the payload the page draws is grouped on the server.
+// The countdowns API against a real server: personal countdown reads and writes
+// stay behind the Office session, and the payload the page draws is grouped on
+// the server.
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -150,11 +150,11 @@ function inHours(count) {
   return new Date(Date.now() + count * 3600000).toISOString();
 }
 
-test('reading countdowns is open, writing needs the passphrase', async () => {
+test('reading and writing countdowns need the passphrase', async () => {
   const server = await startServer();
   try {
-    const open = await fetch(`${server.origin}/api/countdowns`);
-    assert.equal(open.status, 200, 'the page reads without a prompt');
+    const lockedRead = await fetch(`${server.origin}/api/countdowns`);
+    assert.equal(lockedRead.status, 401);
 
     const lockedWrite = await fetch(`${server.origin}/api/countdowns`, {
       method: 'POST',
@@ -163,7 +163,9 @@ test('reading countdowns is open, writing needs the passphrase', async () => {
     });
     assert.equal(lockedWrite.status, 401);
 
-    const payload = await open.json();
+    const unlocked = await call(server, '/api/countdowns');
+    assert.equal(unlocked.status, 200);
+    const payload = await unlocked.json();
     assert.deepEqual(payload.groups, { today: [], week: [], later: [] });
     assert.ok(Array.isArray(payload.categories) && payload.categories.length);
   } finally {
@@ -342,7 +344,8 @@ test('the roll-up returns the top countdowns as text', async () => {
       next_action: 'Call the broker',
     });
 
-    const response = await fetch(`${server.origin}/api/countdowns/rollup?limit=3&format=text`);
+    assert.equal((await fetch(`${server.origin}/api/countdowns/rollup?limit=3&format=text`)).status, 401);
+    const response = await call(server, '/api/countdowns/rollup?limit=3&format=text');
     assert.equal(response.status, 200);
     assert.match(response.headers.get('content-type') || '', /text\/plain/);
     const text = await response.text();
@@ -350,7 +353,7 @@ test('the roll-up returns the top countdowns as text', async () => {
     assert.match(text, /• Renew insurance/);
     assert.match(text, /→ Call the broker/);
 
-    const asJson = await fetch(`${server.origin}/api/countdowns/rollup?limit=3`);
+    const asJson = await call(server, '/api/countdowns/rollup?limit=3');
     const payload = await asJson.json();
     assert.equal(payload.items.length, 1);
     assert.equal(payload.items[0].title, 'Renew insurance');
