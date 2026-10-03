@@ -15,7 +15,7 @@ The 3D office is intended to be an operational view of that system, not a decora
 - **Phone inbox** — a token-authenticated API for iOS Shortcuts: send a note or reminder to the Dropbox from your phone, and pull back whatever has come due. See [Phone inbox](#phone-inbox--ios-shortcuts).
 - **Memory** — per-agent memory entries that agents can reference across sessions.
 - **Calendar** — a Google Calendar-backed control surface for the office: agent/project metadata on every block, live run status, an Agent Assistant drawer, agent-timeline filters, and a scored scheduling policy instead of first-available-slot. It opens in **Focus Mode** — the chrome steps aside so the grid gets the whole viewport, and the sidebar is one tap away in the focus rail. See [Focus Mode](#focus-mode).
-- **Planning Mode** — the weekly planning checklist you keep by hand, and the list CoachClaw reads before it builds the week. Ticking an item asks CoachClaw to find time for it; it does not mean the item is done, which is a separate state. Unticked items stay on the list and out of the week. See [Planning Mode](#planning-mode).
+- **Planning Mode** — the weekly planning checklist you keep by hand, and the list CoachClaw reads before it builds the week. Ticking an item asks CoachClaw to find time for it; it does not mean the item is done, which is a separate state. Unticked items stay on the list and out of the week. **Build my week** places the ticked items in the time that is actually free around your calendar, your work schedule and everything else fixed, and shows the result for review — nothing reaches the calendar until you accept it. Your work schedule can be read off a photo of the rota and corrected before anything is planned around it. See [Planning Mode](#planning-mode).
 - **Countdowns** — everything with a clock on it in one page: deadlines, goals, work shifts, weekly routines and trading dates, grouped into Today / This Week / Later alongside what is next on the Google Calendar. Every card carries the time left, the category and the next action. See [Countdowns](#countdowns-1).
 - **Streaks** — every day you kept a habit up, plotted on a month grid and a year strip. Each streak carries a type (Health, Deep Work, Avoid, …) and a colour, the calendar can be filtered down to one streak or one type, and a day is marked from the day itself or from the streak's **Mark today** button. See [Streaks](#streaks-1).
 - **Visitors** — who is on your websites right now, what they are reading, and whether they have been before. One tracker script goes on any site you run; nothing is looked up against any outside service. See [Visitors](#visitors-1).
@@ -74,6 +74,9 @@ agent-office-deploy/
     calendar-agent-meta.js     # Agent Office event metadata + run lifecycle
     calendar-scheduling.js     # Scheduling preferences, slot scoring, NL parsing
     planning.js                # Planning Mode records and the CoachClaw brief (server-side)
+    work-schedule.js           # The work schedule record and its scheduler commitments (server-side)
+    work-schedule-reader.js    # Reads a photographed rota into draft shifts (server-side)
+    planning-week.js           # Places the ticked items in free time; the proposed week (server-side)
     planning-page.js           # Planning Mode page-only logic
     planning.css               # Planning Mode-only styles
     calendar-google-sync.js    # Incremental Google sync (sync tokens, paging, 410 recovery)
@@ -234,6 +237,11 @@ All endpoints return JSON.
 | PATCH  | `/api/planning/:id`               | Edit, tick, untick or complete a planning item (session-authed) |
 | DELETE | `/api/planning/:id`               | Delete a planning item (session-authed) |
 | GET    | `/api/planning/brief`             | The ticked items, shaped for the scheduler (session-authed) |
+| GET    | `/api/planning/work-schedule`     | The saved work schedule and its days off (session-authed) |
+| PUT    | `/api/planning/work-schedule`     | Save the corrected work schedule (session-authed) |
+| DELETE | `/api/planning/work-schedule`     | Delete the work schedule (session-authed) |
+| POST   | `/api/planning/work-schedule/read`| Read shifts off a photo of a rota — returns a draft, saves nothing (session-authed) |
+| POST   | `/api/planning/week`              | The proposed week, built but not written (session-authenticated) |
 | GET    | `/api/memories`                   | List memory entries              |
 | POST   | `/api/memories`                   | Create a memory entry            |
 | PATCH  | `/api/memories/:id`               | Update a memory entry            |
@@ -272,7 +280,7 @@ All endpoints return JSON.
 | POST   | `/api/calendar/quick-add`         | Natural-language event entry (session-authenticated) |
 | GET    | `/api/config-files/:agent`        | Read snapshots only from a private runtime CONFIG_FILES_DIR (session-authenticated) |
 | GET    | `/api/orchestration/goals`        | List Penny goals and Outbox results (session-authenticated) |
-| POST   | `/api/orchestration/goals`        | Queue a goal for Penny (session-authenticated) |
+| POST   | `/api/orchestration/goals`        | Queue a goal for Penny, as a `title` plus a `goal` description (session-authenticated) |
 | DELETE | `/api/orchestration/goals/:id`    | Remove a goal from Mission Control; refused while Penny holds a live claim (session-authenticated) |
 | GET    | `/api/sharebot/newsroom-health`   | ShareBot67's live newsroom health, read server-side from Market Dashboard (session-authed) |
 | POST   | `/api/orchestration/goals/claim`  | Atomically claim the next goal (gateway-token authenticated) |
@@ -601,8 +609,7 @@ and the preferred window resolved to clock times. Unticked and completed items
 are not in it. The page shows the same brief under *What CoachClaw reads*, so
 what the scheduler will be given is visible before it is given.
 
-**Where this sits in the weekly build.** The page lists the whole flow, of which
-steps 2 and 6's inputs are what Planning Mode owns:
+**Where this sits in the weekly build.** The page lists the whole flow:
 
 1. Work schedule — the days and hours you are at work.
 2. This checklist — every ticked item, with its duration, priority and
@@ -612,11 +619,93 @@ steps 2 and 6's inputs are what Planning Mode owns:
 5. The week — ticked items placed into those windows.
 6. Your review — accept it, move something, or send an item back to this list.
 
-Steps 3 to 5 are `calendar-scheduling.js`, which already models working hours,
-sleep, lunch, meeting buffers, recovery time and deep-work windows, and scores
-candidate slots rather than taking the first that fits. Step 1 (reading a photo
-of a work schedule) and step 6 (the proposal-and-review screen) are not built
-yet; the checklist and the brief are the bridge they will plug into.
+### Building the week
+
+**Build my week** on the page is steps 4 and 5. `POST /api/planning/week` takes
+the brief, reads your calendar and your scheduling preferences, and returns a
+proposal. It writes nothing.
+
+`planning-week.js` does the placing, and leans on `calendar-scheduling.js` for
+everything a slot has to respect — sleep, lunch, commutes declared as
+commitments, meeting buffers, recovery time, deep-work windows — rather than
+deciding any of that again. What it adds is the part a planning item knows and a
+calendar request does not:
+
+- **Packing order.** Items are placed hardest-and-most-urgent first, and each
+  block is fed back in as a commitment before the next item is placed. The
+  second workout cannot land on top of the first, and the gap between two blocks
+  is the gap the calendar leaves everywhere else.
+- **Preferred days.** Honoured when there is room. When there is not, the item
+  is placed on the next best day *and the block says so* — a preference is not a
+  reason to drop something.
+- **Preferred times.** Scored, not enforced: worth about as much as the
+  scheduler's own conflict penalty, so "sometime in the evening" is not answered
+  with nine in the morning, and a slot nothing else fits around does not win for
+  being at the right hour.
+- **Waking hours, seven days.** A personal week is not planned against office
+  hours. *Visit grandmother* is a Saturday and *stretching* is half nine at
+  night, so the day is widened to your waking hours and the whole week, with
+  everything else left exactly as you set it. Pass `respectWorkingHours: true`
+  to plan inside working hours instead.
+- **Nothing is silently dropped.** An item with nowhere to go comes back under
+  `unscheduled`, with the reason.
+
+### Reviewing it
+
+Step 6 is the point of not writing anything. The proposed week is shown day by
+day, with what each slot was chosen for, and each block can be:
+
+- **Moved** — re-placed around the rest of the week, which goes back to the
+  builder as `pinned` blocks so nothing else shifts, and the slot it is leaving
+  is pinned too so "move" cannot hand back the same time.
+- **Not this week** — dropped from the proposal. The item stays ticked: it was
+  the placement that did not work.
+- **Back to list** — dropped *and* unticked, which is the honest record of "not
+  this week", and it is on the list for the next one.
+
+**Accept & add to calendar** posts the surviving blocks to
+`POST /api/calendar/schedule/commit`, the same endpoint every other scheduled
+block goes through. Each committed event keeps `meta.planningItemId`, so a block
+on the calendar still knows which intention it came from.
+
+### The work schedule
+
+Step 1. The hours you are at work are the one part of the week that is not
+negotiable, so they are a record of their own — a weekly pattern of shifts, not
+sixty calendar entries a month — and the week is built around them.
+
+**Photograph the rota, then check it.** *Read a photo of my rota* on the
+Planning page sends the picture to `POST /api/planning/work-schedule/read`,
+which returns the shifts it can see and **saves nothing**. They land in the same
+editable rows a typed schedule uses, under a note saying what the reader was
+unsure about, and `PUT /api/planning/work-schedule` stores whatever is on screen
+when you press Save. That order is the point: "9" and "8" look alike in a phone
+photo of a laser print, and a week planned around a shift that starts an hour
+early is worse than no week at all. A read schedule gets no more trust than a
+typed one until someone has looked at it.
+
+**Days off are whatever is left.** You do not declare one; you simply are not
+rostered that day. `working_days` and `days_off` are derived, so they cannot
+disagree with the shifts.
+
+**Night shifts.** A shift that ends earlier than it starts runs past midnight.
+Read literally that is an end before its start, which the scheduler drops — and
+a dropped shift is not a gap in the record, it is a night the week gets planned
+straight over. `toCommitments()` splits one into the evening of the day you
+clock on and the morning of the day after.
+
+**Reading photos needs `ANTHROPIC_API_KEY`** on the server; `work-schedule-reader.js`
+is the only part of Agent Office that calls a model. Without the key the reader
+is off, the page says so, and typing the schedule in works exactly as it does
+with it — the photo is a shortcut, never the way in.
+
+```jsonc
+// PUT /api/planning/work-schedule
+{ "shifts": [{ "label": "Work", "days": [2,3,4,5,6], "start": "12:30", "end": "21:00" }] }
+```
+
+`POST /api/planning/week` uses the saved schedule with nothing passed; a caller
+can still send a `workSchedule` of its own to plan against a different week.
 
 ## Streaks
 
@@ -1110,6 +1199,10 @@ Dropbox-related variables:
   visitor beacons; required for external tracked sites on a deployed instance
 - `VISITS_MAX_STORED_ROWS` / `VISITS_TRACK_LIMIT` — hard visitor-storage ceiling
   and per-address five-minute intake ceiling (defaults: `100000` / `300`)
+- `ANTHROPIC_API_KEY` — lets Planning Mode read a photographed work schedule
+  into shifts (`work-schedule-reader.js`, the only part of this app that calls a
+  model). Optional: without it the reader is off, the page says so, and the
+  schedule is typed in instead. See [the work schedule](#the-work-schedule).
 - `RESET_TIMER_INTERVAL_MS` — how often the server checks whether a Countdown
   Timer has landed and needs its Pushcut webhook sent (defaults to `45000`;
   `0` turns server-side delivery off). Nothing else is needed to switch this
@@ -1136,6 +1229,16 @@ and it says so at startup (`Agent Office auth: off`). A deployed host with the
 passphrase missing logs `Agent Office auth: NOT CONFIGURED` — look for that line
 first if the app comes up answering `503` to everything.
 
+**Off means off, on a dev box.** The other half of that policy is that an
+undeployed machine with no passphrase is genuinely ungated: no `503`, no lock,
+no login panel. Two places used to disagree with it — the Dropbox guard
+answered `503` on a dev machine as well as a deployed one, and the page locked
+itself behind a login whose password did not exist and whose submit answered
+`503` — so a dev box was sealed behind a door with no key while the calendar
+beside it worked. `/api/session` now answers `gated`, which is what the page
+paints from: false only where there is no passphrase *and* the host does not
+look deployed.
+
 **Guessing the passphrase is rate-limited.** Five wrong attempts from one
 address buy a five-minute timeout, during which even the correct passphrase is
 refused. A successful login clears the count. This is the same treatment the
@@ -1155,6 +1258,11 @@ any `401`. Because the token is signed with deployment-stable key material, it
 survives restarts and works across multiple server processes. Both cookies use
 `Secure` whenever any supported Railway deployment marker is present, not only
 when `NODE_ENV=production`.
+
+It carries one more value, `open`, set only on an ungated host: it says *there
+is no gate here*, so a dev box does not flash a login panel while it waits to
+be told there is nothing to log into. A configured instance never sets it, and
+takes it back on the next check if a browser turns up holding one.
 
 ### Database TLS
 

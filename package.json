@@ -13,6 +13,7 @@
     "package:youtube:fixtures": "node scripts/package-youtube.mjs --input fixtures/youtube-packaging/sample-input.json --now 2026-08-05T00:00:00.000Z --out fixtures/youtube-packaging/sample-output.md --out-json fixtures/youtube-packaging/sample-output.json --quiet"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
     "pg": "^8.16.0"
   },
   "devDependencies": {

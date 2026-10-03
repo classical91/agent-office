@@ -12,6 +12,7 @@
   let selectedId = null;
   let missionGoals = [];
   let missionEditMode = false;
+  const missionExpanded = new Set();
 
   // -- ShareBot67 newsroom health ------------------------------
   //
@@ -251,7 +252,9 @@
     body.innerHTML = `
       <div class="control-callout control-callout--command"><strong>Give Penny one outcome.</strong> Penny owns delegation, routing, cron governance, approvals, failure handling, and the final operator report.</div>
       <form class="mission-goal" id="mission-goal-form">
-        <label for="mission-goal-input">What should the office accomplish?</label>
+        <label for="mission-goal-title">Goal title</label>
+        <input id="mission-goal-title" type="text" maxlength="120" placeholder="Example: Improve the Market Dashboard" required>
+        <label for="mission-goal-input">Description — what should the office accomplish?</label>
         <textarea id="mission-goal-input" rows="4" placeholder="Example: Find the most useful improvement for Market Dashboard today." required></textarea>
         <label for="mission-goal-source">ChatGPT conversation link <span class="mission-optional">optional</span></label>
         <input id="mission-goal-source" type="url" inputmode="url" placeholder="https://chatgpt.com/share/...">
@@ -291,9 +294,17 @@
       }
       const active = goals.filter(goal => goal.orchestration_status !== 'completed');
       const history = goals.filter(goal => goal.orchestration_status === 'completed');
-      const renderGoal = goal => `
-        <article class="mission-result mission-result--${escape(goal.orchestration_status)}${missionEditMode && goal.orchestration_status !== 'completed' ? ' mission-result--moveable' : ''}" data-goal-id="${escape(goal.id)}" draggable="${missionEditMode && goal.orchestration_status !== 'completed'}">
-          <div><span class="mission-drag-handle" aria-hidden="true">⋮⋮</span><strong>${escape(goal.title)}</strong><span class="control-state">${goal.orchestration_status === 'running' ? 'Currently working' : escape(goal.orchestration_status)}</span></div>
+      const renderGoal = goal => {
+        // A goal is a title plus its description, and both are worth reading in
+        // full: the card keeps long text clamped so the list stays scannable and
+        // opens it in place rather than cutting it off for good.
+        const description = goalDescription(goal);
+        const expanded = missionExpanded.has(goal.id);
+        return `
+        <article class="mission-result mission-result--${escape(goal.orchestration_status)}${expanded ? ' mission-result--expanded' : ''}${missionEditMode && goal.orchestration_status !== 'completed' ? ' mission-result--moveable' : ''}" data-goal-id="${escape(goal.id)}" draggable="${missionEditMode && goal.orchestration_status !== 'completed'}">
+          <div class="mission-result-head"><span class="mission-drag-handle" aria-hidden="true">⋮⋮</span><strong class="mission-result-title">${escape(goal.title)}</strong><span class="control-state">${goal.orchestration_status === 'running' ? 'Currently working' : escape(goal.orchestration_status)}</span></div>
+          ${description ? `<p class="mission-result-description">${escape(description)}</p>` : ''}
+          ${description || goal.orchestration_result ? `<button class="ao-btn mission-expand" type="button" data-goal-id="${escape(goal.id)}" aria-expanded="${expanded}">${expanded ? 'Show less' : 'Read full goal'}</button>` : ''}
           ${goal.orchestration_result ? `<p>${escape(goal.orchestration_result)}</p>` : ''}
           ${goal.links && goal.links[0] ? `<a class="mission-source-link" href="${escape(goal.links[0])}" target="_blank" rel="noopener noreferrer">Open ChatGPT context ↗</a>` : ''}
           ${goal.orchestration_error ? `<p class="mission-result-error">${escape(goal.orchestration_error)}</p>` : ''}
@@ -301,7 +312,11 @@
           ${missionEditMode ? `<div class="mission-edit-actions">${goal.orchestration_status !== 'completed' ? `<button class="ao-btn mission-move" type="button" data-direction="up" data-goal-id="${escape(goal.id)}" aria-label="Move goal up">↑</button><button class="ao-btn mission-move" type="button" data-direction="down" data-goal-id="${escape(goal.id)}" aria-label="Move goal down">↓</button>${goal.orchestration_status !== 'running' ? `<button class="ao-btn mission-edit" type="button" data-goal-id="${escape(goal.id)}">Edit goal</button>` : ''}` : ''}<button class="ao-btn ao-btn--danger mission-delete" type="button" data-goal-id="${escape(goal.id)}" aria-label="Delete goal">Delete goal</button></div>` : ''}
           <small>${escape(new Date(goal.updated_at || goal.date).toLocaleString())}</small>
         </article>`;
+      };
       list.innerHTML = `${active.length ? '<div class="mission-list-label">Active goals</div>' + active.slice(0, 10).map(renderGoal).join('') : '<div class="control-unavailable">No active goals.</div>'}${history.length ? '<div class="mission-list-label">Completed history</div>' + history.slice(0, 10).map(renderGoal).join('') : ''}`;
+      list.querySelectorAll('.mission-expand').forEach(button => {
+        button.addEventListener('click', () => toggleMissionGoalText(button.dataset.goalId));
+      });
       list.querySelectorAll('.mission-approve').forEach(button => {
         button.addEventListener('click', () => approveGoal(button.dataset.goalId));
       });
@@ -318,6 +333,20 @@
     } catch (error) {
       list.innerHTML = `<div class="control-unavailable">${escape(error.message)}</div>`;
     }
+  }
+
+  // The title is a summary of the description, so a card that shows both would
+  // repeat itself when Penny derived the title from the first line.
+  function goalDescription(goal) {
+    const content = typeof goal.content === 'string' ? goal.content.trim() : '';
+    if (!content || content === (goal.title || '').trim()) return '';
+    return content;
+  }
+
+  function toggleMissionGoalText(id) {
+    if (missionExpanded.has(id)) missionExpanded.delete(id);
+    else missionExpanded.add(id);
+    refreshMissionGoals();
   }
 
   async function approveGoal(id) {
@@ -389,7 +418,9 @@
   async function editMissionGoal(id) {
     const goal = missionGoals.find(item => item.id === id);
     if (!goal) return;
-    const content = window.prompt('Edit this mission goal:', goal.content || goal.title);
+    const goalTitle = window.prompt('Goal title:', goal.title || '');
+    if (goalTitle == null || !goalTitle.trim()) return;
+    const content = window.prompt('Goal description:', goalDescription(goal) || goal.content || goal.title);
     if (content == null || !content.trim()) return;
     const sourceUrl = window.prompt('ChatGPT conversation link (optional):', (goal.links && goal.links[0]) || '');
     if (sourceUrl == null) return;
@@ -397,7 +428,7 @@
     try {
       const response = await fetch(`/api/orchestration/goals/${encodeURIComponent(id)}/edit`, {
         method: 'PATCH', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ goal: content.trim(), source_url: sourceUrl.trim(), priority: urgent ? 'urgent' : 'normal' })
+        body: JSON.stringify({ title: goalTitle.trim(), goal: content.trim(), source_url: sourceUrl.trim(), priority: urgent ? 'urgent' : 'normal' })
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || 'The goal could not be updated.');
@@ -428,22 +459,30 @@
 
   async function submitGoal(event) {
     event.preventDefault();
+    const titleInput = body.querySelector('#mission-goal-title');
     const input = body.querySelector('#mission-goal-input');
     const priorityInput = body.querySelector('#mission-goal-priority');
     const sourceInput = body.querySelector('#mission-goal-source');
     const status = body.querySelector('#mission-goal-status');
+    const goalTitle = titleInput.value.trim();
     const goal = input.value.trim();
     const priority = priorityInput.value === 'urgent' ? 'urgent' : 'normal';
     const sourceUrl = sourceInput.value.trim();
+    if (!goalTitle) {
+      status.textContent = 'Give the goal a title so it reads clearly on the board.';
+      titleInput.focus();
+      return;
+    }
     if (!goal) return;
     status.textContent = 'Sending…';
     try {
       const response = await fetch('/api/orchestration/goals', {
         method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ goal, priority, source_url: sourceUrl, title: goal.split(/\n/)[0].slice(0, 120) })
+        body: JSON.stringify({ goal, priority, source_url: sourceUrl, title: goalTitle.slice(0, 120) })
       });
       if (response.status === 401) throw new Error('Log in to Agent Office, then try again.');
       if (!response.ok) throw new Error('The goal could not be saved.');
+      titleInput.value = '';
       input.value = '';
       sourceInput.value = '';
       status.textContent = priority === 'urgent'
@@ -451,7 +490,7 @@
         : 'Goal saved. Penny will ignore it unless it is marked urgent.';
       refreshMissionGoals();
       const penny = configuredAgent('oss');
-      if (penny && typeof addFeedItem === 'function') addFeedItem(penny, `Goal received: ${goal.slice(0, 90)}`);
+      if (penny && typeof addFeedItem === 'function') addFeedItem(penny, `Goal received: ${goalTitle.slice(0, 90)}`);
       if (typeof refreshOpsQueue === 'function') refreshOpsQueue();
     } catch (error) {
       status.textContent = error.message;

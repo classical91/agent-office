@@ -2170,12 +2170,24 @@ let officeLoginWaiters = [];
 let officeSessionChecked = Promise.resolve();
 
 // Set beside the HttpOnly session cookie by server.js, carrying no token - just
-// the fact that a session exists. Reading it is how a page knows which side of
-// the gate to paint before it has asked.
+// the fact that a session exists, or that this instance has no gate at all.
+// Reading it is how a page knows which side of the gate to paint before it has
+// asked. The values mirror SESSION_HINT_* in server.js.
 const OFFICE_SESSION_HINT_COOKIE = 'agent_office_signed_in';
+const OFFICE_HINT_SIGNED_IN = '1';
+const OFFICE_HINT_NO_GATE = 'open';
 
-function officeSessionHinted() {
-  return document.cookie.split(';').some(part => part.trim() === `${OFFICE_SESSION_HINT_COOKIE}=1`);
+// Whether this instance gates the page at all. False only where the server has
+// said so: an undeployed machine running without a passphrase, which has no
+// password to ask for and nothing to lock.
+let officeLoginGated = true;
+
+function officeHint() {
+  const match = document.cookie
+    .split(';')
+    .map(part => part.trim())
+    .find(part => part.startsWith(`${OFFICE_SESSION_HINT_COOKIE}=`));
+  return match ? match.slice(OFFICE_SESSION_HINT_COOKIE.length + 1) : '';
 }
 
 function setOfficeGateState(authenticated) {
@@ -2190,6 +2202,22 @@ function settleOfficeLogin(success) {
   waiters.forEach(resolve => resolve(Boolean(success)));
 }
 
+// The three answers the server can give, painted. An ungated instance is not
+// "logged out": there is nothing to log into, so the page stays open and the
+// login button goes away rather than offering a password that cannot work.
+function applyOfficeSessionState(state) {
+  officeLoginGated = state.gated !== false;
+  const trigger = document.getElementById('ao-login-trigger');
+  if (!officeLoginGated) {
+    officeSessionAuthenticated = false;
+    setOfficeGateState(true);
+    if (trigger) trigger.hidden = true;
+    return;
+  }
+  if (trigger) trigger.hidden = false;
+  setOfficeLoginState(Boolean(state.authenticated));
+}
+
 function setOfficeLoginState(authenticated) {
   officeSessionAuthenticated = Boolean(authenticated);
   setOfficeGateState(officeSessionAuthenticated);
@@ -2201,6 +2229,8 @@ function setOfficeLoginState(authenticated) {
 }
 
 function openOfficeLogin() {
+  // Nothing to open on an instance with no passphrase, and no way to satisfy it.
+  if (!officeLoginGated) return;
   if (officeSessionAuthenticated) {
     fetch('/api/session', { method: 'DELETE' })
       .then(() => {
@@ -2223,6 +2253,7 @@ async function requestOfficeLogin() {
   // The state a page loads with is the cookie's guess; a gated action waits for
   // the server to confirm it rather than riding on it.
   await officeSessionChecked;
+  if (!officeLoginGated) return true;
   if (officeSessionAuthenticated) return true;
   openOfficeLogin();
   return new Promise(resolve => officeLoginWaiters.push(resolve));
@@ -2270,14 +2301,20 @@ function initOfficeLogin() {
   form.addEventListener('submit', submitOfficeLogin);
   // Start from what the cookie says. Locking the page and raising the panel
   // unconditionally meant every load flashed the login screen at someone who
-  // was already logged in, for as long as /api/session took to answer. The
-  // cookie only decides what to paint first - the fetch below still has the
-  // last word, and the server checks every request either way.
-  setOfficeLoginState(officeSessionHinted());
+  // was already logged in, for as long as /api/session took to answer, and
+  // flashed it for good at a machine with no passphrase to type. The cookie
+  // only decides what to paint first - the fetch below still has the last
+  // word, and the server checks every request either way.
+  const hint = officeHint();
+  applyOfficeSessionState({
+    gated: hint !== OFFICE_HINT_NO_GATE,
+    authenticated: hint === OFFICE_HINT_SIGNED_IN,
+  });
+  // An answer that never came, or came back broken, leaves the gate closed.
   officeSessionChecked = fetch('/api/session', { cache: 'no-store' })
     .then(response => response.ok ? response.json() : { authenticated: false })
-    .then(state => setOfficeLoginState(state.authenticated))
-    .catch(() => setOfficeLoginState(false));
+    .then(state => applyOfficeSessionState(state))
+    .catch(() => applyOfficeSessionState({ authenticated: false }));
 }
 
 document.addEventListener('DOMContentLoaded', () => {

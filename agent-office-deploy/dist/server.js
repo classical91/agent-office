@@ -10,6 +10,9 @@ const reminderTime = require('./reminder-time.js');
 const countdowns = require('./countdowns.js');
 const resetTimers = require('./reset-timers.js');
 const planning = require('./planning.js');
+const planningWeek = require('./planning-week.js');
+const workSchedule = require('./work-schedule.js');
+const workScheduleReader = require('./work-schedule-reader.js');
 const sharebotNewsroom = require('./sharebot-newsroom.js');
 const happyHour = require('./happy-hour.js');
 
@@ -29,6 +32,10 @@ const STREAK_DAYS_FILE = path.resolve(__dirname, process.env.STREAK_DAYS_FILE ||
 const COUNTDOWNS_FILE = path.resolve(__dirname, process.env.COUNTDOWNS_FILE || 'countdowns.json');
 const VISITS_FILE = path.resolve(__dirname, process.env.VISITS_FILE || 'visits.json');
 const MAX_BODY_BYTES = 50 * 1024;
+// A photographed rota is the one body that is not a few fields of JSON. Base64
+// carries about a third more than the bytes it encodes, so this is the 5MB the
+// reader accepts plus that overhead and the envelope around it.
+const MAX_PHOTO_BODY_BYTES = 8 * 1024 * 1024;
 const JOURNAL_TOKEN = String(process.env.JOURNAL_TOKEN || '').trim();
 const JOURNAL_TOKEN_MIN_LENGTH = 24;
 const TRADERCLAW_JOURNAL_KEY = 'traderclaw-journal-v1';
@@ -41,6 +48,12 @@ const SESSION_COOKIE = 'agent_office_session';
 // readable so the gate can be painted right on the first try. It is always set
 // and cleared alongside the real one, so it can never outlive it by itself.
 const SESSION_HINT_COOKIE = 'agent_office_signed_in';
+// The hint has three answers, matching the three the server can give: a session
+// exists, no session exists, and this instance has no gate at all. That last one
+// is an undeployed machine running without a passphrase, where painting a login
+// the page can never satisfy is just a flash of the wrong screen.
+const SESSION_HINT_SIGNED_IN = '1';
+const SESSION_HINT_NO_GATE = 'open';
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12;
 const ALLOWED_PRIORITIES = new Set(['normal', 'high', 'urgent']);
 const ALLOWED_STATUSES = new Set(['inbox', 'idea', 'researching', 'coding', 'reviewing', 'ready_to_deploy', 'done', 'archived']);
@@ -252,12 +265,29 @@ function setSessionCookies(res, token, maxAge) {
     serializeCookie(SESSION_COOKIE, token, { ...shared, httpOnly: true }),
     // No HttpOnly here on purpose: this one exists to be read by the page. It
     // is a flag, not a credential - nothing is authorised by holding it.
-    serializeCookie(SESSION_HINT_COOKIE, token ? '1' : '', shared),
+    serializeCookie(SESSION_HINT_COOKIE, token ? SESSION_HINT_SIGNED_IN : '', shared),
   ]);
 }
 
 function clearSessionCookie(res) {
   setSessionCookies(res, '', 0);
+}
+
+// Says "there is no gate here" to the next page load, so a machine running
+// without a passphrase does not paint a login panel for the length of a round
+// trip before finding out there is nothing to log into. It stands for no
+// session and authorises nothing: a configured instance ignores this value and
+// clears it, and every route decides for itself either way.
+function setOpenGateCookie(res) {
+  res.setHeader(
+    'Set-Cookie',
+    serializeCookie(SESSION_HINT_COOKIE, SESSION_HINT_NO_GATE, {
+      maxAge: Math.floor(SESSION_TTL_MS / 1000),
+      path: '/',
+      sameSite: 'Strict',
+      secure: IS_DEPLOYED,
+    })
+  );
 }
 
 function issueSession(res) {
@@ -275,8 +305,8 @@ function queueFileWrite(filePath, task) {
   });
 }
 
-async function readJsonBody(req) {
-  const body = await readRawBody(req);
+async function readJsonBody(req, maxBytes = MAX_BODY_BYTES) {
+  const body = await readRawBody(req, maxBytes);
   if (!body) return {};
   try {
     return JSON.parse(body);
@@ -287,7 +317,7 @@ async function readJsonBody(req) {
   }
 }
 
-async function readRawBody(req) {
+async function readRawBody(req, maxBytes = MAX_BODY_BYTES) {
   return new Promise((resolve, reject) => {
     let body = '';
     let size = 0;
@@ -304,7 +334,7 @@ async function readRawBody(req) {
     req.on('data', chunk => {
       if (settled) return;
       size += chunk.length;
-      if (size > MAX_BODY_BYTES) {
+      if (size > maxBytes) {
         fail(413, 'Request body too large');
         req.destroy();
         return;
@@ -739,12 +769,22 @@ function validateAgentInput(input, partial = false) {
   return { ok: true, value };
 }
 
+// Truthy when the request may proceed. The drops routes only ever test that, so
+// the undeployed case below returns true rather than a session there is none of.
 function requireDropsAuth(res, req) {
   if (!PASSPHRASE_HASH) {
-    sendJson(res, 503, {
-      error: 'Dropbox auth is not configured. Set DROPS_PASSPHRASE_HASH or DROPS_PASSPHRASE.',
-    });
-    return null;
+    // The same policy requireOfficeAuth applies, which this did not: an
+    // unconfigured passphrase is a misconfiguration on a deployed host and is
+    // refused there, but an undeployed developer machine is allowed to run
+    // without one. Answering 503 either way left a dev box unable to read its
+    // own notes while the calendar sitting beside them worked fine.
+    if (IS_DEPLOYED) {
+      sendJson(res, 503, {
+        error: 'Dropbox auth is not configured. Set DROPS_PASSPHRASE_HASH or DROPS_PASSPHRASE.',
+      });
+      return null;
+    }
+    return true;
   }
 
   if (!sessionSigningKey()) {
@@ -3289,6 +3329,36 @@ function toSchedulingEvent(event) {
   };
 }
 
+// Steps 4 and 5 of the weekly build: the ticked planning items, placed in the
+// free time left around the calendar, the work schedule and everything else
+// already committed. Nothing is written - the caller shows the week, the user
+// drops or reschedules what does not work, and the blocks that survive go
+// through /api/calendar/schedule/commit like any other scheduled block.
+async function buildPlanningWeek(body = {}) {
+  const storage = await storageReady;
+  const [items, preferences, events, saved] = await Promise.all([
+    loadPlanningItems(storage),
+    getSchedulingPreferences(),
+    currentCalendarEvents(),
+    loadWorkSchedule(storage),
+  ]);
+
+  return planningWeek.buildWeek({
+    items,
+    events,
+    preferences,
+    now: new Date(),
+    horizonDays: body.horizonDays,
+    // Step 1. The saved rota - read off a photograph or typed in, corrected
+    // either way before it was saved - is what the week is built around. A
+    // caller can still pass one explicitly to plan against a different week.
+    workSchedule: body.workSchedule || (saved ? workSchedule.toWorkSchedule(saved) : undefined),
+    respectWorkingHours: body.respectWorkingHours === true,
+    only: body.only,
+    pinned: body.pinned,
+  });
+}
+
 async function currentCalendarEvents() {
   const storage = await storageReady;
   const source = await isGcalConnected()
@@ -4852,6 +4922,21 @@ async function loadPlanningItems(storage) {
   return planning.parseStoredItems(await storage.getAppSetting(planning.STORAGE_KEY));
 }
 
+// The work schedule is one row like the planning list, and for the same reason:
+// it is a handful of recurring shifts, not an event store. Nothing has one
+// until it is saved, so the absence is a real answer rather than an empty
+// record standing in for one.
+async function loadWorkSchedule(storage) {
+  return workSchedule.parseStored(await storage.getAppSetting(workSchedule.STORAGE_KEY));
+}
+
+async function saveWorkSchedule(storage, schedule) {
+  const encoded = workSchedule.encode(schedule);
+  if (encoded.length > workSchedule.MAX_ENCODED_LENGTH) return 'That work schedule is too large to store.';
+  await storage.setAppSetting(workSchedule.STORAGE_KEY, encoded);
+  return null;
+}
+
 // Returns an error string instead of throwing, because every caller here turns
 // it straight into a status code.
 async function savePlanningItems(storage, items) {
@@ -5267,6 +5352,32 @@ const DEFAULT_GATEWAY_URL = 'http://localhost:18789';
 // write, and a restart is corrected by the next one.
 let lastGatewayHeartbeat = null;
 
+function normalizeCronJob(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const id = cleanText(raw.id, 120);
+  if (!id) return null;
+  const schedule = raw.schedule && typeof raw.schedule === 'object' ? raw.schedule : {};
+  return {
+    id,
+    name: cleanText(raw.name, 180) || 'Unnamed cron job',
+    internal_name: cleanText(raw.internal_name, 180),
+    description: cleanText(raw.description, 500),
+    agent_id: cleanText(raw.agent_id, 80),
+    enabled: raw.enabled !== false,
+    schedule: {
+      kind: cleanText(schedule.kind, 20),
+      expr: cleanText(schedule.expr, 120),
+      tz: cleanText(schedule.tz, 80),
+      every_ms: Number(schedule.every_ms) || null,
+      at: cleanText(schedule.at, 60),
+    },
+    next_run_at_ms: Number(raw.next_run_at_ms) || null,
+    last_run_at_ms: Number(raw.last_run_at_ms) || null,
+    last_run_status: cleanText(raw.last_run_status, 40),
+    last_run_error: cleanText(raw.last_run_error, 500),
+  };
+}
+
 // "localhost:18789" is a host and a port; "file:///etc/passwd" is a scheme.
 // Both have a colon, so the two have to be told apart before anything is
 // prepended - otherwise a rejected scheme becomes a fetchable http address.
@@ -5639,12 +5750,28 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'GET' && pathname === '/api/session') {
       const activeSession = getSession(req);
-      // The readable hint is never evidence of authentication. Clear it when
-      // its signed session token is absent, expired, or invalid.
-      if (!activeSession && parseCookies(req)[SESSION_HINT_COOKIE]) clearSessionCookie(res);
+      const hint = parseCookies(req)[SESSION_HINT_COOKIE];
+      // Whether this instance gates the page at all. A deployed host with no
+      // passphrase is a misconfiguration rather than an open house: it stays
+      // gated, and its data routes go on answering 503.
+      const gated = Boolean(PASSPHRASE_HASH) || IS_DEPLOYED;
+      if (!gated) {
+        if (hint !== SESSION_HINT_NO_GATE) setOpenGateCookie(res);
+      } else if (activeSession && hint !== SESSION_HINT_SIGNED_IN) {
+        // A hint that disagrees with the session it stands for - a no-gate one
+        // left from before a passphrase was set, say - would paint the next
+        // load from the wrong answer. Put it back in step.
+        setSessionCookies(res, activeSession.token, Math.floor(SESSION_TTL_MS / 1000));
+      } else if (!activeSession && hint) {
+        // The readable hint is never evidence of authentication. Clear it when
+        // its signed session token is absent, expired, or invalid. This also
+        // takes back a no-gate hint left over from before a passphrase was set.
+        clearSessionCookie(res);
+      }
       sendJson(res, 200, {
         authenticated: Boolean(activeSession),
         configured: Boolean(PASSPHRASE_HASH),
+        gated,
       });
       return;
     }
@@ -5927,14 +6054,27 @@ const server = http.createServer(async (req, res) => {
 
       const body = await readJsonBody(req);
       const rawAgents = Array.isArray(body.agents) ? body.agents.slice(0, 100) : [];
+      const rawCronJobs = Array.isArray(body.cron_jobs) ? body.cron_jobs.slice(0, 1000) : [];
       lastGatewayHeartbeat = {
         at: Date.now(),
         host: String(body.host || '').trim().slice(0, 120),
         version: String(body.version || '').trim().slice(0, 60),
         agents: rawAgents.filter(agent => agent && typeof agent === 'object').map(toGatewayAgent),
+        cron_jobs: rawCronJobs.map(normalizeCronJob).filter(Boolean),
       };
 
-      sendJson(res, 200, { ok: true, agents: lastGatewayHeartbeat.agents.length });
+      sendJson(res, 200, { ok: true, agents: lastGatewayHeartbeat.agents.length, cron_jobs: lastGatewayHeartbeat.cron_jobs.length });
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/api/cron-jobs') {
+      if (!requireDropsAuth(res, req)) return;
+      const heartbeat = describeGatewayHeartbeat();
+      sendJson(res, 200, {
+        jobs: lastGatewayHeartbeat ? lastGatewayHeartbeat.cron_jobs || [] : [],
+        updated_at: lastGatewayHeartbeat ? new Date(lastGatewayHeartbeat.at).toISOString() : null,
+        fresh: heartbeat.fresh,
+      });
       return;
     }
 
@@ -6450,6 +6590,65 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // -- WORK SCHEDULE API ---------------------------------------
+    // Step 1 of the weekly build: the hours you are at work, which the week is
+    // planned around rather than over. Read off a photograph or typed in; both
+    // end at the same PUT, because both are corrected by eye first.
+    if (req.method === 'GET' && pathname === '/api/planning/work-schedule') {
+      if (!requireDropsAuth(res, req)) return;
+      const saved = await loadWorkSchedule(storage);
+      sendJson(res, 200, {
+        schedule: saved,
+        summary: saved ? workSchedule.summarize(saved) : null,
+        reader_configured: workScheduleReader.isConfigured(),
+      });
+      return;
+    }
+
+    if (req.method === 'PUT' && pathname === '/api/planning/work-schedule') {
+      if (!requireDropsAuth(res, req)) return;
+
+      const payload = workSchedule.validateInput(await readJsonBody(req));
+      if (!payload.ok) {
+        sendJson(res, 400, { error: payload.error });
+        return;
+      }
+
+      const saved = { ...payload.value, updated_at: new Date().toISOString() };
+      const failure = await saveWorkSchedule(storage, saved);
+      if (failure) {
+        sendJson(res, 400, { error: failure });
+        return;
+      }
+
+      sendJson(res, 200, { schedule: saved, summary: workSchedule.summarize(saved) });
+      return;
+    }
+
+    if (req.method === 'DELETE' && pathname === '/api/planning/work-schedule') {
+      if (!requireDropsAuth(res, req)) return;
+      await storage.deleteAppSetting(workSchedule.STORAGE_KEY);
+      sendJson(res, 200, { schedule: null, summary: null });
+      return;
+    }
+
+    // Reading a photo returns a draft and saves nothing. The page shows it for
+    // correction and PUTs what comes back: a rota nobody checked is a week
+    // built on whatever the camera happened to catch.
+    if (req.method === 'POST' && pathname === '/api/planning/work-schedule/read') {
+      if (!requireDropsAuth(res, req)) return;
+
+      const body = await readJsonBody(req, MAX_PHOTO_BODY_BYTES);
+      const draft = await workScheduleReader.readSchedulePhoto(body);
+      if (!draft.ok) {
+        sendJson(res, draft.status, { error: draft.error });
+        return;
+      }
+
+      sendJson(res, 200, draft.value);
+      return;
+    }
+
     // -- PLANNING MODE API --------------------------------------
     // The weekly planning checklist. Two states per item and they never stand
     // in for each other: `schedule_this_week` is a request to CoachClaw to find
@@ -6468,6 +6667,15 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && pathname === '/api/planning/brief') {
       if (!requireDropsAuth(res, req)) return;
       sendJson(res, 200, planning.buildSchedulingBrief(await loadPlanningItems(storage)));
+      return;
+    }
+
+    // Steps 4 to 6: the proposed week. This reads the calendar and writes
+    // nothing; accepting the week posts its blocks to
+    // /api/calendar/schedule/commit, which is where they become real.
+    if (req.method === 'POST' && pathname === '/api/planning/week') {
+      if (!requireDropsAuth(res, req)) return;
+      sendJson(res, 200, await buildPlanningWeek(await readJsonBody(req)));
       return;
     }
 

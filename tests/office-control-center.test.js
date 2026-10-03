@@ -59,6 +59,29 @@ test('Mission Control goals can be deleted, including completed history', () => 
   assert.match(server, /storage\.deleteMissionGoal/);
 });
 
+test('a Mission Control goal is written as a title plus a description', () => {
+  assert.match(control, /id="mission-goal-title"/);
+  assert.match(control, /Description — what should the office accomplish\?/);
+  assert.match(control, /title: goalTitle\.slice\(0, 120\)/);
+  // Editing keeps the same two fields rather than folding them back into one.
+  assert.match(control, /window\.prompt\('Goal title:'/);
+  assert.match(control, /window\.prompt\('Goal description:'/);
+  const server = fs.readFileSync(path.join(DIST, 'server.js'), 'utf8');
+  assert.match(server, /deriveDropTitle\(\{ title: input\.title, content: goal \}\)/);
+  assert.match(server, /title: deriveDropTitle\(\{ title: input\.title, content \}\)/);
+});
+
+test('a long Mission Control goal can be read in full instead of being cut off', () => {
+  assert.match(control, /Read full goal/);
+  assert.match(control, /Show less/);
+  assert.match(control, /mission-result-description/);
+  assert.match(control, /missionExpanded/);
+  assert.match(control, /aria-expanded=/);
+  assert.match(sharedCss, /\.mission-result--expanded \.mission-result-description/);
+  assert.match(sharedCss, /\.mission-result--expanded p \{ max-height: none/);
+  assert.match(sharedCss, /\.mission-result-title \{[^}]*overflow-wrap: anywhere/);
+});
+
 test('one general login gates the entire Agent Office site', () => {
   assert.match(index, /id="ao-login-trigger"[^>]*>Login</);
   assert.match(index, /id="ao-login-password"[^>]*type="password"/);
@@ -70,7 +93,10 @@ test('one general login gates the entire Agent Office site', () => {
   // answered, which flashed the login panel at someone who was already logged
   // in. It is painted from the readable hint cookie now, and the server still
   // has the last word on it.
-  assert.match(shared, /setOfficeLoginState\(officeSessionHinted\(\)\)/);
+  assert.match(shared, /applyOfficeSessionState\(\{\s*gated: hint !== OFFICE_HINT_NO_GATE/);
+  // And it is three answers, not two: an instance with no passphrase has no
+  // gate to paint and no password to ask for.
+  assert.match(shared, /officeLoginGated = state\.gated !== false/);
   assert.match(shared, /classList\.toggle\('ao-site-locked', !authenticated\)/);
   assert.match(sharedCss, /\.ao-site-locked body > :not\(\.ao-login-modal\)/);
   const server = fs.readFileSync(path.join(DIST, 'server.js'), 'utf8');

@@ -213,3 +213,115 @@ textarea.planning-input { resize: vertical; min-height: 62px; }
   .planning-item { flex-wrap: wrap; }
   .planning-item-actions { width: 100%; justify-content: flex-start; }
 }
+
+/* ─── The proposed week ───────────────────────────────────────────────────
+   A read-only picture of where the ticked items would go, and the controls
+   that make it a review rather than an announcement. Nothing in here has
+   touched the calendar: the accent stripe is the reminder that these blocks
+   are still a proposal. */
+.planning-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.planning-panel-head .planning-sub { margin-top: 4px; }
+.planning-panel-actions { display: flex; gap: var(--space-2); flex-shrink: 0; }
+
+.planning-day-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-3); }
+.planning-day-head {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.planning-block {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  padding: 10px 12px;
+}
+.planning-block--unplaced { border-left-color: var(--red); }
+.planning-block-time {
+  flex: 0 0 auto;
+  min-width: 124px;
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+.planning-block-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.planning-block-title { color: var(--text); font-size: var(--fs-sm); font-weight: 600; word-break: break-word; }
+.planning-block-why { color: var(--muted); font-size: var(--fs-2xs); }
+.planning-block-warn { color: var(--amber, #f59e0b); font-size: var(--fs-2xs); }
+
+.planning-week-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 720px) {
+  .planning-block { flex-wrap: wrap; }
+  .planning-block-time { min-width: 0; }
+  .planning-block .planning-item-actions { width: 100%; }
+}
+
+/* The work schedule (step 1).
+   Saved, it is three columns you can check at a glance — days, hours, what the
+   shift is called. Being corrected, it is the same editable rows whether the
+   shifts came off a photograph or were typed, because a read schedule gets no
+   more trust than a typed one until someone has looked at it. */
+/* The panel is a stack: the photo control, then whatever state the schedule is
+   in. Without the gap the chip, the rows and the summary run into each other. */
+#planning-work { display: flex; flex-direction: column; gap: var(--space-3); }
+.work-head { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.work-photo { display: inline-flex; align-items: center; cursor: pointer; }
+
+.work-rows { display: flex; flex-direction: column; gap: 4px; }
+.work-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: baseline;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 6px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+.work-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.work-row-days {
+  color: var(--text);
+  font-weight: 600;
+  min-width: 128px;
+  font-variant-numeric: tabular-nums;
+}
+.work-row-time { color: var(--accent); font-variant-numeric: tabular-nums; }
+
+.work-edit { display: flex; flex-direction: column; gap: var(--space-3); }
+.work-shift {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken);
+  padding: 10px 12px;
+}
+/* What the reader was unsure about, said before the rows rather than after:
+   this is the one thing on the page that is a draft, and it should not look
+   like everything else. */
+.work-notice {
+  border: 1px solid color-mix(in srgb, var(--yellow) 42%, var(--border));
+  background: color-mix(in srgb, var(--yellow) 9%, transparent);
+  border-radius: var(--radius-md);
+  padding: 9px 12px;
+  color: var(--text);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+}
