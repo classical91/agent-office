@@ -11,6 +11,8 @@ const countdowns = require('./countdowns.js');
 const resetTimers = require('./reset-timers.js');
 const planning = require('./planning.js');
 const planningWeek = require('./planning-week.js');
+const workSchedule = require('./work-schedule.js');
+const workScheduleReader = require('./work-schedule-reader.js');
 const sharebotNewsroom = require('./sharebot-newsroom.js');
 const happyHour = require('./happy-hour.js');
 
@@ -30,6 +32,10 @@ const STREAK_DAYS_FILE = path.resolve(__dirname, process.env.STREAK_DAYS_FILE ||
 const COUNTDOWNS_FILE = path.resolve(__dirname, process.env.COUNTDOWNS_FILE || 'countdowns.json');
 const VISITS_FILE = path.resolve(__dirname, process.env.VISITS_FILE || 'visits.json');
 const MAX_BODY_BYTES = 50 * 1024;
+// A photographed rota is the one body that is not a few fields of JSON. Base64
+// carries about a third more than the bytes it encodes, so this is the 5MB the
+// reader accepts plus that overhead and the envelope around it.
+const MAX_PHOTO_BODY_BYTES = 8 * 1024 * 1024;
 const JOURNAL_TOKEN = String(process.env.JOURNAL_TOKEN || '').trim();
 const JOURNAL_TOKEN_MIN_LENGTH = 24;
 const TRADERCLAW_JOURNAL_KEY = 'traderclaw-journal-v1';
@@ -264,8 +270,8 @@ function issueSession(res) {
   setSessionCookies(res, token, Math.floor(SESSION_TTL_MS / 1000));
 }
 
-async function readJsonBody(req) {
-  const body = await readRawBody(req);
+async function readJsonBody(req, maxBytes = MAX_BODY_BYTES) {
+  const body = await readRawBody(req, maxBytes);
   if (!body) return {};
   try {
     return JSON.parse(body);
@@ -276,7 +282,7 @@ async function readJsonBody(req) {
   }
 }
 
-async function readRawBody(req) {
+async function readRawBody(req, maxBytes = MAX_BODY_BYTES) {
   return new Promise((resolve, reject) => {
     let body = '';
     let size = 0;
@@ -293,7 +299,7 @@ async function readRawBody(req) {
     req.on('data', chunk => {
       if (settled) return;
       size += chunk.length;
-      if (size > MAX_BODY_BYTES) {
+      if (size > maxBytes) {
         fail(413, 'Request body too large');
         req.destroy();
         return;
@@ -3305,10 +3311,11 @@ function toSchedulingEvent(event) {
 // through /api/calendar/schedule/commit like any other scheduled block.
 async function buildPlanningWeek(body = {}) {
   const storage = await storageReady;
-  const [items, preferences, events] = await Promise.all([
+  const [items, preferences, events, saved] = await Promise.all([
     loadPlanningItems(storage),
     getSchedulingPreferences(),
     currentCalendarEvents(),
+    loadWorkSchedule(storage),
   ]);
 
   return planningWeek.buildWeek({
@@ -3317,9 +3324,10 @@ async function buildPlanningWeek(body = {}) {
     preferences,
     now: new Date(),
     horizonDays: body.horizonDays,
-    // A rota read off a photograph arrives here already corrected. Until that
-    // step exists, a caller can pass one by hand.
-    workSchedule: body.workSchedule,
+    // Step 1. The saved rota - read off a photograph or typed in, corrected
+    // either way before it was saved - is what the week is built around. A
+    // caller can still pass one explicitly to plan against a different week.
+    workSchedule: body.workSchedule || (saved ? workSchedule.toWorkSchedule(saved) : undefined),
     respectWorkingHours: body.respectWorkingHours === true,
     only: body.only,
     pinned: body.pinned,
@@ -4887,6 +4895,21 @@ async function loadResetTimers(storage) {
 // anything joins against.
 async function loadPlanningItems(storage) {
   return planning.parseStoredItems(await storage.getAppSetting(planning.STORAGE_KEY));
+}
+
+// The work schedule is one row like the planning list, and for the same reason:
+// it is a handful of recurring shifts, not an event store. Nothing has one
+// until it is saved, so the absence is a real answer rather than an empty
+// record standing in for one.
+async function loadWorkSchedule(storage) {
+  return workSchedule.parseStored(await storage.getAppSetting(workSchedule.STORAGE_KEY));
+}
+
+async function saveWorkSchedule(storage, schedule) {
+  const encoded = workSchedule.encode(schedule);
+  if (encoded.length > workSchedule.MAX_ENCODED_LENGTH) return 'That work schedule is too large to store.';
+  await storage.setAppSetting(workSchedule.STORAGE_KEY, encoded);
+  return null;
 }
 
 // Returns an error string instead of throwing, because every caller here turns
@@ -6511,6 +6534,65 @@ const server = http.createServer(async (req, res) => {
       }
 
       sendJson(res, 200, { ok: true });
+      return;
+    }
+
+    // -- WORK SCHEDULE API ---------------------------------------
+    // Step 1 of the weekly build: the hours you are at work, which the week is
+    // planned around rather than over. Read off a photograph or typed in; both
+    // end at the same PUT, because both are corrected by eye first.
+    if (req.method === 'GET' && pathname === '/api/planning/work-schedule') {
+      if (!requireDropsAuth(res, req)) return;
+      const saved = await loadWorkSchedule(storage);
+      sendJson(res, 200, {
+        schedule: saved,
+        summary: saved ? workSchedule.summarize(saved) : null,
+        reader_configured: workScheduleReader.isConfigured(),
+      });
+      return;
+    }
+
+    if (req.method === 'PUT' && pathname === '/api/planning/work-schedule') {
+      if (!requireDropsAuth(res, req)) return;
+
+      const payload = workSchedule.validateInput(await readJsonBody(req));
+      if (!payload.ok) {
+        sendJson(res, 400, { error: payload.error });
+        return;
+      }
+
+      const saved = { ...payload.value, updated_at: new Date().toISOString() };
+      const failure = await saveWorkSchedule(storage, saved);
+      if (failure) {
+        sendJson(res, 400, { error: failure });
+        return;
+      }
+
+      sendJson(res, 200, { schedule: saved, summary: workSchedule.summarize(saved) });
+      return;
+    }
+
+    if (req.method === 'DELETE' && pathname === '/api/planning/work-schedule') {
+      if (!requireDropsAuth(res, req)) return;
+      await storage.deleteAppSetting(workSchedule.STORAGE_KEY);
+      sendJson(res, 200, { schedule: null, summary: null });
+      return;
+    }
+
+    // Reading a photo returns a draft and saves nothing. The page shows it for
+    // correction and PUTs what comes back: a rota nobody checked is a week
+    // built on whatever the camera happened to catch.
+    if (req.method === 'POST' && pathname === '/api/planning/work-schedule/read') {
+      if (!requireDropsAuth(res, req)) return;
+
+      const body = await readJsonBody(req, MAX_PHOTO_BODY_BYTES);
+      const draft = await workScheduleReader.readSchedulePhoto(body);
+      if (!draft.ok) {
+        sendJson(res, draft.status, { error: draft.error });
+        return;
+      }
+
+      sendJson(res, 200, draft.value);
       return;
     }
 

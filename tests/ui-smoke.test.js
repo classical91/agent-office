@@ -681,3 +681,101 @@ test('a machine with no passphrase is not locked behind a login it cannot pass',
     'the page still thinks it is locked'
   );
 });
+
+// The work schedule is step 1, and the panel has to work with the photo reader
+// switched off: the test server has no ANTHROPIC_API_KEY, which is the state
+// every deployment is in until someone sets one.
+test('a work schedule can be entered by hand and comes back with its days off', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  const { page, problems } = await openPage(t);
+  await page.goto(`${server.origin}/planning.html`, { waitUntil: 'domcontentloaded' });
+  await logIn(page);
+  await page.waitForSelector('#planning-work');
+
+  // Nothing saved yet, and the panel says what that means for the week.
+  assert.match(await page.locator('#planning-work').textContent(), /No work schedule yet/);
+  assert.match(
+    await page.locator('#planning-work').textContent(),
+    /Photo reading is off/,
+    'with no key the page offers the manual path instead of a dead button',
+  );
+
+  await page.locator('#planning-work').getByText('Add it by hand', { exact: true }).click();
+  await page.waitForSelector('.work-shift');
+
+  await page.locator('.work-shift input[type="time"]').first().fill('12:30');
+  await page.locator('.work-shift input[type="time"]').nth(1).fill('21:00');
+  for (const day of ['Tue', 'Wed', 'Thu', 'Fri', 'Sat']) {
+    await page.locator('.work-shift .planning-day', { hasText: day }).click();
+  }
+
+  await page.locator('#planning-work').getByText('Save schedule', { exact: true }).click();
+  await page.waitForSelector('.work-row');
+
+  const panel = await page.locator('#planning-work').textContent();
+  assert.match(panel, /Tue Wed Thu Fri Sat/);
+  assert.match(panel, /12:30/);
+  assert.match(panel, /Off: Mon Sun/, 'the days off are what is left over');
+  assert.match(panel, /42\.5h a week/);
+
+  // And it is a record, not a form that forgot.
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('.work-row');
+  assert.match(await page.locator('#planning-work').textContent(), /Tue Wed Thu Fri Sat/);
+  assert.deepEqual(problems, []);
+});
+
+// Step 1's whole point: what a photo produces is a draft, and the draft is
+// corrected before it is a schedule. The reading itself is a model call, so
+// the draft is applied directly here - what is under test is everything that
+// happens to it afterwards.
+test('a schedule read from a photo is shown for correction, not saved', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  const { page, problems } = await openPage(t);
+  await page.goto(`${server.origin}/planning.html`, { waitUntil: 'domcontentloaded' });
+  await logIn(page);
+  await page.waitForSelector('#planning-work');
+
+  // These tests share one server, and the test above saves a schedule. What is
+  // under test here is that *reading* does not save, so start from nothing
+  // rather than from whatever ran first.
+  await page.evaluate(async () => {
+    await fetch('/api/planning/work-schedule', { method: 'DELETE', credentials: 'same-origin' });
+  });
+
+  await page.evaluate(() => window.AOPlanning.applyWorkDraft({
+    notes: 'Saturday’s end time was faint — it may be 21:00 or 23:00.',
+    shifts: [
+      { id: 'd1', label: 'Work', days: [2, 3, 4, 5], start: '12:30', end: '21:00' },
+      { id: 'd2', label: 'Close', days: [6], start: '14:00', end: '23:00' },
+    ],
+  }));
+  await page.waitForSelector('.work-notice');
+
+  // The doubt the reader had is on screen, next to the rows it is about.
+  assert.match(await page.locator('.work-notice').textContent(), /check it before you plan on it/);
+  assert.match(await page.locator('.work-notice').textContent(), /Saturday/);
+  assert.equal(await page.locator('.work-shift').count(), 2);
+
+  // Nothing has been stored: a photo on its own is not a work schedule.
+  const beforeSave = await page.evaluate(async () => {
+    const response = await fetch('/api/planning/work-schedule', { credentials: 'same-origin' });
+    return (await response.json()).schedule;
+  });
+  assert.equal(beforeSave, null, 'reading a photo must not save anything');
+
+  // Correct the row the reader flagged, then save.
+  await page.locator('.work-shift').nth(1).locator('input[type="time"]').nth(1).fill('21:00');
+  await page.locator('#planning-work').getByText('Save schedule', { exact: true }).click();
+  await page.waitForSelector('.work-row');
+
+  const saved = await page.evaluate(async () => {
+    const response = await fetch('/api/planning/work-schedule', { credentials: 'same-origin' });
+    return (await response.json()).schedule;
+  });
+  assert.equal(saved.shifts.length, 2);
+  assert.equal(saved.shifts[1].end, '21:00', 'the correction is what got stored, not the reading');
+  assert.deepEqual(problems, []);
+});
