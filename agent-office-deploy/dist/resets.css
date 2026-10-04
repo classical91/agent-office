@@ -388,6 +388,30 @@
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+/* ─── Yesterday ───────────────────────────────────────────────────────── */
+
+.rst-yesterday-sheet { max-height: 90dvh; overflow-y: auto; }
+.rst-yesterday-list { list-style: none; margin: 0; padding: 0; }
+.rst-yesterday-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--border);
+}
+.rst-yesterday-item .rst-icon { width: 36px; height: 36px; font-size: var(--fs-md); flex: 0 0 auto; }
+.rst-yesterday-copy { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
+.rst-yesterday-title { color: var(--text-strong); font-weight: 600; overflow-wrap: anywhere; }
+.rst-yesterday-meta { color: var(--text-dim); font-size: var(--fs-sm); }
+.rst-yesterday-time {
+  color: var(--rst-color, var(--text-strong));
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rst-yesterday-empty { color: var(--text-dim); padding: var(--space-3) 0; }
+
 /* ─── Phones ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 700px) {

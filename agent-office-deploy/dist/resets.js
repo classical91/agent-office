@@ -293,6 +293,7 @@ window.AOResets = (() => {
     syncTimer: null,
     order: '',
     happyHourTrigger: null,
+    yesterdayTrigger: null,
   };
 
   // ─── Helpers ───────────────────────────────────────────────────────────
@@ -1222,10 +1223,104 @@ window.AOResets = (() => {
     if (orderChanged) saveCards();
     // Re-sorting under a finger that is mid-edit is worse than a stale order,
     // so the list only re-flows once nothing is open.
-    if (!state.openId && !isFormOpen() && !isHappyHourOpen()) {
+    if (!state.openId && !isFormOpen() && !isHappyHourOpen() && !isYesterdayOpen()) {
       const next = listedViews().map(view => view.card.id).join('|');
       if (next !== state.order) render();
     }
+  }
+
+  // ─── Yesterday ─────────────────────────────────────────────────────────
+
+  // Which countdowns landed yesterday, local time. A repeating card has already
+  // rolled forward past yesterday, so its earlier occurrences are worked out by
+  // stepping back from where it points now. Paused cards did not land, and an
+  // occurrence from before the card existed never happened.
+  function yesterdayBounds(now = new Date()) {
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const start = new Date(end);
+    start.setDate(start.getDate() - 1);
+    return { start: start.getTime(), end: end.getTime() };
+  }
+
+  function stepBack(date, card) {
+    if (card.repeatMonths) return addMonths(date, -card.repeatMonths);
+    if (card.officeRepeat === 'monthly') return addMonths(date, -1);
+    date.setDate(date.getDate() - card.repeatDays);
+    // The office's weekday repeat skips Saturday and Sunday.
+    if (card.officeRepeat === 'weekday') {
+      while (date.getDay() === 0 || date.getDay() === 6) date.setDate(date.getDate() - 1);
+    }
+  }
+
+  function yesterdayOccurrences(card, now = new Date()) {
+    if (card.deleted || card.status === 'paused' || card.id === HAPPY_HOUR_ID) return [];
+    const at = new Date(card.resetAt);
+    if (Number.isNaN(at.getTime())) return [];
+    const { start, end } = yesterdayBounds(now);
+    const repeats = card.repeatDays > 0 || card.repeatMonths > 0;
+    const found = [];
+    for (let guard = 0; guard < 1000 && at.getTime() >= start; guard += 1) {
+      if (at.getTime() < end && at.getTime() <= now.getTime()
+        && !(card.createdAt && at.getTime() < card.createdAt)) found.push(at.toISOString());
+      if (!repeats) break;
+      stepBack(at, card);
+    }
+    return found.reverse();
+  }
+
+  function yesterdayItems(cards = liveCards(), now = new Date()) {
+    return cards
+      .flatMap(card => yesterdayOccurrences(card, now).map(at => ({ card, at })))
+      .sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+  }
+
+  function yesterdayHtml(items) {
+    if (!items.length) return '<div class="rst-yesterday-empty">No countdowns landed yesterday.</div>';
+    return `<ul class="rst-yesterday-list">${items.map(({ card, at }) => {
+      const icon = iconFor(card.title);
+      const time = new Date(at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+      const category = card.source === 'office'
+        ? officeCategoryLabel(card.officeCategory || card.category)
+        : (CATEGORY_LABELS[card.category] || 'Uncategorized');
+      return `
+        <li class="rst-yesterday-item" style="--rst-color: ${icon.color}">
+          <span class="rst-icon" aria-hidden="true">${icon.glyph}</span>
+          <span class="rst-yesterday-copy">
+            <span class="rst-yesterday-title">${escHtml(card.title)}</span>
+            <span class="rst-yesterday-meta">${escHtml(category)}${card.status === 'completed' ? ' · Done' : ''}</span>
+          </span>
+          <span class="rst-yesterday-time">${escHtml(time)}</span>
+        </li>`;
+    }).join('')}</ul>`;
+  }
+
+  function isYesterdayOpen() {
+    const modal = el('rst-yesterday-modal');
+    return Boolean(modal) && !modal.hidden;
+  }
+
+  function openYesterday(trigger) {
+    const modal = el('rst-yesterday-modal');
+    if (!modal) return;
+    state.openId = '';
+    state.yesterdayTrigger = trigger || null;
+    const { start } = yesterdayBounds();
+    el('rst-yesterday-date').textContent = new Date(start)
+      .toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+    el('rst-yesterday-body').innerHTML = yesterdayHtml(yesterdayItems());
+    modal.hidden = false;
+    const close = modal.querySelector('[data-action="close-yesterday"]');
+    if (close) close.focus();
+  }
+
+  function closeYesterday() {
+    const modal = el('rst-yesterday-modal');
+    if (!modal || modal.hidden) return;
+    modal.hidden = true;
+    if (state.yesterdayTrigger && document.contains(state.yesterdayTrigger)) {
+      state.yesterdayTrigger.focus();
+    }
+    state.yesterdayTrigger = null;
   }
 
   // ─── Expanding a card ──────────────────────────────────────────────────
@@ -1702,6 +1797,7 @@ window.AOResets = (() => {
     if (event.key !== 'Escape') return;
     if (!el('rst-categories-modal').hidden) return closeCategories();
     if (isHappyHourOpen()) return closeHappyHour();
+    if (isYesterdayOpen()) return closeYesterday();
     if (isFormOpen()) return closeForm();
     closeCard();
   }
@@ -1771,6 +1867,9 @@ window.AOResets = (() => {
     addFromForm,
     openHappyHour,
     closeHappyHour,
+    openYesterday,
+    closeYesterday,
+    yesterdayItems,
     happyHourDetails,
     happyHourMeal,
     happyHourShortcutTime,

@@ -8,7 +8,7 @@
 <meta http-equiv="Expires" content="0"/>
 <title>Countdowns - Agent Office</title>
 <link rel="stylesheet" href="shared.css?v=nav-monograms-filter-contrast-20260919"/>
-<link rel="stylesheet" href="resets.css?v=remove-cron-category-20261004"/>
+<link rel="stylesheet" href="resets.css?v=yesterday-countdowns-20261004"/>
 <!-- Restores the saved theme, sidebar state and focus mode before first paint,
      so no page flashes the default accent, a full-width sidebar, or the chrome
      of a page that opens in Focus Mode. ACCENTS mirrors THEMES in
@@ -160,6 +160,9 @@
           </div>
         </div>
         <div class="ao-page-actions">
+          <button type="button" class="ao-btn" id="rst-yesterday-btn"
+                  aria-haspopup="dialog" aria-controls="rst-yesterday-modal"
+                  onclick="AOResets.openYesterday(this)">&#8630; Yesterday</button>
           <button class="ao-btn ao-btn--primary" onclick="AOResets.openForm()">+ New Countdown</button>
         </div>
       </div>
@@ -229,6 +232,21 @@
     <div class="ao-modal-actions rst-happy-modal-actions">
       <button class="ao-btn ao-btn--primary" data-action="close-happy-hour"
               onclick="AOResets.closeHappyHour()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- YESTERDAY'S COUNTDOWNS -->
+<div id="rst-yesterday-modal" class="ao-modal" hidden
+     onclick="if (event.target === this) AOResets.closeYesterday()">
+  <div class="ao-modal-sheet rst-modal-sheet rst-yesterday-sheet" role="dialog" aria-modal="true"
+       aria-labelledby="rst-yesterday-title">
+    <h2 class="ao-modal-title" id="rst-yesterday-title">Yesterday's countdowns</h2>
+    <p class="ao-modal-desc" id="rst-yesterday-date"></p>
+    <div id="rst-yesterday-body"></div>
+    <div class="ao-modal-actions">
+      <button type="button" class="ao-btn ao-btn--primary" data-action="close-yesterday"
+              onclick="AOResets.closeYesterday()">Close</button>
     </div>
   </div>
 </div>
@@ -304,7 +322,7 @@
 <script src="app-shared.js?v=reminder-categories-20260916"></script>
 <!-- The Happy Hour schedule, shared with the server. Must load before resets.js. -->
 <script src="happy-hour.js?v=happy-hour-shared-20260910"></script>
-<script src="resets.js?v=remove-cron-category-20261004"></script>
+<script src="resets.js?v=yesterday-countdowns-20261004"></script>
 <script>
 switchView('resets', document.querySelector('.nav-item.active'));
 </script>
