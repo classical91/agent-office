@@ -91,7 +91,6 @@ window.AOResets = (() => {
 
   const CATEGORY_FILTERS = {
     all: { label: 'All categories', keep: () => true },
-    'cron-jobs': { label: 'Cron jobs', keep: () => false },
     uncategorized: { label: 'Uncategorized', keep: view => !view.card.category },
     'subscriptions-bills': { label: 'Subscriptions / Bills', keep: view => view.card.category === 'subscriptions-bills' },
     'ai-usage': { label: 'AI / Usage resets', keep: view => view.card.category === 'ai-usage' },
@@ -164,7 +163,6 @@ window.AOResets = (() => {
         label: item.label, keep: view => normalizeCategory(view.card.category) === item.value,
       };
     });
-    CATEGORY_FILTERS['cron-jobs'] = { label: 'Cron jobs', keep: () => false };
     if (!CATEGORY_FILTERS[state.categoryFilter]) state.categoryFilter = 'all';
     try { localStorage.setItem(CATEGORY_CACHE_KEY, JSON.stringify(categoryRegistry)); } catch {}
     fillToolbar();
@@ -296,7 +294,6 @@ window.AOResets = (() => {
     order: '',
     happyHourTrigger: null,
   };
-  let cronJobs = [];
 
   // ─── Helpers ───────────────────────────────────────────────────────────
 
@@ -1134,88 +1131,11 @@ window.AOResets = (() => {
     );
   }
 
-  function cronDate(value) {
-    if (!value) return 'Not scheduled';
-    const at = new Date(Number(value));
-    return Number.isNaN(at.getTime()) ? 'Not scheduled' : at.toLocaleString();
-  }
-
-  function cronSchedule(job) {
-    const schedule = job.schedule || {};
-    if (schedule.kind === 'cron') return `${schedule.expr || 'Cron'}${schedule.tz ? ` - ${schedule.tz}` : ''}`;
-    if (schedule.kind === 'every' && schedule.every_ms) {
-      const minutes = Math.round(schedule.every_ms / 60000);
-      return minutes >= 1440 && minutes % 1440 === 0 ? `Every ${minutes / 1440} day(s)` : `Every ${minutes} minute(s)`;
-    }
-    if (schedule.kind === 'at') return schedule.at ? `Once - ${cronDate(Date.parse(schedule.at))}` : 'One time';
-    return schedule.kind || 'Schedule unavailable';
-  }
-
-  function cronState(job) {
-    if (!job.enabled) return 'paused';
-    if (job.last_run_status === 'error' || job.last_run_status === 'failed') return 'failed';
-    if (job.last_run_status === 'running') return 'running';
-    return 'active';
-  }
-
-  function renderCronJobs(payload = {}) {
-    const list = el('rst-cron-list');
-    const summary = el('rst-cron-summary');
-    if (!list || !summary) return;
-    const active = cronJobs.filter(job => job.enabled).length;
-    const paused = cronJobs.length - active;
-    const failing = cronJobs.filter(job => job.enabled && ['error', 'failed'].includes(job.last_run_status)).length;
-    const snapshot = payload.fresh ? 'Live snapshot' : 'Last known snapshot';
-    summary.innerHTML = [
-      ['All jobs', cronJobs.length], ['Active', active], ['Paused', paused], ['Failing', failing],
-    ].map(([label, value]) => `<div><span>${label}</span><strong>${value}</strong></div>`).join('')
-      + `<small>${escHtml(snapshot)}</small>`;
-    if (!cronJobs.length) {
-      list.innerHTML = '<div class="rst-cron-empty">No cron inventory has been received from the OpenClaw gateway yet.</div>';
-      return;
-    }
-    const ordered = cronJobs.slice().sort((a, b) => Number(b.enabled) - Number(a.enabled)
-      || (a.next_run_at_ms || Infinity) - (b.next_run_at_ms || Infinity)
-      || a.name.localeCompare(b.name));
-    list.innerHTML = ordered.map(job => {
-      const status = cronState(job);
-      const last = job.last_run_at_ms ? `${job.last_run_status || 'unknown'} - ${cronDate(job.last_run_at_ms)}` : 'No run recorded';
-      return `<article class="rst-cron-job rst-cron-job--${escHtml(status)}">
-        <div class="rst-cron-job-head"><strong>${escHtml(job.name)}</strong><span>${escHtml(status)}</span></div>
-        ${job.description ? `<p>${escHtml(job.description)}</p>` : ''}
-        <div class="rst-cron-meta"><span><b>Owner</b>${escHtml(job.agent_id || 'Unassigned')}</span><span><b>Schedule</b>${escHtml(cronSchedule(job))}</span><span><b>Next run</b>${escHtml(job.enabled ? cronDate(job.next_run_at_ms) : 'Paused')}</span><span><b>Last run</b>${escHtml(last)}</span></div>
-        ${job.last_run_error ? `<div class="rst-cron-error">${escHtml(job.last_run_error)}</div>` : ''}
-      </article>`;
-    }).join('');
-  }
-
-  async function refreshCronJobs() {
-    const list = el('rst-cron-list');
-    if (!list) return;
-    try {
-      const response = await fetch('/api/cron-jobs', { credentials: 'same-origin' });
-      if (response.status === 401) throw new Error('Log in to Agent Office to see cron jobs.');
-      if (!response.ok) throw new Error('Cron inventory is unavailable.');
-      const payload = await response.json();
-      cronJobs = Array.isArray(payload.jobs) ? payload.jobs : [];
-      renderCronJobs(payload);
-      if (state.categoryFilter === 'cron-jobs') render();
-    } catch (error) {
-      el('rst-cron-summary').innerHTML = '';
-      list.innerHTML = `<div class="rst-cron-empty">${escHtml(error.message)}</div>`;
-    }
-  }
-
   function render() {
     const list = el('reset-cards');
     if (!list) return;
 
     renderHappyHourShortcut();
-    const cronView = state.categoryFilter === 'cron-jobs';
-    list.hidden = cronView;
-    el('rst-crons').hidden = !cronView;
-    el('rst-sort-control').hidden = cronView;
-    el('rst-footnote').hidden = cronView;
     const views = listedViews();
     state.order = views.map(view => view.card.id).join('|');
     list.innerHTML = views.map(cardHtml).join('');
@@ -1223,7 +1143,7 @@ window.AOResets = (() => {
     const empty = el('rst-empty');
     if (empty) {
       const nothingAtAll = !liveCards().some(card => card.id !== HAPPY_HOUR_ID);
-      empty.hidden = cronView || views.length > 0;
+      empty.hidden = views.length > 0;
       empty.querySelector('[data-role="empty-title"]').textContent =
         nothingAtAll ? 'No countdowns yet' : 'Nothing matches this filter';
       empty.querySelector('[data-role="empty-body"]').textContent =
@@ -1234,8 +1154,7 @@ window.AOResets = (() => {
     }
 
     const count = el('rst-count');
-    if (count && cronView) count.textContent = `${cronJobs.length} cron job${cronJobs.length === 1 ? '' : 's'}`;
-    if (count && !cronView) {
+    if (count) {
       const live = liveCards().map(viewOf).filter(view => isListView(view) && view.state === 'active').length;
       count.textContent = liveCards().some(card => card.id !== HAPPY_HOUR_ID)
         ? `${views.length} shown · ${live} counting down`
@@ -1823,7 +1742,6 @@ window.AOResets = (() => {
       loadCategories().catch(() => {});
       loadOfficeCards();
       syncServerCards(false);
-      refreshCronJobs();
     }
 
     fillToolbar();
@@ -1839,7 +1757,7 @@ window.AOResets = (() => {
   }
 
   return {
-    openCategories, closeCategories, addCategory, saveCategories, refreshCronJobs,
+    openCategories, closeCategories, addCategory, saveCategories,
     init,
     mergeCardLists,
     normalizeCard,

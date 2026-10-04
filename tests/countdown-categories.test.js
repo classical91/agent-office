@@ -40,24 +40,10 @@ test('category filters select only countdowns assigned to that category', () => 
   assert.equal(CATEGORY_FILTERS.other.keep(loose), true);
 });
 
-test('Countdowns shows the complete read-only OpenClaw cron inventory', () => {
-  const html = read('countdowns.html');
-  const script = read('resets.js');
-  const server = read('server.js');
-  const relay = fs.readFileSync(path.join(ROOT, 'scripts', 'openclaw-heartbeat.js'), 'utf8');
-  assert.match(html, /id="rst-crons-title">Cron jobs/);
-  assert.match(html, /id="rst-crons"[^>]*hidden/);
-  assert.match(html, /including active and paused jobs/);
-  assert.match(script, /fetch\('\/api\/cron-jobs'/);
-  assert.match(script, /'cron-jobs': \{ label: 'Cron jobs'/);
-  assert.match(script, /state\.categoryFilter === 'cron-jobs'/);
-  assert.match(script, /All jobs/);
-  assert.match(script, /Last run/);
-  assert.match(server, /pathname === '\/api\/cron-jobs'/);
-  assert.match(server, /requireDropsAuth\(res, req\)/);
-  assert.match(relay, /\['cron', 'list', '--all', '--json'\]/);
-  assert.match(relay, /cron_jobs: cronJobs/);
-  assert.doesNotMatch(relay, /payload:\s*job\.payload/);
+test('Countdowns has no built-in cron jobs category', () => {
+  assert.equal(CATEGORY_FILTERS['cron-jobs'], undefined);
+  assert.doesNotMatch(read('countdowns.html'), /rst-crons|Cron jobs/);
+  assert.doesNotMatch(read('resets.js'), /cron-jobs|Cron jobs/);
 });
 
 test('the canonical navigation name and URL are Countdowns', () => {
