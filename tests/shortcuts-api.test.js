@@ -17,6 +17,7 @@ const PASSPHRASE = 'open-the-dropbox';
 
 async function startServer(options = {}) {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-office-shortcuts-'));
+  if (options.seed) fs.writeFileSync(path.join(scratch, 'drops.json'), JSON.stringify(options.seed), 'utf8');
 
   const buildEnv = port => {
     const environment = {
@@ -341,6 +342,80 @@ test('the web Dropbox numbers duplicate titles too, and titles stay in range', a
   const second = await create({ content: 'second', title: full });
   assert.equal(second.title.length, 200);
   assert.match(second.title, / \(2\)$/);
+});
+
+// A Mission Control goal carries no reminder time, so in the Dropbox's own
+// `any` scope it sorts behind every drop that has one — and that feed stops at
+// 100. Main Hub's dashboard card read goals out of it by subject and went
+// blank over a full queue once the open Dropbox passed a hundred rows. These
+// two tests are that failure and the route that answers instead.
+function goalRow(id, title, rank, orchestrationStatus, date) {
+  return {
+    id, title, subject: 'Mission Control', category: 'Mission Control', project: '',
+    agent: 'oss', status: orchestrationStatus === 'completed' ? 'done' : 'inbox',
+    tags: ['penny', 'orchestration'], links: [], content: `${title}\nThe description.`,
+    priority: 'normal', done: orchestrationStatus === 'completed', remind_at: null,
+    date, updated_at: date,
+    orchestration_status: orchestrationStatus, orchestration_rank: rank,
+  };
+}
+
+function busyDropbox() {
+  const goals = [
+    goalRow('goal-old', 'Rebuild the alerting path', 2, 'queued', '2026-08-11T22:40:57.000Z'),
+    goalRow('goal-older', 'Audit the homepage', 5, 'running', '2026-08-12T10:02:05.000Z'),
+    goalRow('goal-done', 'Ship the countdown editor', 1, 'completed', '2026-08-01T10:02:05.000Z'),
+  ];
+  // Enough reminder-bearing drops to fill the phone inbox's largest page.
+  const noise = Array.from({ length: 120 }, (unused, index) => ({
+    id: `drop-noise-${index}`, title: `Noise ${index}`, subject: 'General', project: '',
+    agent: '', status: 'inbox', tags: [], links: [], content: '', priority: 'normal',
+    done: false, remind_at: `2026-09-${String((index % 28) + 1).padStart(2, '0')}T09:00:00.000Z`,
+    date: '2026-09-01T09:00:00.000Z', updated_at: '2026-09-01T09:00:00.000Z',
+  }));
+  return [...goals, ...noise];
+}
+
+test('goals fall past the end of the phone inbox once the Dropbox is busy', async t => {
+  const server = await startServer({ seed: busyDropbox() });
+  t.after(() => stop(server));
+
+  const page = await pull(server.origin, 'due=any&limit=100');
+  assert.equal(page.count, 100);
+  assert.deepEqual(page.items.filter(item => item.subject === 'Mission Control'), []);
+});
+
+test('Mission Control goals have a machine route of their own', async t => {
+  const server = await startServer({ seed: busyDropbox() });
+  t.after(() => stop(server));
+
+  const anonymous = await fetch(`${server.origin}/api/shortcuts/goals`);
+  assert.equal(anonymous.status, 401);
+
+  const response = await send(server.origin, '/api/shortcuts/goals');
+  assert.equal(response.status, 200);
+  const payload = await response.json();
+
+  // Penny's order, not the Dropbox's: the highest rank is the next one up.
+  assert.deepEqual(payload.items.map(item => item.title), ['Audit the homepage', 'Rebuild the alerting path']);
+  assert.equal(payload.count, 2);
+  assert.equal(payload.total, 2);
+
+  // The state the Dropbox projection has no field for.
+  assert.equal(payload.items[0].orchestration_status, 'running');
+  assert.equal(payload.items[1].orchestration_status, 'queued');
+  assert.match(payload.items[0].url, /\/mission-board\.html\?view=ios&task=goal-older$/);
+
+  // Completed goals are history, and stay out unless they are asked for.
+  const history = await (await send(server.origin, '/api/shortcuts/goals?completed=1')).json();
+  assert.deepEqual(history.items.map(item => item.orchestration_status), ['running', 'queued', 'completed']);
+
+  const capped = await (await send(server.origin, '/api/shortcuts/goals?limit=1')).json();
+  assert.equal(capped.count, 1);
+  assert.equal(capped.total, 2);
+
+  const text = await send(server.origin, '/api/shortcuts/goals?format=text');
+  assert.equal((await text.text()).split('\n')[0], '2 goals');
 });
 
 test('the settings page can read the setup details but never the token', async t => {

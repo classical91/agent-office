@@ -227,6 +227,7 @@ All endpoints return JSON.
 | POST   | `/api/shortcuts/drops/:id/done`   | Mark a pulled item done          |
 | POST   | `/api/shortcuts/drops/:id/snooze` | Push a reminder out              |
 | GET    | `/api/shortcuts/status`           | Due/upcoming counts and the next reminder |
+| GET    | `/api/shortcuts/goals`            | Mission Control's outstanding goals, in Penny's order, with their orchestration state (machine-token authenticated) |
 | GET    | `/api/shortcuts/countdowns`       | The top countdowns as text, for the evening roll-up |
 | GET    | `/api/shortcuts/reset-timers`     | The Countdown Timers on `/resets.html`, as text or JSON |
 | GET    | `/api/shortcuts/traderclaw-journal` | The TraderClaw journal roll-up, as text or JSON |
