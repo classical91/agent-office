@@ -4510,6 +4510,31 @@ function firstDefined(input, keys) {
   return undefined;
 }
 
+// -- MISSION CONTROL GOALS ------------------------------------
+//
+// A Mission Control goal is a drop, but it is not any drop: Penny's queue is
+// the drops she owns, filed under her subject, that carry an orchestration
+// state. One definition, used by the panel's own route and by the machine
+// route Main Hub's dashboard card reads.
+function isMissionControlGoal(drop) {
+  return drop.agent === 'oss' && drop.subject === 'Mission Control' && Boolean(drop.orchestration_status);
+}
+
+// Penny's order: what is still outstanding first, in the rank Jason dragged
+// them into, then the completed history newest-first.
+function selectMissionControlGoals(drops, { includeCompleted = true } = {}) {
+  return drops
+    .filter(drop => isMissionControlGoal(drop) &&
+      (includeCompleted || drop.orchestration_status !== 'completed'))
+    .sort((a, b) => {
+      const aCompleted = a.orchestration_status === 'completed';
+      const bCompleted = b.orchestration_status === 'completed';
+      if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
+      if (!aCompleted) return (Number(b.orchestration_rank) || 1) - (Number(a.orchestration_rank) || 1);
+      return new Date(b.updated_at || b.date) - new Date(a.updated_at || a.date);
+    });
+}
+
 function isOpenDrop(drop) {
   return !drop.done && drop.status !== 'done' && drop.status !== 'archived';
 }
@@ -4544,6 +4569,19 @@ function toShortcutItem(drop, now, req) {
   };
 }
 
+// A goal row carries one field the drop projection has none for: the state
+// Penny has the goal in. A card that reads goals through /api/shortcuts/drops
+// can only ever say "queued" for all of them, which is the thing a reader of
+// that card most wants to know and the one thing it cannot tell them.
+function toShortcutGoal(drop, now, req) {
+  return {
+    ...toShortcutItem(drop, now, req),
+    orchestration_status: drop.orchestration_status || '',
+    rank: Number(drop.orchestration_rank) || 0,
+    updated_at: toIsoOrEmpty(drop.updated_at) || drop.date,
+  };
+}
+
 // due=now (default) is what a "what did I put down for later?" Shortcut wants:
 // reminders whose time has arrived. The other scopes are there so one Shortcut
 // can show today's list, everything pending, or the whole open Dropbox.
@@ -4575,6 +4613,16 @@ function shortcutsTextReport(items, scope) {
   const lines = items.map(item => {
     const when = item.due_relative ? ` — ${item.due_relative}` : '';
     return `• ${item.title}${when}`;
+  });
+  return [heading, ...lines].join('\n');
+}
+
+function shortcutsGoalsText(items) {
+  if (!items.length) return 'No goals queued for Penny.';
+  const heading = `${items.length} ${items.length === 1 ? 'goal' : 'goals'}`;
+  const lines = items.map(item => {
+    const state = item.orchestration_status ? ` — ${item.orchestration_status}` : '';
+    return `• ${item.title}${state}`;
   });
   return [heading, ...lines].join('\n');
 }
@@ -4811,6 +4859,47 @@ async function handleShortcutsRequest(req, res, url, storage) {
     sendJson(res, 200, {
       scope,
       count: items.length,
+      generated_at: now.toISOString(),
+      items,
+    });
+    return true;
+  }
+
+  // Mission Control's queue, for anything that shows Penny's goals outside the
+  // panel itself — Main Hub's Daily Dashboard is the first.
+  //
+  // Deliberately not /api/shortcuts/drops with a subject filter. A goal carries
+  // no reminder time, so it sorts behind every drop that has one in the `any`
+  // scope, and that feed stops at SHORTCUTS_MAX_LIMIT: a dashboard reading
+  // goals out of it went blank over a full queue the moment the open Dropbox
+  // passed a hundred rows. This answers the narrow question in Penny's own
+  // order, so a goal's place in the response is its place in her queue rather
+  // than an accident of how much else is open.
+  //
+  // Completed goals are left out unless asked for: the panel keeps them as
+  // history, and a card showing outstanding work should not have to filter
+  // them back out.
+  if (req.method === 'GET' && pathname === '/api/shortcuts/goals') {
+    const includeCompleted = ['1', 'true', 'yes'].includes(
+      String(url.searchParams.get('completed') || '').toLowerCase());
+    const requestedLimit = Number.parseInt(url.searchParams.get('limit') || '', 10);
+    const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
+      ? Math.min(requestedLimit, SHORTCUTS_MAX_LIMIT)
+      : SHORTCUTS_MAX_LIMIT;
+
+    const selected = selectMissionControlGoals(await storage.listDrops(), { includeCompleted });
+    const items = selected.slice(0, limit).map(goal => toShortcutGoal(goal, now, req));
+
+    if (String(url.searchParams.get('format') || '') === 'text') {
+      sendText(res, 200, shortcutsGoalsText(items));
+      return true;
+    }
+
+    sendJson(res, 200, {
+      count: items.length,
+      // The queue's own length, so a reader can tell a short card from a
+      // truncated one without asking for everything again.
+      total: selected.length,
       generated_at: now.toISOString(),
       items,
     });
@@ -5875,16 +5964,7 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'GET' && pathname === '/api/orchestration/goals') {
       if (!requireDropsAuth(res, req)) return;
-      const goals = (await storage.listDrops()).filter(drop =>
-        drop.agent === 'oss' && drop.subject === 'Mission Control' && drop.orchestration_status
-      ).sort((a, b) => {
-        const aCompleted = a.orchestration_status === 'completed';
-        const bCompleted = b.orchestration_status === 'completed';
-        if (aCompleted !== bCompleted) return aCompleted ? 1 : -1;
-        if (!aCompleted) return (Number(b.orchestration_rank) || 1) - (Number(a.orchestration_rank) || 1);
-        return new Date(b.updated_at || b.date) - new Date(a.updated_at || a.date);
-      });
-      sendJson(res, 200, goals);
+      sendJson(res, 200, selectMissionControlGoals(await storage.listDrops()));
       return;
     }
 
