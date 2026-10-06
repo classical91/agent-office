@@ -10,9 +10,6 @@
 
   let liveAgents = [];
   let selectedId = null;
-  let missionGoals = [];
-  let missionEditMode = false;
-  const missionExpanded = new Set();
 
   // -- ShareBot67 newsroom health ------------------------------
   //
@@ -79,6 +76,7 @@
     document.body.classList.remove('control-center-open');
     selectedId = null;
     stopNewsroom();
+    stopSchedules();
   }
 
   function stat(label, value, note) {
@@ -86,6 +84,7 @@
   }
 
   async function openAgent(id) {
+    stopSchedules();
     selectedId = id;
     await refreshLiveAgents();
     const agent = roomAgent(id);
@@ -101,7 +100,7 @@
         <div class="control-agent-avatar">${escape(agent.emoji)}</div>
         <div><strong>${escape(agent.role)}</strong><span class="control-state control-state--${escape(state)}">${escape(state)}</span><p>${escape(agent.desc)}</p></div>
       </div>
-      ${isPenny ? '<div class="control-callout"><strong>Penny owns this office.</strong> Goals go to Penny; specialists execute assigned domain work and report results back. Specialists do not command one another.</div>' : '<div class="control-callout">This specialist operates under Penny. New cross-agent goals should be sent to Mission Control.</div>'}
+      ${isPenny ? '<div class="control-callout"><strong>Penny owns this office.</strong> Goals go to Penny; specialists execute assigned domain work and report results back. Specialists do not command one another.</div>' : '<div class="control-callout">This specialist operates under Penny. View upcoming jobs in Mission Control.</div>'}
       <div class="control-stats">
         ${stat('Current task', task, live ? 'Live agent record' : 'Configured fallback')}
         ${stat('Model / provider', (live && live.model) || agent.model, (live && live.source) || 'Configured roster')}
@@ -110,7 +109,7 @@
       </div>
       ${agent.id === NEWSROOM_AGENT_ID ? newsroomPanelShell() : ''}
       <div class="control-actions">
-        ${isPenny ? '<button class="ao-btn ao-btn--primary" type="button" onclick="AOControlCenter.openMissionControl()">Give Penny a goal</button>' : ''}
+        ${isPenny ? '<button class="ao-btn ao-btn--primary" type="button" onclick="AOControlCenter.openMissionControl()">View task schedules</button>' : ''}
         <a class="ao-btn" href="/memory.html?agent=${encodeURIComponent(agent.id)}">View memory</a>
         <a class="ao-btn" href="/agent-registry.html">Agent registry</a>
         <button class="ao-btn" type="button" onclick="AOControlCenter.customize('${escape(agent.id)}')">Edit appearance</button>
@@ -232,269 +231,103 @@
     newsroomTimer = null;
   }
 
-  function workflowCounts() {
-    const counts = { inbox: 0, assigned: 0, working: 0, review: 0, approval: 0, completed: 0 };
-    (typeof agentState !== 'undefined' ? agentState : []).forEach(agent => {
-      const state = typeof agentOperationalState === 'function' ? agentOperationalState(agent) : agent.status;
-      if (state === 'working') counts.working += 1;
-      if (state === 'blocked') counts.approval += 1;
-    });
-    if (typeof opsQueue !== 'undefined' && opsQueue.available) counts.inbox = opsQueue.open;
-    return counts;
+  let scheduleTimer = null;
+  let scheduleItems = [];
+  let cronSnapshot = null;
+  let scheduleLoaded = false;
+  let editingSchedule = -1;
+  let scheduleGeneration = 0;
+  function stopSchedules() {
+    clearInterval(scheduleTimer); scheduleTimer = null; scheduleGeneration++;
   }
-
   function openMissionControl() {
-    stopNewsroom();
-    selectedId = 'oss';
-    const counts = workflowCounts();
-    kicker.textContent = 'PENNY · SOLE ORCHESTRATOR';
-    title.textContent = 'Mission Control';
+    stopNewsroom(); stopSchedules(); selectedId = 'schedules';
+    scheduleLoaded = false; editingSchedule = -1; cronSnapshot = null;
+    kicker.textContent = 'TASK SCHEDULES'; title.textContent = 'Mission Control';
     body.innerHTML = `
-      <div class="control-callout control-callout--command"><strong>Give Penny one outcome.</strong> Penny owns delegation, routing, cron governance, approvals, failure handling, and the final operator report.</div>
-      <form class="mission-goal" id="mission-goal-form">
-        <label for="mission-goal-title">Goal title</label>
-        <input id="mission-goal-title" type="text" maxlength="120" placeholder="Example: Improve the Market Dashboard" required>
-        <label for="mission-goal-input">Description — what should the office accomplish?</label>
-        <textarea id="mission-goal-input" rows="4" placeholder="Example: Find the most useful improvement for Market Dashboard today." required></textarea>
-        <label for="mission-goal-source">ChatGPT conversation link <span class="mission-optional">optional</span></label>
-        <input id="mission-goal-source" type="url" inputmode="url" placeholder="https://chatgpt.com/share/...">
-        <label for="mission-goal-priority">Priority</label>
-        <select id="mission-goal-priority">
-          <option value="normal">Normal — save only; Penny will not process it</option>
-          <option value="urgent">Urgent — send to Penny for orchestration</option>
-        </select>
-        <div class="mission-goal-actions"><button class="ao-btn ao-btn--primary" type="submit">Send goal to Penny</button><span id="mission-goal-status">Saved to the Mission Board for orchestration.</span></div>
+      <div class="control-callout">See upcoming cron jobs and your ChatGPT and Claude schedules. Times are expected runs; execution happens in the source app.</div>
+      <button class="ao-btn ao-btn--primary" id="schedule-toggle" aria-expanded="false" aria-controls="schedule-form" type="button">+ Add task</button>
+      <form class="mission-goal" id="schedule-form" hidden style="display:none">
+        <label for="schedule-title">Task name</label><input id="schedule-title" maxlength="120" required>
+        <label for="schedule-source">Source</label><select id="schedule-source"><option>ChatGPT</option><option>Claude</option><option>Other</option></select>
+        <label for="schedule-start">First / next scheduled time</label><input id="schedule-start" type="datetime-local" required>
+        <label for="schedule-repeat">Repeats</label><select id="schedule-repeat"><option value="once">Once</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly on this date</option></select>
+        <details><summary>Notes and timezone</summary><label for="schedule-zone">Timezone</label><input id="schedule-zone" value="America/Vancouver" required><label for="schedule-notes">Notes (optional)</label><textarea id="schedule-notes" rows="2" maxlength="2000"></textarea></details>
+        <p class="mission-optional">Copy the schedule from the source app. Saving here tracks it; it does not create or change that automation.</p>
+        <div class="mission-goal-actions"><button class="ao-btn ao-btn--primary" type="submit">Save schedule</button><button class="ao-btn" id="schedule-cancel" type="button">Cancel</button></div>
       </form>
-      <div class="workflow-lane" aria-label="Office workflow">
-        ${Object.entries(counts).map(([name, count]) => `<div><span>${escape(name.replace(/^./, char => char.toUpperCase()))}</span><strong>${count}</strong></div>`).join('<i>→</i>')}
-      </div>
-      <section class="mission-results" aria-live="polite">
-        <div class="mission-results-heading"><div><strong>Goals and Outbox</strong><span>In edit mode, drag active goals to set Penny's order or delete the ones you no longer want.</span></div><button class="ao-btn mission-order-toggle" type="button">Edit order</button></div>
-        <div id="mission-results-list"><div class="control-unavailable">Loading goals…</div></div>
-      </section>
-      <div class="control-actions"><a class="ao-btn" href="/mission-board.html">Open Mission Board</a><a class="ao-btn" href="/project-rooms.html">Project rooms</a><a class="ao-btn" href="/agent-registry.html">Agent registry</a></div>`;
-    body.querySelector('#mission-goal-form').addEventListener('submit', submitGoal);
-    body.querySelector('.mission-order-toggle').addEventListener('click', toggleMissionEditMode);
-    openShell();
-    refreshMissionGoals();
+      <p id="schedule-status" role="status"></p>
+      <section class="mission-results"><div class="mission-results-heading"><div><strong>Upcoming tasks</strong><span>Next runs shown in America/Vancouver · soonest first</span></div><button class="ao-btn" id="schedule-refresh" type="button">Refresh</button></div><p id="cron-status"></p><div id="schedule-list">Loading schedules…</div></section>`;
+    body.querySelector('#schedule-toggle').onclick = () => toggleScheduleForm();
+    body.querySelector('#schedule-cancel').onclick = () => toggleScheduleForm(false);
+    body.querySelector('#schedule-refresh').onclick = refreshSchedules;
+    body.querySelector('#schedule-form').onsubmit = saveSchedule;
+    openShell(); refreshSchedules();
+    let ticks = 0;
+    scheduleTimer = setInterval(() => {
+      if (shell.hidden || selectedId !== 'schedules' || document.hidden) return;
+      body.querySelectorAll('[data-schedule-next]').forEach(node => { node.textContent = MissionSchedules.countdown(Number(node.dataset.scheduleNext)); });
+      if (++ticks % 30 === 0) refreshSchedules();
+    }, 1000);
   }
-
-  async function refreshMissionGoals() {
-    const list = body.querySelector('#mission-results-list');
-    if (!list) return;
-    try {
-      const response = await fetch('/api/orchestration/goals', { credentials: 'same-origin' });
-      if (response.status === 401) throw new Error('Log in to Agent Office to see goal status.');
-      if (!response.ok) throw new Error('Goal status is unavailable.');
-      const goals = await response.json();
-      missionGoals = goals;
-      if (!goals.length) {
-        list.innerHTML = '<div class="control-unavailable">No Mission Control goals yet.</div>';
-        return;
-      }
-      const active = goals.filter(goal => goal.orchestration_status !== 'completed');
-      const history = goals.filter(goal => goal.orchestration_status === 'completed');
-      const renderGoal = goal => {
-        // A goal is a title plus its description, and both are worth reading in
-        // full: the card keeps long text clamped so the list stays scannable and
-        // opens it in place rather than cutting it off for good.
-        const description = goalDescription(goal);
-        const expanded = missionExpanded.has(goal.id);
-        return `
-        <article class="mission-result mission-result--${escape(goal.orchestration_status)}${expanded ? ' mission-result--expanded' : ''}${missionEditMode && goal.orchestration_status !== 'completed' ? ' mission-result--moveable' : ''}" data-goal-id="${escape(goal.id)}" draggable="${missionEditMode && goal.orchestration_status !== 'completed'}">
-          <div class="mission-result-head"><span class="mission-drag-handle" aria-hidden="true">⋮⋮</span><strong class="mission-result-title">${escape(goal.title)}</strong><span class="control-state">${goal.orchestration_status === 'running' ? 'Currently working' : escape(goal.orchestration_status)}</span></div>
-          ${description ? `<p class="mission-result-description">${escape(description)}</p>` : ''}
-          ${description || goal.orchestration_result ? `<button class="ao-btn mission-expand" type="button" data-goal-id="${escape(goal.id)}" aria-expanded="${expanded}">${expanded ? 'Show less' : 'Read full goal'}</button>` : ''}
-          ${goal.orchestration_result ? `<p>${escape(goal.orchestration_result)}</p>` : ''}
-          ${goal.links && goal.links[0] ? `<a class="mission-source-link" href="${escape(goal.links[0])}" target="_blank" rel="noopener noreferrer">Open ChatGPT context ↗</a>` : ''}
-          ${goal.orchestration_error ? `<p class="mission-result-error">${escape(goal.orchestration_error)}</p>` : ''}
-          ${goal.orchestration_status === 'needs_approval' ? `<button class="ao-btn ao-btn--primary mission-approve" type="button" data-goal-id="${escape(goal.id)}">Approve build</button>` : ''}
-          ${missionEditMode ? `<div class="mission-edit-actions">${goal.orchestration_status !== 'completed' ? `<button class="ao-btn mission-move" type="button" data-direction="up" data-goal-id="${escape(goal.id)}" aria-label="Move goal up">↑</button><button class="ao-btn mission-move" type="button" data-direction="down" data-goal-id="${escape(goal.id)}" aria-label="Move goal down">↓</button>${goal.orchestration_status !== 'running' ? `<button class="ao-btn mission-edit" type="button" data-goal-id="${escape(goal.id)}">Edit goal</button>` : ''}` : ''}<button class="ao-btn ao-btn--danger mission-delete" type="button" data-goal-id="${escape(goal.id)}" aria-label="Delete goal">Delete goal</button></div>` : ''}
-          <small>${escape(new Date(goal.updated_at || goal.date).toLocaleString())}</small>
-        </article>`;
-      };
-      list.innerHTML = `${active.length ? '<div class="mission-list-label">Active goals</div>' + active.slice(0, 10).map(renderGoal).join('') : '<div class="control-unavailable">No active goals.</div>'}${history.length ? '<div class="mission-list-label">Completed history</div>' + history.slice(0, 10).map(renderGoal).join('') : ''}`;
-      list.querySelectorAll('.mission-expand').forEach(button => {
-        button.addEventListener('click', () => toggleMissionGoalText(button.dataset.goalId));
-      });
-      list.querySelectorAll('.mission-approve').forEach(button => {
-        button.addEventListener('click', () => approveGoal(button.dataset.goalId));
-      });
-      list.querySelectorAll('.mission-edit').forEach(button => {
-        button.addEventListener('click', () => editMissionGoal(button.dataset.goalId));
-      });
-      list.querySelectorAll('.mission-move').forEach(button => {
-        button.addEventListener('click', () => moveMissionGoal(button.dataset.goalId, button.dataset.direction));
-      });
-      list.querySelectorAll('.mission-delete').forEach(button => {
-        button.addEventListener('click', () => deleteMissionGoal(button.dataset.goalId));
-      });
-      wireMissionDragging(list);
-    } catch (error) {
-      list.innerHTML = `<div class="control-unavailable">${escape(error.message)}</div>`;
+  function toggleScheduleForm(force, item) {
+    const form = body.querySelector('#schedule-form');
+    const open = force === undefined ? form.hidden : force;
+    form.hidden = !open; form.style.display = open ? '' : 'none';
+    const button = body.querySelector('#schedule-toggle');
+    button.setAttribute('aria-expanded', String(open)); button.textContent = open ? 'Close form' : '+ Add task';
+    if (!open) { form.reset(); editingSchedule = -1; }
+    if (item) {
+      for (const [field, key] of [['title','title'],['source','source'],['start','start'],['repeat','repeat'],['zone','timezone'],['notes','notes']]) body.querySelector('#schedule-'+field).value = item[key];
     }
+    if (open) body.querySelector('#schedule-title').focus();
   }
-
-  // The title is a summary of the description, so a card that shows both would
-  // repeat itself when Penny derived the title from the first line.
-  function goalDescription(goal) {
-    const content = typeof goal.content === 'string' ? goal.content.trim() : '';
-    if (!content || content === (goal.title || '').trim()) return '';
-    return content;
+  async function scheduleRequest(url, options) {
+    const response = await fetch(url, { credentials: 'same-origin', ...options });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Could not load schedules. Log in and try again.');
+    return data;
   }
-
-  function toggleMissionGoalText(id) {
-    if (missionExpanded.has(id)) missionExpanded.delete(id);
-    else missionExpanded.add(id);
-    refreshMissionGoals();
+  async function refreshSchedules() {
+    const generation = scheduleGeneration;
+    const results = await Promise.allSettled([scheduleRequest('/api/mission-schedules'), scheduleRequest('/api/cron-jobs')]);
+    if (generation !== scheduleGeneration || selectedId !== 'schedules') return;
+    if (results[0].status === 'fulfilled') { if (!scheduleLoaded || body.querySelector('#schedule-form').hidden) scheduleItems = results[0].value.items; scheduleLoaded = true; }
+    else { scheduleLoaded = false; body.querySelector('#schedule-status').textContent = results[0].reason.message; }
+    cronSnapshot = results[1].status === 'fulfilled' ? results[1].value : null;
+    renderSchedules();
   }
-
-  async function approveGoal(id) {
-    if (!window.confirm('Approve Penny to build the proposed scope? Deployment still requires separate approval unless the proposal included it.')) return;
-    try {
-      const response = await fetch(`/api/orchestration/goals/${encodeURIComponent(id)}/approve`, {
-        method: 'POST', credentials: 'same-origin'
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || 'Approval could not be saved.');
-      await refreshMissionGoals();
-    } catch (error) {
-      window.alert(error.message);
-    }
-  }
-
-  function toggleMissionEditMode() {
-    missionEditMode = !missionEditMode;
-    const toggle = body.querySelector('.mission-order-toggle');
-    if (toggle) toggle.textContent = missionEditMode ? 'Done editing' : 'Edit order';
-    refreshMissionGoals();
-  }
-
-  function wireMissionDragging(list) {
-    if (!missionEditMode) return;
-    let dragged = null;
-    list.querySelectorAll('.mission-result--moveable').forEach(card => {
-      card.addEventListener('dragstart', () => { dragged = card; card.classList.add('is-dragging'); });
-      card.addEventListener('dragend', async () => {
-        card.classList.remove('is-dragging');
-        dragged = null;
-        const ids = [...list.querySelectorAll('.mission-result--moveable')].map(item => item.dataset.goalId);
-        await saveMissionOrder(ids);
-      });
-      card.addEventListener('dragover', event => {
-        event.preventDefault();
-        if (!dragged || dragged === card) return;
-        const box = card.getBoundingClientRect();
-        card.parentNode.insertBefore(dragged, event.clientY < box.top + box.height / 2 ? card : card.nextSibling);
-      });
+  function renderSchedules() {
+    const list = body.querySelector('#schedule-list'); if (!list) return;
+    const now = Date.now(), date = ms => new Date(ms).toLocaleString('en-CA', { timeZone:'America/Vancouver', dateStyle:'medium', timeStyle:'short' });
+    const fresh = cronSnapshot && cronSnapshot.fresh && now - Date.parse(cronSnapshot.updated_at) < 120000;
+    body.querySelector('#cron-status').textContent = !cronSnapshot ? 'Cron feed unavailable.' : !fresh ? 'Cron feed stale or not yet connected — times may have changed.' : 'Cron feed connected';
+    const rows = (scheduleLoaded ? scheduleItems : []).map((item,index) => ({ ...item, index, next: MissionSchedules.nextRun(item,now) }));
+    for (const job of (cronSnapshot && cronSnapshot.jobs || [])) rows.push({ title:job.name, source:'OpenClaw cron', next:job.enabled ? job.next_run_at_ms : null, paused:!job.enabled, notes:job.description, repeat:job.schedule.expr || job.schedule.kind || 'cron', stale:!fresh, last:job.last_run_at_ms, lastStatus:job.last_run_status });
+    rows.sort((a,b)=>(a.next || Infinity)-(b.next || Infinity));
+    list.innerHTML = rows.length ? rows.map(item => `<article class="mission-result"><div class="mission-result-head"><strong class="mission-result-title">${escape(item.title)}</strong><span class="control-state">${escape(item.source)}</span></div><p><strong ${item.next && !item.paused ? `data-schedule-next="${item.next}"` : ''}>${escape(item.paused ? 'Paused' : MissionSchedules.countdown(item.next,now))}</strong></p><p>${item.next ? 'Next scheduled: '+escape(date(item.next)) : 'No next run reported'} · ${escape(item.repeat)}${item.stale ? ' · stale snapshot' : ''}</p>${item.notes ? `<details><summary>Details</summary><p>${escape(item.notes)}</p></details>` : ''}${item.last ? `<small>Last reported run: ${escape(date(item.last))} · ${escape(item.lastStatus || 'status unknown')}</small>` : ''}${item.index !== undefined ? `<div class="control-actions"><button class="ao-btn" data-schedule-edit="${item.index}">Edit</button><button class="ao-btn" data-schedule-delete="${item.index}">Delete</button></div>` : ''}</article>`).join('') : '<div class="control-unavailable">No schedules to display. Add a task to track its next run.</div>';
+    list.querySelectorAll('[data-schedule-edit]').forEach(button => button.onclick = () => { editingSchedule = Number(button.dataset.scheduleEdit); toggleScheduleForm(true,scheduleItems[editingSchedule]); });
+    list.querySelectorAll('[data-schedule-delete]').forEach(button => button.onclick = async () => {
+      const index = Number(button.dataset.scheduleDelete);
+      if (!confirm(`Remove "${scheduleItems[index].title}" from this list? The source automation will remain active.`)) return;
+      try { await persistSchedules(scheduleItems.filter((_,i)=>i!==index)); toggleScheduleForm(false); } catch(error) { body.querySelector('#schedule-status').textContent=error.message; }
     });
   }
-
-  async function saveMissionOrder(ids) {
-    try {
-      const response = await fetch('/api/orchestration/goals/order', {
-        method: 'PUT', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ids })
-      });
-      if (!response.ok) throw new Error('The new goal order could not be saved.');
-    } catch (error) {
-      window.alert(error.message);
-      refreshMissionGoals();
-    }
+  async function persistSchedules(items) {
+    if (!scheduleLoaded) throw new Error('Refresh schedules before saving.');
+    scheduleGeneration++;
+    const result = await scheduleRequest('/api/mission-schedules', {method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({items,previous:scheduleItems})});
+    scheduleItems=result.items; renderSchedules();
   }
-
-  async function moveMissionGoal(id, direction) {
-    const list = body.querySelector('#mission-results-list');
-    const card = list && list.querySelector(`.mission-result--moveable[data-goal-id="${CSS.escape(id)}"]`);
-    if (!card) return;
-    const sibling = direction === 'up' ? card.previousElementSibling : card.nextElementSibling;
-    if (!sibling || !sibling.classList.contains('mission-result--moveable')) return;
-    if (direction === 'up') card.parentNode.insertBefore(card, sibling);
-    else card.parentNode.insertBefore(sibling, card);
-    const ids = [...list.querySelectorAll('.mission-result--moveable')].map(item => item.dataset.goalId);
-    await saveMissionOrder(ids);
-  }
-
-  async function editMissionGoal(id) {
-    const goal = missionGoals.find(item => item.id === id);
-    if (!goal) return;
-    const goalTitle = window.prompt('Goal title:', goal.title || '');
-    if (goalTitle == null || !goalTitle.trim()) return;
-    const content = window.prompt('Goal description:', goalDescription(goal) || goal.content || goal.title);
-    if (content == null || !content.trim()) return;
-    const sourceUrl = window.prompt('ChatGPT conversation link (optional):', (goal.links && goal.links[0]) || '');
-    if (sourceUrl == null) return;
-    const urgent = window.confirm('Should Penny process this goal? Choose Cancel to save it for later.');
+  async function saveSchedule(event) {
+    event.preventDefault(); const button=event.target.querySelector('[type="submit"]'); button.disabled=true;
     try {
-      const response = await fetch(`/api/orchestration/goals/${encodeURIComponent(id)}/edit`, {
-        method: 'PATCH', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: goalTitle.trim(), goal: content.trim(), source_url: sourceUrl.trim(), priority: urgent ? 'urgent' : 'normal' })
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || 'The goal could not be updated.');
-      refreshMissionGoals();
-    } catch (error) {
-      window.alert(error.message);
-    }
-  }
-
-  // A goal Jason no longer wants should leave the board entirely rather than
-  // sit in the queue as noise. The server refuses one Penny is mid-run on.
-  async function deleteMissionGoal(id) {
-    const goal = missionGoals.find(item => item.id === id);
-    if (!window.confirm(`Delete "${goal ? goal.title : 'this goal'}" from Mission Control? This cannot be undone.`)) return;
-    try {
-      const response = await fetch(`/api/orchestration/goals/${encodeURIComponent(id)}`, {
-        method: 'DELETE', credentials: 'same-origin'
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (response.status === 401) throw new Error('Log in to Agent Office, then try again.');
-      if (!response.ok) throw new Error(payload.error || 'The goal could not be deleted.');
-      missionGoals = missionGoals.filter(item => item.id !== id);
-      refreshMissionGoals();
-    } catch (error) {
-      window.alert(error.message);
-    }
-  }
-
-  async function submitGoal(event) {
-    event.preventDefault();
-    const titleInput = body.querySelector('#mission-goal-title');
-    const input = body.querySelector('#mission-goal-input');
-    const priorityInput = body.querySelector('#mission-goal-priority');
-    const sourceInput = body.querySelector('#mission-goal-source');
-    const status = body.querySelector('#mission-goal-status');
-    const goalTitle = titleInput.value.trim();
-    const goal = input.value.trim();
-    const priority = priorityInput.value === 'urgent' ? 'urgent' : 'normal';
-    const sourceUrl = sourceInput.value.trim();
-    if (!goalTitle) {
-      status.textContent = 'Give the goal a title so it reads clearly on the board.';
-      titleInput.focus();
-      return;
-    }
-    if (!goal) return;
-    status.textContent = 'Sending…';
-    try {
-      const response = await fetch('/api/orchestration/goals', {
-        method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ goal, priority, source_url: sourceUrl, title: goalTitle.slice(0, 120) })
-      });
-      if (response.status === 401) throw new Error('Log in to Agent Office, then try again.');
-      if (!response.ok) throw new Error('The goal could not be saved.');
-      titleInput.value = '';
-      input.value = '';
-      sourceInput.value = '';
-      status.textContent = priority === 'urgent'
-        ? 'Urgent goal received. Penny will process it.'
-        : 'Goal saved. Penny will ignore it unless it is marked urgent.';
-      refreshMissionGoals();
-      const penny = configuredAgent('oss');
-      if (penny && typeof addFeedItem === 'function') addFeedItem(penny, `Goal received: ${goalTitle.slice(0, 90)}`);
-      if (typeof refreshOpsQueue === 'function') refreshOpsQueue();
-    } catch (error) {
-      status.textContent = error.message;
-    }
+      const value = key => body.querySelector('#schedule-'+key).value;
+      const item=MissionSchedules.validate({title:value('title'),source:value('source'),start:value('start'),repeat:value('repeat'),timezone:value('zone'),notes:value('notes')});
+      const items=scheduleItems.slice(); if(editingSchedule<0)items.push(item);else items[editingSchedule]=item;
+      await persistSchedules(items); toggleScheduleForm(false); body.querySelector('#schedule-status').textContent='Schedule saved.';
+    } catch(error) { body.querySelector('#schedule-status').textContent=error.message; }
+    finally { button.disabled=false; }
   }
 
   function customize(id) {

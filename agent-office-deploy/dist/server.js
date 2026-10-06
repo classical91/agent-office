@@ -5440,6 +5440,7 @@ const DEFAULT_GATEWAY_URL = 'http://localhost:18789';
 // Deliberately in memory. A beat every 30 seconds is not worth a database
 // write, and a restart is corrected by the next one.
 let lastGatewayHeartbeat = null;
+let missionScheduleAccess = Promise.resolve();
 
 function normalizeCronJob(raw) {
   if (!raw || typeof raw !== 'object') return null;
@@ -6145,6 +6146,35 @@ const server = http.createServer(async (req, res) => {
 
       sendJson(res, 200, { ok: true, agents: lastGatewayHeartbeat.agents.length, cron_jobs: lastGatewayHeartbeat.cron_jobs.length });
       return;
+    }
+
+    // Display-only registry; no orchestration side effects.
+    if (pathname === '/api/mission-schedules') {
+      if (!requireDropsAuth(res, req)) return;
+      const previousAccess = missionScheduleAccess;
+      let releaseAccess;
+      missionScheduleAccess = new Promise(resolve => { releaseAccess = resolve; });
+      await previousAccess;
+      try {
+      const key = 'mission_schedules_v1';
+      const stored = await storage.getAppSetting(key);
+      const items = stored ? JSON.parse(stored) : [];
+      if (req.method === 'GET') { sendJson(res, 200, { items }); return; }
+      if (req.method === 'PUT') {
+        const input = await readJsonBody(req);
+        if (JSON.stringify(input.previous) !== JSON.stringify(items)) {
+          sendJson(res, 409, { error: 'Schedules changed. Refresh before saving again.' }); return;
+        }
+        try {
+          if (!Array.isArray(input.items) || input.items.length > 200) throw new Error('At most 200 schedules are supported.');
+          const next = input.items.map(require('./mission-schedules.js').validate);
+          await storage.setAppSetting(key, JSON.stringify(next));
+          sendJson(res, 200, { items: next });
+        } catch (error) { sendJson(res, 400, { error: error.message }); }
+        return;
+      }
+      sendJson(res, 405, { error: 'Method not allowed.' }); return;
+      } finally { releaseAccess(); }
     }
 
     if (req.method === 'GET' && pathname === '/api/cron-jobs') {
