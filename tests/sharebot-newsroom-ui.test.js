@@ -358,7 +358,12 @@ test('the rest of the office is unchanged: other agents and Mission Control stil
 
   // And Mission Control still opens over the top of it.
   await page.evaluate(() => window.AOControlCenter.openMissionControl());
-  await page.waitForSelector('#mission-goal-form');
+  await page.waitForSelector('#schedule-toggle');
+  assert.equal(await page.isVisible('#schedule-form'), false);
+  await page.click('#schedule-toggle');
+  assert.equal(await page.isVisible('#schedule-form'), true);
+  await page.click('#schedule-cancel');
+  assert.equal(await page.isVisible('#schedule-form'), false);
   assert.equal(await page.textContent('#control-center-title'), 'Mission Control');
   assert.equal(await page.$('#newsroom-panel'), null);
 

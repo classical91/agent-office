@@ -29,59 +29,6 @@ test('the office exposes Mission Control and operational agent inspection', () =
   assert.doesNotMatch(sharedCss, /\.office-command-btn\s*\{\s*display:\s*none/);
 });
 
-test('Mission Control sends goals to Penny through the authenticated board', () => {
-  assert.match(control, /fetch\('\/api\/orchestration\/goals'/);
-  assert.match(control, /id="mission-goal-priority"/);
-  assert.doesNotMatch(control, /id="mission-goal-rank"/);
-  assert.match(control, /id="mission-goal-source"/);
-  assert.match(relay, /Saved ChatGPT conversation context/);
-  assert.match(control, /Currently working/);
-  assert.match(control, /Completed history/);
-  assert.match(control, /priority === 'urgent'/);
-  assert.match(control, /refreshMissionGoals/);
-  assert.match(control, /Goals and Outbox/);
-  assert.match(control, /Edit order/);
-  assert.match(control, /draggable=/);
-  assert.match(control, /Move goal up/);
-  assert.match(control, /\/api\/orchestration\/goals\/order/);
-  assert.match(control, /\/edit/);
-});
-
-test('Mission Control goals can be deleted, including completed history', () => {
-  const server = fs.readFileSync(path.join(DIST, 'server.js'), 'utf8');
-  assert.match(control, /Delete goal/);
-  assert.match(control, /mission-delete/);
-  assert.match(control, /method: 'DELETE'/);
-  assert.match(control, /This cannot be undone/);
-  assert.match(server, /req\.method === 'DELETE' && pathname\.startsWith\('\/api\/orchestration\/goals\/'\)/);
-  assert.match(server, /deleteMissionGoal/);
-  // The relay token is for Penny's own writes; removing a goal is Jason's.
-  assert.match(server, /storage\.deleteMissionGoal/);
-});
-
-test('a Mission Control goal is written as a title plus a description', () => {
-  assert.match(control, /id="mission-goal-title"/);
-  assert.match(control, /Description — what should the office accomplish\?/);
-  assert.match(control, /title: goalTitle\.slice\(0, 120\)/);
-  // Editing keeps the same two fields rather than folding them back into one.
-  assert.match(control, /window\.prompt\('Goal title:'/);
-  assert.match(control, /window\.prompt\('Goal description:'/);
-  const server = fs.readFileSync(path.join(DIST, 'server.js'), 'utf8');
-  assert.match(server, /deriveDropTitle\(\{ title: input\.title, content: goal \}\)/);
-  assert.match(server, /title: deriveDropTitle\(\{ title: input\.title, content \}\)/);
-});
-
-test('a long Mission Control goal can be read in full instead of being cut off', () => {
-  assert.match(control, /Read full goal/);
-  assert.match(control, /Show less/);
-  assert.match(control, /mission-result-description/);
-  assert.match(control, /missionExpanded/);
-  assert.match(control, /aria-expanded=/);
-  assert.match(sharedCss, /\.mission-result--expanded \.mission-result-description/);
-  assert.match(sharedCss, /\.mission-result--expanded p \{ max-height: none/);
-  assert.match(sharedCss, /\.mission-result-title \{[^}]*overflow-wrap: anywhere/);
-});
-
 test('one general login gates the entire Agent Office site', () => {
   assert.match(index, /id="ao-login-trigger"[^>]*>Login</);
   assert.match(index, /id="ao-login-password"[^>]*type="password"/);
@@ -123,6 +70,4 @@ test('code goals pause for approval and enforce the GitHub push-first workflow',
   assert.match(relay, /fetch the latest GitHub main\/master first/);
   assert.match(relay, /push the exact tested commit to GitHub/);
   assert.match(relay, /Never deploy unless Jason separately approved deployment/);
-  assert.match(control, /Approve build/);
-  assert.match(control, /\/approve/);
 });
