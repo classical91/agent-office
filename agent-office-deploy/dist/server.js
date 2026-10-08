@@ -4549,13 +4549,43 @@ function shortcutDropUrl(req, id) {
   return `${getRequestOrigin(req)}/mission-board.html?view=ios&task=${encodeURIComponent(id)}`;
 }
 
-function toShortcutItem(drop, now, req) {
+// The Reminders screen files a drop under a category id — "custom-<uuid>" for
+// one made in Manage categories — and keeps the names in a registry beside the
+// drops. That registry sits behind the browser session, so a machine reading
+// the projection below would only ever see the id. Defaults and the deleted →
+// Uncategorized rule mirror reminder-categories.js, which draws the same names.
+const REMINDER_CATEGORY_DEFAULTS = ['Personal', 'Work', 'Subscriptions', 'Bills', 'Other'];
+
+async function loadReminderCategoryLabels(storage) {
+  let registry = null;
+  try {
+    const saved = await storage.getAppSetting('reminder-categories.v1');
+    registry = saved ? JSON.parse(saved) : null;
+  } catch {
+    registry = null;
+  }
+  const items = Array.isArray(registry)
+    ? registry
+    : REMINDER_CATEGORY_DEFAULTS.map(id => ({ id, label: id, deleted: false }));
+  return new Map(items.map(item => [item.id, item.deleted ? 'Uncategorized' : item.label]));
+}
+
+function shortcutCategoryLabel(drop, labels) {
+  const id = drop.category || drop.subject || '';
+  if (!id) return drop.project === 'iOS' ? 'Uncategorized' : '';
+  if (id === 'uncategorized') return 'Uncategorized';
+  return labels.get(id) || id;
+}
+
+function toShortcutItem(drop, now, req, categoryLabels = new Map()) {
   const reminder = reminderTime.describeReminder(drop.remind_at, now);
   return {
     id: drop.id,
     title: drop.title || 'Untitled drop',
     content: drop.content || '',
     subject: drop.subject || '',
+    category: drop.category || drop.subject || '',
+    category_label: shortcutCategoryLabel(drop, categoryLabels),
     project: drop.project || '',
     priority: drop.priority || 'normal',
     status: drop.status || 'inbox',
@@ -4849,7 +4879,8 @@ async function handleShortcutsRequest(req, res, url, storage) {
 
     const drops = await storage.listDrops();
     const selected = selectShortcutDrops(drops, scope, now).slice(0, limit);
-    const items = selected.map(drop => toShortcutItem(drop, now, req));
+    const categoryLabels = await loadReminderCategoryLabels(storage);
+    const items = selected.map(drop => toShortcutItem(drop, now, req, categoryLabels));
 
     if (String(url.searchParams.get('format') || '') === 'text') {
       sendText(res, 200, shortcutsTextReport(items, scope));

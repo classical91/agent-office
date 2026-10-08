@@ -18,6 +18,7 @@ const PASSPHRASE = 'open-the-dropbox';
 async function startServer(options = {}) {
   const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'agent-office-shortcuts-'));
   if (options.seed) fs.writeFileSync(path.join(scratch, 'drops.json'), JSON.stringify(options.seed), 'utf8');
+  if (options.settings) fs.writeFileSync(path.join(scratch, 'settings.json'), JSON.stringify(options.settings), 'utf8');
 
   const buildEnv = port => {
     const environment = {
@@ -180,6 +181,33 @@ test('form bodies and query strings are accepted the same way', async t => {
   const badTime = await send(server.origin, '/api/shortcuts/drops?text=hi&remind=sometime-ish', { method: 'POST' });
   assert.equal(badTime.status, 400);
   assert.match((await badTime.json()).error, /reminder time/i);
+});
+
+test('a reminder carries the name of its category, not only the id', async t => {
+  const server = await startServer({
+    settings: {
+      'reminder-categories.v1': JSON.stringify([
+        { id: 'custom-house', label: 'House', deleted: false },
+        { id: 'custom-gone', label: 'Gone', deleted: true },
+      ]),
+    },
+  });
+  t.after(() => stop(server));
+
+  for (const [text, category] of [['Fix the gutter', 'custom-house'], ['Old one', 'custom-gone'], ['Loose', '']]) {
+    const response = await send(server.origin, '/api/shortcuts/drops', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, category }),
+    });
+    assert.equal(response.status, 201);
+  }
+
+  const byTitle = Object.fromEntries((await pull(server.origin, 'due=any')).items.map(item => [item.title, item]));
+  assert.equal(byTitle['Fix the gutter'].category, 'custom-house');
+  assert.equal(byTitle['Fix the gutter'].category_label, 'House');
+  assert.equal(byTitle['Old one'].category_label, 'Uncategorized');
+  assert.equal(byTitle['Loose'].category_label, 'Uncategorized');
 });
 
 test('format=text returns a list a Shortcut can show as-is', async t => {
