@@ -235,6 +235,9 @@
   let scheduleItems = [];
   let cronSnapshot = null;
   let missionGoals = null;
+  // Penny only claims urgent goals, so "active" is urgent and anything else is
+  // parked where she will not pick it up.
+  let goalFilter = 'active';
   let scheduleLoaded = false;
   let editingSchedule = -1;
   let scheduleGeneration = 0;
@@ -247,11 +250,12 @@
     kicker.textContent = 'GOALS AND TASK SCHEDULES'; title.textContent = 'Mission Control';
     body.innerHTML = `
       <div class="control-callout">See your open Mission Control goals plus upcoming cron jobs and ChatGPT or Claude schedules.</div>
-      <section class="mission-results" aria-live="polite"><div class="mission-results-heading"><div><strong>Open goals</strong><span>The same goals shown on your Mission Control card</span></div></div><div id="mission-goals-list">Loading goals…</div></section>
+      <section class="mission-results" aria-live="polite"><div class="mission-results-heading"><div><strong>Open goals</strong><span>The same goals shown on your Mission Control card</span></div><div class="mission-goal-filter" role="group" aria-label="Show goals"><button class="ao-btn ao-btn--sm" type="button" data-goal-filter="active">Active</button><button class="ao-btn ao-btn--sm" type="button" data-goal-filter="disabled">Disabled</button></div></div><div id="mission-goals-list">Loading goals…</div></section>
       <button class="ao-btn ao-btn--primary" id="goal-toggle" aria-expanded="false" aria-controls="goal-form" type="button">+ Add goal</button>
       <form class="mission-goal" id="goal-form" hidden style="display:none">
         <label for="goal-title">Goal title</label><input id="goal-title" maxlength="120" required>
         <label for="goal-content">Goal instructions</label><textarea id="goal-content" rows="5" maxlength="10000" required></textarea>
+        <label for="goal-state">Status</label><select id="goal-state"><option value="active">Active — Penny picks it up</option><option value="disabled">Disabled — saved but not run</option></select>
         <p class="mission-optional">Queues a Mission Control goal for Penny.</p>
         <div class="mission-goal-actions"><button class="ao-btn ao-btn--primary" type="submit">Save goal</button><button class="ao-btn" id="goal-cancel" type="button">Cancel</button></div>
       </form>
@@ -271,6 +275,7 @@
     body.querySelector('#goal-toggle').onclick = () => toggleGoalForm();
     body.querySelector('#goal-cancel').onclick = () => toggleGoalForm(false);
     body.querySelector('#goal-form').onsubmit = saveGoal;
+    body.querySelectorAll('[data-goal-filter]').forEach(button => button.onclick = () => { goalFilter = button.dataset.goalFilter; renderMissionGoals(); });
     body.querySelector('#schedule-toggle').onclick = () => toggleScheduleForm();
     body.querySelector('#schedule-cancel').onclick = () => toggleScheduleForm(false);
     body.querySelector('#schedule-refresh').onclick = refreshSchedules;
@@ -300,16 +305,18 @@
     const submit = form.querySelector('button[type="submit"]');
     const title = form.querySelector('#goal-title').value.trim();
     const goal = form.querySelector('#goal-content').value.trim();
+    const active = form.querySelector('#goal-state').value === 'active';
     if (!title || !goal) { status.textContent = 'Enter a title and goal instructions.'; return; }
     submit.disabled = true; status.textContent = 'Saving goal…';
     try {
       await scheduleRequest('/api/orchestration/goals', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, goal })
+        body: JSON.stringify({ title, goal, priority: active ? 'urgent' : 'normal' })
       });
       if (body.querySelector('#goal-form') !== form) return;
       toggleGoalForm(false);
-      status.textContent = 'Goal queued in Mission Control.';
+      goalFilter = active ? 'active' : 'disabled';
+      status.textContent = active ? 'Goal queued in Mission Control.' : 'Goal saved as disabled.';
       await refreshSchedules();
     } catch (error) {
       status.textContent = error.message;
@@ -344,14 +351,43 @@
     renderMissionGoals(results[2].status === 'rejected' ? results[2].reason : null);
     renderSchedules();
   }
+  function isGoalActive(goal) { return goal.priority === 'urgent' || goal.orchestration_status === 'running'; }
   function renderMissionGoals(error) {
     const list = body.querySelector('#mission-goals-list'); if (!list) return;
     if (error) { list.innerHTML = `<div class="control-unavailable">${escape(error.message)}</div>`; return; }
-    const goals = (missionGoals || []).filter(goal => goal.orchestration_status !== 'completed');
+    const open = (missionGoals || []).filter(goal => goal.orchestration_status !== 'completed');
+    const counts = { active: open.filter(isGoalActive).length, disabled: open.filter(goal => !isGoalActive(goal)).length };
+    body.querySelectorAll('[data-goal-filter]').forEach(button => {
+      const key = button.dataset.goalFilter, selected = key === goalFilter;
+      button.textContent = `${key === 'active' ? 'Active' : 'Disabled'} (${counts[key]})`;
+      button.setAttribute('aria-pressed', String(selected));
+      button.classList.toggle('ao-btn--primary', selected);
+    });
+    const goals = open.filter(goal => isGoalActive(goal) === (goalFilter === 'active'));
     list.innerHTML = goals.length ? goals.map(goal => {
       const content = typeof goal.content === 'string' && goal.content.trim() !== (goal.title || '').trim() ? goal.content.trim() : '';
-      return `<article class="mission-result mission-result--${escape(goal.orchestration_status || 'queued')}"><div class="mission-result-head"><strong class="mission-result-title">${escape(goal.title)}</strong><span class="control-state">${escape(goal.orchestration_status === 'running' ? 'Currently working' : goal.orchestration_status || 'queued')}</span></div>${content ? `<p class="mission-result-description">${escape(content)}</p>` : ''}<small>${escape(new Date(goal.updated_at || goal.date).toLocaleString())}</small></article>`;
-    }).join('') : '<div class="control-unavailable">No open Mission Control goals.</div>';
+      const toggle = goal.orchestration_status === 'running' ? '' : `<div class="control-actions"><button class="ao-btn" type="button" data-goal-toggle="${escape(goal.id)}">${goal.priority === 'urgent' ? 'Disable' : 'Enable'}</button></div>`;
+      return `<article class="mission-result mission-result--${escape(goal.orchestration_status || 'queued')}"><div class="mission-result-head"><strong class="mission-result-title">${escape(goal.title)}</strong><span class="control-state">${escape(goal.orchestration_status === 'running' ? 'Currently working' : goal.orchestration_status || 'queued')}</span></div>${content ? `<p class="mission-result-description">${escape(content)}</p>` : ''}<small>${escape(new Date(goal.updated_at || goal.date).toLocaleString())}</small>${toggle}</article>`;
+    }).join('') : `<div class="control-unavailable">${goalFilter === 'active' ? 'No active Mission Control goals.' : 'No disabled Mission Control goals.'}</div>`;
+    list.querySelectorAll('[data-goal-toggle]').forEach(button => button.onclick = () => setGoalActive(button));
+  }
+  // Disabling is an edit to the goal's priority, so it goes through the same
+  // route as any other edit and keeps the goal's title, instructions and link.
+  async function setGoalActive(button) {
+    const goal = (missionGoals || []).find(item => item.id === button.dataset.goalToggle); if (!goal) return;
+    const status = body.querySelector('#goal-status');
+    const enable = goal.priority !== 'urgent';
+    button.disabled = true;
+    try {
+      await scheduleRequest(`/api/orchestration/goals/${encodeURIComponent(goal.id)}/edit`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: goal.title, goal: goal.content || goal.title, source_url: (goal.links || [])[0] || '', priority: enable ? 'urgent' : 'normal' })
+      });
+      status.textContent = enable ? `Enabled "${goal.title}".` : `Disabled "${goal.title}". Penny will not pick it up.`;
+      await refreshSchedules();
+    } catch (error) {
+      status.textContent = error.message; button.disabled = false;
+    }
   }
   function renderSchedules() {
     const list = body.querySelector('#schedule-list'); if (!list) return;
