@@ -5473,6 +5473,32 @@ const DEFAULT_GATEWAY_URL = 'http://localhost:18789';
 let lastGatewayHeartbeat = null;
 let missionScheduleAccess = Promise.resolve();
 
+// The cron inventory is the one part of a beat worth keeping across a restart:
+// every deploy would otherwise blank Mission Control's cron list until the
+// desktop relay next reports, which it only does while it is running.
+const CRON_INVENTORY_KEY = 'gateway_cron_inventory_v1';
+let savedCronJobs = '';
+
+// Written only when the list changes, not on every 30-second beat.
+async function rememberCronInventory(at, jobs) {
+  const value = JSON.stringify(jobs);
+  if (value === savedCronJobs) return;
+  savedCronJobs = value;
+  try { await (await storageReady).setAppSetting(CRON_INVENTORY_KEY, JSON.stringify({ at, jobs })); } catch (error) {
+    console.error(`Could not save the cron inventory: ${error.message}`);
+  }
+}
+
+async function recallCronInventory() {
+  try {
+    const stored = JSON.parse(await (await storageReady).getAppSetting(CRON_INVENTORY_KEY) || 'null');
+    if (stored && Array.isArray(stored.jobs) && Number.isFinite(stored.at)) {
+      return { at: stored.at, jobs: stored.jobs.map(normalizeCronJob).filter(Boolean) };
+    }
+  } catch {}
+  return null;
+}
+
 function normalizeCronJob(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const id = cleanText(raw.id, 120);
@@ -6167,13 +6193,20 @@ const server = http.createServer(async (req, res) => {
       const body = await readJsonBody(req);
       const rawAgents = Array.isArray(body.agents) ? body.agents.slice(0, 100) : [];
       const rawCronJobs = Array.isArray(body.cron_jobs) ? body.cron_jobs.slice(0, 1000) : [];
+      // A beat without a cron list (the relay could not read it yet) keeps the
+      // list already known rather than reporting that every job is gone.
+      const knownCronJobs = Array.isArray(body.cron_jobs) ? null
+        : lastGatewayHeartbeat ? lastGatewayHeartbeat.cron_jobs
+        : ((await recallCronInventory()) || { jobs: [] }).jobs;
       lastGatewayHeartbeat = {
         at: Date.now(),
         host: String(body.host || '').trim().slice(0, 120),
         version: String(body.version || '').trim().slice(0, 60),
         agents: rawAgents.filter(agent => agent && typeof agent === 'object').map(toGatewayAgent),
-        cron_jobs: rawCronJobs.map(normalizeCronJob).filter(Boolean),
+        cron_jobs: knownCronJobs || rawCronJobs.map(normalizeCronJob).filter(Boolean),
       };
+
+      if (Array.isArray(body.cron_jobs)) await rememberCronInventory(lastGatewayHeartbeat.at, lastGatewayHeartbeat.cron_jobs);
 
       sendJson(res, 200, { ok: true, agents: lastGatewayHeartbeat.agents.length, cron_jobs: lastGatewayHeartbeat.cron_jobs.length });
       return;
@@ -6211,9 +6244,12 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET' && pathname === '/api/cron-jobs') {
       if (!requireDropsAuth(res, req)) return;
       const heartbeat = describeGatewayHeartbeat();
+      const inventory = lastGatewayHeartbeat
+        ? { at: lastGatewayHeartbeat.at, jobs: lastGatewayHeartbeat.cron_jobs || [] }
+        : await recallCronInventory();
       sendJson(res, 200, {
-        jobs: lastGatewayHeartbeat ? lastGatewayHeartbeat.cron_jobs || [] : [],
-        updated_at: lastGatewayHeartbeat ? new Date(lastGatewayHeartbeat.at).toISOString() : null,
+        jobs: inventory ? inventory.jobs : [],
+        updated_at: inventory ? new Date(inventory.at).toISOString() : null,
         fresh: heartbeat.fresh,
       });
       return;
