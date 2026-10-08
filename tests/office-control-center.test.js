@@ -30,11 +30,21 @@ test('the office exposes Mission Control and operational agent inspection', () =
 });
 
 test('Mission Control shows the persisted Agent Office goals alongside schedules', () => {
-  assert.match(index, /office-control-center\.js\?v=mission-goals-20261008/);
+  assert.match(index, /office-control-center\.js\?v=mission-goals-active-20261008/);
   assert.match(control, /Open goals/);
   assert.match(control, /scheduleRequest\('\/api\/orchestration\/goals'\)/);
   assert.match(control, /goal\.orchestration_status !== 'completed'/);
   assert.match(control, /The same goals shown on your Mission Control card/);
+});
+
+test('Mission Control goals can be filtered and toggled between active and disabled', () => {
+  // Penny claims only urgent goals, so active and disabled map onto priority.
+  assert.match(control, /data-goal-filter="active"/);
+  assert.match(control, /data-goal-filter="disabled"/);
+  assert.match(control, /goal\.priority === 'urgent'/);
+  assert.match(control, /priority: active \? 'urgent' : 'normal'/);
+  assert.match(control, /\/api\/orchestration\/goals\/\$\{encodeURIComponent\(goal\.id\)\}\/edit/);
+  assert.match(control, /priority: enable \? 'urgent' : 'normal'/);
 });
 
 test('one general login gates the entire Agent Office site', () => {

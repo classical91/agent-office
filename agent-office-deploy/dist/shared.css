@@ -2208,6 +2208,8 @@
   .mission-results-heading { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 9px; }
   .mission-results-heading > div { display: grid; gap: 3px; }
   .mission-results-heading span { color: var(--text-dim); font-size: 11px; }
+  .mission-results-heading > .mission-goal-filter { display: flex; gap: 6px; flex: none; }
+  .mission-result .control-actions { margin: 10px 0 0; }
   #mission-results-list { display: grid; gap: 8px; }
   .mission-list-label { margin-top: 8px; color: var(--text-dim); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
   .mission-result { padding: 12px; border: 1px solid var(--border); border-left: 3px solid var(--state-idle); border-radius: 10px; background: var(--view-bg); }
