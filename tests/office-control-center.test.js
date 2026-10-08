@@ -29,6 +29,14 @@ test('the office exposes Mission Control and operational agent inspection', () =
   assert.doesNotMatch(sharedCss, /\.office-command-btn\s*\{\s*display:\s*none/);
 });
 
+test('Mission Control shows the persisted Agent Office goals alongside schedules', () => {
+  assert.match(index, /office-control-center\.js\?v=mission-goals-20261008/);
+  assert.match(control, /Open goals/);
+  assert.match(control, /scheduleRequest\('\/api\/orchestration\/goals'\)/);
+  assert.match(control, /goal\.orchestration_status !== 'completed'/);
+  assert.match(control, /The same goals shown on your Mission Control card/);
+});
+
 test('one general login gates the entire Agent Office site', () => {
   assert.match(index, /id="ao-login-trigger"[^>]*>Login</);
   assert.match(index, /id="ao-login-password"[^>]*type="password"/);
