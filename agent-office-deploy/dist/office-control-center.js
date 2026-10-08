@@ -109,7 +109,7 @@
       </div>
       ${agent.id === NEWSROOM_AGENT_ID ? newsroomPanelShell() : ''}
       <div class="control-actions">
-        ${isPenny ? '<button class="ao-btn ao-btn--primary" type="button" onclick="AOControlCenter.openMissionControl()">View task schedules</button>' : ''}
+        ${isPenny ? '<button class="ao-btn ao-btn--primary" type="button" onclick="AOControlCenter.openMissionControl()">Open Mission Control</button>' : ''}
         <a class="ao-btn" href="/memory.html?agent=${encodeURIComponent(agent.id)}">View memory</a>
         <a class="ao-btn" href="/agent-registry.html">Agent registry</a>
         <button class="ao-btn" type="button" onclick="AOControlCenter.customize('${escape(agent.id)}')">Edit appearance</button>
@@ -234,6 +234,7 @@
   let scheduleTimer = null;
   let scheduleItems = [];
   let cronSnapshot = null;
+  let missionGoals = null;
   let scheduleLoaded = false;
   let editingSchedule = -1;
   let scheduleGeneration = 0;
@@ -242,10 +243,11 @@
   }
   function openMissionControl() {
     stopNewsroom(); stopSchedules(); selectedId = 'schedules';
-    scheduleLoaded = false; editingSchedule = -1; cronSnapshot = null;
-    kicker.textContent = 'TASK SCHEDULES'; title.textContent = 'Mission Control';
+    scheduleLoaded = false; editingSchedule = -1; cronSnapshot = null; missionGoals = null;
+    kicker.textContent = 'GOALS AND TASK SCHEDULES'; title.textContent = 'Mission Control';
     body.innerHTML = `
-      <div class="control-callout">See upcoming cron jobs and your ChatGPT and Claude schedules. Times are expected runs; execution happens in the source app.</div>
+      <div class="control-callout">See your open Mission Control goals plus upcoming cron jobs and ChatGPT or Claude schedules.</div>
+      <section class="mission-results" aria-live="polite"><div class="mission-results-heading"><div><strong>Open goals</strong><span>The same goals shown on your Mission Control card</span></div></div><div id="mission-goals-list">Loading goals…</div></section>
       <button class="ao-btn ao-btn--primary" id="schedule-toggle" aria-expanded="false" aria-controls="schedule-form" type="button">+ Add task</button>
       <form class="mission-goal" id="schedule-form" hidden style="display:none">
         <label for="schedule-title">Task name</label><input id="schedule-title" maxlength="120" required>
@@ -290,12 +292,23 @@
   }
   async function refreshSchedules() {
     const generation = scheduleGeneration;
-    const results = await Promise.allSettled([scheduleRequest('/api/mission-schedules'), scheduleRequest('/api/cron-jobs')]);
+    const results = await Promise.allSettled([scheduleRequest('/api/mission-schedules'), scheduleRequest('/api/cron-jobs'), scheduleRequest('/api/orchestration/goals')]);
     if (generation !== scheduleGeneration || selectedId !== 'schedules') return;
     if (results[0].status === 'fulfilled') { if (!scheduleLoaded || body.querySelector('#schedule-form').hidden) scheduleItems = results[0].value.items; scheduleLoaded = true; }
     else { scheduleLoaded = false; body.querySelector('#schedule-status').textContent = results[0].reason.message; }
     cronSnapshot = results[1].status === 'fulfilled' ? results[1].value : null;
+    missionGoals = results[2].status === 'fulfilled' ? results[2].value : null;
+    renderMissionGoals(results[2].status === 'rejected' ? results[2].reason : null);
     renderSchedules();
+  }
+  function renderMissionGoals(error) {
+    const list = body.querySelector('#mission-goals-list'); if (!list) return;
+    if (error) { list.innerHTML = `<div class="control-unavailable">${escape(error.message)}</div>`; return; }
+    const goals = (missionGoals || []).filter(goal => goal.orchestration_status !== 'completed');
+    list.innerHTML = goals.length ? goals.map(goal => {
+      const content = typeof goal.content === 'string' && goal.content.trim() !== (goal.title || '').trim() ? goal.content.trim() : '';
+      return `<article class="mission-result mission-result--${escape(goal.orchestration_status || 'queued')}"><div class="mission-result-head"><strong class="mission-result-title">${escape(goal.title)}</strong><span class="control-state">${escape(goal.orchestration_status === 'running' ? 'Currently working' : goal.orchestration_status || 'queued')}</span></div>${content ? `<p class="mission-result-description">${escape(content)}</p>` : ''}<small>${escape(new Date(goal.updated_at || goal.date).toLocaleString())}</small></article>`;
+    }).join('') : '<div class="control-unavailable">No open Mission Control goals.</div>';
   }
   function renderSchedules() {
     const list = body.querySelector('#schedule-list'); if (!list) return;
