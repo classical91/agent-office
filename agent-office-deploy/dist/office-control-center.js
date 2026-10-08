@@ -248,6 +248,14 @@
     body.innerHTML = `
       <div class="control-callout">See your open Mission Control goals plus upcoming cron jobs and ChatGPT or Claude schedules.</div>
       <section class="mission-results" aria-live="polite"><div class="mission-results-heading"><div><strong>Open goals</strong><span>The same goals shown on your Mission Control card</span></div></div><div id="mission-goals-list">Loading goals…</div></section>
+      <button class="ao-btn ao-btn--primary" id="goal-toggle" aria-expanded="false" aria-controls="goal-form" type="button">+ Add goal</button>
+      <form class="mission-goal" id="goal-form" hidden style="display:none">
+        <label for="goal-title">Goal title</label><input id="goal-title" maxlength="120" required>
+        <label for="goal-content">Goal instructions</label><textarea id="goal-content" rows="5" maxlength="10000" required></textarea>
+        <p class="mission-optional">Queues a Mission Control goal for Penny.</p>
+        <div class="mission-goal-actions"><button class="ao-btn ao-btn--primary" type="submit">Save goal</button><button class="ao-btn" id="goal-cancel" type="button">Cancel</button></div>
+      </form>
+      <p id="goal-status" role="status"></p>
       <button class="ao-btn ao-btn--primary" id="schedule-toggle" aria-expanded="false" aria-controls="schedule-form" type="button">+ Add task</button>
       <form class="mission-goal" id="schedule-form" hidden style="display:none">
         <label for="schedule-title">Task name</label><input id="schedule-title" maxlength="120" required>
@@ -260,6 +268,9 @@
       </form>
       <p id="schedule-status" role="status"></p>
       <section class="mission-results"><div class="mission-results-heading"><div><strong>Upcoming tasks</strong><span>Next runs shown in America/Vancouver · soonest first</span></div><button class="ao-btn" id="schedule-refresh" type="button">Refresh</button></div><p id="cron-status"></p><div id="schedule-list">Loading schedules…</div></section>`;
+    body.querySelector('#goal-toggle').onclick = () => toggleGoalForm();
+    body.querySelector('#goal-cancel').onclick = () => toggleGoalForm(false);
+    body.querySelector('#goal-form').onsubmit = saveGoal;
     body.querySelector('#schedule-toggle').onclick = () => toggleScheduleForm();
     body.querySelector('#schedule-cancel').onclick = () => toggleScheduleForm(false);
     body.querySelector('#schedule-refresh').onclick = refreshSchedules;
@@ -271,6 +282,38 @@
       body.querySelectorAll('[data-schedule-next]').forEach(node => { node.textContent = MissionSchedules.countdown(Number(node.dataset.scheduleNext)); });
       if (++ticks % 30 === 0) refreshSchedules();
     }, 1000);
+  }
+  function toggleGoalForm(force) {
+    const form = body.querySelector('#goal-form');
+    const open = force === undefined ? form.hidden : force;
+    form.hidden = !open; form.style.display = open ? '' : 'none';
+    const button = body.querySelector('#goal-toggle');
+    button.setAttribute('aria-expanded', String(open));
+    button.textContent = open ? 'Close goal form' : '+ Add goal';
+    if (!open) form.reset();
+    if (open) body.querySelector('#goal-title').focus();
+  }
+  async function saveGoal(event) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const status = body.querySelector('#goal-status');
+    const submit = form.querySelector('button[type="submit"]');
+    const title = form.querySelector('#goal-title').value.trim();
+    const goal = form.querySelector('#goal-content').value.trim();
+    if (!title || !goal) { status.textContent = 'Enter a title and goal instructions.'; return; }
+    submit.disabled = true; status.textContent = 'Saving goal…';
+    try {
+      await scheduleRequest('/api/orchestration/goals', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, goal })
+      });
+      if (body.querySelector('#goal-form') !== form) return;
+      toggleGoalForm(false);
+      status.textContent = 'Goal queued in Mission Control.';
+      await refreshSchedules();
+    } catch (error) {
+      status.textContent = error.message;
+    } finally { submit.disabled = false; }
   }
   function toggleScheduleForm(force, item) {
     const form = body.querySelector('#schedule-form');
