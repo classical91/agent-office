@@ -19,6 +19,7 @@ const SERVER_PATH = path.join(DIST, 'server.js');
 
 const PASSPHRASE = 'plan-the-week';
 const SHORTCUTS_TOKEN = 'coachclaw-planning-test-token';
+const GATEWAY_TOKEN = 'gateway-token-long-enough';
 
 function buildEnvFor(scratch) {
   return port => {
@@ -38,6 +39,7 @@ function buildEnvFor(scratch) {
       COUNTDOWNS_FILE: path.join(scratch, 'countdowns.json'),
       DROPS_PASSPHRASE: PASSPHRASE,
       SHORTCUTS_TOKEN,
+      GATEWAY_TOKEN,
     };
     ['DATABASE_URL', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'DROPS_PASSPHRASE_HASH']
       .forEach(key => { delete environment[key]; });
@@ -88,4 +90,37 @@ test('schedule registry is authenticated, persistent, validated and isolated fro
   const scratch=server.scratch;stop(server,{keepScratch:true});server=await startServer(scratch);
   assert.deepEqual((await (await call(server,'/api/mission-schedules')).json()).items,[item]);
  } finally {stop(server);}
+});
+
+test('the last cron inventory survives a server restart as a stale snapshot', async () => {
+  let server = await startServer();
+  try {
+    const job = { id: 'daily-brief', name: 'Daily brief', enabled: true, schedule: { kind: 'cron', expr: '0 8 * * *' }, next_run_at_ms: 1790000000000 };
+    const beat = await fetch(`${server.origin}/api/gateway/heartbeat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Gateway-Token': GATEWAY_TOKEN },
+      body: JSON.stringify({ host: 'jason-desktop', agents: [], cron_jobs: [job] }),
+    });
+    assert.equal(beat.status, 200);
+    const live = await (await call(server, '/api/cron-jobs')).json();
+    assert.equal(live.fresh, true);
+    assert.deepEqual(live.jobs.map(item => item.name), ['Daily brief']);
+
+    const scratch = server.scratch; stop(server, { keepScratch: true }); server = await startServer(scratch);
+    const recalled = await (await call(server, '/api/cron-jobs')).json();
+    assert.equal(recalled.fresh, false, 'nothing has reported since the restart');
+    assert.equal(recalled.updated_at, live.updated_at);
+    assert.deepEqual(recalled.jobs.map(item => item.name), ['Daily brief']);
+    assert.equal(recalled.jobs[0].schedule.expr, '0 8 * * *');
+
+    // The relay's first beat after a restart can arrive before it has read cron.
+    await fetch(`${server.origin}/api/gateway/heartbeat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Gateway-Token': GATEWAY_TOKEN },
+      body: JSON.stringify({ host: 'jason-desktop', agents: [] }),
+    });
+    const kept = await (await call(server, '/api/cron-jobs')).json();
+    assert.equal(kept.fresh, true);
+    assert.deepEqual(kept.jobs.map(item => item.name), ['Daily brief']);
+  } finally { stop(server); }
 });

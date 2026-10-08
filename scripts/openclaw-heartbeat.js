@@ -132,7 +132,9 @@ async function readCronJobs() {
   } catch (error) {
     console.error(`${new Date().toISOString()} cron inventory read failed: ${error.message}`);
   }
-  return lastCronJobs;
+  // Until one read has succeeded there is no inventory to report, and an empty
+  // list would wipe the one the office kept from the last run.
+  return lastCronReadAt ? lastCronJobs : null;
 }
 
 async function beat() {
@@ -153,7 +155,7 @@ async function beat() {
         host: os.hostname(),
         version: process.version,
         agents: gateway.agents,
-        cron_jobs: cronJobs,
+        ...(cronJobs ? { cron_jobs: cronJobs } : {}),
       }),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
@@ -165,7 +167,7 @@ async function beat() {
     }
 
     const label = gateway.agents.length ? `${gateway.agents.length} agent(s) from ${gateway.from}` : 'no agent list';
-    console.log(`${new Date().toISOString()} reported gateway up - ${label}; ${cronJobs.length} cron job(s)`);
+    console.log(`${new Date().toISOString()} reported gateway up - ${label}; ${cronJobs ? cronJobs.length : 'no'} cron job(s)`);
     return true;
   } catch (error) {
     console.error(`${new Date().toISOString()} could not reach ${OFFICE_URL}: ${error.message}`);
