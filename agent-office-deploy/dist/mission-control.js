@@ -125,7 +125,9 @@
       root.innerHTML = `<div class="control-unavailable">${escape(loadError || 'Loading workflows…')}</div>`;
       return;
     }
-    root.innerHTML = `
+    // On a phone the layout CSS lifts the workflow sections above the source
+    // status and review notes, so the tasks are the first thing on screen.
+    root.innerHTML = `<div class="mc-layout">
       ${renderSources()}
       ${renderOverlaps()}
       <div class="mc-grid">
@@ -154,7 +156,8 @@
         ${renderArchive()}
         ${renderImport()}
         ${renderWorkflowForm()}
-      </details>`;
+      </details>
+    </div>`;
     bind();
   }
 
@@ -184,7 +187,7 @@
     return open.map(flag => `
       <div class="mc-review" role="note">
         <strong>Review: ${flag.names.length} ${escape(W.PROVIDERS[flag.provider] || 'Other')} audit workflows may overlap</strong>
-        <span>${flag.names.map(escape).join(' · ')}</span>
+        <details class="mc-review-names" data-mc-key="overlap-${escape(flag.key)}"><summary>Show the ${flag.names.length} workflows</summary><span>${flag.names.map(escape).join(' · ')}</span></details>
         <small>All of them are kept and nothing has been changed. Decide in ${escape(W.PROVIDERS[flag.provider] || 'the provider')} whether to consolidate.</small>
         <button class="ao-btn ao-btn--sm" type="button" data-mc-ack="${escape(flag.key)}">Mark reviewed</button>
       </div>`).join('');
