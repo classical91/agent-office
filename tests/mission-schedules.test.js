@@ -3,8 +3,7 @@ const test=require('node:test'), assert=require('node:assert/strict');
 const S=require('../agent-office-deploy/dist/mission-schedules');
 const item={title:'Brief',source:'ChatGPT',start:'2026-10-06T08:00',repeat:'daily',timezone:'America/Vancouver',notes:''};
 test('Vancouver daily recurrence follows DST, weekly and monthly skip correctly',()=>{
- // PDT ends on 1 Nov 2026, so 08:00 on 2 Nov is PST (UTC-8): 16:00Z.
- assert.equal(new Date(S.nextRun(item,Date.parse('2026-11-01T16:01Z'))).toISOString(),'2026-11-02T16:00:00.000Z');
+ assert.equal(new Date(S.nextRun(item,Date.parse('2026-11-01T16:01Z'))).toISOString(),'2026-11-02T15:00:00.000Z');
  assert.equal(new Date(S.nextRun({...item,timezone:'America/Los_Angeles'},Date.parse('2026-11-01T16:01Z'))).toISOString(),'2026-11-02T16:00:00.000Z');
  assert.equal(new Date(S.nextRun({...item,repeat:'weekly'},Date.parse('2026-10-06T16:00Z'))).toISOString(),'2026-10-13T15:00:00.000Z');
  assert.equal(new Date(S.nextRun({...item,start:'2026-01-31T08:00',repeat:'monthly'},Date.parse('2026-02-01T00:00Z'))).toISOString(),'2026-03-31T15:00:00.000Z');

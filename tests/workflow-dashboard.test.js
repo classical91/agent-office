@@ -15,24 +15,39 @@ function workflow(patch = {}) {
   return W.normalizeWorkflow({ name: 'Brief', provider: 'openclaw', schedule: { kind: 'cron', expr: '0 8 * * *', timezone: VAN }, ...patch }, { now: at('2026-10-09T00:00Z') });
 }
 
-test('cron runs follow Vancouver across both daylight-saving changes', () => {
-  // 1 Nov 2026: PDT ends. 08:00 is 15:00Z before and 16:00Z after.
-  assert.equal(iso(W.nextCronRun('0 8 * * *', VAN, at('2026-10-31T16:00Z'))), '2026-11-01T16:00:00.000Z');
-  assert.equal(iso(W.nextCronRun('0 8 * * *', VAN, at('2026-10-30T16:00Z'))), '2026-10-31T15:00:00.000Z');
+// Wall-clock time in a zone, as the zone's own tz database sees it. British
+// Columbia's offset rules changed in late 2026 (permanent UTC-7), and Node
+// versions ship different tzdata, so Vancouver is checked by local time and
+// the DST mechanics by Los Angeles, whose rules are stable.
+function local(ms, zone) {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(ms).filter(part => part.type !== 'literal').map(part => [part.type, part.value]));
+  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`;
+}
+const LA = 'America/Los_Angeles';
+
+test('cron runs follow daylight-saving changes in the schedule\'s zone', () => {
+  // 1 Nov 2026: PDT ends in Los Angeles. 08:00 is 15:00Z before and 16:00Z after.
+  assert.equal(iso(W.nextCronRun('0 8 * * *', LA, at('2026-10-31T16:00Z'))), '2026-11-01T16:00:00.000Z');
+  assert.equal(iso(W.nextCronRun('0 8 * * *', LA, at('2026-10-30T16:00Z'))), '2026-10-31T15:00:00.000Z');
   // 14 Mar 2027: 02:30 does not exist, so that day is skipped, not shifted.
-  assert.equal(iso(W.nextCronRun('30 2 * * *', VAN, at('2027-03-14T00:00Z'))), '2027-03-15T09:30:00.000Z');
+  assert.equal(iso(W.nextCronRun('30 2 * * *', LA, at('2027-03-14T00:00Z'))), '2027-03-15T09:30:00.000Z');
   // The repeated 01:30 on 7 Nov 2027 runs once.
-  const first = W.nextCronRun('30 1 * * *', VAN, at('2027-11-07T00:00Z'));
+  const first = W.nextCronRun('30 1 * * *', LA, at('2027-11-07T00:00Z'));
   assert.equal(iso(first), '2027-11-07T08:30:00.000Z');
-  assert.equal(iso(W.nextCronRun('30 1 * * *', VAN, first)), '2027-11-08T09:30:00.000Z');
+  assert.equal(iso(W.nextCronRun('30 1 * * *', LA, first)), '2027-11-08T09:30:00.000Z');
+  // Vancouver runs at 08:00 local whatever its offset is that day.
+  for (const after of ['2026-10-30T16:00Z', '2026-11-01T17:00Z', '2027-03-15T17:00Z', '2027-11-08T17:00Z']) {
+    assert.match(local(W.nextCronRun('0 8 * * *', VAN, at(after)), VAN), / 08:00$/, after);
+  }
 });
 
 test('day-of-month steps restart each month and are never described as a fixed interval', () => {
   // */2 runs on the 31st and again on the 1st: one day apart, not two.
-  assert.equal(iso(W.nextCronRun('0 8 */2 * *', VAN, at('2026-10-30T16:00Z'))), '2026-10-31T15:00:00.000Z');
-  assert.equal(iso(W.nextCronRun('0 8 */2 * *', VAN, at('2026-10-31T16:00Z'))), '2026-11-01T16:00:00.000Z');
+  assert.equal(local(W.nextCronRun('0 8 */2 * *', VAN, at('2026-10-30T16:00Z')), VAN), '2026-10-31 08:00');
+  assert.equal(local(W.nextCronRun('0 8 */2 * *', VAN, at('2026-10-31T16:00Z')), VAN), '2026-11-01 08:00');
   // November has no 31st: from the 29th the next run is 1 December.
-  assert.equal(iso(W.nextCronRun('0 8 */2 * *', VAN, at('2026-11-29T17:00Z'))), '2026-12-01T16:00:00.000Z');
+  assert.equal(local(W.nextCronRun('0 8 */2 * *', VAN, at('2026-11-29T17:00Z')), VAN), '2026-12-01 08:00');
   const described = W.describeCron('0 8 */2 * *');
   assert.match(described.text, /days 1, 3, 5 … 31/);
   assert.doesNotMatch(described.text, /48|every 2 days|every other day/i);
@@ -179,7 +194,7 @@ test('the earlier daily/weekly/monthly tracker converts to exact schedules', () 
   assert.equal(W.fromLegacySchedule({ ...base, repeat: 'monthly' }).schedule.expr, '0 8 6 * *');
   assert.equal(W.fromLegacySchedule({ ...base, repeat: 'once' }).schedule.kind, 'once');
   const legacy = W.normalizeWorkflow(W.fromLegacySchedule({ ...base, start: '2026-12-01T08:00', repeat: 'daily' }));
-  assert.equal(iso(W.nextRun(legacy, at('2026-10-09T00:00Z')).at), '2026-12-01T16:00:00.000Z', 'not before its first date');
+  assert.equal(local(W.nextRun(legacy, at('2026-10-09T00:00Z')).at, VAN), '2026-12-01 08:00', 'not before its first date');
 });
 
 test('a run recorded on a live job stays with it once the job has a stored record', () => {
