@@ -29,7 +29,7 @@ const DUE_SOON_COLOR = '#f59e0b';
 // actually has. `none` is a one-off: it goes overdue and stays there until it
 // is dealt with, because a deadline that quietly rolls forward is not a
 // deadline.
-const REPEATS = ['none', 'daily', 'every2days', 'weekday', 'weekly', 'biweekly', 'monthly'];
+const REPEATS = ['none', 'daily', 'every2days', 'every3days', 'every4days', 'weekday', 'weekly', 'biweekly', 'monthly'];
 const DEFAULT_REPEAT = 'none';
 
 const MINUTE_MS = 60 * 1000;
@@ -161,6 +161,10 @@ function stepOccurrence(date, repeat) {
       return addDays(date, 1);
     case 'every2days':
       return addDays(date, 2);
+    case 'every3days':
+      return addDays(date, 3);
+    case 'every4days':
+      return addDays(date, 4);
     case 'weekly':
       return addDays(date, 7);
     case 'biweekly':

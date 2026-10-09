@@ -78,6 +78,15 @@ test('an every-two-days routine advances without rewriting its stored target', (
   assert.equal(routine.target_at, target);
 });
 
+test('every-three-days and every-four-days routines step by their own gap', () => {
+  const target = at(new Date(2026, 7, 10), 8);
+  const now = new Date(2026, 7, 12, 9, 0, 0);
+  const three = countdowns.nextOccurrence(make({ repeat: 'every3days', target_at: target }), now);
+  const four = countdowns.nextOccurrence(make({ repeat: 'every4days', target_at: target }), now);
+  assert.equal(three.toISOString(), at(new Date(2026, 7, 13), 8));
+  assert.equal(four.toISOString(), at(new Date(2026, 7, 14), 8));
+});
+
 test('monthly repeats clamp to the last day of a short month', () => {
   const monthly = make({ repeat: 'monthly', target_at: at(new Date(2026, 0, 31), 9) });
   const occurrence = countdowns.nextOccurrence(monthly, new Date(2026, 1, 10, 9, 0, 0));
