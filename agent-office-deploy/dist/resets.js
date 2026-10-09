@@ -45,6 +45,8 @@ window.AOResets = (() => {
     { value: 0, label: 'Does not repeat' },
     { value: 1, label: 'Every day' },
     { value: 2, label: 'Every 2 days' },
+    { value: 3, label: 'Every 3 days' },
+    { value: 4, label: 'Every 4 days' },
     { value: 7, label: 'Every week' },
     { value: 14, label: 'Every 2 weeks' },
     { value: 30, label: 'Every 30 days' },
@@ -123,6 +125,8 @@ window.AOResets = (() => {
     none: 'Does not repeat',
     daily: 'Every day',
     every2days: 'Every 2 days',
+    every3days: 'Every 3 days',
+    every4days: 'Every 4 days',
     weekday: 'Every weekday',
     weekly: 'Every week',
     biweekly: 'Every 2 weeks',
@@ -836,7 +840,7 @@ window.AOResets = (() => {
       const items = ['today', 'week', 'later', 'past']
         .flatMap(group => (payload.groups && payload.groups[group]) || [])
         .filter(item => item.kind === 'countdown');
-      const repeatDays = { daily: 1, every2days: 2, weekday: 1, weekly: 7, biweekly: 14, monthly: 30 };
+      const repeatDays = { daily: 1, every2days: 2, every3days: 3, every4days: 4, weekday: 1, weekly: 7, biweekly: 14, monthly: 30 };
       if (Array.isArray(payload.categories) && payload.categories.length) {
         officeCategoryOptions = payload.categories
           .filter(item => item && item.id)

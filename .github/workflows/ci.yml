@@ -15,9 +15,13 @@ jobs:
     # Control result write-back reached production and failed there while CI
     # stayed green. tests/postgres-orchestration.test.js exercises it, and skips
     # itself without DATABASE_URL so a laptop `npm test` is unaffected.
+    #
+    # The image is the official one, pulled from AWS's public mirror of Docker
+    # Hub's library: an anonymous pull from Docker Hub itself is rate-limited
+    # per runner IP and failed the job before any test ran.
     services:
       postgres:
-        image: postgres:16
+        image: public.ecr.aws/docker/library/postgres:16
         env:
           POSTGRES_USER: office
           POSTGRES_PASSWORD: office

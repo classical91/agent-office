@@ -75,7 +75,7 @@ test('a shared countdown keeps Pushcut off the card', () => {
 
 test('the editor offers the office vocabulary, not this page\'s own', () => {
   const markup = html(officeCard());
-  ['none', 'daily', 'every2days', 'weekday', 'weekly', 'biweekly', 'monthly']
+  ['none', 'daily', 'every2days', 'every3days', 'every4days', 'weekday', 'weekly', 'biweekly', 'monthly']
     .forEach(repeat => assert.ok(markup.includes(`value="${repeat}"`), `no ${repeat} repeat`));
   ['deadline', 'goal', 'shift', 'routine', 'trading', 'personal']
     .forEach(category => assert.ok(markup.includes(`value="${category}"`), `no ${category} category`));
