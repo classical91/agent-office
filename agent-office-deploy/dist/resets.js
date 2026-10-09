@@ -40,6 +40,10 @@ window.AOResets = (() => {
   // one schedule in two places is one schedule too many. This page renders it;
   // it does not decide it.
   const { HAPPY_HOUR_ID, atHour, happyHourDetails, happyHourMeal } = window.AOHappyHour;
+  // A repeating timer can cycle through a list (Ebook, Audiobook, Summary).
+  // Which entry is up is worked out in timer-rotation.js, which the server's
+  // Pushcut processor reads too, so the card and the notification agree.
+  const { currentRotation, normalizeRotation } = window.AOTimerRotation;
 
   const REPEAT_OPTIONS = [
     { value: 0, label: 'Does not repeat' },
@@ -606,6 +610,11 @@ window.AOResets = (() => {
       // category for everyone as a side effect of an unrelated edit.
       officeCategory: String(raw.officeCategory || ''),
       nextAction: String(raw.nextAction || ''),
+      // The list this timer cycles through, and the occurrence its first entry
+      // belongs to. A list saved without an anchor starts from where it is now.
+      rotation: normalizeRotation(raw.rotation),
+      rotationAnchor: !normalizeRotation(raw.rotation).length ? ''
+        : toIso(raw.rotationAnchor) || (Number.isNaN(target.getTime()) ? '' : target.toISOString()),
       createdAt: Number(raw.createdAt) || 0,
       // A deleted card is kept as a tombstone rather than dropped, so the
       // deletion can win a merge instead of the other side handing the card
@@ -1041,6 +1050,7 @@ window.AOResets = (() => {
               </span>
             </span>
             <span class="rst-category" data-role="category">${escHtml(categoryLabel)}</span>
+            ${card.rotation.length ? `<span class="rst-rotation" data-role="rotation">${escHtml(rotationLabel(card))}</span>` : ''}
             <span class="rst-time" data-role="time">${escHtml(timeLabel(view))}</span>
             <span class="rst-when" data-role="when">${escHtml(whenLabel(view))}</span>
           </span>
@@ -1080,6 +1090,12 @@ window.AOResets = (() => {
               <select class="ao-select" id="rst-category-${escHtml(card.id)}" data-field="category">
                 ${optionsHtml(CATEGORY_OPTIONS, normalizeCategory(card.category))}
               </select>
+            </div>
+
+            <div class="ao-field">
+              <label class="ao-label" for="rst-rotation-${escHtml(card.id)}">Rotate between (optional)</label>
+              <input class="ao-input" id="rst-rotation-${escHtml(card.id)}" data-field="rotation"
+                     placeholder="e.g. Ebook, Audiobook, Summary" value="${escHtml(card.rotation.join(', '))}" />
             </div>
 
             <label class="rst-check">
@@ -1212,6 +1228,8 @@ window.AOResets = (() => {
       if (time) time.textContent = timeLabel(view);
       const when = node.querySelector('[data-role="when"]');
       if (when) when.textContent = whenLabel(view);
+      const rotation = node.querySelector('[data-role="rotation"]');
+      if (rotation) rotation.textContent = rotationLabel(card);
 
       if (node.dataset.state !== view.state) {
         node.dataset.state = view.state;
@@ -1401,7 +1419,16 @@ window.AOResets = (() => {
       category: normalizeCategory(read('category')),
       webhookUrl: read('webhookUrl'),
       pushcut: checked('pushcut'),
+      rotation: normalizeRotation(read('rotation')),
     };
+  }
+
+  // What the card says about its rotation: the entry the coming occurrence is
+  // for, or the one that just landed once the timer has run out.
+  function rotationLabel(card) {
+    const current = currentRotation(card);
+    if (!current) return '';
+    return viewOf(card).finished ? `This time: ${current}` : `Up next: ${current}`;
   }
 
   /**
@@ -1539,6 +1566,12 @@ window.AOResets = (() => {
     card.category = draft.category;
     card.webhookUrl = draft.webhookUrl;
     card.pushcut = draft.pushcut;
+    // A changed list starts again from its first entry on the occurrence being
+    // saved. An unchanged one keeps its place, even across a new time.
+    if (draft.rotation.join('\n') !== card.rotation.join('\n') || (draft.rotation.length && !card.rotationAnchor)) {
+      card.rotationAnchor = draft.rotation.length ? draft.resetAt : '';
+    }
+    card.rotation = draft.rotation;
     if (retimed) {
       // A new time is a new occurrence, so the server's record of the last one
       // must not read as "already sent" against it.
@@ -1658,6 +1691,7 @@ window.AOResets = (() => {
     el('rst-new-repeat').value = '0';
     el('rst-new-category').value = '';
     el('rst-new-webhook').value = '';
+    if (el('rst-new-rotation')) el('rst-new-rotation').value = '';
     showFormError('');
     modal.hidden = false;
     el('rst-new-title').focus();
@@ -1700,6 +1734,8 @@ window.AOResets = (() => {
       category: normalizeCategory(el('rst-new-category').value),
       webhookUrl,
       pushcut: readNewPushcut(),
+      rotation: el('rst-new-rotation') ? el('rst-new-rotation').value : '',
+      rotationAnchor: resetAt,
       status: 'active',
       createdAt: Date.now(),
       updatedAt: new Date().toISOString(),

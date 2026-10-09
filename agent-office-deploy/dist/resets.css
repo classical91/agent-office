@@ -33,6 +33,14 @@
   text-transform: uppercase;
 }
 
+/* Which entry of a rotating timer is up — the format, not the clock. */
+.rst-rotation {
+  width: fit-content;
+  color: var(--rst-color, var(--text));
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+
 /* ─── The list ────────────────────────────────────────────────────────── */
 
 .rst-list { display: flex; flex-direction: column; gap: var(--space-3); }

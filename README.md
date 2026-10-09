@@ -528,6 +528,18 @@ resets.html  →  /api/reset-timers  →  ┬─ /api/shortcuts/reset-timers  �
                 (persistent store)    └─ server-side timer processor   →  Pushcut  →  iPhone
 ```
 
+#### Rotating timers
+
+A repeating timer can cycle through a list, set in **Rotate between** on the
+card or in Add New Countdown — a reading slot every three days that alternates
+`Ebook, Audiobook, Summary` is one timer, not three. The card shows the entry
+the coming occurrence is for ("Up next: Audiobook"), and the Pushcut
+notification and the Shortcut text name it too. The timer stores the list and
+the occurrence its first entry belongs to; which entry is up is counted in
+repeat steps from there, in `timer-rotation.js`, which the page and the server
+both load — so it stays right whichever of them rolled the timer forward.
+Changing the list starts it again from its first entry.
+
 #### Happy Hour
 
 One card on `/resets.html` is not a timer you set: the Happy Hour countdown

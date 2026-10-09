@@ -17,6 +17,7 @@ const read = name => fs.readFileSync(path.join(distDir, name), 'utf8');
 const context = { Date, console, setInterval, clearInterval };
 context.window = context;
 vm.runInNewContext(read('happy-hour.js'), context);
+vm.runInNewContext(read('timer-rotation.js'), context);
 vm.runInNewContext(read('resets.js'), context);
 const {
   colorForView,

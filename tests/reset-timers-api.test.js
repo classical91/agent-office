@@ -752,6 +752,7 @@ test('the page refuses the same destinations before anything is saved', () => {
   const context = { Date, console, setInterval, clearInterval, URL };
   context.window = context;
   vm.runInNewContext(read('happy-hour.js'), context);
+  vm.runInNewContext(read('timer-rotation.js'), context);
   vm.runInNewContext(read('resets.js'), context);
   const { webhookTargetError } = context.window.AOResets;
 

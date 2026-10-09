@@ -177,6 +177,7 @@ test('the page still gets the schedule through window, as the browser gives it',
   const context = { Date, console, setInterval, clearInterval };
   context.window = context;
   vm.runInNewContext(read('happy-hour.js'), context);
+  vm.runInNewContext(read('timer-rotation.js'), context);
   vm.runInNewContext(read('resets.js'), context);
 
   // resets.js re-exports both, so anything already reading AOResets keeps working.

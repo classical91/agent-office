@@ -22,6 +22,8 @@ const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 
+const { currentRotation, normalizeRotation } = require('./timer-rotation.js');
+
 const STORAGE_KEY = 'reset-timers.v1';
 const MAX_TIMERS = 200;
 const MAX_ENCODED_LENGTH = 250000;
@@ -118,6 +120,8 @@ function normalizeTimer(raw) {
       ? Math.max(0, Math.round(Number(raw.notificationAttempts)))
       : 0,
     notificationOccurrence: toIso(raw.notificationOccurrence),
+    rotation: normalizeRotation(raw.rotation),
+    rotationAnchor: toIso(raw.rotationAnchor),
     updatedAt: toIso(raw.updatedAt),
   };
 }
@@ -218,6 +222,7 @@ function toShortcutItem(timer, now = Date.now()) {
     remaining: formatRemaining(remainingMs),
     repeat_days: timer.repeatDays,
     repeat_months: timer.repeatMonths,
+    rotation: currentRotation(timer),
     status: deriveState(timer, now),
   };
 }
@@ -254,7 +259,8 @@ function formatShortcutText(items, state = 'active') {
   const heading = scope === 'all'
     ? `${items.length} ${noun}`
     : `${items.length} ${scope} ${noun}`;
-  return [heading, ...items.map(item => `• ${item.title} — ${item.remaining}`)].join('\n');
+  return [heading, ...items.map(item =>
+    `• ${item.title}${item.rotation ? ` (${item.rotation})` : ''} — ${item.remaining}`)].join('\n');
 }
 
 // ─── Repeats ─────────────────────────────────────────────────────────────────
@@ -436,9 +442,12 @@ async function deliverWebhook(url, payload, options = {}) {
 }
 
 function notificationPayload(timer) {
+  const rotation = currentRotation(timer);
   return {
     title: timer.title,
-    text: `${timer.title} — the countdown has landed.`,
+    text: rotation
+      ? `${timer.title} — the countdown has landed. This time: ${rotation}.`
+      : `${timer.title} — the countdown has landed.`,
     resetAt: timer.resetAt,
     event: 'countdown_reached_zero',
     timerId: timer.id,
@@ -656,6 +665,7 @@ module.exports = {
   normalizeStateFilter,
   normalizeTimer,
   normalizeTimers,
+  notificationPayload,
   parseStoredTimers,
   processDueTimers,
   redactWebhook,
