@@ -246,3 +246,27 @@ test('cancelling before the claim removes the goal from the queue on PostgreSQL'
   assert.equal(released.executionId, '');
   assert.equal((await (await api.relay('POST', '/api/orchestration/goals/claim')).json()).goal, null);
 });
+
+test('a goal moves to workflow reference and back on PostgreSQL, and is never claimed there', { skip }, async t => {
+  const api = await startServer(t);
+
+  const inventory = await (await api.as('POST', '/api/orchestration/goals', {
+    title: 'ChatGPT task scheduling', goal: '- Daily reflection: every day at 9 PM', priority: 'urgent',
+  })).json();
+  const moved = await api.as('POST', `/api/orchestration/goals/${encodeURIComponent(inventory.id)}/reference`, {});
+  assert.equal(moved.status, 200, 'the reference move must succeed on PostgreSQL');
+  const archiveId = (await moved.json()).archive.id;
+
+  assert.equal((await (await api.relay('POST', '/api/orchestration/goals/claim')).json()).goal, null);
+  assert.deepEqual(await (await api.as('GET', '/api/orchestration/goals')).json(), []);
+
+  const restored = await api.as('POST', `/api/workflows/archive/${encodeURIComponent(archiveId)}/restore`, {});
+  assert.equal(restored.status, 200);
+  const goal = (await restored.json()).goal;
+  assert.equal(goal.orchestration_status, 'queued');
+  assert.equal(goal.priority, 'urgent');
+
+  // A live claim is never pulled out from under Penny.
+  await api.relay('POST', '/api/orchestration/goals/claim');
+  assert.equal((await api.as('POST', `/api/orchestration/goals/${encodeURIComponent(inventory.id)}/reference`, {})).status, 409);
+});

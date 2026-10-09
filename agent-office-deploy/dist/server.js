@@ -15,6 +15,7 @@ const workSchedule = require('./work-schedule.js');
 const workScheduleReader = require('./work-schedule-reader.js');
 const sharebotNewsroom = require('./sharebot-newsroom.js');
 const happyHour = require('./happy-hour.js');
+const workflowDashboard = require('./workflow-dashboard.js');
 
 process.env.TZ = process.env.APP_TIMEZONE || 'America/Vancouver';
 
@@ -62,7 +63,9 @@ const LEGACY_STATUS_MAP = new Map([
   ['building', 'coding'],
 ]);
 const ALLOWED_AGENT_STATUSES = new Set(['idle', 'running', 'blocked', 'failed', 'needs_input', 'offline']);
-const ORCHESTRATION_STATES = new Set(['queued', 'running', 'needs_approval', 'completed', 'failed']);
+// `reference` is a goal moved out of Penny's queue into Mission Control's
+// inventory archive: kept, readable and restorable, never claimable.
+const ORCHESTRATION_STATES = new Set(['queued', 'running', 'needs_approval', 'completed', 'failed', 'reference']);
 const ALLOWED_APP_SETTING_KEYS = new Set(['ao-gateway-local', 'ao-gateway-lan']);
 const DEFAULT_AGENTS = [
   { id: 'codex', name: 'Codex', role: 'Coding Agent', model: 'GPT-5', status: 'idle', source: 'Codex', notes: 'Repo work, reviews, implementation, and local verification.' },
@@ -1324,6 +1327,19 @@ function createFileStorage() {
       await saveDropsToFile(drops.filter(drop => drop.id !== id));
       return { deleted: true, goal: toClientDrop(goal) };
     },
+    // Moves a goal between Penny's queue and the inventory archive. Refused
+    // while Penny holds a live claim on it, and only from the states named.
+    async setMissionGoalState(id, { from, status, priority }) {
+      const drops = await loadDropsFromFile();
+      const goal = drops.find(drop => drop.id === id && drop.agent === 'oss' && drop.subject === 'Mission Control');
+      if (!goal || !from.includes(goal.orchestration_status)) return null;
+      const claimIsLive = goal.orchestration_status === 'running' &&
+        Date.now() - new Date(goal.orchestration_claimed_at || 0).getTime() <= STALE_CLAIM_MS;
+      if (claimIsLive) return null;
+      Object.assign(goal, { orchestration_status: status, priority, updated_at: new Date().toISOString() });
+      await saveDropsToFile(drops);
+      return toClientDrop(goal);
+    },
     async reorderMissionGoals(ids) {
       const drops = await loadDropsFromFile();
       ids.forEach((id, index) => {
@@ -2232,6 +2248,23 @@ async function createPostgresStorage() {
         `SELECT id FROM drops WHERE id = $1 AND agent = 'oss' AND subject = 'Mission Control'`, [id]
       );
       return { deleted: false, reason: existing.rows[0] ? 'running' : 'missing' };
+    },
+    async setMissionGoalState(id, { from, status, priority }) {
+      const result = await pool.query(`
+        UPDATE drops
+        SET orchestration_status = $2::varchar, priority = $3::varchar, updated_at = NOW()
+        WHERE id = $1 AND agent = 'oss' AND subject = 'Mission Control'
+          AND orchestration_status = ANY($4::text[])
+          AND NOT (orchestration_status = 'running'
+                   AND COALESCE(orchestration_claimed_at, 'epoch'::timestamptz) >= NOW() - INTERVAL '20 minutes')
+        RETURNING id, title, subject, category, project, agent, status, tags, links,
+                  content, priority, done, remind_at, created_at AS date, updated_at,
+                  orchestration_status, orchestration_result, orchestration_error,
+                  orchestration_session_key, orchestration_claimed_at,
+                  orchestration_completed_at, orchestration_attempts, orchestration_rank,
+                  orchestration_build_approved, orchestration_approved_at, orchestration_calendar_event_id
+      `, [id, status, priority, from]);
+      return result.rows[0] ? toClientDrop(result.rows[0]) : null;
     },
     async reorderMissionGoals(ids) {
       if (!ids.length) return true;
@@ -4517,7 +4550,8 @@ function firstDefined(input, keys) {
 // state. One definition, used by the panel's own route and by the machine
 // route Main Hub's dashboard card reads.
 function isMissionControlGoal(drop) {
-  return drop.agent === 'oss' && drop.subject === 'Mission Control' && Boolean(drop.orchestration_status);
+  return drop.agent === 'oss' && drop.subject === 'Mission Control' && Boolean(drop.orchestration_status) &&
+    drop.orchestration_status !== 'reference';
 }
 
 // Penny's order: what is still outstanding first, in the rank Jason dragged
@@ -4704,6 +4738,16 @@ async function handleShortcutsRequest(req, res, url, storage) {
   // shared /api/shortcuts gate before this dispatcher runs.
   if (req.method === 'GET' && pathname === '/api/shortcuts/planning/brief') {
     sendJson(res, 200, planning.buildSchedulingBrief(await loadPlanningItems(storage)));
+    return true;
+  }
+
+  // A finished workflow run reported from outside — an iOS Shortcut that
+  // saw a ChatGPT task deliver, or any script holding the phone-inbox token.
+  // Agent Office cannot read ChatGPT tasks itself, so this is how a result
+  // and its delivery state reach Mission Control.
+  if (req.method === 'POST' && pathname === '/api/shortcuts/workflow-runs') {
+    const outcome = await recordWorkflowRun(storage, await readJsonBody(req), 'reported');
+    sendJson(res, outcome.status, outcome.body);
     return true;
   }
 
@@ -5489,6 +5533,180 @@ async function rememberCronInventory(at, jobs) {
   }
 }
 
+// -- MISSION CONTROL WORKFLOWS ---------------------------------
+//
+// Mission Control shows the recurring workflows Penny/OpenClaw and ChatGPT
+// deliver to Jason. Definitions and runs are separate records in one app
+// setting; the OpenClaw cron inventory from the desktop relay is laid over
+// them on every read (workflow-dashboard.js owns the rules). Nothing here
+// creates, enables, runs, deletes or reschedules an external automation:
+// these are dashboard records only.
+const WORKFLOWS_KEY = 'mission_workflows_v1';
+const INVENTORY_ARCHIVE_KEY = 'mission_inventory_archive_v1';
+const INVENTORY_QUARANTINE_KEY = 'mission_inventory_quarantine_v1';
+const LEGACY_SCHEDULES_KEY = 'mission_schedules_v1';
+const MAX_WORKFLOWS = 500;
+const MAX_WORKFLOW_RUNS = 1000;
+let workflowStoreAccess = Promise.resolve();
+
+// One writer at a time: an import, a recorded run and an edit all rewrite the
+// same setting, and the last of two interleaved writes would win.
+async function withWorkflowStore(fn) {
+  const previous = workflowStoreAccess;
+  let release;
+  workflowStoreAccess = new Promise(resolve => { release = resolve; });
+  await previous;
+  try { return await fn(); } finally { release(); }
+}
+
+function newWorkflowId(prefix = 'wf') {
+  return `${prefix}-${typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
+}
+
+async function readWorkflowStore(storage) {
+  let stored = null;
+  try { stored = JSON.parse(await storage.getAppSetting(WORKFLOWS_KEY) || 'null'); } catch {}
+  const store = {
+    records: Array.isArray(stored && stored.records) ? stored.records : [],
+    runs: Array.isArray(stored && stored.runs) ? stored.runs : [],
+    acknowledged_overlaps: Array.isArray(stored && stored.acknowledged_overlaps) ? stored.acknowledged_overlaps : [],
+    legacy_migrated_at: (stored && stored.legacy_migrated_at) || '',
+  };
+  // The earlier manual schedule list becomes workflow records once. Its own
+  // setting is left untouched, so this can be undone by deleting the records.
+  if (!store.legacy_migrated_at) {
+    let legacy = [];
+    try { legacy = JSON.parse(await storage.getAppSetting(LEGACY_SCHEDULES_KEY) || '[]'); } catch {}
+    for (const item of Array.isArray(legacy) ? legacy : []) {
+      try {
+        const record = workflowDashboard.normalizeWorkflow(workflowDashboard.fromLegacySchedule(item));
+        store.records.push({ ...record, id: newWorkflowId() });
+      } catch (error) {
+        console.error(`Could not carry over the tracked schedule "${item && item.title}": ${error.message}`);
+      }
+    }
+    store.legacy_migrated_at = new Date().toISOString();
+    await writeWorkflowStore(storage, store);
+  }
+  return store;
+}
+
+async function writeWorkflowStore(storage, store) {
+  store.runs = store.runs.slice(-MAX_WORKFLOW_RUNS);
+  await storage.setAppSetting(WORKFLOWS_KEY, JSON.stringify(store));
+}
+
+async function readInventoryArchive(storage) {
+  try {
+    const stored = JSON.parse(await storage.getAppSetting(INVENTORY_ARCHIVE_KEY) || '[]');
+    return Array.isArray(stored) ? stored : [];
+  } catch { return []; }
+}
+
+async function currentCronSnapshot() {
+  const heartbeat = describeGatewayHeartbeat();
+  const inventory = lastGatewayHeartbeat
+    ? { at: lastGatewayHeartbeat.at, jobs: lastGatewayHeartbeat.cron_jobs || [] }
+    : await recallCronInventory();
+  return {
+    jobs: inventory ? inventory.jobs : [],
+    updated_at: inventory ? new Date(inventory.at).toISOString() : '',
+    fresh: heartbeat.fresh,
+  };
+}
+
+async function buildWorkflowPayload(storage) {
+  const store = await readWorkflowStore(storage);
+  const dashboard = workflowDashboard.buildDashboard({
+    records: store.records, runs: store.runs, snapshot: await currentCronSnapshot(),
+    acknowledged: store.acknowledged_overlaps, now: Date.now(),
+  });
+  const archive = (await readInventoryArchive(storage)).map(entry => ({
+    ...entry,
+    imported_workflows: store.records.filter(record => record.archive_id === entry.id).length,
+  }));
+  return { ...dashboard, archive };
+}
+
+// A goal moved to the inventory archive keeps everything needed to put it
+// back exactly as it was: its text, its state, and whether it was active.
+// Callers hold the workflow store lock: the archive is one setting, and two
+// moves at once would each write back a list missing the other's entry.
+async function archiveGoalAsInventory(storage, goal, reason) {
+  const moved = await storage.setMissionGoalState(goal.id, {
+    from: ['queued', 'failed', 'needs_approval', 'running'],
+    status: 'reference', priority: 'normal',
+  });
+  if (!moved) return null;
+  const archive = await readInventoryArchive(storage);
+  const entry = {
+    id: newWorkflowId('inv'),
+    goal_id: goal.id,
+    title: goal.title,
+    content: goal.content || '',
+    links: goal.links || [],
+    previous_status: goal.orchestration_status === 'running' ? 'queued' : goal.orchestration_status,
+    previous_priority: goal.priority || 'normal',
+    reason,
+    archived_at: new Date().toISOString(),
+  };
+  archive.push(entry);
+  await storage.setAppSetting(INVENTORY_ARCHIVE_KEY, JSON.stringify(archive));
+  return entry;
+}
+
+// The two schedule inventories pasted into Mission Control as goals are
+// reference data. Left in the queue, an Active one is exactly what Penny's
+// claim picks up. Each is moved to the archive once; one Jason restores is
+// not moved again.
+const INVENTORY_GOAL_TITLE = /^(?:openclaw cron jobs|chatgpt task scheduling)(?: \(\d+\))?$/i;
+
+async function quarantineInventoryGoals(storage) {
+  let handled = [];
+  try { handled = JSON.parse(await storage.getAppSetting(INVENTORY_QUARANTINE_KEY) || '[]'); } catch {}
+  if (!Array.isArray(handled)) handled = [];
+  const candidates = (await storage.listDrops()).filter(drop =>
+    isMissionControlGoal(drop) && INVENTORY_GOAL_TITLE.test(String(drop.title || '').trim()) &&
+    drop.orchestration_status !== 'completed' && !handled.includes(drop.id));
+  for (const goal of candidates) {
+    const entry = await archiveGoalAsInventory(storage, goal, 'Schedule inventory moved out of Penny\'s queue automatically.');
+    if (!entry) continue; // Penny holds a live claim; try again on the next start.
+    handled.push(goal.id);
+    console.log(`Mission Control: moved the inventory goal "${goal.title}" to workflow reference.`);
+  }
+  if (candidates.length) await storage.setAppSetting(INVENTORY_QUARANTINE_KEY, JSON.stringify(handled));
+}
+
+function findWorkflowForRun(dashboard, input) {
+  const id = cleanText(input.workflow_id, 160);
+  const provider = workflowDashboard.PROVIDERS[input.provider] ? input.provider : (input.provider ? workflowDashboard.providerKey(input.provider) : '');
+  const providerId = cleanText(input.provider_id, 160);
+  const name = cleanText(input.workflow || input.name, 180).toLowerCase();
+  return dashboard.workflows.find(w => id && w.id === id) ||
+    dashboard.workflows.find(w => providerId && w.provider_id === providerId && (!provider || w.provider === provider)) ||
+    dashboard.workflows.find(w => name && w.name.toLowerCase() === name && (!provider || w.provider === provider)) ||
+    null;
+}
+
+async function recordWorkflowRun(storage, input, source) {
+  return withWorkflowStore(async () => {
+    const dashboard = await buildWorkflowPayload(storage);
+    const workflow = findWorkflowForRun(dashboard, input);
+    if (!workflow) return { status: 404, body: { error: 'No workflow matches that id, provider id or name.' } };
+    let run;
+    try {
+      run = workflowDashboard.normalizeRun({ ...input, workflow_id: workflow.id, source });
+    } catch (error) {
+      return { status: 400, body: { error: error.message } };
+    }
+    run.id = newWorkflowId('run');
+    const store = await readWorkflowStore(storage);
+    store.runs.push(run);
+    await writeWorkflowStore(storage, store);
+    return { status: 201, body: { run, workflow: { id: workflow.id, name: workflow.name } } };
+  });
+}
+
 async function recallCronInventory() {
   try {
     const stored = JSON.parse(await (await storageReady).getAppSetting(CRON_INVENTORY_KEY) || 'null');
@@ -6209,6 +6427,166 @@ const server = http.createServer(async (req, res) => {
       if (Array.isArray(body.cron_jobs)) await rememberCronInventory(lastGatewayHeartbeat.at, lastGatewayHeartbeat.cron_jobs);
 
       sendJson(res, 200, { ok: true, agents: lastGatewayHeartbeat.agents.length, cron_jobs: lastGatewayHeartbeat.cron_jobs.length });
+      return;
+    }
+
+    // -- MISSION CONTROL WORKFLOWS ---------------------------------
+    // Dashboard records only: no route here reaches OpenClaw or ChatGPT.
+    if (pathname === '/api/workflows' || pathname.startsWith('/api/workflows/')) {
+      if (!requireDropsAuth(res, req)) return;
+      const rest = pathname.slice('/api/workflows'.length).replace(/^\/+/, '');
+      const segments = rest ? rest.split('/').map(decodeURIComponent) : [];
+
+      if (req.method === 'GET' && !segments.length) {
+        // Under the lock: the first read also carries over the old schedules.
+        sendJson(res, 200, await withWorkflowStore(() => buildWorkflowPayload(storage)));
+        return;
+      }
+
+      if (req.method === 'POST' && segments[0] === 'import' && segments.length === 1) {
+        const input = await readJsonBody(req, 512 * 1024);
+        const provider = cleanText(input.provider, 20) || 'other';
+        const parsed = workflowDashboard.parseImport(String(input.text || ''), { provider });
+        if (input.dry_run) {
+          sendJson(res, 200, { ...parsed, drafts: parsed.drafts.map(draft => ({ ...draft, dedupe_key: workflowDashboard.dedupeKey(draft) })) });
+          return;
+        }
+        if (!parsed.drafts.length) {
+          sendJson(res, 400, { error: parsed.errors[0] || 'Nothing to import.', errors: parsed.errors });
+          return;
+        }
+        const archiveId = cleanText(input.archive_id, 160);
+        const result = await withWorkflowStore(async () => {
+          const store = await readWorkflowStore(storage);
+          const archive = archiveId ? (await readInventoryArchive(storage)).find(entry => entry.id === archiveId) : null;
+          const sourceLabel = archive ? `Imported from the inventory "${archive.title}"` : (cleanText(input.source_label, 200) || 'Imported inventory');
+          const merged = workflowDashboard.mergeImport(store.records, parsed.drafts, {
+            newId: () => newWorkflowId(), sourceLabel, archiveId: archive ? archive.id : '',
+          });
+          if (merged.records.length > MAX_WORKFLOWS) return { error: `At most ${MAX_WORKFLOWS} workflows are supported.` };
+          store.records = merged.records;
+          await writeWorkflowStore(storage, store);
+          return merged.summary;
+        });
+        if (result.error) { sendJson(res, 400, { error: result.error }); return; }
+        sendJson(res, 200, { ...result, errors: parsed.errors });
+        return;
+      }
+
+      if (req.method === 'POST' && segments[0] === 'overlaps' && segments[1] === 'acknowledge') {
+        const key = cleanText((await readJsonBody(req)).key, 4000);
+        if (!key) { sendJson(res, 400, { error: 'Overlap key is required.' }); return; }
+        await withWorkflowStore(async () => {
+          const store = await readWorkflowStore(storage);
+          if (!store.acknowledged_overlaps.includes(key)) store.acknowledged_overlaps.push(key);
+          await writeWorkflowStore(storage, store);
+        });
+        sendJson(res, 200, { ok: true });
+        return;
+      }
+
+      if (req.method === 'POST' && segments[0] === 'archive' && segments[2] === 'restore' && segments.length === 3) {
+        const outcome = await withWorkflowStore(async () => {
+          const archive = await readInventoryArchive(storage);
+          const entry = archive.find(item => item.id === segments[1] && !item.restored_at);
+          if (!entry) return { status: 404, body: { error: 'Archived inventory not found.' } };
+          const goal = await storage.setMissionGoalState(entry.goal_id, {
+            from: ['reference'], status: entry.previous_status || 'queued', priority: entry.previous_priority || 'normal',
+          });
+          if (!goal) return { status: 409, body: { error: 'The original goal is no longer in Mission Control, so it cannot be restored.' } };
+          entry.restored_at = new Date().toISOString();
+          await storage.setAppSetting(INVENTORY_ARCHIVE_KEY, JSON.stringify(archive));
+          return { status: 200, body: { ok: true, goal } };
+        });
+        sendJson(res, outcome.status, outcome.body);
+        return;
+      }
+
+      if (req.method === 'POST' && !segments.length) {
+        const input = await readJsonBody(req);
+        let record;
+        try {
+          record = workflowDashboard.normalizeWorkflow({ ...input, source: 'manual' });
+        } catch (error) { sendJson(res, 400, { error: error.message }); return; }
+        const created = await withWorkflowStore(async () => {
+          const store = await readWorkflowStore(storage);
+          if (store.records.length >= MAX_WORKFLOWS) return null;
+          const key = workflowDashboard.dedupeKey(record);
+          if (store.records.some(existing => workflowDashboard.dedupeKey(existing) === key)) return { duplicate: true };
+          const saved = { ...record, id: newWorkflowId() };
+          store.records.push(saved);
+          await writeWorkflowStore(storage, store);
+          return saved;
+        });
+        if (!created) { sendJson(res, 400, { error: `At most ${MAX_WORKFLOWS} workflows are supported.` }); return; }
+        if (created.duplicate) { sendJson(res, 409, { error: 'A workflow with that provider and id (or name) is already tracked.' }); return; }
+        sendJson(res, 201, created);
+        return;
+      }
+
+      if (req.method === 'POST' && segments.length === 2 && segments[1] === 'runs') {
+        const outcome = await recordWorkflowRun(storage, { ...(await readJsonBody(req)), workflow_id: segments[0] }, 'manual');
+        sendJson(res, outcome.status, outcome.body);
+        return;
+      }
+
+      if ((req.method === 'PATCH' || req.method === 'DELETE') && segments.length === 1) {
+        const id = segments[0];
+        const input = req.method === 'PATCH' ? await readJsonBody(req) : {};
+        const outcome = await withWorkflowStore(async () => {
+          const store = await readWorkflowStore(storage);
+          const index = store.records.findIndex(record => record.id === id);
+          const live = (await currentCronSnapshot()).jobs.find(job => `openclaw:${job.id}` === id ||
+            (index >= 0 && store.records[index].provider === 'openclaw' && store.records[index].provider_id === job.id));
+          if (req.method === 'DELETE') {
+            if (index < 0) return { status: live ? 409 : 404, body: { error: live ? 'This workflow comes from the OpenClaw cron inventory. Remove it in OpenClaw; the dashboard only mirrors it.' : 'Workflow not found.' } };
+            const [removed] = store.records.splice(index, 1);
+            await writeWorkflowStore(storage, store);
+            return { status: 200, body: { ok: true, removed, note: 'Removed from the dashboard only. The automation itself was not changed.' } };
+          }
+          // OpenClaw owns a live job's schedule and enabled state; only
+          // Jason's annotations are editable here.
+          if (live && ('schedule' in input || 'enabled' in input || 'provider_id' in input)) {
+            return { status: 409, body: { error: 'Schedule and enabled state come from OpenClaw. Change them there; the dashboard updates on the next report.' } };
+          }
+          let base = index >= 0 ? store.records[index] : null;
+          if (!base && live) {
+            const view = workflowDashboard.mergeOpenClaw([], { jobs: [live] }).views[0];
+            base = { ...view, id: newWorkflowId(), source: 'imported', source_label: 'Annotations on a live OpenClaw job' };
+          }
+          if (!base) return { status: 404, body: { error: 'Workflow not found.' } };
+          const editable = ['name', 'purpose', 'agent', 'delivery', 'category', 'schedule', 'enabled', 'prompt', 'provider_id'];
+          const patch = Object.fromEntries(editable.filter(key => key in input).map(key => [key, input[key]]));
+          let updated;
+          try {
+            updated = workflowDashboard.normalizeWorkflow({ ...base, ...patch, updated_at: new Date().toISOString() });
+          } catch (error) { return { status: 400, body: { error: error.message } }; }
+          updated.id = base.id;
+          if (index >= 0) store.records[index] = updated; else store.records.push(updated);
+          await writeWorkflowStore(storage, store);
+          return { status: 200, body: updated };
+        });
+        sendJson(res, outcome.status, outcome.body);
+        return;
+      }
+
+      sendJson(res, 405, { error: 'Method not allowed.' });
+      return;
+    }
+
+    // Moves a goal (a schedule inventory pasted in as one) out of Penny's
+    // queue into the inventory archive. Reversible from the archive.
+    if (req.method === 'POST' && pathname.startsWith('/api/orchestration/goals/') && pathname.endsWith('/reference')) {
+      if (!requireDropsAuth(res, req)) return;
+      const id = pathname.slice('/api/orchestration/goals/'.length, -'/reference'.length).trim();
+      const goal = (await storage.listDrops()).find(drop => drop.id === id && isMissionControlGoal(drop));
+      if (!goal) { sendJson(res, 404, { error: 'Goal not found.' }); return; }
+      const entry = await withWorkflowStore(() => archiveGoalAsInventory(storage, goal, 'Moved to workflow reference from Mission Control.'));
+      if (!entry) {
+        sendJson(res, 409, { error: goal.orchestration_status === 'completed' ? 'Completed goals stay in the goal history.' : 'Penny is working on this goal. Wait for the run to finish before moving it.' });
+        return;
+      }
+      sendJson(res, 200, { ok: true, archive: entry });
       return;
     }
 
@@ -7656,7 +8034,12 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-storageReady.then(storage => server.listen(PORT, () => {
+storageReady.then(async storage => {
+  // Before the first request, so no claim can reach an inventory goal first.
+  await quarantineInventoryGoals(storage).catch(error =>
+    console.error(`Could not move inventory goals out of Penny's queue: ${error.message}`));
+  return storage;
+}).then(storage => server.listen(PORT, () => {
   console.log(`Agent Office running on port ${PORT}`);
   if (process.env.DATABASE_URL) {
     console.log('Dropbox storage: PostgreSQL');

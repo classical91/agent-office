@@ -1105,19 +1105,23 @@ function agentDisplayStatus(agent) {
 // described two different ways on the same screen.
 //   working  — has a task in hand
 //   idle     — online, nothing assigned
-//   blocked  — wants to work and cannot; today that means the gateway is down
+//   blocked  — wants to work and cannot, on evidence from the agent itself
+//   unknown  — the gateway cannot be reached, so nothing is known either way.
+//              A lost connection is not a failure of every agent, and is not
+//              counted as one.
 //   offline  — not running
 const AGENT_STATE = {
   working: { label: 'Working', dot: 'dot-active', css: 'is-active', color: 'var(--state-active)' },
   idle:    { label: 'Idle',    dot: 'dot-idle',   css: 'is-idle',   color: 'var(--state-idle)' },
   blocked: { label: 'Blocked', dot: 'dot-blocked', css: 'is-blocked', color: 'var(--state-blocked)' },
   offline: { label: 'Offline', dot: 'dot-offline', css: 'is-offline', color: 'var(--state-offline)' },
+  unknown: { label: 'Unknown', dot: 'dot-offline', css: 'is-offline', color: 'var(--state-offline)' },
 };
 
 function agentOperationalState(agent) {
-  // A dead gateway blocks the whole floor: the agents are configured and
-  // willing, nothing can reach them.
-  if (openClawGatewayReachable === false) return 'blocked';
+  // An unreachable gateway says nothing about the agents behind it: their
+  // state is unknown until it answers, not blocked.
+  if (openClawGatewayReachable === false) return 'unknown';
   if (agent.status === 'active') return 'working';
   if (agent.status === 'offline') return 'offline';
   return 'idle';
@@ -1164,7 +1168,7 @@ function renderStatusBar() {
 let opsQueue = { loaded: false, available: false, open: 0, next: null };
 
 function opsAgentCounts() {
-  const counts = { working: 0, idle: 0, blocked: 0, offline: 0 };
+  const counts = { working: 0, idle: 0, blocked: 0, offline: 0, unknown: 0 };
   agentState.forEach(agent => { counts[agentOperationalState(agent)] += 1; });
   counts.online = counts.working + counts.idle;
   return counts;
@@ -1199,7 +1203,7 @@ async function refreshOpsQueue() {
 
 function opsNextAction() {
   if (openClawGatewayReachable === false) {
-    return { text: 'Reconnect the OpenClaw gateway', meta: 'Every agent is blocked until it answers', tone: 'alert' };
+    return { text: 'Reconnect the OpenClaw gateway', meta: 'Agent status is unknown until it answers', tone: 'alert' };
   }
   if (!opsQueue.loaded) return { text: 'Checking the board…', meta: '', tone: '' };
   if (!opsQueue.available) return { text: 'Log in to Agent Office to see what is next', meta: 'Session locked', tone: '' };
@@ -1243,7 +1247,8 @@ function renderOpsSummary() {
       title: 'Agents with a task in hand',
     }),
     metric({
-      label: 'Blocked', dot: 'blocked', value: counts.blocked, note: counts.blocked ? 'Needs attention' : 'All clear',
+      label: 'Blocked', dot: 'blocked', value: counts.unknown && !counts.blocked ? '—' : counts.blocked,
+      note: counts.blocked ? 'Needs attention' : counts.unknown ? 'Unknown — gateway disconnected' : 'All clear',
       tone: counts.blocked ? 'is-alert' : '', title: 'Agents that cannot work right now',
     }),
     metric({

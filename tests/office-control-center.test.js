@@ -29,15 +29,22 @@ test('the office exposes Mission Control and operational agent inspection', () =
   assert.doesNotMatch(sharedCss, /\.office-command-btn\s*\{\s*display:\s*none/);
 });
 
-test('Mission Control shows the persisted Agent Office goals alongside schedules', () => {
-  assert.match(index, /office-control-center\.js\?v=mission-goals-active-20261008/);
+test('Mission Control is workflow-first, with goals kept as a secondary section', () => {
+  assert.match(index, /office-control-center\.js\?v=workflows-20261009/);
+  assert.match(index, /workflow-dashboard\.js\?v=/);
+  assert.match(index, /mission-control\.js\?v=/);
+  // workflow-dashboard.js defines the shared rules mission-control.js draws with.
+  assert.ok(index.indexOf('workflow-dashboard.js') < index.indexOf('mission-control.js'));
+  assert.match(control, /Your scheduled workflows and latest results\./);
+  assert.match(control, /AOMissionControl\.mount/);
+  assert.match(control, /Goals and manual assignments/);
   assert.match(control, /Open goals/);
-  assert.match(control, /scheduleRequest\('\/api\/orchestration\/goals'\)/);
+  assert.match(control, /missionRequest\('\/api\/orchestration\/goals'\)/);
   assert.match(control, /goal\.orchestration_status !== 'completed'/);
   assert.match(control, /The same goals shown on your Mission Control card/);
 });
 
-test('Mission Control goals can be filtered and toggled between active and disabled', () => {
+test('Mission Control goals can be filtered, toggled for Penny, and moved to reference', () => {
   // Penny claims only urgent goals, so active and disabled map onto priority.
   assert.match(control, /data-goal-filter="active"/);
   assert.match(control, /data-goal-filter="disabled"/);
@@ -45,6 +52,26 @@ test('Mission Control goals can be filtered and toggled between active and disab
   assert.match(control, /priority: active \? 'urgent' : 'normal'/);
   assert.match(control, /\/api\/orchestration\/goals\/\$\{encodeURIComponent\(goal\.id\)\}\/edit/);
   assert.match(control, /priority: enable \? 'urgent' : 'normal'/);
+  assert.match(control, /Disable for Penny/);
+  assert.match(control, /\/api\/orchestration\/goals\/\$\{encodeURIComponent\(goal\.id\)\}\/reference/);
+});
+
+test('workflow controls say they change the dashboard record only', () => {
+  const panel = fs.readFileSync(path.join(DIST, 'mission-control.js'), 'utf8');
+  assert.match(panel, /Mark disabled here/);
+  assert.match(panel, /Remove from dashboard/);
+  assert.match(panel, /change Agent Office's record only/);
+  assert.match(panel, /Dashboard records only — never changes OpenClaw or ChatGPT/);
+  // The panel never talks to a provider; every write goes to this app's API.
+  assert.doesNotMatch(panel, /fetch\((?!url)/);
+  assert.doesNotMatch(panel, /chatgpt\.com\/backend|openclaw\.cmd|\/api\/cron\//);
+});
+
+test('an unreachable gateway makes agent state unknown, not blocked', () => {
+  assert.match(shared, /if \(openClawGatewayReachable === false\) return 'unknown';/);
+  assert.doesNotMatch(shared, /if \(openClawGatewayReachable === false\) return 'blocked';/);
+  assert.doesNotMatch(shared, /Every agent is blocked/);
+  assert.match(shared, /Agent status is unknown until it answers/);
 });
 
 test('one general login gates the entire Agent Office site', () => {

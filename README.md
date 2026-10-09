@@ -20,7 +20,8 @@ The 3D office is intended to be an operational view of that system, not a decora
 - **Streaks** — every day you kept a habit up, plotted on a month grid and a year strip. Each streak carries a type (Health, Deep Work, Avoid, …) and a colour, the calendar can be filtered down to one streak or one type, and a day is marked from the day itself or from the streak's **Mark today** button. See [Streaks](#streaks-1).
 - **Visitors** — who is on your websites right now, what they are reading, and whether they have been before. One tracker script goes on any site you run; nothing is looked up against any outside service. See [Visitors](#visitors-1).
 - **Org chart** — a visual layout of the agent team.
-- **Office view** — a live operational room where clicking an agent opens its task, model, workspace, authority, state, and available controls. Penny opens Mission Control; appearance editing remains available from the inspector.
+- **Office view** — a live operational room where clicking an agent opens its task, model, workspace, authority, state, and available controls. Penny opens Mission Control; appearance editing remains available from the inspector. When the OpenClaw gateway cannot be reached, agents read **Unknown**, not Blocked: a lost connection is not evidence that any agent failed.
+- **Mission Control** — *your scheduled workflows and latest results*: what Penny/OpenClaw and ChatGPT deliver to Jason, when each is due, and whether it arrived. Upcoming runs, latest results, confirmed failures, and every workflow with its exact schedule. Goals for Penny sit below as a secondary section. See [Mission Control workflows](#mission-control-workflows).
 - **Penny execution bridge** — Mission Control goals are claimed by the authenticated desktop relay, run in a dedicated Penny session through the local OpenClaw gateway, delivered to Jason in Telegram, and written back to the Agent Office Outbox. Stale claims recover after 20 minutes; cron is not required for normal execution.
 - **Build safeguards** — code, configuration, infrastructure, scheduled-task, and deployment goals pause after read-only inspection. Penny sends the exact proposed scope to Jason and the Outbox shows **Approve build**. Only that authenticated approval requeues the same Penny session. Approved work must fetch current GitHub `main`/`master`, verify repo/remote/branch/dirty state, preserve unrelated work in a clean branch or worktree, test, commit, and push the tested source. Deployment remains separately approval-gated unless it was explicitly included.
 - **AI Landscape** — a tracker page for the AI model/tooling landscape.
@@ -85,7 +86,10 @@ agent-office-deploy/
     visitors.{js,css}          # Visitors dashboard
     visit-tracker.js           # The script you paste on a tracked site
     sharebot-newsroom.js       # Reads Market Dashboard newsroom health server-side
-    office-control-center.js   # Agent inspector + Mission Control panel (incl. ShareBot67 health)
+    office-control-center.js   # Agent inspector + Mission Control shell and goals (incl. ShareBot67 health)
+    mission-control.js         # Mission Control's workflow view (Upcoming, results, attention, all workflows)
+    workflow-dashboard.js      # Workflow rules shared by server and browser: cron, next runs, import, health
+    mission-schedules.js       # The earlier manual schedule tracker's validation (legacy route only)
     server.js                  # Node HTTP server
     config-files/              # Placeholder only; local agent files are not deployed
 YOUTUBE_PACKAGING.md          # The YouTube packaging playbook (read at runtime)
@@ -283,9 +287,78 @@ All endpoints return JSON.
 | GET    | `/api/orchestration/goals`        | List Penny goals and Outbox results (session-authenticated) |
 | POST   | `/api/orchestration/goals`        | Queue a goal for Penny, as a `title` plus a `goal` description (session-authenticated) |
 | DELETE | `/api/orchestration/goals/:id`    | Remove a goal from Mission Control; refused while Penny holds a live claim (session-authenticated) |
+| POST   | `/api/orchestration/goals/:id/reference` | Move a goal (e.g. a pasted schedule inventory) out of Penny's queue into the archived inventories (session-authenticated) |
+| GET    | `/api/workflows`                  | Mission Control's workflow dashboard: workflows, upcoming, results, attention, sources, archived inventories (session-authed) |
+| POST   | `/api/workflows`                  | Track a workflow by hand — a dashboard record only (session-authed) |
+| PATCH  | `/api/workflows/:id`              | Edit a dashboard record; for a live OpenClaw job only the notes (session-authed) |
+| DELETE | `/api/workflows/:id`              | Remove a dashboard record; the automation is untouched (session-authed) |
+| POST   | `/api/workflows/import`           | Preview (`dry_run`) or import an inventory, deduplicated by provider and id (session-authed) |
+| POST   | `/api/workflows/:id/runs`         | Record a run: execution and delivery status, output link (session-authed) |
+| POST   | `/api/workflows/overlaps/acknowledge` | Mark an overlap flag as reviewed (session-authed) |
+| POST   | `/api/workflows/archive/:id/restore` | Put an archived inventory back in the goal queue exactly as it was (session-authed) |
+| POST   | `/api/shortcuts/workflow-runs`    | Report a workflow result from a Shortcut or script (phone-inbox token) |
 | GET    | `/api/sharebot/newsroom-health`   | ShareBot67's live newsroom health, read server-side from Market Dashboard (session-authed) |
 | POST   | `/api/orchestration/goals/claim`  | Atomically claim the next goal (gateway-token authenticated) |
 | PATCH  | `/api/orchestration/goals/:id`    | Complete/fail a claimed goal (gateway-token authenticated) |
+
+### Mission Control workflows
+
+Mission Control answers one question: **what do Penny and ChatGPT deliver to
+Jason, when is it due, and did it arrive?** It opens from Penny in the office
+(or `/?panel=mission-control`) as a full-width panel.
+
+**Records.** Each workflow is its own record — provider (`openclaw`,
+`chatgpt`, `claude`, `other`) and provider job id, name, purpose, responsible
+agent, delivery destination, category, exact schedule and its timezone,
+enabled state, full prompt, and where the record came from (`live`,
+`imported`, `manual`) with its last sync time. Runs are separate records, and
+execution and delivery are separate states: a run can succeed and still fail
+to reach Jason. Both live in the `mission_workflows_v1` app setting;
+`workflow-dashboard.js` holds every rule and is unit-tested on its own.
+
+**Schedules are kept exactly.** Cron, fixed interval, one-time and
+provider-described schedules (ChatGPT's own wording, optionally flagged as
+flexible) are all first-class; nothing is forced into daily/weekly/monthly.
+`0 8 */2 * *` is stored as written and described as day-of-month stepping —
+the dashboard notes that the count restarts each month, so runs are not
+always 48 hours apart. Times display in America/Vancouver; the schedule's own
+zone is in the details. Every next run says where it came from: **reported**
+by the provider, **calculated** from the schedule, or **unknown**.
+
+**Sources.** The OpenClaw cron inventory arrives from the desktop relay
+(`scripts/openclaw-heartbeat.js`, `openclaw cron list --all --json`) and is
+mirrored live, then kept as a labelled stale snapshot when the relay stops.
+OpenClaw owns those jobs' schedules and enabled state; only notes are editable
+here. Agent Office cannot read ChatGPT scheduled tasks — there is no
+server-side integration for them — so ChatGPT workflows are imported or
+tracked by hand, and their results arrive when recorded in the panel or
+reported by a Shortcut to `POST /api/shortcuts/workflow-runs` (body:
+`workflow` name or `provider_id`, `status`, `delivery_status`, `output_url`,
+`output_title`).
+
+**Status is evidence-based.** No run history is *unknown*, never failed.
+*Needs attention* lists only confirmed execution failures, confirmed delivery
+failures, and a stale OpenClaw connection — the last as one notice, not one
+failure per job. Several audit workflows from one provider are flagged for
+review; all are kept and nothing is merged.
+
+**Dashboard-only.** No Mission Control control creates, enables, runs,
+deletes or reschedules an automation at OpenClaw or ChatGPT, and the controls
+are labelled that way (*Mark disabled here*, *Remove from dashboard*).
+
+**Inventories are reference data, never goals.** Penny claims any queued,
+Active (urgent) Mission Control goal, so a schedule inventory pasted in as a
+goal could be dispatched as work. On start-up the server moves goals titled
+*OpenClaw cron jobs* or *ChatGPT task scheduling* out of the queue into
+**archived inventories** (once each — one Jason restores stays restored), and
+any goal can be moved by hand with **Move to workflow reference**. An archived
+goal keeps its text word for word and its previous state, can never be
+claimed, and can be imported into workflows or restored exactly as it was.
+Imports always preview first, deduplicate by provider and provider id (by
+name when an inventory gives no id), update rather than duplicate, and never
+remove a workflow missing from the paste. The earlier manual schedule list
+(`mission_schedules_v1`) is copied into workflow records once and left in
+place.
 
 ### The calendar as an agent control surface
 
