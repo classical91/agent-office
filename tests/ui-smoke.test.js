@@ -779,3 +779,45 @@ test('a schedule read from a photo is shown for correction, not saved', async t 
   assert.equal(saved.shifts[1].end, '21:00', 'the correction is what got stored, not the reading');
   assert.deepEqual(problems, []);
 });
+
+// Mission Control is workflow-first: an inventory is previewed before it is
+// saved, the controls say they only touch the dashboard, and the wide panel
+// still fits a phone.
+test('Mission Control imports an inventory through a preview and shows it as workflows', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  const { page, problems } = await openPage(t);
+  await page.goto(`${server.origin}/?panel=mission-control`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('.mc-grid');
+  assert.equal(await page.locator('.mc-subtitle').textContent(), 'Your scheduled workflows and latest results.');
+  assert.deepEqual(await page.locator('.mc-section-head h3').allTextContents(), ['Upcoming', 'Needs attention', 'Latest results', 'All workflows']);
+  assert.match(await page.locator('.mc-sources').textContent(), /cannot read ChatGPT tasks directly/);
+
+  await page.evaluate(() => { document.querySelector('#mc-manage').open = true; });
+  await page.selectOption('#mc-import-provider', 'openclaw');
+  await page.fill('#mc-import-text', '- Morning brief: `0 7 * * 1-5` id: morning-brief\n- Old digest (disabled): `0 9 * * 1` id: old-digest');
+  await page.click('#mc-import-form button[type="submit"]');
+  await page.waitForSelector('.mc-preview');
+  assert.match(await page.locator('.mc-preview strong').first().textContent(), /2 workflows recognised/);
+  await page.click('[data-mc-action="import-confirm"]');
+  await page.waitForSelector('[data-mc-toggle]');
+
+  assert.equal(await page.locator('#mc-all-list .mc-workflow').count(), 1, 'the default filter shows enabled workflows');
+  await page.click('[data-mc-filter="state"][data-value="all"]');
+  assert.equal(await page.locator('#mc-all-list .mc-workflow').count(), 2, 'the disabled job is kept');
+
+  await page.locator('[data-mc-toggle]').first().click();
+  const body = page.locator('.mc-workflow-body').first();
+  assert.match(await body.textContent(), /0 7 \* \* 1-5/);
+  assert.match(await body.textContent(), /change Agent Office's record only/);
+  assert.equal(await body.locator('.mc-run-form').isVisible(), false, 'the result form waits to be asked for');
+  assert.match(await page.locator('.mc-attention').textContent(), /Nothing confirmed as failing/);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const overflow = await page.evaluate(() => {
+    const panel = document.querySelector('.control-center-panel');
+    return panel.scrollWidth - panel.clientWidth;
+  });
+  assert.equal(overflow, 0, 'Mission Control scrolls sideways on a phone');
+  assert.deepEqual(problems, []);
+});

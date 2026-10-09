@@ -358,14 +358,20 @@ test('the rest of the office is unchanged: other agents and Mission Control stil
 
   // And Mission Control still opens over the top of it.
   await page.evaluate(() => window.AOControlCenter.openMissionControl());
-  await page.waitForSelector('#schedule-toggle');
-  assert.equal(await page.isVisible('#schedule-form'), false);
-  await page.click('#schedule-toggle');
-  assert.equal(await page.isVisible('#schedule-form'), true);
-  await page.click('#schedule-cancel');
-  assert.equal(await page.isVisible('#schedule-form'), false);
+  await page.waitForSelector('#mc-workflows .mc-grid');
+  assert.equal(await page.getAttribute('#control-center', 'class'), 'control-center control-center--wide');
+  await page.click('#mc-goals-section > summary');
+  assert.equal(await page.isVisible('#goal-form'), false);
+  await page.click('#goal-toggle');
+  assert.equal(await page.isVisible('#goal-form'), true);
+  await page.click('#goal-cancel');
+  assert.equal(await page.isVisible('#goal-form'), false);
   assert.equal(await page.textContent('#control-center-title'), 'Mission Control');
   assert.equal(await page.$('#newsroom-panel'), null);
+
+  // An agent opened afterwards gets the ordinary narrow inspector back.
+  await openAgent(page, 'webclaw');
+  assert.equal(await page.getAttribute('#control-center', 'class'), 'control-center');
 
   assert.deepEqual(problems, []);
 });
