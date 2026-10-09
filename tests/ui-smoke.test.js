@@ -819,5 +819,8 @@ test('Mission Control imports an inventory through a preview and shows it as wor
     return panel.scrollWidth - panel.clientWidth;
   });
   assert.equal(overflow, 0, 'Mission Control scrolls sideways on a phone');
+  const [upcomingTop, sourcesTop] = await page.evaluate(() =>
+    ['.mc-upcoming', '.mc-sources'].map(sel => document.querySelector(sel).getBoundingClientRect().top));
+  assert.ok(upcomingTop < sourcesTop, 'on a phone the workflows come before the source status');
   assert.deepEqual(problems, []);
 });
