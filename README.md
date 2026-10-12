@@ -419,8 +419,11 @@ about it*. That last question is why every card carries a **next action** and
 why nothing here has an end time.
 
 **A countdown** is a title, a date and time, a **category**, a **repeat rule**,
-a next action and an optional note. The categories are Deadline, Goal, Work
-Shift, Routine, Trading and Personal, each with its own colour. The repeat rules
+a next action and an optional note. Categories come from **Manage categories**
+— by default Subscriptions / Bills, AI / Usage resets, Deadlines, Goals, Work,
+Personal, Routines, Trading, Holidays and Other — and shared Agent Office
+countdowns use the same list as browser ones. The old Work Shift category reads
+as Work. The repeat rules
 are One-off, Daily, Every 2, 3 or 4 days, Weekdays, Weekly, Every 2 weeks and Monthly — so a weekly
 routine like the Instagram download review is entered once and rolls itself
 forward, a biweekly routine rolls every 14 days, and a monthly one on the 31st

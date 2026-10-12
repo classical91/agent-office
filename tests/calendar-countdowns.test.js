@@ -144,6 +144,22 @@ test('timers expand by days, carry their rotation entry, and never carry the web
   assert.equal(withInactive.items.length, 1);
 });
 
+test('a countdown in a custom category keeps that category and its saved name', () => {
+  const { from, to } = range('2026-10-14T00:00:00-07:00', '2026-10-21T00:00:00-07:00');
+  const payload = build({
+    from,
+    to,
+    categories: [{ id: 'house', label: 'House jobs', color: '#94a3b8' }],
+    countdowns: [
+      { id: 'gutters', title: 'Clear gutters', target_at: '2026-10-17T10:00:00-07:00', category: 'house' },
+      { id: 'legacy', title: 'Shift', target_at: '2026-10-18T10:00:00-07:00', category: 'shift' },
+    ],
+  });
+  assert.equal(payload.items[0].category, 'house');
+  assert.equal(payload.items[0].categoryLabel, 'House jobs');
+  assert.equal(payload.items[1].category, 'work');
+});
+
 test('the projection does not change the records it reads', () => {
   const { from, to } = range('2026-10-14T00:00:00-07:00', '2026-11-14T00:00:00-08:00');
   const countdowns = [{ id: 'c', title: 'C', target_at: '2026-09-01T16:00:00.000Z', repeat: 'weekly' }];

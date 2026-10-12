@@ -128,8 +128,11 @@ function stateFor(at, now, oneOff) {
 
 // ─── The two sources ─────────────────────────────────────────────────────────
 
-function countdownItem(record, at, now) {
-  const category = countdowns.normalizeCategory(record.category);
+// `categories` is the saved Manage categories list, so a custom category keeps
+// its own name here; categorySlug() reads a stored record leniently, the same
+// way the Countdowns page does.
+function countdownItem(record, at, now, categories) {
+  const category = countdowns.categorySlug(record.category);
   const repeat = countdowns.normalizeRepeat(record.repeat);
   const state = stateFor(at, now, repeat === 'none');
   const weekendQuiet = category === 'trading' && (countdowns.isWeekend(now) || countdowns.isWeekend(at));
@@ -141,7 +144,7 @@ function countdownItem(record, at, now) {
     rotation: '',
     at: at.toISOString(),
     category,
-    categoryLabel: countdowns.categoryLabel(category),
+    categoryLabel: countdowns.categoryLabel(category, categories),
     color: countdowns.categoryColor(category),
     repeat,
     repeatLabel: COUNTDOWN_REPEAT_LABELS[repeat] || repeat,
@@ -155,14 +158,14 @@ function countdownItem(record, at, now) {
   };
 }
 
-function countdownOccurrences(record, range, now) {
+function countdownOccurrences(record, range, now, categories) {
   if (!record || !record.id || record.archived) return [];
   const target = toDate(record.target_at || record.targetAt);
   if (!target) return [];
   const repeat = countdowns.normalizeRepeat(record.repeat);
   if (repeat === 'none') {
     const inRange = target.getTime() >= range.from.getTime() && target.getTime() < range.to.getTime();
-    return inRange ? [countdownItem(record, target, now)] : [];
+    return inRange ? [countdownItem(record, target, now, categories)] : [];
   }
   const avoidWeekend = countdowns.skipsWeekends(record);
   return walkOccurrences(target, date => countdowns.stepOccurrence(date, repeat), {
@@ -170,7 +173,7 @@ function countdownOccurrences(record, range, now) {
     to: range.to,
     floor: repeatFloor(now),
     skip: avoidWeekend ? countdowns.isWeekend : null,
-  }).map(at => countdownItem(record, at, now));
+  }).map(at => countdownItem(record, at, now, categories));
 }
 
 function timerRepeatLabel(timer) {
@@ -261,7 +264,7 @@ function byTime(a, b) {
  * the range on screen, so a month view of March still says what is due today.
  */
 function selectUpcoming(options) {
-  const { countdownRecords, timerRecords, now, includeInactive } = options;
+  const { countdownRecords, timerRecords, now, includeInactive, categories } = options;
   const lookahead = { from: new Date(0), to: countdowns.addDays(startOfDay(now), MAX_RANGE_DAYS) };
   const nextFor = items => {
     const overdue = items.find(item => item.overdue);
@@ -270,7 +273,7 @@ function selectUpcoming(options) {
   };
   const picks = [];
   countdownRecords.forEach(record => {
-    const pick = nextFor(countdownOccurrences(record, lookahead, now));
+    const pick = nextFor(countdownOccurrences(record, lookahead, now, categories));
     if (pick) picks.push(pick);
   });
   timerRecords.forEach(raw => {
@@ -289,6 +292,7 @@ function selectUpcoming(options) {
  * @param {object} options
  * @param {Array}  options.countdowns  Stored Agent Office countdown rows.
  * @param {Array}  options.timers      Stored Countdown Timer records (raw).
+ * @param {Array}  [options.categories] The saved category list, for labels.
  * @param {Date}   options.from
  * @param {Date}   options.to
  * @param {Date}   [options.now]
@@ -300,9 +304,10 @@ function buildCalendarCountdowns(options = {}) {
   const countdownRecords = Array.isArray(options.countdowns) ? options.countdowns : [];
   const timerRecords = Array.isArray(options.timers) ? options.timers : [];
   const includeInactive = Boolean(options.includeInactive);
+  const categories = Array.isArray(options.categories) ? options.categories : countdowns.CATEGORIES;
 
   const items = [];
-  countdownRecords.forEach(record => items.push(...countdownOccurrences(record, range, now)));
+  countdownRecords.forEach(record => items.push(...countdownOccurrences(record, range, now, categories)));
   timerRecords.forEach(raw => items.push(...timerOccurrences(raw, range, now, { includeInactive })));
   items.sort(byTime);
 
@@ -311,7 +316,7 @@ function buildCalendarCountdowns(options = {}) {
     from: range.from.toISOString(),
     to: range.to.toISOString(),
     items,
-    upcoming: selectUpcoming({ countdownRecords, timerRecords, now, includeInactive }),
+    upcoming: selectUpcoming({ countdownRecords, timerRecords, now, includeInactive, categories }),
     counts: {
       items: items.length,
       countdowns: items.filter(item => item.source === 'countdown').length,

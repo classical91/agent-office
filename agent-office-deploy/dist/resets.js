@@ -110,21 +110,12 @@ window.AOResets = (() => {
     other: { label: 'Other', keep: view => view.card.category === 'other' },
   };
 
-  // The shared Agent Office countdowns behind /api/countdowns keep their own
-  // small vocabulary — six categories and seven repeats, fixed in countdowns.js
-  // — and an office card's editor has to offer that vocabulary rather than this
-  // page's private one, or a save would quietly rewrite the card's category.
-  // /api/countdowns sends both lists with the payload; these are the fallback
-  // for a load that answered without them.
-  const OFFICE_CATEGORY_OPTIONS = [
-    { value: 'deadline', label: 'Deadline' },
-    { value: 'goal', label: 'Goal' },
-    { value: 'shift', label: 'Work Shift' },
-    { value: 'routine', label: 'Routine' },
-    { value: 'trading', label: 'Trading' },
-    { value: 'personal', label: 'Personal' },
-  ];
-
+  // The shared Agent Office countdowns behind /api/countdowns file under this
+  // page's own categories — the list Manage categories edits — so a shared
+  // card's editor offers the same names as every other card and the category
+  // filter finds it. Repeats are still the shared record's own seven-odd rules,
+  // fixed in countdowns.js; /api/countdowns sends them with the payload and
+  // these are the fallback for a load that answered without them.
   const OFFICE_REPEAT_LABELS = {
     none: 'Does not repeat',
     daily: 'Every day',
@@ -140,13 +131,24 @@ window.AOResets = (() => {
   const OFFICE_REPEAT_OPTIONS = Object.entries(OFFICE_REPEAT_LABELS)
     .map(([value, label]) => ({ value, label }));
 
-  let officeCategoryOptions = OFFICE_CATEGORY_OPTIONS.map(item => ({ ...item }));
   let officeRepeatOptions = OFFICE_REPEAT_OPTIONS.map(item => ({ ...item }));
+  // Names the server gave for ids this browser has no entry for yet.
+  let officeCategoryNames = {};
 
   function officeCategoryLabel(value) {
-    const found = officeCategoryOptions.find(item => item.value === value);
-    return found ? found.label : (OFFICE_CATEGORY_OPTIONS.find(item => item.value === value) || {}).label
-      || 'Deadline';
+    return CATEGORY_LABELS[value] || officeCategoryNames[value]
+      || String(value || 'deadline').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  // A shared record has no Uncategorized, so the editor offers the live
+  // categories only. One the card already carries but that has since been
+  // deleted stays on offer, so saving an unrelated edit does not change it.
+  function officeCategoryOptions(selected) {
+    const options = CATEGORY_OPTIONS.filter(item => item.value);
+    if (selected && !options.some(item => item.value === selected)) {
+      options.push({ value: selected, label: officeCategoryLabel(selected) });
+    }
+    return options;
   }
 
   const CATEGORY_LABELS = Object.fromEntries(CATEGORY_OPTIONS.map(item => [item.value, item.label]));
@@ -850,10 +852,10 @@ window.AOResets = (() => {
         .flatMap(group => (payload.groups && payload.groups[group]) || [])
         .filter(item => item.kind === 'countdown');
       const repeatDays = { daily: 1, every2days: 2, every3days: 3, every4days: 4, weekday: 1, weekly: 7, biweekly: 14, monthly: 30 };
-      if (Array.isArray(payload.categories) && payload.categories.length) {
-        officeCategoryOptions = payload.categories
+      if (Array.isArray(payload.categories)) {
+        officeCategoryNames = Object.fromEntries(payload.categories
           .filter(item => item && item.id)
-          .map(item => ({ value: item.id, label: item.label || item.id }));
+          .map(item => [item.id, item.label || item.id]));
       }
       if (Array.isArray(payload.repeats) && payload.repeats.length) {
         officeRepeatOptions = payload.repeats
@@ -1007,7 +1009,7 @@ window.AOResets = (() => {
             <div class="ao-field">
               <label class="ao-label" for="rst-category-${escHtml(card.id)}">Category</label>
               <select class="ao-select" id="rst-category-${escHtml(card.id)}" data-field="officeCategory">
-                ${optionsHtml(officeCategoryOptions, officeCategory)}
+                ${optionsHtml(officeCategoryOptions(officeCategory), officeCategory)}
               </select>
             </div>
 
