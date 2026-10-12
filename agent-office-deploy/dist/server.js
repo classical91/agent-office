@@ -667,7 +667,7 @@ function toClientCountdown(row) {
     id: row.id,
     title: row.title || '',
     target_at: toIsoOrEmpty(row.target_at),
-    category: countdowns.normalizeCategory(row.category),
+    category: countdowns.categorySlug(row.category),
     repeat: countdowns.normalizeRepeat(row.repeat_rule !== undefined ? row.repeat_rule : row.repeat),
     next_action: row.next_action || '',
     notes: row.notes || '',
@@ -3471,12 +3471,24 @@ async function removeLegacyTradingViewTimeframeCountdowns(storage, now = new Dat
  * yourself should still be readable when Google is down or was never
  * connected, so a failure there costs the events and nothing else.
  */
+// The Manage categories list on the Countdowns page, which every countdown —
+// shared or browser-only — files under.
+async function loadCountdownCategories(storage) {
+  try {
+    const saved = await storage.getAppSetting('countdown-categories.v1');
+    return countdowns.categoriesFrom(saved ? JSON.parse(saved) : null);
+  } catch {
+    return countdowns.categoriesFrom(null);
+  }
+}
+
 async function buildCountdownsPayload(options = {}) {
   const storage = await storageReady;
   const now = options.now instanceof Date ? options.now : new Date();
   await removeLegacyTradingViewTimeframeCountdowns(storage, now);
   if (options.includeShareBotReports) await ensureShareBotCountdowns(storage, now);
   const stored = await storage.listCountdowns();
+  const categories = await loadCountdownCategories(storage);
 
   let events = [];
   let calendarState = 'disconnected';
@@ -3498,9 +3510,10 @@ async function buildCountdownsPayload(options = {}) {
       events,
       now,
       includeArchived: Boolean(options.includeArchived),
+      categories,
     }),
     calendar: { state: calendarState, connected: calendarState === 'connected' },
-    categories: countdowns.CATEGORIES,
+    categories,
     repeats: countdowns.REPEATS,
     timezone: process.env.TZ,
   };
@@ -7416,7 +7429,8 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'POST' && pathname === '/api/countdowns') {
       if (!requireDropsAuth(res, req)) return;
 
-      const payload = countdowns.validateCountdownInput(await readJsonBody(req));
+      const categories = await loadCountdownCategories(storage);
+      const payload = countdowns.validateCountdownInput(await readJsonBody(req), false, categories);
       if (!payload.ok) {
         sendJson(res, 400, { error: payload.error });
         return;
@@ -7430,7 +7444,7 @@ const server = http.createServer(async (req, res) => {
         ...payload.value,
       });
 
-      sendJson(res, 201, countdowns.decorateCountdown(created));
+      sendJson(res, 201, countdowns.decorateCountdown(created, new Date(), categories));
       return;
     }
 
@@ -7443,7 +7457,8 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      const payload = countdowns.validateCountdownInput(await readJsonBody(req), true);
+      const categories = await loadCountdownCategories(storage);
+      const payload = countdowns.validateCountdownInput(await readJsonBody(req), true, categories);
       if (!payload.ok) {
         sendJson(res, 400, { error: payload.error });
         return;
@@ -7455,7 +7470,7 @@ const server = http.createServer(async (req, res) => {
         return;
       }
 
-      sendJson(res, 200, countdowns.decorateCountdown(updated));
+      sendJson(res, 200, countdowns.decorateCountdown(updated, new Date(), categories));
       return;
     }
 

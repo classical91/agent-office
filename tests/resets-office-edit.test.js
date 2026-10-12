@@ -74,14 +74,20 @@ test('a shared countdown keeps Pushcut off the card', () => {
   assert.ok(!markup.includes('data-field="pushcut"'));
 });
 
-test('the editor offers the office vocabulary, not this page\'s own', () => {
+test('the editor offers the office repeats and this page\'s own categories', () => {
   const markup = html(officeCard());
   ['none', 'daily', 'every2days', 'every3days', 'every4days', 'weekday', 'weekly', 'biweekly', 'monthly']
     .forEach(repeat => assert.ok(markup.includes(`value="${repeat}"`), `no ${repeat} repeat`));
-  ['deadline', 'goal', 'shift', 'routine', 'trading', 'personal']
+  ['subscriptions-bills', 'ai-usage', 'deadline', 'goal', 'work', 'routine', 'trading', 'personal', 'holidays', 'other']
     .forEach(category => assert.ok(markup.includes(`value="${category}"`), `no ${category} category`));
+  assert.ok(!markup.includes('value="shift"'), 'the old Work Shift category is still offered');
   assert.ok(markup.includes('value="biweekly" selected'));
   assert.ok(markup.includes('value="routine" selected'));
+});
+
+test('a shared card keeps a category that is no longer on the list', () => {
+  const markup = html(officeCard({ category: 'retired-one', officeCategory: 'retired-one' }));
+  assert.ok(markup.includes('value="retired-one" selected'), 'saving would rewrite the category');
 });
 
 test('the editor opens on the stored target, not on the next occurrence', () => {
