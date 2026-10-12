@@ -595,6 +595,8 @@ module.exports = {
   bucketFor,
   buildUpcoming,
   categoriesFrom,
+  categoryColor,
+  categoryLabel,
   categorySlug,
   decorateCountdown,
   decorateEvent,
@@ -606,6 +608,8 @@ module.exports = {
   normalizeRepeat,
   selectRollupItems,
   selectWidgetToday,
+  skipsWeekends,
+  stepOccurrence,
   toWidgetItem,
   validateCountdownInput,
 };

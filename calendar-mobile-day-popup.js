@@ -257,7 +257,7 @@
 
   function fallbackEventsFromCell(cell) {
     if (!cell) return [];
-    return Array.from(cell.querySelectorAll('.calendar-event.small')).map(button => ({
+    return Array.from(cell.querySelectorAll('.calendar-event.small:not(.calendar-countdown-pill)')).map(button => ({
       summary: (button.querySelector('.calendar-event-title') || {}).textContent || 'Event',
       startLabel: (button.querySelector('.calendar-event-time') || {}).textContent || '',
       type: 'meeting',
@@ -275,6 +275,49 @@
     const events = Array.isArray(payload.events) ? payload.events : [];
     eventCache = { loadedAt: Date.now(), events };
     return events;
+  }
+
+  // Countdowns come from the calendar's own Countdowns layer, already loaded
+  // for the dates on screen. They are read-only here: the one action is
+  // opening the countdown, never Delete, which would go to Google.
+  function countdownsForDate(dateKey) {
+    if (!window.CAL || typeof window.CAL.getCountdownsForDate !== 'function') return [];
+    try {
+      return window.CAL.getCountdownsForDate(dateKey) || [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function countdownRows(items) {
+    return items.map(item => {
+      const at = new Date(item.at);
+      const time = Number.isNaN(at.getTime())
+        ? ''
+        : new Intl.DateTimeFormat('en-CA', { hour: 'numeric', minute: '2-digit' }).format(at);
+      const left = window.CAL && typeof window.CAL.countdownLeft === 'function'
+        ? window.CAL.countdownLeft(item.at, item.repeat === 'none', true)
+        : '';
+      const title = item.title + (item.rotation ? ' · ' + item.rotation : '');
+      const detail = [left, item.nextAction].filter(Boolean).join(' · ') || item.categoryLabel;
+      return '<article class="calendar-mobile-day-event" style="--calendar-event-color:' + escapeHtml(item.overdue ? '#ef4444' : item.color) + ';border-style:dashed;">'
+        + '<span class="calendar-mobile-day-event-time">' + escapeHtml(time) + ' · countdown</span>'
+        + '<span class="calendar-mobile-day-event-title">' + escapeHtml(title) + '</span>'
+        + '<span class="calendar-mobile-day-event-meta">' + escapeHtml(detail) + '</span>'
+        + '<div class="calendar-mobile-day-actions"><a class="calendar-mobile-day-open" href="' + escapeHtml(item.href) + '">Open countdown</a></div>'
+        + '</article>';
+    }).join('');
+  }
+
+  function countLabel(events, countdowns) {
+    const parts = [events.length === 1 ? '1 event' : events.length + ' events'];
+    if (countdowns.length) parts.push(countdowns.length === 1 ? '1 countdown' : countdowns.length + ' countdowns');
+    return parts.join(' · ');
+  }
+
+  function dayRows(events, countdowns) {
+    if (!events.length && countdowns.length) return countdownRows(countdowns);
+    return countdownRows(countdowns) + eventRows(events);
   }
 
   function closePopup() {
@@ -315,11 +358,11 @@
   function updatePopupEvents(popup, dateKey, events) {
     if (!popup || !document.body.contains(popup)) return;
     const visibleEvents = events.filter(event => eventDateKey(event) === dateKey);
-    const count = visibleEvents.length;
+    const countdowns = countdownsForDate(dateKey);
     const countNode = popup.querySelector('.calendar-mobile-day-count');
     const listNode = popup.querySelector('.calendar-mobile-day-list');
-    countNode.textContent = count === 1 ? '1 event' : count + ' events';
-    listNode.innerHTML = eventRows(visibleEvents);
+    countNode.textContent = countLabel(visibleEvents, countdowns);
+    listNode.innerHTML = dayRows(visibleEvents, countdowns);
   }
 
   async function deleteEventFromPopup(button, popup) {
@@ -410,11 +453,11 @@
       events = fallbackEventsFromCell(sourceCell);
     }
     if (!document.body.contains(popup)) return;
-    const count = events.length;
+    const countdowns = countdownsForDate(dateKey);
     const countNode = popup.querySelector('.calendar-mobile-day-count');
     const listNode = popup.querySelector('.calendar-mobile-day-list');
-    countNode.textContent = count === 1 ? '1 event' : count + ' events';
-    listNode.innerHTML = eventRows(events);
+    countNode.textContent = countLabel(events, countdowns);
+    listNode.innerHTML = dayRows(events, countdowns);
   }
 
   document.addEventListener('click', event => {
@@ -429,6 +472,14 @@
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') closePopup();
   });
+
+  // calendar-mobile-event-add.js redraws this list after a refresh; it uses
+  // these so the day's countdowns survive the redraw.
+  window.AOCalendarDayPopup = {
+    countdownsForDate,
+    countdownRows,
+    countLabel
+  };
 
   window.addEventListener('resize', () => {
     if (!isMobile()) closePopup();

@@ -256,8 +256,18 @@
       const events = (Array.isArray(payload.events) ? payload.events : []).filter(event => eventDateKey(event) === dateKey);
       const countNode = popup.querySelector('.calendar-mobile-day-count');
       const listNode = popup.querySelector('.calendar-mobile-day-list');
-      if (countNode) countNode.textContent = events.length === 1 ? '1 event' : events.length + ' events';
-      if (listNode) listNode.innerHTML = renderEvents(events);
+      const dayPopup = window.AOCalendarDayPopup;
+      const countdowns = dayPopup ? dayPopup.countdownsForDate(dateKey) : [];
+      if (countNode) {
+        countNode.textContent = dayPopup
+          ? dayPopup.countLabel(events, countdowns)
+          : (events.length === 1 ? '1 event' : events.length + ' events');
+      }
+      if (listNode) {
+        listNode.innerHTML = countdowns.length
+          ? dayPopup.countdownRows(countdowns) + (events.length ? renderEvents(events) : '')
+          : renderEvents(events);
+      }
     } catch (error) {
       // The original popup remains usable if a refresh fails.
     }

@@ -305,7 +305,18 @@
       projectFilter: '',
       // Filled in from /api/calendar/preferences; the defaults here only cover
       // the first paint.
-      preferences: null
+      preferences: null,
+      // The Countdowns layer: markers projected from the countdown and timer
+      // stores by /api/calendar/countdowns. Loaded on its own so it stays up
+      // when Google is down, and kept apart from `events` so nothing that
+      // edits, deletes, dispatches or looks for free time can reach it.
+      showCountdowns: readCountdownPreference(),
+      countdownItems: [],
+      countdownUpcoming: [],
+      countdownStatus: 'idle',
+      countdownError: null,
+      countdownRangeKey: null,
+      selectedCountdownId: null
     };
   }
 
@@ -429,6 +440,318 @@
     if (meta.runProgress) parts.push(meta.runProgress);
     return parts.join(' · ');
   }
+
+
+  // ─── Countdowns layer ─────────────────────────────────────────────────────
+  //
+  // Countdowns and Countdown Timers drawn on the dates they land. They are
+  // markers, not blocks: they take no time, they are not Google events, and
+  // the only thing a marker can do is open its own countdown, where it is
+  // edited. Viewing one never starts a run, sends a notification, or writes to
+  // the timer store.
+
+  const COUNTDOWN_PREF_KEY = 'ao-calendar-countdowns';
+  // Lanes that slice the calendar by agent work have no countdowns in them.
+  const COUNTDOWN_LANES = ['all', 'deadlines'];
+  let countdownTicket = 0;
+
+  function readCountdownPreference() {
+    try {
+      return localStorage.getItem(COUNTDOWN_PREF_KEY) !== 'off';
+    } catch (error) {
+      return true;
+    }
+  }
+
+  function writeCountdownPreference(on) {
+    try {
+      localStorage.setItem(COUNTDOWN_PREF_KEY, on ? 'on' : 'off');
+    } catch (error) {
+      // The toggle still works for this visit.
+    }
+  }
+
+  // The dates on screen, so a month grid asks for its six weeks and an agenda
+  // for its fortnight.
+  function countdownRange() {
+    if (state.view === 'month') {
+      const from = monthMatrix(state.cursorDate)[0];
+      return { from, to: addDays(from, 42) };
+    }
+    if (state.view === 'week') {
+      const from = startOfWeek(state.cursorDate);
+      return { from, to: addDays(from, 7) };
+    }
+    if (state.view === 'agenda') return { from: state.selectedDate, to: addDays(state.selectedDate, 14) };
+    return { from: state.selectedDate, to: addDays(state.selectedDate, 1) };
+  }
+
+  async function loadCountdowns(force) {
+    const range = countdownRange();
+    const key = range.from.toISOString() + '|' + range.to.toISOString();
+    if (!force && key === state.countdownRangeKey) return;
+    state.countdownRangeKey = key;
+    const ticket = ++countdownTicket;
+    if (!state.countdownItems.length && state.countdownStatus !== 'ready') state.countdownStatus = 'loading';
+    try {
+      const query = '?from=' + encodeURIComponent(range.from.toISOString()) + '&to=' + encodeURIComponent(range.to.toISOString());
+      const resp = await fetch('/api/calendar/countdowns' + query, { credentials: 'same-origin' });
+      if (ticket !== countdownTicket) return;
+      if (resp.status === 401) {
+        state.countdownStatus = 'locked';
+        state.countdownItems = [];
+        state.countdownUpcoming = [];
+        render();
+        return;
+      }
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      if (ticket !== countdownTicket) return;
+      state.countdownItems = Array.isArray(data.items) ? data.items : [];
+      state.countdownUpcoming = Array.isArray(data.upcoming) ? data.upcoming : [];
+      state.countdownStatus = 'ready';
+      state.countdownError = null;
+      if (state.selectedCountdownId && !findCountdown(state.selectedCountdownId)) state.selectedCountdownId = null;
+      render();
+    } catch (error) {
+      if (ticket !== countdownTicket) return;
+      // The range key stays set, so render() does not retry in a loop; Retry,
+      // navigation and returning to the tab all ask again.
+      state.countdownStatus = 'error';
+      state.countdownError = error && error.message ? error.message : String(error);
+      render();
+    }
+  }
+
+  function countdownMatchesSearch(item, term) {
+    if (!term) return true;
+    return [item.title, item.rotation, item.nextAction, item.categoryLabel]
+      .join(' ')
+      .toLowerCase()
+      .includes(term);
+  }
+
+  function visibleCountdowns() {
+    if (!state.showCountdowns) return [];
+    if (COUNTDOWN_LANES.indexOf(state.lane) === -1) return [];
+    if (state.agentFilter || state.projectFilter) return [];
+    const term = state.search.trim().toLowerCase();
+    return state.countdownItems.filter(item => countdownMatchesSearch(item, term));
+  }
+
+  function countdownsForDate(date) {
+    return visibleCountdowns().filter(item => sameDay(new Date(item.at), date));
+  }
+
+  function findCountdown(id) {
+    if (!id) return null;
+    return state.countdownItems.find(item => item.id === id)
+      || state.countdownUpcoming.find(item => item.id === id)
+      || null;
+  }
+
+  function countdownDuration(ms, long) {
+    const abs = Math.abs(ms);
+    const days = Math.floor(abs / 86400000);
+    const hours = Math.floor((abs % 86400000) / 3600000);
+    const minutes = Math.floor((abs % 3600000) / 60000);
+    const unit = (count, word) => count + ' ' + word + (count === 1 ? '' : 's');
+    if (long) {
+      if (days) return hours ? unit(days, 'day') + ' ' + unit(hours, 'hr') : unit(days, 'day');
+      if (hours) return minutes ? unit(hours, 'hr') + ' ' + unit(minutes, 'min') : unit(hours, 'hr');
+      return unit(Math.max(1, minutes), 'min');
+    }
+    if (days) return days + 'd' + (hours && days < 10 ? ' ' + hours + 'h' : '');
+    if (hours) return hours + 'h' + (minutes ? ' ' + minutes + 'm' : '');
+    return Math.max(1, minutes) + 'm';
+  }
+
+  // Worked out from the clock on every call, so the label keeps moving between
+  // loads. A one-off that has passed is overdue; a repeating one has simply
+  // passed - its next occurrence is already on the calendar.
+  function countdownLeft(at, oneOff, long) {
+    const ms = Date.parse(at) - Date.now();
+    if (Number.isNaN(ms)) return '';
+    if (Math.abs(ms) < 60000) return long ? 'Due now' : 'now';
+    if (ms < 0) {
+      if (oneOff) return long ? 'Overdue by ' + countdownDuration(ms, true) : 'overdue';
+      return long ? 'Passed ' + countdownDuration(ms, true) + ' ago' : 'passed';
+    }
+    return long ? 'In ' + countdownDuration(ms, true) : countdownDuration(ms, false);
+  }
+
+  function countdownLeftSpan(item, long) {
+    const oneOff = item.repeat === 'none';
+    return '<span class="calendar-countdown-left" data-countdown-at="' + escapeHtml(item.at) + '"'
+      + ' data-countdown-oneoff="' + (oneOff ? '1' : '0') + '"'
+      + (long ? ' data-countdown-long="1"' : '') + '>'
+      + escapeHtml(countdownLeft(item.at, oneOff, long))
+      + '</span>';
+  }
+
+  function countdownTitle(item) {
+    return item.title + (item.rotation ? ' · ' + item.rotation : '');
+  }
+
+  function countdownClasses(base, item) {
+    return base + ' is-' + escapeHtml(item.state || 'upcoming')
+      + (item.weekendQuiet ? ' is-quiet' : '')
+      + (state.selectedCountdownId === item.id ? ' active' : '');
+  }
+
+  // Ids come from records the browser wrote, so they travel in a data
+  // attribute rather than being spliced into an inline script.
+  function countdownClick(jump) {
+    return ' onclick="event.stopPropagation();CAL.selectCountdown(this.dataset.countdownId' + (jump ? ', true' : '') + ')"';
+  }
+
+  function renderCountdownPill(item) {
+    const at = new Date(item.at);
+    return '<button type="button" class="' + countdownClasses('calendar-event small calendar-countdown-pill', item) + '"'
+      + ' style="--countdown-color:' + escapeHtml(item.color) + ';"'
+      + ' data-countdown-id="' + escapeHtml(item.id) + '"' + countdownClick(false)
+      + ' title="' + escapeHtml('Countdown · ' + formatTime(at) + ' · ' + countdownTitle(item)) + '">'
+      + '<span class="calendar-countdown-glyph" aria-hidden="true">&#9203;</span>'
+      + '<span class="calendar-event-title">' + escapeHtml(countdownTitle(item)) + '</span>'
+      + countdownLeftSpan(item, false)
+      + '</button>';
+  }
+
+  // A line across the day column at the moment it lands, with the label hung
+  // off it. It reserves no height, so it never pushes an event aside.
+  function renderCountdownMarker(item) {
+    const at = new Date(item.at);
+    const top = ((at.getHours() + at.getMinutes() / 60) - HOUR_START) * ROW_HEIGHT;
+    return '<button type="button" class="' + countdownClasses('calendar-countdown-marker', item) + '"'
+      + ' style="top:' + top + 'px;--countdown-color:' + escapeHtml(item.color) + ';"'
+      + ' data-countdown-id="' + escapeHtml(item.id) + '"' + countdownClick(false)
+      + ' title="' + escapeHtml('Countdown · ' + formatTime(at) + ' · ' + countdownTitle(item)) + '">'
+      + '<span class="calendar-countdown-marker-label">'
+      + '<span class="calendar-countdown-glyph" aria-hidden="true">&#9203;</span>'
+      + '<span class="calendar-countdown-marker-title">' + escapeHtml(formatPillTime(at) + ' ' + countdownTitle(item)) + '</span>'
+      + countdownLeftSpan(item, false)
+      + '</span></button>';
+  }
+
+  function renderCountdownAgendaRow(item) {
+    const at = new Date(item.at);
+    return '<button type="button" class="' + countdownClasses('calendar-agenda-row calendar-countdown-row', item) + '"'
+      + ' style="--countdown-color:' + escapeHtml(item.color) + ';"'
+      + ' data-countdown-id="' + escapeHtml(item.id) + '"' + countdownClick(false) + '>'
+      + '<div class="calendar-agenda-row-time">' + escapeHtml(formatTime(at)) + '</div>'
+      + '<div class="calendar-agenda-row-copy"><strong>' + escapeHtml(countdownTitle(item)) + '</strong>'
+      + '<span>' + escapeHtml(item.nextAction || item.repeatLabel) + ' · ' + countdownLeftSpan(item, true) + '</span>'
+      + '</div>'
+      + '<span class="calendar-status-chip"><span class="calendar-chip-swatch" style="background:' + escapeHtml(item.color) + '"></span>' + escapeHtml(item.categoryLabel) + '</span>'
+      + '</button>';
+  }
+
+  function renderCountdownBar() {
+    const on = state.showCountdowns;
+    const count = on ? visibleCountdowns().length : state.countdownItems.length;
+    const toggle = '<button type="button" class="calendar-lane-chip calendar-countdown-toggle' + (on ? ' active' : '') + '"'
+      + ' aria-pressed="' + (on ? 'true' : 'false') + '" onclick="CAL.toggleCountdowns()">'
+      + '<span aria-hidden="true">&#9203;</span> Countdowns'
+      + (state.countdownStatus === 'ready' ? '<span class="calendar-lane-count">' + count + '</span>' : '')
+      + '</button>';
+    let body = '';
+    if (on) {
+      if (state.countdownStatus === 'loading' || state.countdownStatus === 'idle') {
+        body = '<span class="calendar-countdown-status">Loading countdowns…</span>';
+      } else if (state.countdownStatus === 'locked') {
+        body = '<span class="calendar-countdown-status">Unlock Agent Office to show countdowns.</span>'
+          + '<button type="button" class="calendar-lane-chip" onclick="CAL.unlockCountdowns()">Unlock</button>';
+      } else if (state.countdownStatus === 'error') {
+        body = '<span class="calendar-countdown-status is-error">Countdowns unavailable' + (state.countdownError ? ' (' + escapeHtml(state.countdownError) + ')' : '') + '.</span>'
+          + '<button type="button" class="calendar-lane-chip" onclick="CAL.loadCountdowns(true)">Retry</button>';
+      } else if (!state.countdownUpcoming.length) {
+        body = '<span class="calendar-countdown-status">Nothing counting down.</span>';
+      } else {
+        body = state.countdownUpcoming.map(item => '<button type="button" class="' + countdownClasses('calendar-lane-chip calendar-countdown-chip', item) + '"'
+          + ' style="--countdown-color:' + escapeHtml(item.color) + ';"'
+          + ' data-countdown-id="' + escapeHtml(item.id) + '"' + countdownClick(true)
+          + ' title="' + escapeHtml(formatLongDate(new Date(item.at)) + ' · ' + formatTime(new Date(item.at))) + '">'
+          + '<span class="calendar-countdown-dot" aria-hidden="true"></span>'
+          + escapeHtml(countdownTitle(item))
+          + countdownLeftSpan(item, false)
+          + '</button>').join('');
+      }
+    }
+    return '<div class="calendar-countdown-bar"><div class="calendar-lane-row">' + toggle + body + '</div></div>';
+  }
+
+  function renderCountdownDetail() {
+    const item = state.showCountdowns ? findCountdown(state.selectedCountdownId) : null;
+    if (!item) return '';
+    const at = new Date(item.at);
+    const chips = [item.categoryLabel, item.repeatLabel]
+      .concat(item.weekendQuiet ? ['Weekend - quiet'] : [])
+      .map(label => '<span class="calendar-status-chip">' + escapeHtml(label) + '</span>')
+      .join('');
+    return '<div class="' + countdownClasses('calendar-countdown-detail', item).replace(' active', '') + '" style="--countdown-color:' + escapeHtml(item.color) + ';" role="region" aria-label="Countdown details">'
+      + '<div class="calendar-countdown-detail-main">'
+      + '<div class="calendar-detail-label">' + (item.source === 'timer' ? 'Countdown timer' : 'Countdown') + '</div>'
+      + '<div class="calendar-detail-title">' + escapeHtml(item.title) + (item.rotation ? ' <span class="calendar-countdown-rotation">· ' + escapeHtml(item.rotation) + '</span>' : '') + '</div>'
+      + '<div class="calendar-detail-meta">' + escapeHtml(formatLongDate(at) + ' · ' + formatTime(at)) + ' · ' + countdownLeftSpan(item, true) + '</div>'
+      + (item.nextAction ? '<div class="calendar-countdown-next">Next: ' + escapeHtml(item.nextAction) + '</div>' : '')
+      + '<div class="calendar-countdown-chips">' + chips + '</div>'
+      + '</div>'
+      + '<div class="calendar-countdown-detail-actions">'
+      + '<a class="calendar-btn primary tiny" href="' + escapeHtml(item.href) + '">Open countdown</a>'
+      + '<button type="button" class="calendar-btn tiny ghost" onclick="CAL.selectCountdown(null)">Close</button>'
+      + '</div>'
+      + '</div>';
+  }
+
+  function selectCountdown(id, jump) {
+    const item = findCountdown(id);
+    if (!item) {
+      state.selectedCountdownId = null;
+      render();
+      return;
+    }
+    state.selectedCountdownId = state.selectedCountdownId === id && !jump ? null : id;
+    if (jump && state.selectedCountdownId) {
+      const day = startOfDay(new Date(item.at));
+      state.selectedDate = day;
+      state.cursorDate = day;
+    }
+    render();
+  }
+
+  function toggleCountdowns() {
+    state.showCountdowns = !state.showCountdowns;
+    writeCountdownPreference(state.showCountdowns);
+    if (!state.showCountdowns) state.selectedCountdownId = null;
+    render();
+  }
+
+  async function unlockCountdowns() {
+    try {
+      if (typeof window.ensureDropsSession === 'function' && !(await window.ensureDropsSession(true))) return;
+    } catch (error) {
+      return;
+    }
+    loadCountdowns(true);
+  }
+
+  // The time-left labels move in place; nothing else on the board re-renders.
+  function tickCountdownLabels() {
+    document.querySelectorAll('[data-countdown-at]').forEach(node => {
+      const label = countdownLeft(node.dataset.countdownAt, node.dataset.countdownOneoff === '1', node.dataset.countdownLong === '1');
+      if (node.textContent !== label) node.textContent = label;
+    });
+  }
+
+  window.setInterval(tickCountdownLabels, 30000);
+  // A countdown edited on its own page, or rolled forward by the server, shows
+  // up when this tab is looked at again.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && state.showCountdowns && state.countdownStatus !== 'idle') loadCountdowns(true);
+  });
+  window.setInterval(() => {
+    if (document.visibilityState === 'visible' && state.showCountdowns && state.countdownStatus === 'ready') loadCountdowns(true);
+  }, 5 * 60 * 1000);
 
   const state = seedState();
   function visibleEvents() {
@@ -941,8 +1264,12 @@
     const dayNames = WEEKDAY_LABELS.map(label => '<div class="calendar-month-weekday">' + label + '</div>').join('');
     const cells = days.map(day => {
       const dateEvents = eventsForDate(day);
-      const dayEvents = dateEvents.slice(0, MONTH_PILL_CAP);
-      const more = Math.max(0, dateEvents.length - dayEvents.length);
+      // Countdowns lead the cell: a deadline is the thing on that day most
+      // worth not scrolling past.
+      const dateCountdowns = countdownsForDate(day);
+      const dayCountdowns = dateCountdowns.slice(0, MONTH_PILL_CAP);
+      const dayEvents = dateEvents.slice(0, Math.max(0, MONTH_PILL_CAP - dayCountdowns.length));
+      const more = Math.max(0, dateEvents.length + dateCountdowns.length - dayEvents.length - dayCountdowns.length);
       const classes = ['calendar-month-cell'];
       if (!sameMonth(day, state.cursorDate)) classes.push('is-other');
       if (sameDay(day, state.today)) classes.push('is-today');
@@ -950,6 +1277,7 @@
       return '<div class="' + classes.join(' ') + '" onclick="CAL.jumpToDate(\'' + dateKey(day) + '\')" ondragover="CAL.allowTaskDrop(event)" ondrop="CAL.dropTask(event, \'' + dateKey(day) + '\', 10)">'
         + '<div class="calendar-day-number">' + day.getDate() + '</div>'
         + '<div class="calendar-month-events" data-extra="' + more + '">'
+        + dayCountdowns.map(renderCountdownPill).join('')
         + dayEvents.map(event => renderEventPill(event, true)).join('')
         + '</div>'
         // The overflow line sits outside the clipped pill list so it stays
@@ -1026,6 +1354,11 @@
       eventsForDate(day).forEach(event => {
         const start = parseLocalIso(event.start);
         const hour = start.getHours() + start.getMinutes() / 60;
+        if (earliest === null || hour < earliest) earliest = hour;
+      });
+      countdownsForDate(day).forEach(item => {
+        const at = new Date(item.at);
+        const hour = at.getHours() + at.getMinutes() / 60;
         if (earliest === null || hour < earliest) earliest = hour;
       });
     });
@@ -1123,6 +1456,7 @@
           return '<div class="calendar-drop-slot" style="top:' + (index * ROW_HEIGHT) + 'px;height:' + ROW_HEIGHT + 'px;" ondragover="CAL.allowTaskDrop(event)" ondrop="CAL.dropTask(event, \'' + dateKey(day) + '\', ' + hour + ')" onclick="CAL.jumpToDate(\'' + dateKey(day) + '\')"></div>';
         }).join('')
         + laidOut.map(item => renderEventBlock(item)).join('')
+        + countdownsForDate(day).map(renderCountdownMarker).join('')
         + '</div></div>';
     }).join('');
 
@@ -1157,10 +1491,11 @@
     for (let i = 0; i <= 13; i += 1) {
       const day = addDays(start, i);
       const items = eventsForDate(day);
-      if (items.length) grouped.push({ day, items });
+      const countdownItems = countdownsForDate(day);
+      if (items.length || countdownItems.length) grouped.push({ day, items, countdownItems });
     }
     if (!grouped.length) return '<div class="calendar-empty" style="margin:20px;">Nothing is scheduled in this range yet.</div>';
-    return '<div class="calendar-agenda">' + grouped.map(group => '<div class="calendar-agenda-group"><div class="calendar-agenda-date">' + escapeHtml(formatLongDate(group.day)) + '</div><div class="calendar-agenda-list">' + group.items.map(event => {
+    return '<div class="calendar-agenda">' + grouped.map(group => '<div class="calendar-agenda-group"><div class="calendar-agenda-date">' + escapeHtml(formatLongDate(group.day)) + '</div><div class="calendar-agenda-list">' + group.countdownItems.map(renderCountdownAgendaRow).join('') + group.items.map(event => {
       const meta = TYPE_META[event.type] || TYPE_META.meeting;
       const startDate = parseLocalIso(event.start);
       const endDate = parseLocalIso(event.end);
@@ -1659,12 +1994,17 @@
       loadSchedulingPreferences();
       loadGoogleEvents();
     }
+    // Independent of Google: a failed or missing connection costs the events,
+    // never the countdowns.
+    if (state.showCountdowns) loadCountdowns(false);
     root.innerHTML = '<div class="calendar-shell calendar-compact-shell">'
       + '<section class="calendar-stage calendar-compact-stage calendar-view-' + state.view + '">'
       + renderFlash()
       + '<div class="calendar-board calendar-compact-board">'
       + renderToolbar()
       + renderLaneBar()
+      + renderCountdownBar()
+      + renderCountdownDetail()
       + renderCalendarStateNotice()
       + renderMainBoard()
       + '</div>'
@@ -2536,6 +2876,15 @@
     createRecapFor,
     shiftEvent,
     loadGoogleEvents,
+    // The Countdowns layer. Read-only: its only action is opening the
+    // countdown's own page.
+    loadCountdowns,
+    selectCountdown,
+    toggleCountdowns,
+    unlockCountdowns,
+    getCountdowns: () => visibleCountdowns().slice(),
+    getCountdownsForDate: value => countdownsForDate(typeof value === 'string' ? parseDateKey(value) : value),
+    countdownLeft,
     // Agent Office control surface: lanes, run lifecycle, and the state the
     // Agent Assistant drawer reads.
     setLane,
