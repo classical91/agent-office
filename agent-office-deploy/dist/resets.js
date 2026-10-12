@@ -1182,6 +1182,8 @@ window.AOResets = (() => {
         : '';
     }
 
+    if (pendingOpenId) setTimeout(applyPendingOpen, 0);
+
     // The save flash is a one-shot: clear it so the next render is calm.
     if (state.savedId) {
       const saved = state.savedId;
@@ -1346,6 +1348,37 @@ window.AOResets = (() => {
   }
 
   // ─── Expanding a card ──────────────────────────────────────────────────
+
+  // The Calendar's "Open countdown" lands here as ?open=<id>. The card may
+  // arrive late (shared countdowns and the server's timers load after first
+  // paint), so the id waits until a render has it. If the saved filter would
+  // hide it, this visit shows everything - the saved preference is untouched.
+  let pendingOpenId = (() => {
+    try {
+      return new URLSearchParams(window.location.search).get('open') || '';
+    } catch {
+      return '';
+    }
+  })();
+
+  function applyPendingOpen() {
+    if (!pendingOpenId) return;
+    const id = pendingOpenId;
+    if (!state.cards.some(card => card.id === id)) return;
+    pendingOpenId = '';
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('open');
+      window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    } catch {}
+    if (!listedViews().some(view => view.card.id === id)) {
+      state.filter = 'all';
+      state.categoryFilter = 'all';
+      fillToolbar();
+    }
+    state.openId = '';
+    openCard(id);
+  }
 
   function openCard(id) {
     if (state.openId === id) return closeCard();

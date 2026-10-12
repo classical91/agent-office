@@ -8,6 +8,7 @@ const scheduling = require('./calendar-scheduling.js');
 const googleSync = require('./calendar-google-sync.js');
 const reminderTime = require('./reminder-time.js');
 const countdowns = require('./countdowns.js');
+const calendarCountdowns = require('./calendar-countdowns.js');
 const resetTimers = require('./reset-timers.js');
 const planning = require('./planning.js');
 const planningWeek = require('./planning-week.js');
@@ -7399,6 +7400,41 @@ const server = http.createServer(async (req, res) => {
         timezone: process.env.TZ,
         date: `${now.getFullYear()}-${month}-${day}`,
         ...countdowns.selectWidgetToday(payload, { limit }),
+      });
+      return;
+    }
+
+    // The Calendar's Countdowns layer: every countdown and Countdown Timer
+    // occurrence inside the range on screen. A read-only projection of the
+    // two stores - it never runs the migrations /api/countdowns does, never
+    // rolls a timer forward and never sends anything - and it carries no
+    // webhook URL and no notes.
+    if (req.method === 'GET' && pathname === '/api/calendar/countdowns') {
+      if (!requireDropsAuth(res, req)) return;
+      const now = new Date();
+      const range = calendarCountdowns.parseRange(
+        parsedUrl.searchParams.get('from'),
+        parsedUrl.searchParams.get('to'),
+        now
+      );
+      if (!range.ok) {
+        sendJson(res, 400, { error: range.error });
+        return;
+      }
+      const [storedCountdowns, storedTimers] = await Promise.all([
+        storage.listCountdowns(),
+        loadResetTimers(storage),
+      ]);
+      sendJson(res, 200, {
+        ...calendarCountdowns.buildCalendarCountdowns({
+          countdowns: storedCountdowns,
+          timers: storedTimers,
+          from: range.from,
+          to: range.to,
+          now,
+          includeInactive: parsedUrl.searchParams.get('inactive') === '1',
+        }),
+        timezone: process.env.TZ,
       });
       return;
     }

@@ -65,6 +65,7 @@ agent-office-deploy/
     mission-board.js           # Mission Board-only logic
     streaks.{js,css}           # Streaks-only logic and styles
     countdowns.js              # Countdown arithmetic shared by the API and the roll-up (server-side)
+    calendar-countdowns.js     # The Calendar's read-only Countdowns layer (server-side)
     countdowns-page.js         # Countdowns page-only logic
     countdowns.css             # Countdowns-only styles
     project-rooms.js           # Project Rooms-only logic
@@ -439,6 +440,30 @@ and link out to the Calendar rather than being editable here, because the
 calendar owns them. An event that has started but not finished reads as
 *happening now*, not as late. If Google is not connected, or the sync fails,
 the page says so and still shows your own countdowns.
+
+**On the Calendar.** The Calendar has a **Countdowns** layer: every countdown
+and Countdown Timer drawn on the dates it lands — a dashed pill in the month
+grid, a line at the due time in the week and day grids, a row in the agenda —
+with the time left on it. The bar under the lanes switches the layer on and off
+(remembered per browser) and lists what is next, overdue first. Clicking a
+marker shows its due time, time left, category, repeat rule and next action,
+and **Open countdown** opens that card on this page (`/countdowns.html?open=<id>`)
+to edit it. A repeating countdown is drawn on every date it lands in the range
+on screen, using the same stepping rules as its card; a rotating timer shows the
+entry for each date ("Read a book · Audiobook").
+
+`GET /api/calendar/countdowns?from=…&to=…` serves it, behind the same session
+as the rest of this page. It is a read-only projection worked out in
+`calendar-countdowns.js` from the two stores: nothing is copied into the
+calendar, so there is still one record per countdown. Reading it never rolls a
+timer forward, never sends a notification and never writes to either store,
+and it carries no webhook URL and no notes. Markers take no time
+(`blocksTime: false`), so free-time windows and scheduling ignore them, and none
+of the calendar's event actions — edit, delete, snooze, agent runs — can reach
+one. Past occurrences of a repeating countdown are not drawn (today is kept
+whole); an overdue one-off stays on its date, in red. Paused and completed
+timers are left out unless `?inactive=1` is passed. The layer loads on its own,
+so it stays up when Google is disconnected or failing.
 
 **Weekends and trading.** Trading countdowns never land on a Saturday or a
 Sunday — a repeating one skips a closed market and moves to Monday. On the
