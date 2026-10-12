@@ -11,18 +11,34 @@
 // Everything in this file is pure: dates in, plain objects out. The server owns
 // storage and Google, so this module can be tested without either.
 
+// One category list for every countdown. These are the defaults behind
+// Manage categories on the Countdowns page (resets.js keeps the same list);
+// once that list is saved, the server reads the saved one instead through
+// categoriesFrom(). Shared countdowns used to keep a private list of six, which
+// meant the editor on a shared card offered different names from every other
+// card and the category filter could never find one.
 const CATEGORIES = [
-  { id: 'deadline', label: 'Deadline', color: '#ef4444' },
-  { id: 'goal', label: 'Goal', color: '#6366f1' },
-  { id: 'shift', label: 'Work Shift', color: '#38bdf8' },
-  { id: 'routine', label: 'Routine', color: '#22c55e' },
-  { id: 'trading', label: 'Trading', color: '#f59e0b' },
+  { id: 'subscriptions-bills', label: 'Subscriptions / Bills', color: '#0ea5e9' },
+  { id: 'ai-usage', label: 'AI / Usage resets', color: '#14b8a6' },
+  { id: 'deadline', label: 'Deadlines', color: '#ef4444' },
+  { id: 'goal', label: 'Goals', color: '#6366f1' },
+  { id: 'work', label: 'Work', color: '#38bdf8' },
   { id: 'personal', label: 'Personal', color: '#a855f7' },
+  { id: 'routine', label: 'Routines', color: '#22c55e' },
+  { id: 'trading', label: 'Trading', color: '#f59e0b' },
+  { id: 'holidays', label: 'Holidays', color: '#ec4899' },
+  { id: 'other', label: 'Other', color: '#94a3b8' },
 ];
 
 const CATEGORY_IDS = CATEGORIES.map(item => item.id);
 const DEFAULT_CATEGORY = 'deadline';
 const FALLBACK_COLOR = '#94a3b8';
+const CATEGORY_SLUG = /^[a-z0-9][a-z0-9-]{0,79}$/;
+
+// Ids the old private list used that the shared one names differently. A
+// stored record keeps its old id until it is next saved; it reads as the new
+// one everywhere in the meantime.
+const LEGACY_CATEGORIES = { shift: 'work' };
 const DUE_SOON_COLOR = '#f59e0b';
 
 // `weekday` is daily with the weekend cut out — the shape a Mon–Fri routine
@@ -75,8 +91,8 @@ function addMonths(date, months) {
 }
 
 
-function categoryLabel(id) {
-  const known = CATEGORIES.find(item => item.id === id);
+function categoryLabel(id, categories = CATEGORIES) {
+  const known = categories.find(item => item.id === id) || CATEGORIES.find(item => item.id === id);
   if (known) return known.label;
   return String(id || '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Deadline';
 }
@@ -86,9 +102,30 @@ function categoryColor(id) {
   return known ? known.color : FALLBACK_COLOR;
 }
 
-function normalizeCategory(value) {
+/**
+ * The saved Manage categories list as the countdown API hands it out: live
+ * entries only, each with a colour. Nothing saved yet means the defaults.
+ */
+function categoriesFrom(registry) {
+  if (!Array.isArray(registry)) return CATEGORIES.map(item => ({ ...item }));
+  return registry
+    .filter(item => item && !item.deleted && CATEGORY_SLUG.test(String(item.id || '')))
+    .map(item => ({ id: item.id, label: String(item.label || item.id), color: categoryColor(item.id) }));
+}
+
+// What a stored record's category reads as. Lenient on purpose: a category
+// deleted from the list, or one this server has never heard of, still belongs
+// to the record and is not quietly rewritten on the way out.
+function categorySlug(value) {
   const slug = String(value || '').trim().toLowerCase();
-  return CATEGORY_IDS.includes(slug) ? slug : DEFAULT_CATEGORY;
+  const current = LEGACY_CATEGORIES[slug] || slug;
+  return CATEGORY_SLUG.test(current) ? current : DEFAULT_CATEGORY;
+}
+
+// What a write may set the category to: one of the live categories.
+function normalizeCategory(value, ids = CATEGORY_IDS) {
+  const slug = categorySlug(value);
+  return ids.includes(slug) ? slug : DEFAULT_CATEGORY;
 }
 
 function normalizeRepeat(value) {
@@ -105,7 +142,7 @@ function toDate(value) {
 
 // ─── Validation ──────────────────────────────────────────────────────────────
 
-function validateCountdownInput(input, partial = false) {
+function validateCountdownInput(input, partial = false, categories = CATEGORIES) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     return { ok: false, error: 'Body must be a JSON object.' };
   }
@@ -125,7 +162,7 @@ function validateCountdownInput(input, partial = false) {
     value.target_at = target.toISOString();
   }
 
-  if (input.category !== undefined || !partial) value.category = normalizeCategory(input.category);
+  if (input.category !== undefined || !partial) value.category = normalizeCategory(input.category, categories.map(item => item.id));
   if (input.repeat !== undefined || !partial) value.repeat = normalizeRepeat(input.repeat);
   if (input.next_action !== undefined || input.nextAction !== undefined || !partial) {
     value.next_action = cleanText(
@@ -150,7 +187,7 @@ function validateCountdownInput(input, partial = false) {
 // Trading countdowns and weekday routines never land on a Saturday or a Sunday:
 // the market is shut and the point of this page is not to invent weekend work.
 function skipsWeekends(countdown) {
-  return normalizeCategory(countdown.category) === 'trading'
+  return categorySlug(countdown.category) === 'trading'
     || normalizeRepeat(countdown.repeat) === 'weekday';
 }
 
@@ -268,8 +305,8 @@ function bucketFor(date, now = new Date()) {
  * A countdown plus everything the card needs worked out on the server, so a
  * phone and a browser show the same numbers.
  */
-function decorateCountdown(countdown, now = new Date()) {
-  const category = normalizeCategory(countdown.category);
+function decorateCountdown(countdown, now = new Date(), categories = CATEGORIES) {
+  const category = categorySlug(countdown.category);
   const repeat = normalizeRepeat(countdown.repeat);
   const occurrence = nextOccurrence(countdown, now);
   const remaining = occurrence ? describeRemaining(occurrence.getTime() - now.getTime()) : null;
@@ -286,7 +323,7 @@ function decorateCountdown(countdown, now = new Date()) {
     kind: 'countdown',
     title: countdown.title || '',
     category,
-    categoryLabel: categoryLabel(category),
+    categoryLabel: categoryLabel(category, categories),
     color: dueSoon ? DUE_SOON_COLOR : categoryColor(category),
     repeat,
     next_action: countdown.next_action || '',
@@ -377,7 +414,7 @@ function buildUpcoming(options = {}) {
   const includeArchived = Boolean(options.includeArchived);
 
   const countdowns = (Array.isArray(options.countdowns) ? options.countdowns : [])
-    .map(item => decorateCountdown(item, now))
+    .map(item => decorateCountdown(item, now, options.categories))
     .filter(item => includeArchived || !item.archived);
 
   const events = (Array.isArray(options.events) ? options.events : [])
@@ -557,6 +594,8 @@ module.exports = {
   addMonths,
   bucketFor,
   buildUpcoming,
+  categoriesFrom,
+  categorySlug,
   decorateCountdown,
   decorateEvent,
   describeRemaining,

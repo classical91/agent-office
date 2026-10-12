@@ -276,3 +276,24 @@ test('input validation holds the line on titles and dates', () => {
   assert.equal(built.value.category, 'deadline', 'an unknown category falls back rather than 400s');
   assert.equal(built.value.repeat, 'none');
 });
+
+test('countdowns share the Manage categories list, and the old Work Shift reads as Work', () => {
+  assert.equal(countdowns.categorySlug('shift'), 'work');
+  assert.equal(countdowns.categorySlug('custom-abc'), 'custom-abc', 'a stored category is not rewritten on read');
+  assert.equal(countdowns.validateCountdownInput({ category: 'shift' }, true).value.category, 'work');
+  assert.equal(countdowns.validateCountdownInput({ category: 'holidays' }, true).value.category, 'holidays');
+
+  const saved = countdowns.categoriesFrom([
+    { id: 'work', label: 'Day job', deleted: false },
+    { id: 'custom-gym', label: 'Gym', deleted: false },
+    { id: 'goal', label: 'Goals', deleted: true },
+  ]);
+  assert.deepEqual(saved.map(item => item.id), ['work', 'custom-gym'], 'deleted categories are not offered');
+  assert.equal(countdowns.validateCountdownInput({ category: 'custom-gym' }, true, saved).value.category, 'custom-gym');
+  assert.equal(countdowns.validateCountdownInput({ category: 'custom-other' }, true, saved).value.category, 'deadline');
+
+  const card = countdowns.decorateCountdown(
+    make({ category: 'custom-gym', target_at: at(WEDNESDAY, 18) }), WEDNESDAY, saved);
+  assert.equal(card.categoryLabel, 'Gym');
+  assert.equal(countdowns.decorateCountdown(make({ category: 'shift' }), WEDNESDAY).categoryLabel, 'Work');
+});
