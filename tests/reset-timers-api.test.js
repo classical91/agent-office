@@ -269,6 +269,35 @@ test('a Shortcut reads the timers as JSON, soonest first, without the webhook', 
   assert.equal(raw.includes(SECRET), false);
 });
 
+test('a Shortcut gets each timer\'s category by the name it was given', async t => {
+  const server = await startServer();
+  t.after(() => stop(server));
+
+  const registry = [
+    { id: 'custom-learning', label: 'Learning', deleted: false },
+    { id: 'custom-gone', label: 'Old stuff', deleted: true },
+  ];
+  const saved = await call(server, '/api/countdown-categories', {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items: registry, previous: null }),
+  });
+  assert.equal(saved.status, 200);
+
+  await putTimers(server, [
+    timer({ id: 'read', title: 'Reading', resetAt: inHours(1), category: 'custom-learning' }),
+    timer({ id: 'old', title: 'Retired', resetAt: inHours(2), category: 'custom-gone' }),
+    timer({ id: 'none', title: 'Loose', resetAt: inHours(3) }),
+  ]);
+
+  const payload = await (await shortcut(server, '/api/shortcuts/reset-timers')).json();
+  const byId = Object.fromEntries(payload.items.map(item => [item.id, item]));
+  assert.equal(byId.read.category, 'custom-learning');
+  assert.equal(byId.read.category_label, 'Learning');
+  // A deleted category reads as uncategorized, as it does on /resets.html.
+  assert.equal(byId.old.category_label, '');
+  assert.equal(byId.none.category_label, '');
+});
+
 test('state and limit narrow what the Shortcut gets', async t => {
   const server = await startServer();
   t.after(() => stop(server));

@@ -4810,7 +4810,8 @@ async function handleShortcutsRequest(req, res, url, storage) {
     const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
       ? Math.min(requestedLimit, SHORTCUTS_MAX_LIMIT)
       : SHORTCUTS_DEFAULT_LIMIT;
-    const items = resetTimers.selectShortcutTimers(stored, { state, limit, now });
+    const categories = await loadCountdownCategories(storage);
+    const items = resetTimers.selectShortcutTimers(stored, { state, limit, now, categories });
 
     if (String(url.searchParams.get('format') || 'json').toLowerCase() === 'text') {
       sendText(res, 200, resetTimers.formatShortcutText(items, state));

@@ -25,6 +25,7 @@ const DAY_MS = 24 * HOUR_MS;
 const { currentRotation, normalizeRotation } = require('./timer-rotation.js');
 
 const STORAGE_KEY = 'reset-timers.v1';
+const CATEGORY_SLUG = /^[a-z0-9][a-z0-9-]{0,79}$/;
 const MAX_TIMERS = 200;
 const MAX_ENCODED_LENGTH = 250000;
 
@@ -120,6 +121,10 @@ function normalizeTimer(raw) {
       ? Math.max(0, Math.round(Number(raw.notificationAttempts)))
       : 0,
     notificationOccurrence: toIso(raw.notificationOccurrence),
+    // The id resets.js filed the card under. Only the slug is kept: the name
+    // lives in the Manage categories registry, which the caller looks up.
+    category: CATEGORY_SLUG.test(String(raw.category || '').trim().toLowerCase())
+      ? String(raw.category).trim().toLowerCase() : '',
     rotation: normalizeRotation(raw.rotation),
     rotationAnchor: toIso(raw.rotationAnchor),
     updatedAt: toIso(raw.updatedAt),
@@ -211,9 +216,16 @@ function normalizeStateFilter(value) {
  *
  * The webhook URL is a credential and is not in this object. Nothing that
  * builds a Shortcuts response may reach past this function to the record.
+ *
+ * `categories` is the live Manage categories list ({ id, label }). A card
+ * filed under a category that has since been deleted reads as uncategorized,
+ * exactly as resets.js shows it: both fields come back empty.
  */
-function toShortcutItem(timer, now = Date.now()) {
+function toShortcutItem(timer, now = Date.now(), categories = []) {
   const remainingMs = Number.isFinite(timer.targetMs) ? timer.targetMs - now : 0;
+  const category = timer.category
+    ? (Array.isArray(categories) ? categories : []).find(item => item && item.id === timer.category)
+    : null;
   return {
     id: timer.id,
     title: timer.title,
@@ -223,6 +235,8 @@ function toShortcutItem(timer, now = Date.now()) {
     repeat_days: timer.repeatDays,
     repeat_months: timer.repeatMonths,
     rotation: currentRotation(timer),
+    category: category ? category.id : '',
+    category_label: category ? String(category.label || '') : '',
     status: deriveState(timer, now),
   };
 }
@@ -243,7 +257,7 @@ function selectShortcutTimers(items, options = {}) {
   const selected = normalizeTimers(items)
     .filter(timer => !timer.deleted && timer.source !== 'office' && Number.isFinite(timer.targetMs))
     .sort((a, b) => a.targetMs - b.targetMs || a.title.localeCompare(b.title))
-    .map(timer => toShortcutItem(timer, now))
+    .map(timer => toShortcutItem(timer, now, options.categories))
     .filter(item => state === 'all' || item.status === state);
 
   return limit ? selected.slice(0, limit) : selected;
