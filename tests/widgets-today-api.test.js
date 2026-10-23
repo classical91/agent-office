@@ -45,6 +45,36 @@ test('next up is the soonest thing on today', () => {
   assert.equal(widget.total, 2);
 });
 
+test("today's events are the whole day, outside the countdown cap", () => {
+  const now = at(15);
+  const events = [
+    { id: 'gym', title: 'Morning gym', start: at(7).toISOString(), end: at(8).toISOString() },
+    { id: 'standup', title: 'Standup', start: at(14, 30).toISOString(), end: at(15, 30).toISOString() },
+    { id: 'dinner', title: 'Dinner', start: at(19).toISOString(), end: at(21).toISOString(), notes: 'PRIVATE' },
+    { id: 'off', title: 'Day off', start: '2026-09-10', end: '2026-09-11' },
+    { id: 'yday', title: 'Yesterday', start: '2026-09-09', end: '2026-09-10' },
+    { id: 'tmrw', title: 'Tomorrow', start: on(11, 9).toISOString(), end: on(11, 10).toISOString() },
+  ];
+  // Twenty-five overdue countdowns would fill every row the cap allows.
+  const rows = Array.from({ length: 25 }, (_, i) => ({
+    id: `late-${i}`, title: `Late ${i}`, category: 'deadline', target_at: at(6).toISOString(),
+  }));
+  const payload = build(now, rows, events);
+  assert.equal(countdowns.selectWidgetToday(payload, { limit: 20 }).items.some(item => item.kind === 'event'), false);
+
+  const today = countdowns.selectTodayEvents(events, now);
+  assert.deepEqual(today.map(event => event.title), ['Day off', 'Morning gym', 'Standup', 'Dinner']);
+  assert.deepEqual(today.map(event => [event.allDay, event.ended, event.inProgress]), [
+    [true, false, false],
+    [false, true, false],
+    [false, false, true],
+    [false, false, false],
+  ]);
+  // An all-day date is today's local midnight, not UTC's.
+  assert.equal(today[0].startAt, new Date(2026, 8, 10).toISOString());
+  assert.equal(JSON.stringify(today).includes('PRIVATE'), false);
+});
+
 test('overdue work leads, because it is the thing to deal with', () => {
   const now = at(15);
   const payload = build(now, [
@@ -250,6 +280,8 @@ test('GET /api/widgets/today answers with correct machine auth', async t => {
   assert.match(payload.date, /^\d{4}-\d{2}-\d{2}$/);
   assert.equal(payload.timezone, 'UTC');
   assert.ok(Array.isArray(payload.items));
+  assert.ok(Array.isArray(payload.events));
+  assert.equal(typeof payload.calendar, 'string');
   assert.equal(typeof payload.total, 'number');
   assert.ok('next' in payload);
 });
