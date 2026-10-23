@@ -2569,23 +2569,36 @@
 
   // Every failure below used to return silently. With no seeded events left, a
   // silent failure is indistinguishable from an empty calendar, so say what broke.
-  function reportSyncProblem(message) {
+  // A background refresh that hits the same failure again stays quiet - the
+  // sync chip already says so, and a flash every few minutes would not help.
+  function reportSyncProblem(message, background) {
+    const repeat = background && state.gcalError === message;
     state.gcalError = message;
-    setFlash(message, 'warn');
+    if (!repeat) setFlash(message, 'warn');
     render();
   }
 
   // The server is the authority on sync state; this only mirrors it. Seeded
   // demo events used to fill the gap when the calendar was empty, which made a
   // connected-but-empty account look like a populated one.
+  //
+  // A background refresh is the same load with two differences: it leaves the
+  // user where they are (selection, visible range) instead of jumping to the
+  // next upcoming event, and it gives way to anyone mid-edit or mid-typing,
+  // since render() rebuilds the board and would throw their input away.
   async function loadGoogleEvents(options) {
     const force = Boolean(options && options.force);
+    const background = Boolean(options && options.background);
+    if (background && (state.gcalLoading || userIsBusy())) return;
+    state.gcalLoading = true;
+    state.gcalLoadedAt = Date.now();
     try {
       const statusResp = await fetch('/api/calendar/status');
+      if (background && userIsBusy()) return;
       if (!statusResp.ok) {
         state.syncState = 'error';
         state.calendarState = 'sync-error';
-        reportSyncProblem('Calendar status check failed (HTTP ' + statusResp.status + ').');
+        reportSyncProblem('Calendar status check failed (HTTP ' + statusResp.status + ').', background);
         return;
       }
       const status = await statusResp.json();
@@ -2595,17 +2608,18 @@
 
       if (state.syncState === 'auth-error') {
         state.calendarState = 'sync-error';
-        reportSyncProblem(status.error || 'The stored Google token is no longer valid. Reconnect Google Calendar.');
+        reportSyncProblem(status.error || 'The stored Google token is no longer valid. Reconnect Google Calendar.', background);
         return;
       }
 
       // Even when Google is disconnected the server still returns the blocks
       // Agent Office created locally, so this request runs in every state.
       const resp = await fetch('/api/calendar/events' + (force ? '?refresh=full' : ''));
+      if (background && userIsBusy()) return;
       if (!resp.ok) {
         state.syncState = 'error';
         state.calendarState = 'sync-error';
-        reportSyncProblem('Loading events failed (HTTP ' + resp.status + ').');
+        reportSyncProblem('Loading events failed (HTTP ' + resp.status + ').', background);
         return;
       }
       const data = await resp.json();
@@ -2615,16 +2629,22 @@
 
       if (data.googleError) {
         state.calendarState = 'sync-error';
-        reportSyncProblem('Google: ' + data.googleError);
+        reportSyncProblem('Google: ' + data.googleError, background);
         return;
       }
       state.gcalError = null;
 
       const gEvents = (data.events || []).filter(e => e.start);
       const converted = gEvents.map(googleEventToInternal).sort(compareEvents);
-      resetEventEditor();
       state.events = converted;
 
+      if (background) {
+        // ensureSelection() picks a new event if this one was deleted in Google.
+        render();
+        return;
+      }
+
+      resetEventEditor();
       const now = new Date();
       const upcoming = state.events.find(e => parseLocalIso(e.end) >= now);
       if (upcoming) {
@@ -2638,9 +2658,37 @@
     } catch (error) {
       state.syncState = 'error';
       state.calendarState = 'sync-error';
-      reportSyncProblem('Could not reach the calendar API: ' + (error && error.message ? error.message : error));
+      reportSyncProblem('Could not reach the calendar API: ' + (error && error.message ? error.message : error), background);
+    } finally {
+      state.gcalLoading = false;
     }
   }
+
+  // Editing a block, creating one, or typing into a field on the board.
+  function userIsBusy() {
+    if (state.editingEventId || state.creatingEvent) return true;
+    const active = document.activeElement;
+    const root = document.getElementById('calendar-app');
+    return Boolean(active && root && root.contains(active)
+      && /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName));
+  }
+
+  // Events used to be fetched once per page load, so a tab left open - or the
+  // app parked on a phone - never saw anything added in Google afterwards.
+  // Pull again whenever the page comes back into view and on a slow timer
+  // while it stays in view. The server syncs incrementally, so these are cheap.
+  const EVENTS_REFRESH_MS = 2 * 60 * 1000;
+  const EVENTS_REFOCUS_MIN_MS = 30 * 1000;
+  function refreshEventsInBackground(minAgeMs) {
+    if (!state.gcalFetchStarted || document.visibilityState !== 'visible') return;
+    if (Date.now() - (state.gcalLoadedAt || 0) < minAgeMs) return;
+    loadGoogleEvents({ background: true });
+  }
+  document.addEventListener('visibilitychange', () => refreshEventsInBackground(EVENTS_REFOCUS_MIN_MS));
+  window.addEventListener('pageshow', event => {
+    if (event.persisted) refreshEventsInBackground(0);
+  });
+  window.setInterval(() => refreshEventsInBackground(EVENTS_REFRESH_MS - 1000), EVENTS_REFRESH_MS);
 
   async function loadSchedulingPreferences() {
     try {
