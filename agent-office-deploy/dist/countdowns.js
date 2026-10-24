@@ -544,6 +544,54 @@ function selectWidgetToday(payload, options = {}) {
   };
 }
 
+const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/**
+ * A calendar boundary as a Date. An all-day event's boundaries come as bare
+ * dates, which `new Date()` would read as UTC midnight — the evening before,
+ * in Vancouver — so those are read as local midnight instead.
+ */
+function eventBoundary(value) {
+  const match = typeof value === 'string' ? DATE_ONLY.exec(value) : null;
+  if (match) return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return toDate(value);
+}
+
+/**
+ * Every calendar event on today, start to finish of the day.
+ *
+ * Its own list rather than rows in `items`: those are capped and ranked for
+ * countdowns, so overdue and pinned work pushed events off the end, and an
+ * event dropped out once it was over. A day's calendar is read whole —
+ * including the meeting that already happened — so this keeps all of it.
+ */
+function selectTodayEvents(events, now = new Date()) {
+  const dayStart = startOfDay(now);
+  const dayEnd = addDays(dayStart, 1);
+
+  return (Array.isArray(events) ? events : [])
+    .map(event => {
+      const start = eventBoundary(event && event.start);
+      if (!start) return null;
+      const allDay = typeof event.start === 'string' && DATE_ONLY.test(event.start);
+      const end = eventBoundary(event.end) || (allDay ? addDays(start, 1) : start);
+      return { event, start, end, allDay };
+    })
+    // Starts before tonight, and is not over before this morning began. A
+    // zero-length event at 9am still counts, by its start.
+    .filter(entry => entry && entry.start < dayEnd && (entry.end > dayStart || entry.start >= dayStart))
+    .sort((a, b) => (a.allDay === b.allDay ? a.start - b.start : a.allDay ? -1 : 1))
+    .map(({ event, start, end, allDay }) => ({
+      id: `event:${event.id}`,
+      title: event.title || '(untitled event)',
+      startAt: start.toISOString(),
+      endAt: end.toISOString(),
+      allDay,
+      inProgress: !allDay && start <= now && end > now,
+      ended: !allDay && end <= now,
+    }));
+}
+
 // ─── The evening roll-up ─────────────────────────────────────────────────────
 
 function formatClock(date) {
@@ -607,6 +655,7 @@ module.exports = {
   normalizeCategory,
   normalizeRepeat,
   selectRollupItems,
+  selectTodayEvents,
   selectWidgetToday,
   skipsWeekends,
   stepOccurrence,

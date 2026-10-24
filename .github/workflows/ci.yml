@@ -16,23 +16,11 @@ jobs:
     # stayed green. tests/postgres-orchestration.test.js exercises it, and skips
     # itself without DATABASE_URL so a laptop `npm test` is unaffected.
     #
-    # The image is the official one, pulled from AWS's public mirror of Docker
-    # Hub's library: an anonymous pull from Docker Hub itself is rate-limited
-    # per runner IP and failed the job before any test ran.
-    services:
-      postgres:
-        image: public.ecr.aws/docker/library/postgres:16
-        env:
-          POSTGRES_USER: office
-          POSTGRES_PASSWORD: office
-          POSTGRES_DB: office
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    # The database is the PostgreSQL the runner image already has installed,
+    # started below, rather than a service container. Pulling the image was
+    # anonymous, and both registries it was tried from rate-limit anonymous
+    # pulls: Docker Hub per runner IP, then the ECR Public mirror with "Data
+    # limit exceeded". Either way the job failed before any test ran.
 
     env:
       # tests/ui-smoke.test.js skips itself when no browser is around, which is
@@ -48,6 +36,13 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+
+      - name: Start PostgreSQL
+        run: |
+          sudo systemctl start postgresql.service
+          timeout 60 bash -c "until pg_isready -h localhost; do sleep 1; done"
+          sudo -u postgres psql -v ON_ERROR_STOP=1 -c "CREATE ROLE office WITH LOGIN SUPERUSER PASSWORD 'office';"
+          sudo -u postgres createdb -O office office
 
       # Chromium for the UI smoke tests. The browser is versioned with
       # playwright-core, so the cache key is its resolved version: a bump to the
