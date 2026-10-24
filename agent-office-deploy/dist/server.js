@@ -3517,6 +3517,14 @@ async function buildCountdownsPayload(options = {}) {
     // The raw events, for the today widget only. Never sent as-is: they
     // carry each event's notes.
     ...(options.keepEvents ? { calendarEvents: events } : {}),
+    ...(options.includeCalendarCountdowns ? {
+      calendarCountdowns: calendarCountdowns.selectTodayCountdowns({
+        countdowns: stored,
+        timers: await loadResetTimers(storage),
+        categories,
+        now,
+      }),
+    } : {}),
     categories,
     repeats: countdowns.REPEATS,
     timezone: process.env.TZ,
@@ -7405,7 +7413,7 @@ const server = http.createServer(async (req, res) => {
       if (!requireShortcutsAuth(req, res, parsedUrl)) return;
 
       const now = new Date();
-      const payload = await buildCountdownsPayload({ now, keepEvents: true });
+      const payload = await buildCountdownsPayload({ now, keepEvents: true, includeCalendarCountdowns: true });
       const limit = Number.parseInt(parsedUrl.searchParams.get('limit') || '', 10);
       const month = `${now.getMonth() + 1}`.padStart(2, '0');
       const day = `${now.getDate()}`.padStart(2, '0');
@@ -7420,6 +7428,9 @@ const server = http.createServer(async (req, res) => {
         // Today's whole calendar, outside the countdown cap. `calendar` says
         // whether an empty list means a free day or a broken sync.
         events: countdowns.selectTodayEvents(payload.calendarEvents, now),
+        // The calendar's separate marker layer includes countdowns and reset
+        // timers. It stays whole even when the next-up list is capped.
+        calendarCountdowns: payload.calendarCountdowns,
         calendar: payload.calendar.state,
       });
       return;

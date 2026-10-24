@@ -281,6 +281,7 @@ test('GET /api/widgets/today answers with correct machine auth', async t => {
   assert.equal(payload.timezone, 'UTC');
   assert.ok(Array.isArray(payload.items));
   assert.ok(Array.isArray(payload.events));
+  assert.ok(Array.isArray(payload.calendarCountdowns));
   assert.equal(typeof payload.calendar, 'string');
   assert.equal(typeof payload.total, 'number');
   assert.ok('next' in payload);
@@ -323,6 +324,55 @@ test('a countdown created today shows up as next up', async t => {
     headers: { Authorization: `Bearer ${SHORTCUTS_TOKEN}` },
   })).text();
   assert.equal(body.includes('PRIVATE NOTE'), false);
+});
+
+test('the widget includes the same countdown and timer markers as the calendar day', async t => {
+  const server = await startServer();
+  t.after(() => stop(server));
+  const cookie = await unlock(server.origin);
+  const call = (pathname, options = {}) => fetch(`${server.origin}${pathname}`, {
+    ...options,
+    headers: { Cookie: cookie, ...(options.headers || {}) },
+  });
+  // The server is pinned to UTC; construct its complete day explicitly rather
+  // than depending on the test runner's local timezone.
+  const from = new Date();
+  from.setUTCHours(0, 0, 0, 0);
+  const to = new Date(from);
+  to.setUTCDate(to.getUTCDate() + 1);
+  const yesterday = new Date(from);
+  yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+  const created = await call('/api/countdowns', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: 'Daily morning routine', target_at: yesterday.toISOString(), repeat: 'daily', notes: 'PRIVATE NOTE',
+    }),
+  });
+  assert.equal(created.status, 201);
+  const saved = await call('/api/reset-timers', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items: [{
+      id: 'reading-timer', title: 'Reading timer',
+      resetAt: new Date(to.getTime() - 60000).toISOString(),
+      webhookUrl: 'https://api.pushcut.io/PRIVATE-WEBHOOK/notifications/Reading',
+    }] }),
+  });
+  assert.equal(saved.status, 200);
+
+  const response = await fetch(`${server.origin}/api/widgets/today?limit=1`, {
+    headers: { Authorization: `Bearer ${SHORTCUTS_TOKEN}` },
+  });
+  assert.equal(response.status, 200);
+  const payload = await response.json();
+  const day = await (await call(`/api/calendar/countdowns?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`)).json();
+  assert.deepEqual(payload.calendarCountdowns.map(item => item.id), day.items.map(item => item.id));
+  assert.deepEqual(payload.calendarCountdowns.map(item => item.kind).sort(), ['countdown', 'resetTimer']);
+  assert.equal(payload.calendarCountdowns[0].state, 'passed');
+  assert.equal(payload.items.length <= 1, true, 'the separate next-up limit still applies');
+  assert.equal(JSON.stringify(payload).includes('PRIVATE NOTE'), false);
+  assert.equal(JSON.stringify(payload).includes('PRIVATE-WEBHOOK'), false);
 });
 
 test('the widget does not answer writes', async t => {

@@ -544,6 +544,14 @@ real count. **`notes` never travels** — it is the free-text field on a countdo
 so the one most likely to hold something personal, and a dashboard row has
 nowhere to put it.
 
+The widget also carries the calendar's complete day in two uncapped lists:
+`events` for Google/local events and `calendarCountdowns` for countdown and
+reset-timer occurrences. The latter uses the same projection as the calendar
+day view, including routines that have already passed today. Each marker has
+`id`, `title`, `startAt`, `endAt: null`, `allDay: false`, `kind` (`countdown` or
+`resetTimer`), `state`, and an owner-relative `url`. Neither notes nor timer
+webhooks travel. Day boundaries use the app's timezone, including DST changes.
+
 ### Countdown Timers and Pushcut
 
 `/resets.html` is the other half of the page: personal reset timers — usage
