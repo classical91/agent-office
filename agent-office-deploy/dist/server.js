@@ -3514,6 +3514,9 @@ async function buildCountdownsPayload(options = {}) {
       categories,
     }),
     calendar: { state: calendarState, connected: calendarState === 'connected' },
+    // The raw events, for the today widget only. Never sent as-is: they
+    // carry each event's notes.
+    ...(options.keepEvents ? { calendarEvents: events } : {}),
     categories,
     repeats: countdowns.REPEATS,
     timezone: process.env.TZ,
@@ -7402,7 +7405,7 @@ const server = http.createServer(async (req, res) => {
       if (!requireShortcutsAuth(req, res, parsedUrl)) return;
 
       const now = new Date();
-      const payload = await buildCountdownsPayload({ now });
+      const payload = await buildCountdownsPayload({ now, keepEvents: true });
       const limit = Number.parseInt(parsedUrl.searchParams.get('limit') || '', 10);
       const month = `${now.getMonth() + 1}`.padStart(2, '0');
       const day = `${now.getDate()}`.padStart(2, '0');
@@ -7414,6 +7417,10 @@ const server = http.createServer(async (req, res) => {
         timezone: process.env.TZ,
         date: `${now.getFullYear()}-${month}-${day}`,
         ...countdowns.selectWidgetToday(payload, { limit }),
+        // Today's whole calendar, outside the countdown cap. `calendar` says
+        // whether an empty list means a free day or a broken sync.
+        events: countdowns.selectTodayEvents(payload.calendarEvents, now),
+        calendar: payload.calendar.state,
       });
       return;
     }
