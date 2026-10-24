@@ -326,10 +326,30 @@ function buildCalendarCountdowns(options = {}) {
   };
 }
 
+// The hub's calendar uses the same occurrences as this app's day view, rather
+// than the capped/overdue-ranked widget list. Keep today's passed routines and
+// both stores, but only send the fields a dashboard row can draw.
+function selectTodayCountdowns(options = {}) {
+  const now = options.now instanceof Date ? options.now : new Date();
+  const from = startOfDay(now);
+  const to = countdowns.addDays(from, 1);
+  return buildCalendarCountdowns({ ...options, now, from, to }).items.map(item => ({
+    id: item.id,
+    title: item.title,
+    startAt: item.at,
+    endAt: null,
+    allDay: false,
+    kind: item.source === 'timer' ? 'resetTimer' : 'countdown',
+    url: item.href,
+    state: item.state,
+  }));
+}
+
 module.exports = {
   MAX_RANGE_DAYS,
   buildCalendarCountdowns,
   countdownOccurrences,
   parseRange,
+  selectTodayCountdowns,
   timerOccurrences,
 };

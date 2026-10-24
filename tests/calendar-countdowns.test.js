@@ -169,6 +169,39 @@ test('the projection does not change the records it reads', () => {
   assert.equal(JSON.stringify({ countdowns, timers }), before);
 });
 
+test('the today widget matches the calendar day across DST, uncapped and including passed routines', () => {
+  // This local day is 25 hours long. A rolling 24-hour cutoff drops 11:59 PM.
+  const now = new Date('2025-11-02T12:00:00-08:00');
+  const records = Array.from({ length: 23 }, (_, index) => ({
+    id: `routine-${index}`,
+    title: `Routine ${index}`,
+    target_at: '2025-11-01T08:00:00-07:00',
+    repeat: 'daily',
+    notes: 'PRIVATE NOTE',
+  }));
+  records.push({ id: 'tomorrow', title: 'Tomorrow', target_at: '2025-11-03T00:00:00-08:00' });
+  const timers = [
+    { id: 'late', title: 'Late timer', resetAt: '2025-11-02T23:59:00-08:00', webhookUrl: WEBHOOK },
+    { id: 'paused', title: 'Paused timer', resetAt: '2025-11-02T20:00:00-08:00', status: 'paused' },
+  ];
+  const widget = calendarCountdowns.selectTodayCountdowns({ now, countdowns: records, timers });
+  const day = calendarCountdowns.buildCalendarCountdowns({
+    now, countdowns: records, timers,
+    from: new Date('2025-11-02T00:00:00-07:00'),
+    to: new Date('2025-11-03T00:00:00-08:00'),
+  });
+  assert.equal(widget.length, 24, 'calendar rows are independent of the twenty-row next-up cap');
+  assert.deepEqual(widget.map(item => item.id), day.items.map(item => item.id));
+  assert.equal(widget[0].state, 'passed', 'a recurring morning item remains on today');
+  assert.equal(widget.at(-1).title, 'Late timer');
+  assert.equal(widget.at(-1).kind, 'resetTimer');
+  assert.equal(widget[0].kind, 'countdown');
+  assert.equal(widget[0].endAt, null, 'a marker does not claim a block of time');
+  assert.equal(widget[0].allDay, false);
+  assert.equal(JSON.stringify(widget).includes('PRIVATE NOTE'), false);
+  assert.equal(JSON.stringify(widget).includes('secret-token'), false);
+});
+
 test('ranges must be ordered and bounded', () => {
   assert.equal(calendarCountdowns.parseRange('2026-10-14', '2026-10-01', NOW).ok, false);
   assert.equal(calendarCountdowns.parseRange('nope', '2026-10-01', NOW).ok, false);
