@@ -280,17 +280,44 @@
   // Countdowns come from the calendar's own Countdowns layer, already loaded
   // for the dates on screen. They are read-only here: the one action is
   // opening the countdown, never Delete, which would go to Google.
+  //
+  // Workouts and meals from the Wellness layer ride along in the same list:
+  // they are just as read-only, and their one action opens the app that owns
+  // them.
   function countdownsForDate(dateKey) {
     if (!window.CAL || typeof window.CAL.getCountdownsForDate !== 'function') return [];
     try {
-      return window.CAL.getCountdownsForDate(dateKey) || [];
+      const countdowns = window.CAL.getCountdownsForDate(dateKey) || [];
+      const wellness = typeof window.CAL.getWellnessForDate === 'function'
+        ? window.CAL.getWellnessForDate(dateKey) || []
+        : [];
+      return countdowns.concat(wellness).sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
     } catch (error) {
       return [];
     }
   }
 
+  function isWellness(item) {
+    return item.source === 'workout' || item.source === 'meal';
+  }
+
+  function wellnessRow(item) {
+    const at = new Date(item.at);
+    const time = Number.isNaN(at.getTime())
+      ? ''
+      : new Intl.DateTimeFormat('en-CA', { hour: 'numeric', minute: '2-digit' }).format(at);
+    const detail = (item.lines || []).map(line => line.text).join(' · ') || item.appLabel;
+    return '<article class="calendar-mobile-day-event" style="--calendar-event-color:' + escapeHtml(item.color) + ';border-style:dashed;">'
+      + '<span class="calendar-mobile-day-event-time">' + escapeHtml(time) + ' · ' + escapeHtml(item.label.toLowerCase()) + '</span>'
+      + '<span class="calendar-mobile-day-event-title">' + escapeHtml(item.emoji + ' ' + item.title) + '</span>'
+      + '<span class="calendar-mobile-day-event-meta">' + escapeHtml(detail) + '</span>'
+      + '<div class="calendar-mobile-day-actions"><a class="calendar-mobile-day-open" href="' + escapeHtml(item.href) + '" target="_blank" rel="noopener noreferrer">Open in ' + escapeHtml(item.appLabel) + ' ↗</a></div>'
+      + '</article>';
+  }
+
   function countdownRows(items) {
     return items.map(item => {
+      if (isWellness(item)) return wellnessRow(item);
       const at = new Date(item.at);
       const time = Number.isNaN(at.getTime())
         ? ''
@@ -309,9 +336,14 @@
     }).join('');
   }
 
-  function countLabel(events, countdowns) {
+  function countLabel(events, items) {
     const parts = [events.length === 1 ? '1 event' : events.length + ' events'];
-    if (countdowns.length) parts.push(countdowns.length === 1 ? '1 countdown' : countdowns.length + ' countdowns');
+    const countdowns = items.filter(item => !isWellness(item)).length;
+    const workouts = items.filter(item => item.source === 'workout').length;
+    const meals = items.filter(item => item.source === 'meal').length;
+    if (countdowns) parts.push(countdowns === 1 ? '1 countdown' : countdowns + ' countdowns');
+    if (workouts) parts.push(workouts === 1 ? '1 workout' : workouts + ' workouts');
+    if (meals) parts.push(meals === 1 ? '1 meal' : meals + ' meals');
     return parts.join(' · ');
   }
 
