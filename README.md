@@ -67,6 +67,7 @@ agent-office-deploy/
     countdowns.js              # Countdown arithmetic shared by the API and the roll-up (server-side)
     calendar-countdowns.js     # The Calendar's read-only Countdowns layer (server-side)
     calendar-wellness.js       # The Calendar's Workouts & meals layer, read from the Wellness Tracker and Nutri-Mind (server-side)
+    calendar-wellness-sync.js  # Writes those workouts and meals into Google Calendar and keeps them in step (server-side)
     countdowns-page.js         # Countdowns page-only logic
     countdowns.css             # Countdowns-only styles
     project-rooms.js           # Project Rooms-only logic
@@ -279,6 +280,7 @@ All endpoints return JSON.
 | DELETE | `/api/calendar/events/:id`        | Delete an event (session-authenticated) |
 | POST   | `/api/calendar/events/:id/run`    | Drive a block's agent run (session-authenticated) |
 | GET    | `/api/calendar/wellness`          | Workouts and planned meals for the range on screen, read from the Wellness Tracker and Nutri-Mind (session-authenticated) |
+| POST   | `/api/calendar/wellness/sync`     | Write this week's workouts and meals into Google Calendar now (session-authenticated) |
 | GET    | `/api/calendar/agent-timeline`    | Agent work grouped by agent (session-authenticated) |
 | GET    | `/api/calendar/preferences`       | Read scheduling preferences (session-authenticated) |
 | PUT    | `/api/calendar/preferences`       | Update scheduling preferences (session-authenticated) |
@@ -508,6 +510,34 @@ The diet sync code reads the whole meal plan, so it stays on the server: it
 travels to Nutri-Mind in an `x-sync-code` header, redirects are not followed,
 HTTPS is required on a deployed host, and the browser only ever gets titles
 and lines.
+
+**Into Google Calendar.** When Google Calendar is connected, the same workouts
+and meals are also written into it as real events, so they show up in the
+Google Calendar app and on the phone too. `calendar-wellness-sync.js` runs a
+pass every 15 minutes (`CALENDAR_WELLNESS_SYNC_INTERVAL_MS`, `0` turns the
+automatic pass off) and **Sync to Google now** on the layer bar runs one
+straight away (`POST /api/calendar/wellness/sync`). Each pass covers today and
+the six days after it:
+
+- every event it writes carries `aoSource=wellness` and the item's key in
+  Google's private extended properties, and only those events are ever listed,
+  changed or deleted — nothing else on the calendar is touched;
+- an item with no event gets one; an item whose plan changed is rewritten in
+  place; an unchanged item is left alone, so moving its event by hand in
+  Google sticks until the plan itself changes;
+- an event whose item has gone (a meal un-ticked, a dinner cleared) is deleted,
+  but only when that app answered — a source that is down, refused or not set
+  up deletes nothing;
+- a workout runs as long as its items add up to (from "30 min" in each line,
+  30 minutes if none say), a meal runs 30 minutes; workouts are Basil green
+  with the calendar's default reminder, meals are Banana yellow with no
+  reminder, and each description links back to its app;
+- days before today are never touched, so past events stay as a record;
+- an event deleted by hand in Google comes back on the next pass while the
+  plan still has it — change the plan in its app instead.
+
+Once an item is in Google it arrives on this Calendar as an ordinary event, and
+the layer stops drawing its own marker for it, so nothing is shown twice.
 
 **Weekends and trading.** Trading countdowns never land on a Saturday or a
 Sunday — a repeating one skips a closed market and moves to Monday. On the
@@ -1384,8 +1414,12 @@ Dropbox-related variables:
   the code as a password** — it reads the whole meal plan. It stays on the
   server; one day's planned meals at a time is all that reaches the browser.
   The same values the Main Hub uses for its Today's Meals card.
-- `CALENDAR_WELLNESS_TIMES` — optional nominal times for those markers, as
+- `CALENDAR_WELLNESS_TIMES` — optional nominal times for those markers and
+  the Google events written from them, as
   `workout=17:30,morning=08:00,afternoon=12:30,night=18:30` (any subset).
+- `CALENDAR_WELLNESS_SYNC_INTERVAL_MS` — how often workouts and meals are
+  written into Google Calendar (default `900000`, 15 minutes; minimum one
+  minute; `0` turns the automatic pass off and leaves **Sync to Google now**).
 - `RESET_TIMER_ALLOW_LOOPBACK_WEBHOOKS` — **local testing only.** Set to
   `yes-allow-loopback-webhooks-for-local-tests` it lets the timer processor
   deliver to `127.0.0.1` / `localhost` as well as Pushcut, which is how the test

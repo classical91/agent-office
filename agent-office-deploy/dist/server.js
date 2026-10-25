@@ -10,6 +10,7 @@ const reminderTime = require('./reminder-time.js');
 const countdowns = require('./countdowns.js');
 const calendarCountdowns = require('./calendar-countdowns.js');
 const calendarWellness = require('./calendar-wellness.js');
+const wellnessSync = require('./calendar-wellness-sync.js');
 const resetTimers = require('./reset-timers.js');
 const planning = require('./planning.js');
 const planningWeek = require('./planning-week.js');
@@ -3311,6 +3312,9 @@ function toClientGoogleEvent(event, localMeta) {
     end: event.end || {},
     recurringEventId: event.recurringEventId || '',
     updated: event.updated || '',
+    // Set on the workout and meal events Agent Office writes, so the Wellness
+    // layer does not draw a second marker for an item Google already shows.
+    wellnessKey: privateFields.aoSource === wellnessSync.SOURCE_TAG ? String(privateFields.aoWellnessKey || '') : '',
     meta,
   };
 }
@@ -4409,6 +4413,115 @@ async function deleteGoogleCalendarEvent(eventId) {
   gcalSync.remove(eventId);
   await deleteEventMeta(`gcal:${eventId}`);
   return result;
+}
+
+// ── Workouts and meals into Google ─────────────────────────────────────────
+//
+// calendar-wellness-sync.js decides what to write; this is the Google side of
+// it. Only events tagged aoSource=wellness are ever listed, so the pass cannot
+// see - let alone change - anything else on the calendar.
+
+const WELLNESS_SYNC_INTERVAL_MS = (() => {
+  const configured = Number(process.env.CALENDAR_WELLNESS_SYNC_INTERVAL_MS);
+  if (!Number.isFinite(configured) || configured < 0) return 15 * 60 * 1000;
+  // 0 turns the automatic sync off; "Sync now" still works. Anything else gets
+  // a one-minute floor so a mistyped value cannot hammer Google.
+  return configured === 0 ? 0 : Math.max(60 * 1000, Math.round(configured));
+})();
+
+const wellnessGoogleApi = {
+  async list({ timeMin, timeMax }) {
+    const events = [];
+    let pageToken = '';
+    for (let page = 0; page < 10; page += 1) {
+      const params = new URLSearchParams({
+        privateExtendedProperty: `aoSource=${wellnessSync.SOURCE_TAG}`,
+        timeMin,
+        timeMax,
+        singleEvents: 'true',
+        maxResults: '250',
+      });
+      if (pageToken) params.set('pageToken', pageToken);
+      const data = await gcalApiRequest(`/calendar/v3/calendars/primary/events?${params.toString()}`);
+      events.push(...(Array.isArray(data.items) ? data.items : []));
+      pageToken = data.nextPageToken || '';
+      if (!pageToken) break;
+    }
+    return events;
+  },
+  async create(body) {
+    const created = await gcalApiRequest('/calendar/v3/calendars/primary/events', { method: 'POST', body });
+    if (created && created.id) gcalSync.upsert(created);
+    return created;
+  },
+  async patch(id, body) {
+    const updated = await gcalApiRequest(`/calendar/v3/calendars/primary/events/${encodeURIComponent(id)}`, { method: 'PATCH', body });
+    if (updated && updated.id) gcalSync.upsert(updated);
+    return updated;
+  },
+  async remove(id) {
+    try {
+      await gcalApiRequest(`/calendar/v3/calendars/primary/events/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    } catch (error) {
+      // Already deleted in Google is the outcome this call wanted.
+      if (error.statusCode !== 404 && error.statusCode !== 410) throw error;
+    }
+    gcalSync.remove(id);
+  },
+};
+
+let wellnessSyncRunning = null;
+let lastWellnessSync = null;
+
+/**
+ * One pass of the workout and meal sync, or the reason it did not run. Calls
+ * that land while a pass is running share it rather than starting a second.
+ */
+function runWellnessGoogleSync() {
+  if (wellnessSyncRunning) return wellnessSyncRunning;
+  wellnessSyncRunning = (async () => {
+    const config = calendarWellness.resolveConfig(process.env, { deployed: IS_DEPLOYED });
+    if (!config.workout.ok && !config.meals.ok) {
+      lastWellnessSync = { ranAt: new Date().toISOString(), skipped: 'Neither the Wellness Tracker nor Nutri-Mind is configured.' };
+      return lastWellnessSync;
+    }
+    if (!(await isGcalConnected())) {
+      lastWellnessSync = { ranAt: new Date().toISOString(), skipped: 'Google Calendar is not connected.' };
+      return lastWellnessSync;
+    }
+    try {
+      lastWellnessSync = await wellnessSync.runWellnessSync({
+        readWellness: range => wellnessReader.read({ ...range, deployed: IS_DEPLOYED }),
+        api: wellnessGoogleApi,
+        timeZone: process.env.TZ,
+      });
+    } catch (error) {
+      lastWellnessSync = { ranAt: new Date().toISOString(), error: (error && error.message) || 'Sync failed.' };
+    }
+    return lastWellnessSync;
+  })().finally(() => { wellnessSyncRunning = null; });
+  return wellnessSyncRunning;
+}
+
+function logWellnessSync(result) {
+  if (!result) return;
+  if (result.error) {
+    console.error(`Workouts & meals sync failed: ${result.error}`);
+  } else if (!result.skipped && (result.created || result.updated || result.deleted || result.failed)) {
+    console.log(`Workouts & meals sync: ${result.created} created, ${result.updated} updated, ${result.deleted} deleted, ${result.failed} failed`);
+  }
+}
+
+function startWellnessSync() {
+  if (WELLNESS_SYNC_INTERVAL_MS === 0) {
+    console.log('Workouts & meals: Google sync off (CALENDAR_WELLNESS_SYNC_INTERVAL_MS=0)');
+    return null;
+  }
+  console.log(`Workouts & meals: Google sync every ${Math.round(WELLNESS_SYNC_INTERVAL_MS / 60000)} min`);
+  const tick = () => runWellnessGoogleSync().then(logWellnessSync, error => console.error('Workouts & meals sync failed:', error.message));
+  // The first pass waits a moment so a restart does not race its own startup.
+  setTimeout(tick, 20 * 1000).unref();
+  return setInterval(tick, WELLNESS_SYNC_INTERVAL_MS).unref();
 }
 
 function gcalEventIdFromRoute(id) {
@@ -7496,7 +7609,18 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 200, {
         ...(await wellnessReader.read({ from: range.from, to: range.to, now, deployed: IS_DEPLOYED })),
         timezone: process.env.TZ,
+        googleSync: { auto: WELLNESS_SYNC_INTERVAL_MS > 0, intervalMs: WELLNESS_SYNC_INTERVAL_MS, last: lastWellnessSync },
       });
+      return;
+    }
+
+    // Write this week's workouts and meals into Google now, rather than on the
+    // next automatic pass. Answers with what the pass did, or why it did not run.
+    if (req.method === 'POST' && pathname === '/api/calendar/wellness/sync') {
+      if (!requireDropsAuth(res, req)) return;
+      const result = await runWellnessGoogleSync();
+      logWellnessSync(result);
+      sendJson(res, result.error ? 502 : 200, result);
       return;
     }
 
@@ -8151,6 +8275,7 @@ storageReady.then(async storage => {
   setInterval(() => pruneOldVisits(storage), VISIT_PRUNE_INTERVAL_MS).unref();
 
   startResetTimerProcessor(storage);
+  startWellnessSync();
 
   if (!PASSPHRASE_HASH && IS_DEPLOYED) {
     console.error(
