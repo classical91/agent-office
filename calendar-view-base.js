@@ -327,7 +327,10 @@
       wellnessStatus: 'idle',
       wellnessError: null,
       wellnessRangeKey: null,
-      selectedWellnessId: null
+      selectedWellnessId: null,
+      // How the last write into Google went (/api/calendar/wellness/sync).
+      wellnessGoogleSync: null,
+      wellnessSyncing: false
     };
   }
 
@@ -817,6 +820,7 @@
       if (ticket !== wellnessTicket) return;
       state.wellnessItems = Array.isArray(data.items) ? data.items : [];
       state.wellnessSources = data.sources || null;
+      state.wellnessGoogleSync = data.googleSync || null;
       state.wellnessStatus = 'ready';
       state.wellnessError = null;
       if (state.selectedWellnessId && !findWellness(state.selectedWellnessId)) state.selectedWellnessId = null;
@@ -829,12 +833,22 @@
     }
   }
 
+  // Items already written into Google arrive as ordinary events, tagged with
+  // their key; the layer leaves those to the event so nothing is drawn twice.
+  function syncedWellnessKeys() {
+    const keys = new Set();
+    state.events.forEach(event => { if (event.wellnessKey) keys.add(event.wellnessKey); });
+    return keys;
+  }
+
   function visibleWellness() {
     if (!state.showWellness) return [];
     if (WELLNESS_LANES.indexOf(state.lane) === -1) return [];
     if (state.agentFilter || state.projectFilter) return [];
     const term = state.search.trim().toLowerCase();
+    const synced = syncedWellnessKeys();
     return state.wellnessItems.filter(item => {
+      if (synced.has(item.id)) return false;
       if (!term) return true;
       return [item.title, item.label].concat((item.lines || []).map(line => line.text))
         .join(' ')
@@ -938,10 +952,55 @@
         body = '<span class="calendar-countdown-status is-error">Workouts and meals unavailable' + (state.wellnessError ? ' (' + escapeHtml(state.wellnessError) + ')' : '') + '.</span>'
           + '<button type="button" class="calendar-lane-chip" onclick="CAL.loadWellness(true)">Retry</button>';
       } else {
-        body = wellnessSourceNotes();
+        body = wellnessSourceNotes() + renderWellnessGoogleSync();
       }
     }
     return toggle + body;
+  }
+
+  function wellnessSyncSummary(last) {
+    if (!last) return 'Not synced to Google yet';
+    if (last.skipped) return 'Google sync: ' + last.skipped;
+    if (last.error) return 'Google sync failed: ' + last.error;
+    const changes = [];
+    if (last.created) changes.push(last.created + ' added');
+    if (last.updated) changes.push(last.updated + ' updated');
+    if (last.deleted) changes.push(last.deleted + ' removed');
+    if (last.failed) changes.push(last.failed + ' failed');
+    return 'Synced to Google ' + relativeTime(last.ranAt) + (changes.length ? ' (' + changes.join(', ') + ')' : '');
+  }
+
+  function renderWellnessGoogleSync() {
+    const info = state.wellnessGoogleSync || {};
+    const last = info.last || null;
+    const isError = Boolean(last && (last.error || last.failed));
+    return '<span class="calendar-countdown-status' + (isError ? ' is-error' : '') + '">' + escapeHtml(wellnessSyncSummary(last)) + '</span>'
+      + '<button type="button" class="calendar-lane-chip" onclick="CAL.syncWellnessToGoogle()"' + (state.wellnessSyncing ? ' disabled' : '') + '>'
+      + (state.wellnessSyncing ? 'Syncing…' : 'Sync to Google now')
+      + '</button>';
+  }
+
+  // Writes this week's workouts and meals into Google straight away, then
+  // reloads the events so the new ones replace their layer markers.
+  async function syncWellnessToGoogle() {
+    if (state.wellnessSyncing) return;
+    state.wellnessSyncing = true;
+    render();
+    try {
+      const resp = await fetch('/api/calendar/wellness/sync', { method: 'POST', credentials: 'same-origin' });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok && !data.error) data.error = 'HTTP ' + resp.status;
+      state.wellnessGoogleSync = Object.assign({}, state.wellnessGoogleSync, { last: data });
+      if (data.error) setFlash('Workouts & meals: ' + data.error, 'warn');
+      else if (data.skipped) setFlash(data.skipped, 'warn');
+      else setFlash('Workouts & meals synced to Google.', 'success');
+      if (!data.error && !data.skipped) loadGoogleEvents();
+    } catch (error) {
+      setFlash('Workouts & meals sync failed: ' + (error && error.message ? error.message : error), 'warn');
+    } finally {
+      state.wellnessSyncing = false;
+      render();
+    }
   }
 
   function renderWellnessDetail() {
@@ -2807,6 +2866,7 @@
       seriesId: seriesId || null,
       gcalId: gEvent.gcalId || null,
       htmlLink: gEvent.htmlLink || null,
+      wellnessKey: gEvent.wellnessKey || '',
       meta
     };
   }
@@ -3182,6 +3242,7 @@
     loadWellness,
     selectWellness,
     toggleWellness,
+    syncWellnessToGoogle,
     getWellnessForDate: value => wellnessForDate(typeof value === 'string' ? parseDateKey(value) : value),
     // Agent Office control surface: lanes, run lifecycle, and the state the
     // Agent Assistant drawer reads.
