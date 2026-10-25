@@ -66,6 +66,7 @@ agent-office-deploy/
     streaks.{js,css}           # Streaks-only logic and styles
     countdowns.js              # Countdown arithmetic shared by the API and the roll-up (server-side)
     calendar-countdowns.js     # The Calendar's read-only Countdowns layer (server-side)
+    calendar-wellness.js       # The Calendar's Workouts & meals layer, read from the Wellness Tracker and Nutri-Mind (server-side)
     countdowns-page.js         # Countdowns page-only logic
     countdowns.css             # Countdowns-only styles
     project-rooms.js           # Project Rooms-only logic
@@ -277,6 +278,7 @@ All endpoints return JSON.
 | PATCH  | `/api/calendar/events/:id`        | Update an event (session-authenticated) |
 | DELETE | `/api/calendar/events/:id`        | Delete an event (session-authenticated) |
 | POST   | `/api/calendar/events/:id/run`    | Drive a block's agent run (session-authenticated) |
+| GET    | `/api/calendar/wellness`          | Workouts and planned meals for the range on screen, read from the Wellness Tracker and Nutri-Mind (session-authenticated) |
 | GET    | `/api/calendar/agent-timeline`    | Agent work grouped by agent (session-authenticated) |
 | GET    | `/api/calendar/preferences`       | Read scheduling preferences (session-authenticated) |
 | PUT    | `/api/calendar/preferences`       | Update scheduling preferences (session-authenticated) |
@@ -467,6 +469,45 @@ one. Past occurrences of a repeating countdown are not drawn (today is kept
 whole); an overdue one-off stays on its date, in red. Paused and completed
 timers are left out unless `?inactive=1` is passed. The layer loads on its own,
 so it stays up when Google is disconnected or failing.
+
+**Workouts and meals on the Calendar.** Next to the Countdowns toggle is
+**Workouts & meals**: the Wellness Tracker's weekly workout rota and the meals
+planned in Nutri-Mind's Daily Meal Planner, drawn on the days they land. Both
+apps stay the owners — change the rota or tonight's dinner there and the
+calendar follows on its next load (it re-reads when the tab is looked at again,
+and every five minutes). Nothing is copied into Google Calendar or into this
+app, so there is no second copy to drift.
+
+`GET /api/calendar/wellness?from=…&to=…` serves it, worked out in
+`calendar-wellness.js` from `GET /api/weekly-plan` on the Wellness Tracker and
+`GET /api/daily-meal-plan?date=` on Nutri-Mind — the same two routes the Main
+Hub's Daily Dashboard reads. The rules:
+
+- **Workouts** land on every day from today on, matched by weekday, with the
+  day's theme and focus as the title and its exercises listed in the detail.
+- **Meals** land on today and the six days after it, one marker per planned
+  slot (Morning, Afternoon, Night). Slots turned off or still "Not chosen yet"
+  are not drawn. Further out than a week is not drawn either: the planner keeps
+  one rolling week keyed by weekday, so a Monday two weeks away would only be
+  repeating a plan that will have been replaced by then.
+- **Past days are not drawn** — a forecast shown for yesterday would read as a
+  record of what was done.
+- **Times are nominal.** Neither app says *when* in the day something happens,
+  so markers are drawn at 08:00 (Morning), 12:30 (Afternoon), 17:30 (workout)
+  and 18:30 (Night). `CALENDAR_WELLNESS_TIMES` moves them, e.g.
+  `workout=06:30,night=19:00`. Markers take no time (`blocksTime: false`), so
+  free-time windows, scheduling and Build my week ignore them.
+- Each source reports its own state (`ok`, `empty`, `not_configured`,
+  `auth_error`, `unreachable`, `error`) and the bar says which one is missing
+  and why, so "no meals" is never confused with "Nutri-Mind is not set up". A
+  failing source never costs the other one.
+- Each upstream answer is reused for a minute, so switching between month,
+  week and day does not re-ask both apps.
+
+The diet sync code reads the whole meal plan, so it stays on the server: it
+travels to Nutri-Mind in an `x-sync-code` header, redirects are not followed,
+HTTPS is required on a deployed host, and the browser only ever gets titles
+and lines.
 
 **Weekends and trading.** Trading countdowns never land on a Saturday or a
 Sunday — a repeating one skips a closed market and moves to Monday. On the
@@ -1335,6 +1376,16 @@ Dropbox-related variables:
   deployed host. See [ShareBot67 newsroom health](#sharebot67-newsroom-health).
 - `MARKET_DASHBOARD_TIMEOUT_MS` — optional timeout for that read (default
   `6000`, clamped to 1–20s).
+- `WORKOUT_TRACKER_BASE_URL` — the Wellness Tracker whose weekly rota the
+  Calendar's **Workouts & meals** layer draws. An address and nothing else: the
+  rota is published read-only. See [Workouts and meals on the Calendar](#countdowns).
+- `DIET_PLAN_BASE_URL` / `DIET_PLAN_SYNC_CODE` — Nutri-Mind and the sync code
+  its Daily Meal Planner is connected with, for the same layer's meals. **Treat
+  the code as a password** — it reads the whole meal plan. It stays on the
+  server; one day's planned meals at a time is all that reaches the browser.
+  The same values the Main Hub uses for its Today's Meals card.
+- `CALENDAR_WELLNESS_TIMES` — optional nominal times for those markers, as
+  `workout=17:30,morning=08:00,afternoon=12:30,night=18:30` (any subset).
 - `RESET_TIMER_ALLOW_LOOPBACK_WEBHOOKS` — **local testing only.** Set to
   `yes-allow-loopback-webhooks-for-local-tests` it lets the timer processor
   deliver to `127.0.0.1` / `localhost` as well as Pushcut, which is how the test

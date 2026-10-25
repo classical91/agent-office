@@ -1605,3 +1605,17 @@
 .calendar-countdown-detail-actions { display: flex; gap: 6px; flex: none; align-items: center; }
 .calendar-countdown-detail.is-overdue .calendar-countdown-left { color: #fca5a5; font-weight: 700; }
 .calendar-agenda-row-copy span.calendar-countdown-left { display: inline; margin-top: 0; }
+
+/* ─── Wellness layer ────────────────────────────────────────────────────────
+   Workouts and meals read from the Wellness Tracker and Nutri-Mind. They use
+   the countdown marker look (a moment, not a block) in their own colour. */
+.calendar-wellness-detail .calendar-detail-label { text-transform: none; }
+
+.calendar-wellness-lines {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.calendar-wellness-line-detail { color: var(--muted); }

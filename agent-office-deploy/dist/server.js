@@ -9,6 +9,7 @@ const googleSync = require('./calendar-google-sync.js');
 const reminderTime = require('./reminder-time.js');
 const countdowns = require('./countdowns.js');
 const calendarCountdowns = require('./calendar-countdowns.js');
+const calendarWellness = require('./calendar-wellness.js');
 const resetTimers = require('./reset-timers.js');
 const planning = require('./planning.js');
 const planningWeek = require('./planning-week.js');
@@ -89,6 +90,9 @@ const DEFAULT_AGENTS = [
 ];
 const ALLOWED_ORIGIN = process.env.APP_ORIGIN || process.env.PUBLIC_APP_URL || '';
 const PASSPHRASE_HASH = resolvePassphraseHash();
+// Workouts and meals for the Calendar are read from their own apps; the reader
+// keeps each answer for a minute so switching views does not re-ask them.
+const wellnessReader = calendarWellness.createWellnessReader();
 const IS_DEPLOYED = isDeployedEnvironment();
 const SESSION_SECRET = String(process.env.SESSION_SECRET || '').trim();
 const SESSION_SECRET_MIN_LENGTH = 32;
@@ -7468,6 +7472,29 @@ const server = http.createServer(async (req, res) => {
           now,
           includeInactive: parsedUrl.searchParams.get('inactive') === '1',
         }),
+        timezone: process.env.TZ,
+      });
+      return;
+    }
+
+    // The Calendar's Wellness layer: the Wellness Tracker's workout rota and
+    // Nutri-Mind's planned meals, read from those apps for the range on
+    // screen. Nothing is stored here or written to Google; the diet sync code
+    // stays in this process and only titles and lines come back.
+    if (req.method === 'GET' && pathname === '/api/calendar/wellness') {
+      if (!requireDropsAuth(res, req)) return;
+      const now = new Date();
+      const range = calendarCountdowns.parseRange(
+        parsedUrl.searchParams.get('from'),
+        parsedUrl.searchParams.get('to'),
+        now
+      );
+      if (!range.ok) {
+        sendJson(res, 400, { error: range.error });
+        return;
+      }
+      sendJson(res, 200, {
+        ...(await wellnessReader.read({ from: range.from, to: range.to, now, deployed: IS_DEPLOYED })),
         timezone: process.env.TZ,
       });
       return;

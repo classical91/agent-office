@@ -316,7 +316,18 @@
       countdownStatus: 'idle',
       countdownError: null,
       countdownRangeKey: null,
-      selectedCountdownId: null
+      selectedCountdownId: null,
+      // The Wellness layer: workouts from the Wellness Tracker and meals from
+      // Nutri-Mind, read by /api/calendar/wellness. Kept apart from `events`
+      // for the same reason as countdowns: nothing that edits, deletes or looks
+      // for free time can reach it.
+      showWellness: readWellnessPreference(),
+      wellnessItems: [],
+      wellnessSources: null,
+      wellnessStatus: 'idle',
+      wellnessError: null,
+      wellnessRangeKey: null,
+      selectedWellnessId: null
     };
   }
 
@@ -677,7 +688,7 @@
           + '</button>').join('');
       }
     }
-    return '<div class="calendar-countdown-bar"><div class="calendar-lane-row">' + toggle + body + '</div></div>';
+    return '<div class="calendar-countdown-bar"><div class="calendar-lane-row">' + toggle + body + renderWellnessToggle() + '</div></div>';
   }
 
   function renderCountdownDetail() {
@@ -733,6 +744,7 @@
       return;
     }
     loadCountdowns(true);
+    if (state.showWellness) loadWellness(true);
   }
 
   // The time-left labels move in place; nothing else on the board re-renders.
@@ -751,6 +763,230 @@
   });
   window.setInterval(() => {
     if (document.visibilityState === 'visible' && state.showCountdowns && state.countdownStatus === 'ready') loadCountdowns(true);
+  }, 5 * 60 * 1000);
+
+  // ─── Wellness layer ───────────────────────────────────────────────────────
+  //
+  // Today's workout from the Wellness Tracker's rota and the meals planned in
+  // Nutri-Mind, drawn on the days they land. Like countdowns they are markers:
+  // they take no time, they are not Google events, and the one thing a marker
+  // can do is open the app that owns it, where it is changed.
+
+  const WELLNESS_PREF_KEY = 'ao-calendar-wellness';
+  const WELLNESS_LANES = ['all'];
+  const WELLNESS_SOURCE_LABELS = { workout: 'Workouts', meals: 'Meals' };
+  let wellnessTicket = 0;
+
+  function readWellnessPreference() {
+    try {
+      return localStorage.getItem(WELLNESS_PREF_KEY) !== 'off';
+    } catch (error) {
+      return true;
+    }
+  }
+
+  function writeWellnessPreference(on) {
+    try {
+      localStorage.setItem(WELLNESS_PREF_KEY, on ? 'on' : 'off');
+    } catch (error) {
+      // The toggle still works for this visit.
+    }
+  }
+
+  async function loadWellness(force) {
+    // The same dates the countdowns ask for: whatever is on screen.
+    const range = countdownRange();
+    const key = range.from.toISOString() + '|' + range.to.toISOString();
+    if (!force && key === state.wellnessRangeKey) return;
+    state.wellnessRangeKey = key;
+    const ticket = ++wellnessTicket;
+    if (!state.wellnessItems.length && state.wellnessStatus !== 'ready') state.wellnessStatus = 'loading';
+    try {
+      const query = '?from=' + encodeURIComponent(range.from.toISOString()) + '&to=' + encodeURIComponent(range.to.toISOString());
+      const resp = await fetch('/api/calendar/wellness' + query, { credentials: 'same-origin' });
+      if (ticket !== wellnessTicket) return;
+      if (resp.status === 401) {
+        state.wellnessStatus = 'locked';
+        state.wellnessItems = [];
+        state.wellnessSources = null;
+        render();
+        return;
+      }
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      const data = await resp.json();
+      if (ticket !== wellnessTicket) return;
+      state.wellnessItems = Array.isArray(data.items) ? data.items : [];
+      state.wellnessSources = data.sources || null;
+      state.wellnessStatus = 'ready';
+      state.wellnessError = null;
+      if (state.selectedWellnessId && !findWellness(state.selectedWellnessId)) state.selectedWellnessId = null;
+      render();
+    } catch (error) {
+      if (ticket !== wellnessTicket) return;
+      state.wellnessStatus = 'error';
+      state.wellnessError = error && error.message ? error.message : String(error);
+      render();
+    }
+  }
+
+  function visibleWellness() {
+    if (!state.showWellness) return [];
+    if (WELLNESS_LANES.indexOf(state.lane) === -1) return [];
+    if (state.agentFilter || state.projectFilter) return [];
+    const term = state.search.trim().toLowerCase();
+    return state.wellnessItems.filter(item => {
+      if (!term) return true;
+      return [item.title, item.label].concat((item.lines || []).map(line => line.text))
+        .join(' ')
+        .toLowerCase()
+        .includes(term);
+    });
+  }
+
+  function wellnessForDate(date) {
+    return visibleWellness().filter(item => sameDay(new Date(item.at), date));
+  }
+
+  function findWellness(id) {
+    if (!id) return null;
+    return state.wellnessItems.find(item => item.id === id) || null;
+  }
+
+  function wellnessTitle(item) {
+    return item.source === 'meal' ? item.label + ' · ' + item.title : item.title;
+  }
+
+  function wellnessClasses(base, item) {
+    return base + ' calendar-wellness is-' + escapeHtml(item.state || 'upcoming')
+      + ' is-' + escapeHtml(item.source)
+      + (state.selectedWellnessId === item.id ? ' active' : '');
+  }
+
+  function wellnessClick() {
+    return ' onclick="event.stopPropagation();CAL.selectWellness(this.dataset.wellnessId)"';
+  }
+
+  // Countdown pills and markers already draw "a thing at a moment, not a
+  // block", so wellness markers reuse that look in their own colour.
+  function renderWellnessPill(item) {
+    return '<button type="button" class="' + wellnessClasses('calendar-event small calendar-countdown-pill calendar-wellness-pill', item) + '"'
+      + ' style="--countdown-color:' + escapeHtml(item.color) + ';"'
+      + ' data-wellness-id="' + escapeHtml(item.id) + '"' + wellnessClick()
+      + ' title="' + escapeHtml(item.label + ' · ' + wellnessTitle(item)) + '">'
+      + '<span class="calendar-countdown-glyph" aria-hidden="true">' + escapeHtml(item.emoji) + '</span>'
+      + '<span class="calendar-event-title">' + escapeHtml(wellnessTitle(item)) + '</span>'
+      + '</button>';
+  }
+
+  function renderWellnessMarker(item) {
+    const at = new Date(item.at);
+    const top = ((at.getHours() + at.getMinutes() / 60) - HOUR_START) * ROW_HEIGHT;
+    return '<button type="button" class="' + wellnessClasses('calendar-countdown-marker calendar-wellness-marker', item) + '"'
+      + ' style="top:' + top + 'px;--countdown-color:' + escapeHtml(item.color) + ';"'
+      + ' data-wellness-id="' + escapeHtml(item.id) + '"' + wellnessClick()
+      + ' title="' + escapeHtml(item.label + ' · ' + wellnessTitle(item)) + '">'
+      + '<span class="calendar-countdown-marker-label">'
+      + '<span class="calendar-countdown-glyph" aria-hidden="true">' + escapeHtml(item.emoji) + '</span>'
+      + '<span class="calendar-countdown-marker-title">' + escapeHtml(wellnessTitle(item)) + '</span>'
+      + '</span></button>';
+  }
+
+  function renderWellnessAgendaRow(item) {
+    const detail = item.source === 'workout'
+      ? (item.lines || []).map(line => line.text).join(' · ')
+      : item.appLabel;
+    return '<button type="button" class="' + wellnessClasses('calendar-agenda-row calendar-countdown-row', item) + '"'
+      + ' style="--countdown-color:' + escapeHtml(item.color) + ';"'
+      + ' data-wellness-id="' + escapeHtml(item.id) + '"' + wellnessClick() + '>'
+      + '<div class="calendar-agenda-row-time">' + escapeHtml(item.emoji + ' ' + item.label) + '</div>'
+      + '<div class="calendar-agenda-row-copy"><strong>' + escapeHtml(item.title) + '</strong>'
+      + '<span>' + escapeHtml(detail) + '</span>'
+      + '</div>'
+      + '<span class="calendar-status-chip"><span class="calendar-chip-swatch" style="background:' + escapeHtml(item.color) + '"></span>' + escapeHtml(item.appLabel) + '</span>'
+      + '</button>';
+  }
+
+  // A source that cannot be read says why, so "no meals" is never confused
+  // with "Nutri-Mind is not set up".
+  function wellnessSourceNotes() {
+    const sources = state.wellnessSources || {};
+    return Object.keys(WELLNESS_SOURCE_LABELS).map(key => {
+      const source = sources[key];
+      if (!source || source.state === 'ok') return '';
+      const isError = source.state !== 'empty' && source.state !== 'not_configured';
+      return '<span class="calendar-countdown-status' + (isError ? ' is-error' : '') + '">'
+        + escapeHtml(WELLNESS_SOURCE_LABELS[key] + ': ' + (source.message || source.state.replace(/_/g, ' ')))
+        + '</span>';
+    }).join('');
+  }
+
+  function renderWellnessToggle() {
+    const on = state.showWellness;
+    const count = on ? visibleWellness().length : state.wellnessItems.length;
+    const toggle = '<button type="button" class="calendar-lane-chip calendar-countdown-toggle calendar-wellness-toggle' + (on ? ' active' : '') + '"'
+      + ' aria-pressed="' + (on ? 'true' : 'false') + '" onclick="CAL.toggleWellness()">'
+      + '<span aria-hidden="true">&#127947;</span> Workouts &amp; meals'
+      + (state.wellnessStatus === 'ready' ? '<span class="calendar-lane-count">' + count + '</span>' : '')
+      + '</button>';
+    let body = '';
+    if (on) {
+      if (state.wellnessStatus === 'loading' || state.wellnessStatus === 'idle') {
+        body = '<span class="calendar-countdown-status">Loading workouts and meals…</span>';
+      } else if (state.wellnessStatus === 'locked') {
+        body = '';
+      } else if (state.wellnessStatus === 'error') {
+        body = '<span class="calendar-countdown-status is-error">Workouts and meals unavailable' + (state.wellnessError ? ' (' + escapeHtml(state.wellnessError) + ')' : '') + '.</span>'
+          + '<button type="button" class="calendar-lane-chip" onclick="CAL.loadWellness(true)">Retry</button>';
+      } else {
+        body = wellnessSourceNotes();
+      }
+    }
+    return toggle + body;
+  }
+
+  function renderWellnessDetail() {
+    const item = state.showWellness ? findWellness(state.selectedWellnessId) : null;
+    if (!item) return '';
+    const at = new Date(item.at);
+    const lines = (item.lines || []).map(line => '<li>'
+      + (line.emoji ? '<span aria-hidden="true">' + escapeHtml(line.emoji) + '</span> ' : '')
+      + escapeHtml(line.text)
+      + (line.detail ? ' <span class="calendar-wellness-line-detail">' + escapeHtml(line.detail) + '</span>' : '')
+      + '</li>').join('');
+    return '<div class="calendar-countdown-detail calendar-wellness-detail" style="--countdown-color:' + escapeHtml(item.color) + ';" role="region" aria-label="' + escapeHtml(item.label) + ' details">'
+      + '<div class="calendar-countdown-detail-main">'
+      + '<div class="calendar-detail-label">' + escapeHtml(item.emoji + ' ' + item.label) + '</div>'
+      + '<div class="calendar-detail-title">' + escapeHtml(item.title) + '</div>'
+      + '<div class="calendar-detail-meta">' + escapeHtml(formatLongDate(at)) + ' · shown at ' + escapeHtml(formatTime(at)) + '</div>'
+      + (lines ? '<ul class="calendar-wellness-lines">' + lines + '</ul>' : '')
+      + '</div>'
+      + '<div class="calendar-countdown-detail-actions">'
+      + '<a class="calendar-btn primary tiny" href="' + escapeHtml(item.href) + '" target="_blank" rel="noopener noreferrer">Open in ' + escapeHtml(item.appLabel) + ' ↗</a>'
+      + '<button type="button" class="calendar-btn tiny ghost" onclick="CAL.selectWellness(null)">Close</button>'
+      + '</div>'
+      + '</div>';
+  }
+
+  function selectWellness(id) {
+    const item = findWellness(id);
+    state.selectedWellnessId = item && state.selectedWellnessId !== id ? id : null;
+    render();
+  }
+
+  function toggleWellness() {
+    state.showWellness = !state.showWellness;
+    writeWellnessPreference(state.showWellness);
+    if (!state.showWellness) state.selectedWellnessId = null;
+    render();
+  }
+
+  // Tonight's dinner changed on the phone shows up when this tab is looked at
+  // again; the server keeps each answer for a minute, so this is cheap.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && state.showWellness && state.wellnessStatus !== 'idle') loadWellness(true);
+  });
+  window.setInterval(() => {
+    if (document.visibilityState === 'visible' && state.showWellness && state.wellnessStatus === 'ready') loadWellness(true);
   }, 5 * 60 * 1000);
 
   const state = seedState();
@@ -1268,8 +1504,11 @@
       // worth not scrolling past.
       const dateCountdowns = countdownsForDate(day);
       const dayCountdowns = dateCountdowns.slice(0, MONTH_PILL_CAP);
-      const dayEvents = dateEvents.slice(0, Math.max(0, MONTH_PILL_CAP - dayCountdowns.length));
-      const more = Math.max(0, dateEvents.length + dateCountdowns.length - dayEvents.length - dayCountdowns.length);
+      const dateWellness = wellnessForDate(day);
+      const dayWellness = dateWellness.slice(0, Math.max(0, MONTH_PILL_CAP - dayCountdowns.length));
+      const dayEvents = dateEvents.slice(0, Math.max(0, MONTH_PILL_CAP - dayCountdowns.length - dayWellness.length));
+      const more = Math.max(0, dateEvents.length + dateCountdowns.length + dateWellness.length
+        - dayEvents.length - dayCountdowns.length - dayWellness.length);
       const classes = ['calendar-month-cell'];
       if (!sameMonth(day, state.cursorDate)) classes.push('is-other');
       if (sameDay(day, state.today)) classes.push('is-today');
@@ -1278,6 +1517,7 @@
         + '<div class="calendar-day-number">' + day.getDate() + '</div>'
         + '<div class="calendar-month-events" data-extra="' + more + '">'
         + dayCountdowns.map(renderCountdownPill).join('')
+        + dayWellness.map(renderWellnessPill).join('')
         + dayEvents.map(event => renderEventPill(event, true)).join('')
         + '</div>'
         // The overflow line sits outside the clipped pill list so it stays
@@ -1356,7 +1596,7 @@
         const hour = start.getHours() + start.getMinutes() / 60;
         if (earliest === null || hour < earliest) earliest = hour;
       });
-      countdownsForDate(day).forEach(item => {
+      countdownsForDate(day).concat(wellnessForDate(day)).forEach(item => {
         const at = new Date(item.at);
         const hour = at.getHours() + at.getMinutes() / 60;
         if (earliest === null || hour < earliest) earliest = hour;
@@ -1457,6 +1697,7 @@
         }).join('')
         + laidOut.map(item => renderEventBlock(item)).join('')
         + countdownsForDate(day).map(renderCountdownMarker).join('')
+        + wellnessForDate(day).map(renderWellnessMarker).join('')
         + '</div></div>';
     }).join('');
 
@@ -1492,10 +1733,11 @@
       const day = addDays(start, i);
       const items = eventsForDate(day);
       const countdownItems = countdownsForDate(day);
-      if (items.length || countdownItems.length) grouped.push({ day, items, countdownItems });
+      const wellnessItems = wellnessForDate(day);
+      if (items.length || countdownItems.length || wellnessItems.length) grouped.push({ day, items, countdownItems, wellnessItems });
     }
     if (!grouped.length) return '<div class="calendar-empty" style="margin:20px;">Nothing is scheduled in this range yet.</div>';
-    return '<div class="calendar-agenda">' + grouped.map(group => '<div class="calendar-agenda-group"><div class="calendar-agenda-date">' + escapeHtml(formatLongDate(group.day)) + '</div><div class="calendar-agenda-list">' + group.countdownItems.map(renderCountdownAgendaRow).join('') + group.items.map(event => {
+    return '<div class="calendar-agenda">' + grouped.map(group => '<div class="calendar-agenda-group"><div class="calendar-agenda-date">' + escapeHtml(formatLongDate(group.day)) + '</div><div class="calendar-agenda-list">' + group.countdownItems.map(renderCountdownAgendaRow).join('') + group.wellnessItems.map(renderWellnessAgendaRow).join('') + group.items.map(event => {
       const meta = TYPE_META[event.type] || TYPE_META.meeting;
       const startDate = parseLocalIso(event.start);
       const endDate = parseLocalIso(event.end);
@@ -1997,6 +2239,7 @@
     // Independent of Google: a failed or missing connection costs the events,
     // never the countdowns.
     if (state.showCountdowns) loadCountdowns(false);
+    if (state.showWellness) loadWellness(false);
     root.innerHTML = '<div class="calendar-shell calendar-compact-shell">'
       + '<section class="calendar-stage calendar-compact-stage calendar-view-' + state.view + '">'
       + renderFlash()
@@ -2005,6 +2248,7 @@
       + renderLaneBar()
       + renderCountdownBar()
       + renderCountdownDetail()
+      + renderWellnessDetail()
       + renderCalendarStateNotice()
       + renderMainBoard()
       + '</div>'
@@ -2933,6 +3177,12 @@
     getCountdowns: () => visibleCountdowns().slice(),
     getCountdownsForDate: value => countdownsForDate(typeof value === 'string' ? parseDateKey(value) : value),
     countdownLeft,
+    // The Wellness layer. Read-only: its only action is opening the app that
+    // owns the workout or meal.
+    loadWellness,
+    selectWellness,
+    toggleWellness,
+    getWellnessForDate: value => wellnessForDate(typeof value === 'string' ? parseDateKey(value) : value),
     // Agent Office control surface: lanes, run lifecycle, and the state the
     // Agent Assistant drawer reads.
     setLane,
