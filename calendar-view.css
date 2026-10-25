@@ -1465,6 +1465,20 @@
   border-color: color-mix(in srgb, var(--countdown-color, #94a3b8) 50%, transparent);
 }
 
+.calendar-countdown-filter-row {
+  margin-top: 6px;
+}
+
+.calendar-countdown-category.active {
+  border-color: color-mix(in srgb, var(--countdown-color, #94a3b8) 55%, transparent);
+  background: color-mix(in srgb, var(--countdown-color, #94a3b8) 16%, rgba(15, 23, 42, 0.6));
+}
+
+.calendar-countdown-category.is-hidden {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
 .calendar-countdown-chip .calendar-countdown-left {
   font-variant-numeric: tabular-nums;
   opacity: 0.75;
