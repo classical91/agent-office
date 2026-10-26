@@ -3325,14 +3325,17 @@ async function saveReminder() {
     });
     contentEl.value = '';
     whenEl.value = '';
+    // Drop focus so the phone keyboard goes away with the cleared form.
+    document.activeElement?.blur();
 
-    // On the Reminders screen there is no list to watch it land in, so the
-    // panel says so itself and stays open for the next one.
+    // The note sits outside the form, so it still confirms the save once the
+    // form has closed. The capture-only screen has nothing else to show, so
+    // there the empty form stays up for the next one.
     if (isIosCaptureView()) {
       const info = dropReminderInfo(saved);
       showReminderSaved(info ? `Saved — reminding you ${info.relative}.` : 'Saved.');
-      contentEl.focus();
-    } else {
+    }
+    if (!document.getElementById('dropbox-view')?.classList.contains('ios-capture-mode')) {
       collapseCapture('dropbox-reminder-capture', 'is-collapsed');
     }
 
