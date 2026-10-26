@@ -22,16 +22,12 @@ const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 
-const { currentRotation, normalizeRotation } = require('./timer-rotation.js');
+const { currentRotation, normalizeRotation, occurrenceAfter } = require('./timer-rotation.js');
 
 const STORAGE_KEY = 'reset-timers.v1';
 const CATEGORY_SLUG = /^[a-z0-9][a-z0-9-]{0,79}$/;
 const MAX_TIMERS = 200;
 const MAX_ENCODED_LENGTH = 250000;
-
-// A repeating timer whose reset time is years behind should not be stepped
-// forward one day at a time forever. countdowns.js draws the same line.
-const MAX_ROLL_STEPS = 5000;
 
 // Delivery defaults. The first retry waits five minutes and each one after that
 // doubles, up to two hours: a Pushcut outage costs a handful of requests a day
@@ -109,6 +105,9 @@ function normalizeTimer(raw) {
     webhookUrl: typeof raw.webhookUrl === 'string' ? raw.webhookUrl.trim() : '',
     repeatDays: Number.isFinite(repeatDays) && repeatDays > 0 ? Math.round(repeatDays) : 0,
     repeatMonths: Number.isFinite(repeatMonths) && repeatMonths > 0 ? Math.round(repeatMonths) : 0,
+    // Saturday and Sunday move on to Monday; see timer-rotation.js.
+    skipWeekends: Boolean(raw.skipWeekends),
+    shiftedFrom: toIso(raw.shiftedFrom),
     status,
     deleted: Boolean(raw.deleted),
     source: raw.source === 'office' ? 'office' : 'browser',
@@ -282,25 +281,14 @@ function formatShortcutText(items, state = 'active') {
 /**
  * The next occurrence of a repeating timer after `now`, keeping the hour it was
  * set to. Returns '' for a one-off: an expired one-off stays expired.
+ *
+ * The stepping itself is timer-rotation.js's, which the page rolls its cards
+ * forward with too. firedPatch() goes to it directly, because a timer that
+ * skips weekends has a second field to move.
  */
 function nextOccurrence(resetAt, repeatDays, now = Date.now(), repeatMonths = 0) {
-  const days = Number(repeatDays);
-  const months = Number(repeatMonths);
-  if ((!Number.isFinite(days) || days <= 0) && (!Number.isFinite(months) || months <= 0)) return '';
-  const next = new Date(resetAt);
-  if (Number.isNaN(next.getTime())) return '';
-  for (let step = 0; step < MAX_ROLL_STEPS && next.getTime() <= now; step += 1) {
-    if (months > 0) {
-      const day = next.getDate();
-      next.setDate(1);
-      next.setMonth(next.getMonth() + Math.round(months));
-      const lastDay = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate();
-      next.setDate(Math.min(day, lastDay));
-    } else {
-      next.setDate(next.getDate() + Math.round(days));
-    }
-  }
-  return next.getTime() > now ? next.toISOString() : '';
+  const next = occurrenceAfter({ resetAt, repeatDays, repeatMonths }, now);
+  return next ? next.resetAt : '';
 }
 
 // ─── Delivery ────────────────────────────────────────────────────────────────
@@ -547,9 +535,10 @@ function firedPatch(timer, now, error) {
     updatedAt: nowIso,
   };
 
-  const advanced = nextOccurrence(timer.resetAt, timer.repeatDays, now, timer.repeatMonths);
+  const advanced = occurrenceAfter(timer, now);
   if (advanced) {
-    patch.resetAt = advanced;
+    patch.resetAt = advanced.resetAt;
+    patch.shiftedFrom = advanced.shiftedFrom;
     // The new occurrence has not been sent, and the page reads `fired` to
     // decide whether a card is still armed.
     patch.fired = false;

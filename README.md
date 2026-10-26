@@ -647,6 +647,22 @@ repeat steps from there, in `timer-rotation.js`, which the page and the server
 both load — so it stays right whichever of them rolled the timer forward.
 Changing the list starts it again from its first entry.
 
+#### Skipping weekends
+
+Tick **Skip weekends** on a card or in Add New Countdown and the countdown
+never lands on a Saturday or a Sunday: an occurrence due on one lands on the
+Monday after it, at the same time, and the card says so ("Resets Nov 2,
+9:00 AM · moved from Sat"). The repeat then restarts from Monday, so a daily
+timer runs Monday to Friday and an every-3-days one due on a Saturday comes
+round on Monday and then Thursday. Monthly and yearly timers keep their day of
+the month instead: a review on the 1st that was moved to Monday the 2nd is back
+on the 1st next month. The card stores that as `skipWeekends`, plus
+`shiftedFrom` — when the current occurrence was due before the weekend moved
+it. The rule lives in `timer-rotation.js`, so the page, the server's Pushcut
+processor and the Calendar all move the timer the same way, and a rotation
+moves one entry per occurrence that actually lands. Turning the option on or
+off on a rotating timer starts its list again from the first entry.
+
 #### This month's bill
 
 A countdown in **Subscriptions / Bills** has a **Cost** field — "Cost per
