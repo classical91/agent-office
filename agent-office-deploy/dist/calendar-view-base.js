@@ -317,6 +317,10 @@
       countdownError: null,
       countdownRangeKey: null,
       selectedCountdownId: null,
+      // Countdown categories filtered off the calendar, and whether the row of
+      // category chips is open.
+      hiddenCountdownCategories: readHiddenCountdownCategories(),
+      countdownFilterOpen: false,
       // The Wellness layer: workouts from the Wellness Tracker and meals from
       // Nutri-Mind, read by /api/calendar/wellness. Kept apart from `events`
       // for the same reason as countdowns: nothing that edits, deletes or looks
@@ -465,6 +469,7 @@
   // the timer store.
 
   const COUNTDOWN_PREF_KEY = 'ao-calendar-countdowns';
+  const COUNTDOWN_HIDDEN_KEY = 'ao-calendar-countdown-hidden';
   // Lanes that slice the calendar by agent work have no countdowns in them.
   const COUNTDOWN_LANES = ['all', 'deadlines'];
   let countdownTicket = 0;
@@ -482,6 +487,23 @@
       localStorage.setItem(COUNTDOWN_PREF_KEY, on ? 'on' : 'off');
     } catch (error) {
       // The toggle still works for this visit.
+    }
+  }
+
+  function readHiddenCountdownCategories() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(COUNTDOWN_HIDDEN_KEY) || '[]');
+      return Array.isArray(saved) ? saved.filter(id => typeof id === 'string') : [];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  function writeHiddenCountdownCategories(ids) {
+    try {
+      localStorage.setItem(COUNTDOWN_HIDDEN_KEY, JSON.stringify(ids));
+    } catch (error) {
+      // The filter still works for this visit.
     }
   }
 
@@ -545,12 +567,35 @@
       .includes(term);
   }
 
-  function visibleCountdowns() {
+  function countdownCategoryShown(item) {
+    return state.hiddenCountdownCategories.indexOf(item.category) === -1;
+  }
+
+  // Everything the layer would draw before the category filter, so the filter
+  // chips can still count what they hide.
+  function countdownsBeforeCategoryFilter() {
     if (!state.showCountdowns) return [];
     if (COUNTDOWN_LANES.indexOf(state.lane) === -1) return [];
     if (state.agentFilter || state.projectFilter) return [];
     const term = state.search.trim().toLowerCase();
     return state.countdownItems.filter(item => countdownMatchesSearch(item, term));
+  }
+
+  function visibleCountdowns() {
+    return countdownsBeforeCategoryFilter().filter(countdownCategoryShown);
+  }
+
+  // One entry per category the loaded countdowns use, in first-seen order.
+  function countdownCategories() {
+    const counts = {};
+    countdownsBeforeCategoryFilter().forEach(item => { counts[item.category] = (counts[item.category] || 0) + 1; });
+    const seen = {};
+    return state.countdownItems.concat(state.countdownUpcoming).reduce((list, item) => {
+      if (seen[item.category]) return list;
+      seen[item.category] = true;
+      list.push({ id: item.category, label: item.categoryLabel || item.category, color: item.color, count: counts[item.category] || 0 });
+      return list;
+    }, []);
   }
 
   function countdownsForDate(date) {
@@ -664,10 +709,19 @@
     const on = state.showCountdowns;
     const count = on ? visibleCountdowns().length : state.countdownItems.length;
     const toggle = '<button type="button" class="calendar-lane-chip calendar-countdown-toggle' + (on ? ' active' : '') + '"'
-      + ' aria-pressed="' + (on ? 'true' : 'false') + '" onclick="CAL.toggleCountdowns()">'
+      + ' aria-pressed="' + (on ? 'true' : 'false') + '" onclick="CAL.toggleCountdowns()"'
+      + ' title="' + (on ? 'Hide countdowns from the calendar' : 'Show countdowns on the calendar') + '">'
       + '<span aria-hidden="true">&#9203;</span> Countdowns'
       + (state.countdownStatus === 'ready' ? '<span class="calendar-lane-count">' + count + '</span>' : '')
       + '</button>';
+    const hiddenCount = state.hiddenCountdownCategories.length;
+    const filter = on && state.countdownStatus === 'ready' && countdownCategories().length
+      ? '<button type="button" class="calendar-lane-chip calendar-countdown-filter-toggle' + (state.countdownFilterOpen ? ' active' : '') + '"'
+        + ' aria-expanded="' + (state.countdownFilterOpen ? 'true' : 'false') + '" onclick="CAL.toggleCountdownFilter()"'
+        + ' title="Choose which countdown categories show on the calendar">'
+        + 'Filter' + (hiddenCount ? '<span class="calendar-lane-count">' + hiddenCount + ' hidden</span>' : '')
+        + '</button>'
+      : '';
     let body = '';
     if (on) {
       if (state.countdownStatus === 'loading' || state.countdownStatus === 'idle') {
@@ -678,10 +732,10 @@
       } else if (state.countdownStatus === 'error') {
         body = '<span class="calendar-countdown-status is-error">Countdowns unavailable' + (state.countdownError ? ' (' + escapeHtml(state.countdownError) + ')' : '') + '.</span>'
           + '<button type="button" class="calendar-lane-chip" onclick="CAL.loadCountdowns(true)">Retry</button>';
-      } else if (!state.countdownUpcoming.length) {
-        body = '<span class="calendar-countdown-status">Nothing counting down.</span>';
+      } else if (!state.countdownUpcoming.filter(countdownCategoryShown).length) {
+        body = '<span class="calendar-countdown-status">' + (state.countdownUpcoming.length ? 'Every upcoming countdown is filtered out.' : 'Nothing counting down.') + '</span>';
       } else {
-        body = state.countdownUpcoming.map(item => '<button type="button" class="' + countdownClasses('calendar-lane-chip calendar-countdown-chip', item) + '"'
+        body = state.countdownUpcoming.filter(countdownCategoryShown).map(item => '<button type="button" class="' + countdownClasses('calendar-lane-chip calendar-countdown-chip', item) + '"'
           + ' style="--countdown-color:' + escapeHtml(item.color) + ';"'
           + ' data-countdown-id="' + escapeHtml(item.id) + '"' + countdownClick(true)
           + ' title="' + escapeHtml(formatLongDate(new Date(item.at)) + ' · ' + formatTime(new Date(item.at))) + '">'
@@ -691,7 +745,50 @@
           + '</button>').join('');
       }
     }
-    return '<div class="calendar-countdown-bar"><div class="calendar-lane-row">' + toggle + body + renderWellnessToggle() + '</div></div>';
+    return '<div class="calendar-countdown-bar"><div class="calendar-lane-row">' + toggle + filter + body + renderWellnessToggle() + '</div>'
+      + (filter && state.countdownFilterOpen ? renderCountdownFilterRow() : '')
+      + '</div>';
+  }
+
+  function renderCountdownFilterRow() {
+    const chips = countdownCategories().map(category => {
+      const shown = state.hiddenCountdownCategories.indexOf(category.id) === -1;
+      return '<button type="button" class="calendar-lane-chip calendar-countdown-category' + (shown ? ' active' : ' is-hidden') + '"'
+        + ' style="--countdown-color:' + escapeHtml(category.color) + ';"'
+        + ' aria-pressed="' + (shown ? 'true' : 'false') + '"'
+        + ' data-countdown-category="' + escapeHtml(category.id) + '" onclick="CAL.toggleCountdownCategory(this.dataset.countdownCategory)"'
+        + ' title="' + escapeHtml((shown ? 'Hide ' : 'Show ') + category.label + ' countdowns') + '">'
+        + '<span class="calendar-countdown-dot" aria-hidden="true"></span>'
+        + escapeHtml(category.label)
+        + '<span class="calendar-lane-count">' + category.count + '</span>'
+        + '</button>';
+    }).join('');
+    const reset = state.hiddenCountdownCategories.length
+      ? '<button type="button" class="calendar-lane-chip clear" onclick="CAL.showAllCountdownCategories()">Show all</button>'
+      : '';
+    return '<div class="calendar-lane-row calendar-countdown-filter-row" role="group" aria-label="Countdown categories">'
+      + '<span class="calendar-countdown-status">Show on calendar:</span>' + chips + reset + '</div>';
+  }
+
+  function toggleCountdownFilter() {
+    state.countdownFilterOpen = !state.countdownFilterOpen;
+    render();
+  }
+
+  function toggleCountdownCategory(id) {
+    if (!id) return;
+    const hidden = state.hiddenCountdownCategories;
+    state.hiddenCountdownCategories = hidden.indexOf(id) === -1 ? hidden.concat(id) : hidden.filter(other => other !== id);
+    writeHiddenCountdownCategories(state.hiddenCountdownCategories);
+    const selected = findCountdown(state.selectedCountdownId);
+    if (selected && !countdownCategoryShown(selected)) state.selectedCountdownId = null;
+    render();
+  }
+
+  function showAllCountdownCategories() {
+    state.hiddenCountdownCategories = [];
+    writeHiddenCountdownCategories([]);
+    render();
   }
 
   function renderCountdownDetail() {
@@ -3233,6 +3330,9 @@
     loadCountdowns,
     selectCountdown,
     toggleCountdowns,
+    toggleCountdownFilter,
+    toggleCountdownCategory,
+    showAllCountdownCategories,
     unlockCountdowns,
     getCountdowns: () => visibleCountdowns().slice(),
     getCountdownsForDate: value => countdownsForDate(typeof value === 'string' ? parseDateKey(value) : value),
