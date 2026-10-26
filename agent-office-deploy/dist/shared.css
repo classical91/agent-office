@@ -3244,6 +3244,10 @@
     width: 100%;
     box-sizing: border-box;
   }
+  /* iOS Safari zooms the page into any field under 16px when it is tapped. */
+  @supports (-webkit-touch-callout: none) {
+    input, textarea, select { font-size: 16px !important; }
+  }
   .dropbox-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   .dropbox-row select { flex: 1; min-width: 120px; }
   /* ─── Folder wall ───────────────────────────────────────────────────────── */
