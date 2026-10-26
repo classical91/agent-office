@@ -35,6 +35,14 @@ window.AOResets = (() => {
   const TOMBSTONE_TTL_MS = 30 * 86400000;
   const DAY_MS = 86400000;
   const DUE_SOON_COLOR = 'var(--yellow)';
+  // The category whose view adds up the month's bill, and the most a single
+  // charge may be — anything bigger is a typo, not a subscription.
+  const BILLS_CATEGORY = 'subscriptions-bills';
+  const MAX_COST = 1000000;
+  const COST_ERROR = 'Enter the cost as an amount, like 9.99.';
+  // How far monthCharges() will step to find a renewal. countdowns.js and
+  // reset-timers.js draw the same line.
+  const MAX_STEPS = 5000;
   // The Happy Hour schedule lives in happy-hour.js, which the server loads too —
   // Main Hub's Daily Dashboard shows the same meal and the same countdown, and
   // one schedule in two places is one schedule too many. This page renders it;
@@ -304,6 +312,7 @@ window.AOResets = (() => {
     order: '',
     happyHourTrigger: null,
     yesterdayTrigger: null,
+    billHtml: '',
   };
 
   // ─── Helpers ───────────────────────────────────────────────────────────
@@ -595,6 +604,8 @@ window.AOResets = (() => {
       repeatDays: Number.isFinite(repeatDays) && repeatDays > 0 ? Math.round(repeatDays) : 0,
       repeatMonths: Number.isFinite(repeatMonths) && repeatMonths > 0 ? Math.round(repeatMonths) : 0,
       category: normalizeCategory(raw.category),
+      // What one renewal costs, in dollars. 0 is "not set", not "free".
+      cost: normalizeCost(raw.cost),
       status,
       fired: Boolean(raw.fired),
       message: String(raw.message || ''),
@@ -939,6 +950,194 @@ window.AOResets = (() => {
     return sortedViews().filter(isListView);
   }
 
+  // ─── This month's bill ─────────────────────────────────────────────────
+  //
+  // A card in Subscriptions / Bills can carry what it costs each time it
+  // renews, and that category's view adds the month up above the list: the
+  // total, what has gone out, and what is still to pay, which drops as each
+  // renewal lands. A charge counts in the month its renewal lands in, so a
+  // yearly one shows up in its own month only and a weekly one four or five
+  // times. Shared Agent Office countdowns have no cost field and are left out.
+
+  // "$9.99", "9.99", "1,299.00" and "9,99" all read; '' is no cost. NaN is a
+  // value that is not a price, which the editor turns into a message.
+  function readCost(text) {
+    let value = String(text == null ? '' : text).replace(/[$\s]/g, '');
+    if (!value) return 0;
+    value = /^\d+,\d{1,2}$/.test(value) ? value.replace(',', '.') : value.replace(/,/g, '');
+    const amount = Number(value);
+    return Number.isFinite(amount) && amount >= 0 && amount <= MAX_COST
+      ? Math.round(amount * 100) / 100
+      : NaN;
+  }
+
+  function normalizeCost(value) {
+    const amount = readCost(value);
+    return Number.isNaN(amount) ? 0 : amount;
+  }
+
+  function formatMoney(amount) {
+    return '$' + (Number(amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // What one charge pays for: "month", "year", "2 weeks". '' for a one-off.
+  function costPeriod(repeatDays, repeatMonths) {
+    if (repeatMonths) return repeatMonths === 1 ? 'month' : repeatMonths === 12 ? 'year' : `${repeatMonths} months`;
+    if (repeatDays === 1) return 'day';
+    if (repeatDays === 7) return 'week';
+    if (repeatDays) return repeatDays % 7 === 0 ? `${repeatDays / 7} weeks` : `${repeatDays} days`;
+    return '';
+  }
+
+  function costLabel(card) {
+    const period = costPeriod(card.repeatDays, card.repeatMonths);
+    return formatMoney(card.cost) + (period ? ` / ${period}` : '');
+  }
+
+  // The editor's label follows its Repeats select, whose value is days when
+  // positive and months when negative.
+  function costFieldLabel(repeatValue) {
+    const value = Number(repeatValue) || 0;
+    const period = costPeriod(Math.max(0, value), Math.max(0, -value));
+    return period ? `Cost per ${period}` : 'Cost';
+  }
+
+  // The cost field is for bills. It stays on any card that already has a cost,
+  // so moving one out of the category does not hide a price it still carries.
+  function syncCostField(field, category, repeatValue) {
+    if (!field) return;
+    const input = field.querySelector('input');
+    field.hidden = normalizeCategory(category) !== BILLS_CATEGORY && !(input && input.value.trim());
+    const label = field.querySelector('label');
+    if (label) label.textContent = costFieldLabel(repeatValue);
+  }
+
+  function syncCardCostField(node) {
+    const read = field => {
+      const input = node.querySelector(`[data-field="${field}"]`);
+      return input ? input.value : '';
+    };
+    syncCostField(node.querySelector('[data-role="cost-field"]'), read('category'), read('repeatDays'));
+  }
+
+  function syncNewCostField() {
+    syncCostField(el('rst-new-cost-field'), el('rst-new-category').value, el('rst-new-repeat').value);
+  }
+
+  function monthBounds(now = new Date()) {
+    return {
+      start: new Date(now.getFullYear(), now.getMonth(), 1).getTime(),
+      end: new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime(),
+    };
+  }
+
+  // The renewal `steps` repeats away from the one the card points at. Each is
+  // worked out from that one rather than from the last, so a bill due on the
+  // 31st comes back to the 31st after a short month instead of creeping to
+  // the 28th.
+  function shiftedRenewal(card, steps) {
+    const date = new Date(card.resetAt);
+    if (card.repeatMonths) addMonths(date, card.repeatMonths * steps);
+    else date.setDate(date.getDate() + card.repeatDays * steps);
+    return date.getTime();
+  }
+
+  /**
+   * The charges a card makes this calendar month, local time, oldest first.
+   *
+   * A charge is paid once its time has passed. A card marked done is paid up:
+   * its renewals this month up to the one it stopped on count as paid, and it
+   * makes no more. A paused card is on hold and makes none.
+   */
+  function monthCharges(card, now = new Date()) {
+    if (card.deleted || card.source === 'office' || card.status === 'paused' || !card.cost) return [];
+    const base = Date.parse(card.resetAt);
+    if (Number.isNaN(base)) return [];
+    const { start, end } = monthBounds(now);
+    const done = card.status === 'completed';
+    const charge = at => ({ at, paid: done || at <= now.getTime() });
+    if (!card.repeatDays && !card.repeatMonths) return base >= start && base < end ? [charge(base)] : [];
+
+    // Back to the last renewal before this month, then forward through it.
+    let steps = 0;
+    for (let guard = 0; guard < MAX_STEPS && shiftedRenewal(card, steps) >= start; guard += 1) steps -= 1;
+    const found = [];
+    for (let guard = 0; guard < MAX_STEPS; guard += 1) {
+      steps += 1;
+      const at = shiftedRenewal(card, steps);
+      if (at >= end || (done && at > base)) break;
+      if (at >= start) found.push(charge(at));
+    }
+    return found;
+  }
+
+  function billSummary(cards = liveCards(), now = new Date()) {
+    const bills = cards.filter(card => !card.deleted && card.source !== 'office'
+      && card.id !== HAPPY_HOUR_ID && normalizeCategory(card.category) === BILLS_CATEGORY);
+    const charges = bills
+      .flatMap(card => monthCharges(card, now).map(charge => ({ card, ...charge })))
+      .sort((a, b) => a.at - b.at);
+    const due = charges.filter(charge => !charge.paid);
+    // Added in cents, so twelve $9.99s come to $119.88 and not $119.88000000000001.
+    const sum = list => list.reduce((total, charge) => total + Math.round(charge.card.cost * 100), 0) / 100;
+    const total = sum(charges);
+    const left = sum(due);
+    return {
+      month: new Date(now.getFullYear(), now.getMonth(), 1),
+      total,
+      left,
+      paid: Math.round((total - left) * 100) / 100,
+      count: charges.length,
+      paidCount: charges.length - due.length,
+      next: due[0] || null,
+      unpriced: bills.filter(card => !card.cost && card.status !== 'paused').length,
+    };
+  }
+
+  function billHtml(summary, now = new Date()) {
+    const month = summary.month.toLocaleDateString([], { month: 'long' });
+    const unpriced = summary.unpriced
+      ? `<div class="rst-bill-note">${summary.unpriced} ${summary.unpriced === 1 ? 'bill has' : 'bills have'} no cost yet &mdash; open ${summary.unpriced === 1 ? 'it' : 'one'} to add it.</div>`
+      : '';
+    if (!summary.count) {
+      return `
+        <div class="rst-bill-head"><span class="rst-bill-kicker">${escHtml(month)} bill</span></div>
+        <div class="rst-bill-left"><span class="rst-bill-amount">${formatMoney(0)}</span><span>this month</span></div>
+        ${unpriced || '<div class="rst-bill-note">Open a subscription and add what it costs to start this month&rsquo;s total.</div>'}`;
+    }
+    const percent = summary.total ? Math.round((summary.paid / summary.total) * 100) : 0;
+    const next = summary.next
+      ? `Next: <strong>${escHtml(summary.next.card.title)}</strong> &middot; ${formatMoney(summary.next.card.cost)} &middot; ${escHtml(formatWhen(new Date(summary.next.at).toISOString()))} (in ${escHtml(formatRemaining(summary.next.at - now.getTime()))})`
+      : `All paid for ${escHtml(month)}.`;
+    return `
+      <div class="rst-bill-head">
+        <span class="rst-bill-kicker">${escHtml(month)} bill</span>
+        <span class="rst-bill-count">${summary.paidCount} of ${summary.count} paid</span>
+      </div>
+      <div class="rst-bill-left"><span class="rst-bill-amount">${formatMoney(summary.left)}</span><span>left to pay</span></div>
+      <div class="rst-bill-meter" role="progressbar" aria-label="${escHtml(month)} bill paid"
+           aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><span style="width: ${percent}%"></span></div>
+      <div class="rst-bill-split"><span>${formatMoney(summary.paid)} paid</span><span>${formatMoney(summary.total)} total</span></div>
+      <div class="rst-bill-next">${next}</div>
+      ${unpriced}`;
+  }
+
+  // Only the Subscriptions / Bills view carries the bill. It is redrawn on the
+  // tick so the amount drops the moment a renewal lands, but the DOM is only
+  // touched when the text has actually changed.
+  function renderBill() {
+    const panel = el('rst-bill');
+    if (!panel) return;
+    const show = state.categoryFilter === BILLS_CATEGORY && Boolean(CATEGORY_FILTERS[BILLS_CATEGORY]);
+    panel.hidden = !show;
+    if (!show) return;
+    const html = billHtml(billSummary());
+    if (state.billHtml !== html) {
+      panel.innerHTML = html;
+      state.billHtml = html;
+    }
+  }
+
   // ─── Rendering ─────────────────────────────────────────────────────────
 
   function optionsHtml(options, selected) {
@@ -1038,6 +1237,7 @@ window.AOResets = (() => {
       </article>`;
     }
 
+    const repeatValue = card.repeatMonths ? -card.repeatMonths : card.repeatDays;
     return `
       <article class="rst-card${open ? ' is-open' : ''}${state.savedId === card.id ? ' is-saved' : ''}${isDueSoon(view) ? ' is-due-soon' : ''}"
                data-id="${escHtml(card.id)}" data-state="${view.state}" style="--rst-color: ${color}">
@@ -1052,6 +1252,7 @@ window.AOResets = (() => {
               </span>
             </span>
             <span class="rst-category" data-role="category">${escHtml(categoryLabel)}</span>
+            ${card.cost ? `<span class="rst-cost" data-role="cost">${escHtml(costLabel(card))}</span>` : ''}
             ${card.rotation.length ? `<span class="rst-rotation" data-role="rotation">${escHtml(rotationLabel(card))}</span>` : ''}
             <span class="rst-time" data-role="time">${escHtml(timeLabel(view))}</span>
             <span class="rst-when" data-role="when">${escHtml(whenLabel(view))}</span>
@@ -1083,7 +1284,7 @@ window.AOResets = (() => {
             <div class="ao-field">
               <label class="ao-label" for="rst-repeat-${escHtml(card.id)}">Repeats</label>
               <select class="ao-select" id="rst-repeat-${escHtml(card.id)}" data-field="repeatDays">
-                ${optionsHtml(REPEAT_OPTIONS, card.repeatMonths ? -card.repeatMonths : card.repeatDays)}
+                ${optionsHtml(REPEAT_OPTIONS, repeatValue)}
               </select>
             </div>
 
@@ -1092,6 +1293,12 @@ window.AOResets = (() => {
               <select class="ao-select" id="rst-category-${escHtml(card.id)}" data-field="category">
                 ${optionsHtml(CATEGORY_OPTIONS, normalizeCategory(card.category))}
               </select>
+            </div>
+
+            <div class="ao-field" data-role="cost-field"${card.cost || normalizeCategory(card.category) === BILLS_CATEGORY ? '' : ' hidden'}>
+              <label class="ao-label" for="rst-cost-${escHtml(card.id)}">${escHtml(costFieldLabel(repeatValue))}</label>
+              <input class="ao-input" id="rst-cost-${escHtml(card.id)}" data-field="cost" inputmode="decimal"
+                     placeholder="e.g. 9.99" value="${card.cost ? card.cost.toFixed(2) : ''}" />
             </div>
 
             <div class="ao-field">
@@ -1159,6 +1366,7 @@ window.AOResets = (() => {
     if (!list) return;
 
     renderHappyHourShortcut();
+    renderBill();
     const views = listedViews();
     state.order = views.map(view => view.card.id).join('|');
     list.innerHTML = views.map(cardHtml).join('');
@@ -1214,6 +1422,7 @@ window.AOResets = (() => {
     });
 
     renderHappyHourShortcut();
+    renderBill();
     const happyHourCard = state.cards.find(card => card.id === HAPPY_HOUR_ID);
     if (happyHourCard && isHappyHourOpen()) updateHappyHourModal(viewOf(happyHourCard));
 
@@ -1452,6 +1661,7 @@ window.AOResets = (() => {
       repeatDays: Math.max(0, Number(read('repeatDays')) || 0),
       repeatMonths: Math.max(0, -(Number(read('repeatDays')) || 0)),
       category: normalizeCategory(read('category')),
+      cost: readCost(read('cost')),
       webhookUrl: read('webhookUrl'),
       pushcut: checked('pushcut'),
       rotation: normalizeRotation(read('rotation')),
@@ -1590,6 +1800,7 @@ window.AOResets = (() => {
     const draft = draftFrom(node);
     if (!draft.title) return setMessage(id, 'Give the countdown a name before saving.');
     if (!draft.resetAt) return setMessage(id, 'Pick a date and time before saving.');
+    if (Number.isNaN(draft.cost)) return setMessage(id, COST_ERROR);
     const hookError = webhookTargetError(draft.webhookUrl);
     if (hookError) return setMessage(id, hookError);
 
@@ -1599,6 +1810,7 @@ window.AOResets = (() => {
     card.repeatDays = draft.repeatDays;
     card.repeatMonths = draft.repeatMonths;
     card.category = draft.category;
+    card.cost = draft.cost;
     card.webhookUrl = draft.webhookUrl;
     card.pushcut = draft.pushcut;
     // A changed list starts again from its first entry on the occurrence being
@@ -1723,10 +1935,15 @@ window.AOResets = (() => {
     el('rst-new-title').value = '';
     el('rst-new-date').value = toDateValue(atHour(tomorrow, 9, 0).toISOString());
     el('rst-new-time').value = '09:00';
-    el('rst-new-repeat').value = '0';
-    el('rst-new-category').value = '';
+    // A countdown added from a category's view is filed under that category,
+    // and one added from the bills view starts out as a monthly bill.
+    const category = CATEGORY_LABELS[state.categoryFilter] ? state.categoryFilter : '';
+    el('rst-new-category').value = category;
+    el('rst-new-repeat').value = category === BILLS_CATEGORY ? '-1' : '0';
     el('rst-new-webhook').value = '';
     if (el('rst-new-rotation')) el('rst-new-rotation').value = '';
+    if (el('rst-new-cost')) el('rst-new-cost').value = '';
+    if (el('rst-new-cost-field')) syncNewCostField();
     showFormError('');
     modal.hidden = false;
     el('rst-new-title').focus();
@@ -1755,8 +1972,10 @@ window.AOResets = (() => {
     const title = el('rst-new-title').value.trim();
     const resetAt = fromDateTime(el('rst-new-date').value, el('rst-new-time').value);
     const webhookUrl = el('rst-new-webhook').value.trim();
+    const cost = el('rst-new-cost') ? readCost(el('rst-new-cost').value) : 0;
     if (!title) return showFormError('Give the countdown a name.');
     if (!resetAt) return showFormError('Pick the date and time it lands.');
+    if (Number.isNaN(cost)) return showFormError(COST_ERROR);
     const hookError = webhookTargetError(webhookUrl);
     if (hookError) return showFormError(hookError);
 
@@ -1767,6 +1986,7 @@ window.AOResets = (() => {
       repeatDays: Math.max(0, Number(el('rst-new-repeat').value) || 0),
       repeatMonths: Math.max(0, -(Number(el('rst-new-repeat').value) || 0)),
       category: normalizeCategory(el('rst-new-category').value),
+      cost,
       webhookUrl,
       pushcut: readNewPushcut(),
       rotation: el('rst-new-rotation') ? el('rst-new-rotation').value : '',
@@ -1860,6 +2080,13 @@ window.AOResets = (() => {
     }
   }
 
+  // The cost field follows the editor's category and repeat as they change.
+  function onListChange(event) {
+    if (!event.target.matches('[data-field="category"], [data-field="repeatDays"]')) return;
+    const node = event.target.closest('.rst-card');
+    if (node) syncCardCostField(node);
+  }
+
   // Tapping anywhere off the expanded card closes it, which is how the rest of
   // the app's popovers behave.
   function onDocumentClick(event) {
@@ -1893,6 +2120,7 @@ window.AOResets = (() => {
 
       const list = el('reset-cards');
       if (list) list.addEventListener('click', onListClick);
+      if (list) list.addEventListener('change', onListChange);
       document.addEventListener('click', onDocumentClick);
       document.addEventListener('keydown', onKeyDown);
       state.initialized = true;
@@ -1940,6 +2168,11 @@ window.AOResets = (() => {
     openForm,
     closeForm,
     addFromForm,
+    syncNewCostField,
+    readCost,
+    monthCharges,
+    billSummary,
+    billHtml,
     openHappyHour,
     closeHappyHour,
     openYesterday,
