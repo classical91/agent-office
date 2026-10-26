@@ -24,6 +24,7 @@ window.AOResets = (() => {
   const SORT_KEY = 'ao-resets-sort';
   const FILTER_KEY = 'ao-resets-filter';
   const CATEGORY_FILTER_KEY = 'ao-resets-category-filter';
+  const STATUS_FILTER_KEY = 'ao-resets-status-filter';
   // The list opens on the Pushcut cards. Most of what is on this page is a
   // countdown that pushes a notification to the phone; the rest is reference,
   // and "Show: All timers" is one control away.
@@ -87,6 +88,15 @@ window.AOResets = (() => {
     active: { label: 'Active only', keep: view => view.state === 'active' },
     paused: { label: 'Paused', keep: view => view.state === 'paused' },
     finished: { label: 'Finished', keep: view => view.state === 'expired' || view.state === 'completed' },
+  };
+
+  // The Status menu beside Category. It opens on everything, so a card is
+  // never hidden until someone asks for a narrower view.
+  const STATUS_FILTERS = {
+    all: { label: 'All statuses', keep: () => true },
+    active: { label: 'Active', keep: view => view.state === 'active' },
+    paused: { label: 'Paused', keep: view => view.state === 'paused' },
+    finished: { label: 'Finished', keep: view => view.finished },
   };
 
   const CATEGORY_OPTIONS = [
@@ -305,6 +315,7 @@ window.AOResets = (() => {
     sort: 'soonest',
     filter: DEFAULT_FILTER,
     categoryFilter: 'all',
+    statusFilter: 'all',
     openId: '',
     savedId: '',
     tickTimer: null,
@@ -929,9 +940,11 @@ window.AOResets = (() => {
   function sortedViews() {
     const sort = SORTS[state.sort] || SORTS.soonest;
     const categoryFilter = CATEGORY_FILTERS[state.categoryFilter] || CATEGORY_FILTERS.all;
+    const statusFilter = STATUS_FILTERS[state.statusFilter] || STATUS_FILTERS.all;
     return liveCards()
       .map(viewOf)
       .filter(categoryFilter.keep)
+      .filter(statusFilter.keep)
       .sort((a, b) => {
         // Finished timers sink under the live ones for the two time-based
         // sorts; within that group the most recently finished comes first.
@@ -1380,7 +1393,7 @@ window.AOResets = (() => {
       empty.querySelector('[data-role="empty-body"]').textContent =
         nothingAtAll
           ? 'Create your first countdown and it will show up here, ticking.'
-          : 'Choose "All categories" to see the rest of the list.';
+          : 'Choose "All categories" and "All statuses" to see the rest of the list.';
       empty.querySelector('[data-role="empty-new"]').hidden = !nothingAtAll;
     }
 
@@ -1585,6 +1598,7 @@ window.AOResets = (() => {
     if (!listedViews().some(view => view.card.id === id)) {
       state.filter = 'all';
       state.categoryFilter = 'all';
+      state.statusFilter = 'all';
       fillToolbar();
     }
     state.openId = '';
@@ -2025,6 +2039,12 @@ window.AOResets = (() => {
     render();
   }
 
+  function setStatusFilter(value) {
+    state.statusFilter = STATUS_FILTERS[value] ? value : 'all';
+    writePreference(STATUS_FILTER_KEY, state.statusFilter);
+    render();
+  }
+
   function fillToolbar() {
     const sort = el('rst-sort');
     if (sort && !sort.options.length) {
@@ -2046,6 +2066,13 @@ window.AOResets = (() => {
         .map(([value, item]) => `<option value="${value}">${escHtml(item.label)}</option>`).join('');
     }
     if (categoryFilter) categoryFilter.value = state.categoryFilter;
+
+    const statusFilter = el('rst-status-filter');
+    if (statusFilter && !statusFilter.options.length) {
+      statusFilter.innerHTML = Object.entries(STATUS_FILTERS)
+        .map(([value, item]) => `<option value="${value}">${escHtml(item.label)}</option>`).join('');
+    }
+    if (statusFilter) statusFilter.value = state.statusFilter;
 
     const repeat = el('rst-new-repeat');
     if (repeat && !repeat.options.length) repeat.innerHTML = optionsHtml(REPEAT_OPTIONS, 0);
@@ -2109,6 +2136,7 @@ window.AOResets = (() => {
       state.sort = readPreference(SORT_KEY, SORTS, 'soonest');
       state.filter = readPreference(FILTER_KEY, FILTERS, DEFAULT_FILTER);
       state.categoryFilter = readPreference(CATEGORY_FILTER_KEY, CATEGORY_FILTERS, 'all');
+      state.statusFilter = readPreference(STATUS_FILTER_KEY, STATUS_FILTERS, 'all');
       try {
         const cached = JSON.parse(localStorage.getItem(CATEGORY_CACHE_KEY) || 'null');
         if (Array.isArray(cached)) applyCategories(cached);
@@ -2165,6 +2193,7 @@ window.AOResets = (() => {
     setSort,
     setFilter,
     setCategoryFilter,
+    setStatusFilter,
     openForm,
     closeForm,
     addFromForm,
@@ -2189,6 +2218,7 @@ window.AOResets = (() => {
     viewOf,
     FILTERS,
     CATEGORY_FILTERS,
+    STATUS_FILTERS,
     CATEGORY_OPTIONS,
     DEFAULT_FILTER,
     colorForView,

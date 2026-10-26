@@ -156,7 +156,7 @@
           </div>
           <div class="ao-page-title">Countdowns</div>
           <div class="ao-page-sub">
-            Filter countdowns by category. Open a personal countdown to change its category.
+            Filter countdowns by category or status. Open a personal countdown to change its category.
           </div>
         </div>
         <div class="ao-page-actions">
@@ -177,6 +177,11 @@
           <label class="ao-label" for="rst-category-filter">Category</label>
           <select class="ao-select rst-select" id="rst-category-filter" aria-label="Filter countdowns by category"
                   onchange="AOResets.setCategoryFilter(this.value)"></select>
+        </div>
+        <div class="rst-control">
+          <label class="ao-label" for="rst-status-filter">Status</label>
+          <select class="ao-select rst-select" id="rst-status-filter" aria-label="Filter countdowns by status"
+                  onchange="AOResets.setStatusFilter(this.value)"></select>
         </div>
         <div class="rst-spacer"></div>
         <button type="button" class="ao-btn" onclick="AOResets.openCategories()">Manage categories</button>
