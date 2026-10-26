@@ -51,8 +51,9 @@ window.AOResets = (() => {
   const { HAPPY_HOUR_ID, atHour, happyHourDetails, happyHourMeal } = window.AOHappyHour;
   // A repeating timer can cycle through a list (Ebook, Audiobook, Summary).
   // Which entry is up is worked out in timer-rotation.js, which the server's
-  // Pushcut processor reads too, so the card and the notification agree.
-  const { currentRotation, normalizeRotation } = window.AOTimerRotation;
+  // Pushcut processor reads too, so the card and the notification agree. So is
+  // where a timer that skips weekends lands, for the same reason.
+  const { currentRotation, landing, normalizeRotation, occurrenceAfter } = window.AOTimerRotation;
 
   const REPEAT_OPTIONS = [
     { value: 0, label: 'Does not repeat' },
@@ -438,7 +439,14 @@ window.AOResets = (() => {
     if (view.state === 'completed') return `Marked done — was set for ${when}`;
     if (view.state === 'expired') return `Landed ${when}`;
     if (view.state === 'paused') return `Paused at ${formatRemaining(view.remaining)} — ${when}`;
-    return `Resets ${when}`;
+    const moved = movedFrom(view.card);
+    return moved ? `Resets ${when} \u00b7 moved from ${moved}` : `Resets ${when}`;
+  }
+
+  // "Sat" when the weekend moved this occurrence on to Monday, otherwise ''.
+  function movedFrom(card) {
+    if (!card.skipWeekends || !card.shiftedFrom) return '';
+    return new Date(card.shiftedFrom).toLocaleDateString([], { weekday: 'short' });
   }
 
   // <input type="date"> and <input type="time"> speak local wall-clock time and
@@ -614,6 +622,12 @@ window.AOResets = (() => {
       pushcut: raw.pushcut == null ? Boolean(raw.webhookUrl) : Boolean(raw.pushcut),
       repeatDays: Number.isFinite(repeatDays) && repeatDays > 0 ? Math.round(repeatDays) : 0,
       repeatMonths: Number.isFinite(repeatMonths) && repeatMonths > 0 ? Math.round(repeatMonths) : 0,
+      // A card that skips weekends never lands on a Saturday or a Sunday: it
+      // restarts on the Monday. `shiftedFrom` is when the current occurrence
+      // was due before the weekend moved it, or ''. timer-rotation.js has the
+      // rule, so the server rolls these forward the same way.
+      skipWeekends: Boolean(raw.skipWeekends),
+      shiftedFrom: toIso(raw.shiftedFrom),
       category: normalizeCategory(raw.category),
       // What one renewal costs, in dollars. 0 is "not set", not "free".
       cost: normalizeCost(raw.cost),
@@ -724,7 +738,8 @@ window.AOResets = (() => {
 
   // A repeating card that has gone past its time rolls forward to its next
   // occurrence rather than sitting there expired, keeping the hour it was set
-  // to. One-off cards are left alone: "Expired" is the right answer for those.
+  // to and skipping the weekend if the card does. One-off cards are left
+  // alone: "Expired" is the right answer for those.
   //
   // A card with a webhook waits. Its occurrence belongs to the server's
   // notification processor now, and rolling it forward in the browser would
@@ -740,14 +755,13 @@ window.AOResets = (() => {
 
   function rollForward(card) {
     if (card.deleted || (!card.repeatDays && !card.repeatMonths) || card.status === 'completed') return false;
-    const next = new Date(card.resetAt);
-    if (Number.isNaN(next.getTime()) || next.getTime() > Date.now()) return false;
+    const at = new Date(card.resetAt).getTime();
+    if (Number.isNaN(at) || at > Date.now()) return false;
     if (card.webhookUrl && card.firedForResetAt !== card.resetAt) return false;
-    while (next.getTime() <= Date.now()) {
-      if (card.repeatMonths) addMonths(next, card.repeatMonths);
-      else next.setDate(next.getDate() + card.repeatDays);
-    }
-    card.resetAt = next.toISOString();
+    const next = occurrenceAfter(card, Date.now());
+    if (!next) return false;
+    card.resetAt = next.resetAt;
+    card.shiftedFrom = next.shiftedFrom;
     card.fired = false;
     touch(card);
     return true;
@@ -1047,12 +1061,13 @@ window.AOResets = (() => {
   // The renewal `steps` repeats away from the one the card points at. Each is
   // worked out from that one rather than from the last, so a bill due on the
   // 31st comes back to the 31st after a short month instead of creeping to
-  // the 28th.
+  // the 28th. A card that skips weekends is charged where the renewal lands,
+  // and a monthly one counts from the day it was due, as it rolls forward.
   function shiftedRenewal(card, steps) {
-    const date = new Date(card.resetAt);
+    const date = new Date(card.repeatMonths && card.skipWeekends && card.shiftedFrom ? card.shiftedFrom : card.resetAt);
     if (card.repeatMonths) addMonths(date, card.repeatMonths * steps);
     else date.setDate(date.getDate() + card.repeatDays * steps);
-    return date.getTime();
+    return card.skipWeekends ? Date.parse(landing(date, true).resetAt) : date.getTime();
   }
 
   /**
@@ -1079,7 +1094,9 @@ window.AOResets = (() => {
       steps += 1;
       const at = shiftedRenewal(card, steps);
       if (at >= end || (done && at > base)) break;
-      if (at >= start) found.push(charge(at));
+      // A daily card that skips weekends lands Saturday's and Sunday's
+      // renewals on Monday too, and Monday is charged once.
+      if (at >= start && !found.some(item => item.at === at)) found.push(charge(at));
     }
     return found;
   }
@@ -1301,6 +1318,11 @@ window.AOResets = (() => {
               </select>
             </div>
 
+            <label class="rst-check">
+              <input type="checkbox" data-field="skipWeekends" ${card.skipWeekends ? 'checked' : ''} />
+              <span>Skip weekends &mdash; restart on Monday instead of landing on a Saturday or Sunday</span>
+            </label>
+
             <div class="ao-field">
               <label class="ao-label" for="rst-category-${escHtml(card.id)}">Category</label>
               <select class="ao-select" id="rst-category-${escHtml(card.id)}" data-field="category">
@@ -1500,16 +1522,24 @@ window.AOResets = (() => {
     }
   }
 
+  // A card that skips weekends steps back over the days it was due and is
+  // listed where each one landed, so Saturday's and Sunday's both turn up once,
+  // on Monday. A weekend occurrence lands up to two days after it was due,
+  // which is how far past yesterday the walk has to reach.
   function yesterdayOccurrences(card, now = new Date()) {
     if (card.deleted || card.status === 'paused' || card.id === HAPPY_HOUR_ID) return [];
-    const at = new Date(card.resetAt);
+    const skip = card.skipWeekends;
+    const at = new Date(skip && card.repeatMonths && card.shiftedFrom ? card.shiftedFrom : card.resetAt);
     if (Number.isNaN(at.getTime())) return [];
     const { start, end } = yesterdayBounds(now);
+    const reach = skip ? 2 * DAY_MS : 0;
     const repeats = card.repeatDays > 0 || card.repeatMonths > 0;
     const found = [];
-    for (let guard = 0; guard < 1000 && at.getTime() >= start; guard += 1) {
-      if (at.getTime() < end && at.getTime() <= now.getTime()
-        && !(card.createdAt && at.getTime() < card.createdAt)) found.push(at.toISOString());
+    for (let guard = 0; guard < 1000 && at.getTime() >= start - reach; guard += 1) {
+      const landed = skip ? landing(at, true).resetAt : at.toISOString();
+      const time = Date.parse(landed);
+      if (time >= start && time < end && time <= now.getTime() && !found.includes(landed)
+        && !(card.createdAt && time < card.createdAt)) found.push(landed);
       if (!repeats) break;
       stepBack(at, card);
     }
@@ -1674,6 +1704,7 @@ window.AOResets = (() => {
       resetAt: fromDateTime(read('date'), read('time')),
       repeatDays: Math.max(0, Number(read('repeatDays')) || 0),
       repeatMonths: Math.max(0, -(Number(read('repeatDays')) || 0)),
+      skipWeekends: checked('skipWeekends'),
       category: normalizeCategory(read('category')),
       cost: readCost(read('cost')),
       webhookUrl: read('webhookUrl'),
@@ -1818,20 +1849,26 @@ window.AOResets = (() => {
     const hookError = webhookTargetError(draft.webhookUrl);
     if (hookError) return setMessage(id, hookError);
 
-    const retimed = draft.resetAt !== card.resetAt;
+    const landed = landingFor(card, draft);
+    const retimed = landed.resetAt !== card.resetAt;
+    // A changed list starts again from its first entry on the occurrence being
+    // saved, and so does a changed weekend rule, which changes what a step is.
+    // An unchanged one keeps its place, even across a new time.
+    const restartRotation = draft.rotation.join('\n') !== card.rotation.join('\n')
+      || (draft.rotation.length && (!card.rotationAnchor || draft.skipWeekends !== card.skipWeekends));
     card.title = draft.title;
-    card.resetAt = draft.resetAt;
+    card.resetAt = landed.resetAt;
+    card.shiftedFrom = landed.shiftedFrom;
+    card.skipWeekends = draft.skipWeekends;
     card.repeatDays = draft.repeatDays;
     card.repeatMonths = draft.repeatMonths;
     card.category = draft.category;
     card.cost = draft.cost;
     card.webhookUrl = draft.webhookUrl;
     card.pushcut = draft.pushcut;
-    // A changed list starts again from its first entry on the occurrence being
-    // saved. An unchanged one keeps its place, even across a new time.
-    if (draft.rotation.join('\n') !== card.rotation.join('\n') || (draft.rotation.length && !card.rotationAnchor)) {
-      card.rotationAnchor = draft.rotation.length ? draft.resetAt : '';
-    }
+    // The anchor is the day the first entry was due, which for a card the
+    // weekend has moved is not the Monday it lands on.
+    if (restartRotation) card.rotationAnchor = draft.rotation.length ? landed.shiftedFrom || landed.resetAt : '';
     card.rotation = draft.rotation;
     if (retimed) {
       // A new time is a new occurrence, so the server's record of the last one
@@ -1842,13 +1879,29 @@ window.AOResets = (() => {
       card.notificationOccurrence = '';
       card.lastNotificationError = '';
     }
-    card.message = retimed ? 'Saved. Webhook firing re-armed for the new time.' : 'Saved.';
+    card.message = landed.resetAt !== draft.resetAt
+      ? `Saved. ${weekendNote(landed)}`
+      : retimed ? 'Saved. Webhook firing re-armed for the new time.' : 'Saved.';
     touch(card);
 
     saveCards();
     state.savedId = id;
     state.openId = '';
     render();
+  }
+
+  // Where a saved time lands. A time and weekend rule left as they were keep
+  // the day the weekend moved the card from, so re-saving a monthly card that
+  // landed on Monday the 2nd does not make it a card for the 2nd.
+  function landingFor(card, draft) {
+    if (draft.resetAt === card.resetAt && draft.skipWeekends === card.skipWeekends) {
+      return { resetAt: card.resetAt, shiftedFrom: card.shiftedFrom };
+    }
+    return landing(draft.resetAt, draft.skipWeekends);
+  }
+
+  function weekendNote(landed) {
+    return `That falls on a weekend, so it lands on Monday, ${formatWhen(landed.resetAt)}.`;
   }
 
   // Deleting leaves a tombstone rather than removing the record. The card is
@@ -1954,6 +2007,7 @@ window.AOResets = (() => {
     const category = CATEGORY_LABELS[state.categoryFilter] ? state.categoryFilter : '';
     el('rst-new-category').value = category;
     el('rst-new-repeat').value = category === BILLS_CATEGORY ? '-1' : '0';
+    if (el('rst-new-skip-weekends')) el('rst-new-skip-weekends').checked = false;
     el('rst-new-webhook').value = '';
     if (el('rst-new-rotation')) el('rst-new-rotation').value = '';
     if (el('rst-new-cost')) el('rst-new-cost').value = '';
@@ -1982,6 +2036,11 @@ window.AOResets = (() => {
     return box ? Boolean(box.checked) : true;
   }
 
+  function readNewSkipWeekends() {
+    const box = el('rst-new-skip-weekends');
+    return Boolean(box && box.checked);
+  }
+
   async function addFromForm() {
     const title = el('rst-new-title').value.trim();
     const resetAt = fromDateTime(el('rst-new-date').value, el('rst-new-time').value);
@@ -1993,10 +2052,14 @@ window.AOResets = (() => {
     const hookError = webhookTargetError(webhookUrl);
     if (hookError) return showFormError(hookError);
 
+    const skipWeekends = readNewSkipWeekends();
+    const landed = landing(resetAt, skipWeekends);
     const card = normalizeCard({
       id: randomId(),
       title,
-      resetAt,
+      resetAt: landed.resetAt,
+      shiftedFrom: landed.shiftedFrom,
+      skipWeekends,
       repeatDays: Math.max(0, Number(el('rst-new-repeat').value) || 0),
       repeatMonths: Math.max(0, -(Number(el('rst-new-repeat').value) || 0)),
       category: normalizeCategory(el('rst-new-category').value),
@@ -2008,7 +2071,7 @@ window.AOResets = (() => {
       status: 'active',
       createdAt: Date.now(),
       updatedAt: new Date().toISOString(),
-      message: 'Added.',
+      message: landed.shiftedFrom ? `Added. ${weekendNote(landed)}` : 'Added.',
     }, state.cards.length);
 
     state.cards.push(card);
@@ -2215,6 +2278,9 @@ window.AOResets = (() => {
     cardHtml,
     officeDraftFrom,
     officePatchBody,
+    draftFrom,
+    landingFor,
+    whenLabel,
     viewOf,
     FILTERS,
     CATEGORY_FILTERS,

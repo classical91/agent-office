@@ -23,7 +23,7 @@
 // never rolls one forward, and never fires a notification.
 
 const countdowns = require('./countdowns.js');
-const { currentRotation } = require('./timer-rotation.js');
+const { currentRotation, followingOccurrence } = require('./timer-rotation.js');
 const resetTimers = require('./reset-timers.js');
 
 const MINUTE_MS = 60 * 1000;
@@ -176,7 +176,7 @@ function countdownOccurrences(record, range, now, categories) {
   }).map(at => countdownItem(record, at, now, categories));
 }
 
-function timerRepeatLabel(timer) {
+function timerRepeatEvery(timer) {
   if (timer.repeatMonths) return timer.repeatMonths === 1 ? 'Monthly' : `Every ${timer.repeatMonths} months`;
   if (timer.repeatDays === 1) return 'Daily';
   if (timer.repeatDays === 7) return 'Weekly';
@@ -184,10 +184,28 @@ function timerRepeatLabel(timer) {
   return 'One-off';
 }
 
-function stepTimer(timer) {
-  if (timer.repeatMonths) return date => countdowns.addMonths(date, timer.repeatMonths);
-  if (timer.repeatDays) return date => countdowns.addDays(date, timer.repeatDays);
-  return null;
+function timerRepeatLabel(timer) {
+  const every = timerRepeatEvery(timer);
+  if (!timer.skipWeekends || every === 'One-off') return every;
+  return every === 'Daily' ? 'Weekdays' : `${every}, skipping weekends`;
+}
+
+// One step of the timer's own rule, weekends included (timer-rotation.js). The
+// walk only hands back a date, so each date's `shiftedFrom` is kept here: a
+// monthly timer the weekend moved to Monday steps on from the day it was due,
+// and its rotation is counted from that day too.
+function timerStepper(timer) {
+  const shiftedFrom = new Map([[timer.resetAt, timer.shiftedFrom]]);
+  return {
+    step(date) {
+      const at = date.toISOString();
+      const next = followingOccurrence({ ...timer, resetAt: at, shiftedFrom: shiftedFrom.get(at) || '' });
+      if (!next) return null;
+      shiftedFrom.set(next.resetAt, next.shiftedFrom);
+      return new Date(next.resetAt);
+    },
+    shiftedFrom: date => shiftedFrom.get(date.toISOString()) || '',
+  };
 }
 
 // The raw record's category is free text the page wrote; it is a label here
@@ -205,7 +223,7 @@ function timerCategoryLabel(raw) {
  * this builds the item field by field from the normalized timer rather than
  * spreading the record.
  */
-function timerItem(timer, raw, at, now) {
+function timerItem(timer, raw, at, now, shiftedFrom = '') {
   const oneOff = !timer.repeatDays && !timer.repeatMonths;
   const state = stateFor(at, now, oneOff);
   return {
@@ -213,7 +231,7 @@ function timerItem(timer, raw, at, now) {
     source: 'timer',
     recordId: timer.id,
     title: timer.title,
-    rotation: currentRotation({ ...timer, resetAt: at.toISOString() }),
+    rotation: currentRotation({ ...timer, resetAt: at.toISOString(), shiftedFrom }),
     at: at.toISOString(),
     category: 'timer',
     categoryLabel: timerCategoryLabel(raw),
@@ -240,16 +258,16 @@ function timerOccurrences(raw, range, now, options = {}) {
   if ((timer.status === 'paused' || timer.status === 'completed') && !options.includeInactive) return [];
 
   const target = new Date(timer.targetMs);
-  const step = stepTimer(timer);
-  if (!step) {
+  if (!timer.repeatDays && !timer.repeatMonths) {
     const inRange = target.getTime() >= range.from.getTime() && target.getTime() < range.to.getTime();
     return inRange ? [timerItem(timer, raw, target, now)] : [];
   }
-  return walkOccurrences(target, step, {
+  const stepper = timerStepper(timer);
+  return walkOccurrences(target, stepper.step, {
     from: range.from,
     to: range.to,
     floor: repeatFloor(now),
-  }).map(at => timerItem(timer, raw, at, now));
+  }).map(at => timerItem(timer, raw, at, now, stepper.shiftedFrom(at)));
 }
 
 // ─── The payload ─────────────────────────────────────────────────────────────

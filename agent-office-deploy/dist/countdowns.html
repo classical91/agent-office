@@ -300,6 +300,11 @@
       <select class="ao-select" id="rst-new-repeat" onchange="AOResets.syncNewCostField()"></select>
     </div>
 
+    <label class="rst-check">
+      <input type="checkbox" id="rst-new-skip-weekends" />
+      <span>Skip weekends &mdash; restart on Monday instead of landing on a Saturday or Sunday</span>
+    </label>
+
     <div class="ao-field">
       <label class="ao-label" for="rst-new-category">Category</label>
       <select class="ao-select" id="rst-new-category" onchange="AOResets.syncNewCostField()"></select>
@@ -340,8 +345,8 @@
 <script src="app-shared.js?v=agent-state-unknown-20261009"></script>
 <!-- The Happy Hour schedule, shared with the server. Must load before resets.js. -->
 <script src="happy-hour.js?v=happy-hour-shared-20260910"></script>
-<script src="timer-rotation.js?v=timer-rotation-20261009"></script>
-<script src="resets.js?v=subscription-bill-20261026"></script>
+<script src="timer-rotation.js?v=skip-weekends-20261026"></script>
+<script src="resets.js?v=skip-weekends-20261026"></script>
 <script>
 switchView('resets', document.querySelector('.nav-item.active'));
 </script>
