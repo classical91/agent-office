@@ -647,6 +647,21 @@ repeat steps from there, in `timer-rotation.js`, which the page and the server
 both load — so it stays right whichever of them rolled the timer forward.
 Changing the list starts it again from its first entry.
 
+#### This month's bill
+
+A countdown in **Subscriptions / Bills** has a **Cost** field — "Cost per
+month" on a monthly card, "Cost per year" on a yearly one — and the card shows
+it under its category ("$5.99 / month"). Filtering the page to Subscriptions /
+Bills puts the month's bill above the list: the total, what has already gone
+out, and the amount **left to pay**, which drops the moment each renewal lands,
+with the next one due underneath. A charge counts in the month its renewal
+lands in, so a yearly subscription is in its own month only and a weekly one
+four or five times. Paused cards are left out, a card marked done counts as
+paid, and shared Agent Office countdowns have no cost and are not counted.
+The cost is stored on the timer record like any other field, so it syncs
+between devices through `/api/reset-timers`. **+ New Countdown** from that view
+starts the new card in Subscriptions / Bills, repeating every month.
+
 #### Happy Hour
 
 One card on `/resets.html` is not a timer you set: the Happy Hour countdown

@@ -41,6 +41,82 @@
   font-weight: 700;
 }
 
+/* What one renewal costs, on a card that has a price. */
+.rst-cost {
+  width: fit-content;
+  color: var(--text);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── This month's bill ───────────────────────────────────────────────── */
+
+/* The Subscriptions / Bills view only. The amount left is the number this
+   panel is for, so it gets the size; the meter fills green as bills go out. */
+.rst-bill {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--yellow) 30%, var(--border));
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--yellow) 5%, var(--surface));
+}
+.rst-bill[hidden] { display: none; }
+.rst-bill-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.rst-bill-kicker {
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.rst-bill-count,
+.rst-bill-split {
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+.rst-bill-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  color: var(--text-dim);
+  font-size: var(--fs-md);
+}
+.rst-bill-amount {
+  color: var(--yellow);
+  font-size: var(--fs-2xl);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.rst-bill-meter {
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+}
+.rst-bill-meter > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green);
+  transition: width var(--duration);
+}
+.rst-bill-split { display: flex; justify-content: space-between; gap: var(--space-3); }
+.rst-bill-next { color: var(--text); font-size: var(--fs-sm); line-height: var(--lh-normal); overflow-wrap: anywhere; }
+.rst-bill-next strong { color: var(--text-strong); font-weight: 600; }
+.rst-bill-note { color: var(--text-dim); font-size: var(--fs-sm); line-height: var(--lh-normal); }
+
 /* ─── The list ────────────────────────────────────────────────────────── */
 
 .rst-list { display: flex; flex-direction: column; gap: var(--space-3); }
