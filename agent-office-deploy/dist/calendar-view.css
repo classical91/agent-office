@@ -569,23 +569,60 @@
 .calendar-nav-btn,
 .calendar-view-btn {
   appearance: none;
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  background: rgba(15, 23, 42, 0.72);
-  color: color-mix(in srgb, var(--text) 78%, var(--muted));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: transparent;
+  color: color-mix(in srgb, var(--text) 86%, var(--muted));
   border-radius: 12px;
-  padding: 9px 12px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: capitalize;
   cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.calendar-nav-btn:hover,
+.calendar-view-btn:hover {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.calendar-nav-btn:focus-visible,
+.calendar-view-btn:focus-visible,
+.calendar-lane:focus-visible,
+.calendar-lane-chip:focus-visible,
+.calendar-countdown-category:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+/* Prev / next: bare chevrons, the way Google draws them. */
+.calendar-nav-btn.is-icon {
+  width: 32px;
+  padding: 0;
+  border-color: transparent;
+  border-radius: 999px;
+}
+
+/* Day / Week / Month / Agenda read as one segmented control. */
+.calendar-view-switcher {
+  padding: 2px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 999px;
+}
+
+.calendar-view-btn {
+  border-color: transparent;
 }
 
 .calendar-nav-btn.active,
 .calendar-view-btn.active {
-  color: #07111f;
-  background: linear-gradient(135deg, rgba(125, 211, 252, 0.95), rgba(56, 189, 248, 0.95));
-  border-color: rgba(125, 211, 252, 0.6);
+  color: #04121f;
+  background: #7dd3fc;
+  border-color: transparent;
 }
 
 .calendar-board {
@@ -605,21 +642,30 @@
 
 .calendar-month-weekday {
   padding: 12px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.10);
-  background: rgba(15, 23, 42, 0.72);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  border-right: 1px solid rgba(148, 163, 184, 0.10);
+  background: transparent;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--muted) 85%, var(--text));
+}
+
+.calendar-month-weekday:nth-child(7) {
+  border-right: none;
 }
 
 .calendar-month-cell {
+  position: relative;
   min-height: 134px;
   padding: 10px 8px;
-  border-right: 1px solid rgba(148, 163, 184, 0.08);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+  border-right: 1px solid rgba(148, 163, 184, 0.12);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
   display: flex;
   flex-direction: column;
   gap: 6px;
   cursor: pointer;
   background: transparent;
-  transition: background 0.18s ease;
+  transition: background 0.16s ease, box-shadow 0.16s ease;
   /* Month rows are a fixed fraction of the viewport, so a busy day has to
      clip inside its own cell instead of bleeding into the week below. */
   overflow: hidden;
@@ -631,37 +677,48 @@
 }
 
 .calendar-month-cell:hover {
-  background: rgba(30, 41, 59, 0.26);
+  background: rgba(148, 163, 184, 0.06);
 }
 
 .calendar-month-cell.is-other {
-  background: rgba(8, 12, 20, 0.48);
+  background: rgba(2, 6, 23, 0.28);
+}
+
+/* A day you clicked is only tinted. The one outline on the grid is today's,
+   so it is never mistaken for a selection. */
+.calendar-month-cell.selected {
+  background: rgba(148, 163, 184, 0.08);
 }
 
 .calendar-month-cell.is-today {
-  background: linear-gradient(180deg, rgba(14, 165, 233, 0.10), transparent);
-}
-
-.calendar-month-cell.selected {
-  box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.34);
+  background: rgba(56, 189, 248, 0.07);
+  box-shadow: inset 0 0 0 2px #38bdf8;
 }
 
 .calendar-day-number {
   display: inline-flex;
   flex: none;
+  align-self: center;
   width: 26px;
   height: 26px;
   align-items: center;
   justify-content: center;
   border-radius: 999px;
   font-size: 12px;
-  font-weight: 700;
-  color: color-mix(in srgb, var(--text) 78%, var(--muted));
+  font-weight: 600;
+  color: color-mix(in srgb, var(--text) 86%, var(--muted));
+  transition: background 0.16s ease;
 }
 
-.calendar-month-cell.is-today .calendar-day-number {
-  background: rgba(56, 189, 248, 0.18);
-  color: #f8fafc;
+.calendar-month-cell:hover .calendar-day-number {
+  background: rgba(148, 163, 184, 0.16);
+}
+
+.calendar-month-cell.is-today .calendar-day-number,
+.calendar-month-cell.is-today:hover .calendar-day-number {
+  background: #38bdf8;
+  color: #04121f;
+  font-weight: 700;
 }
 
 .calendar-month-cell.is-other .calendar-day-number {
@@ -695,6 +752,11 @@
   text-decoration: underline;
 }
 
+.calendar-more:hover,
+.calendar-more:focus-visible {
+  color: #7dd3fc;
+}
+
 .calendar-event {
   text-align: left;
   border: 1px solid transparent;
@@ -703,6 +765,11 @@
   cursor: pointer;
   background: rgba(15, 23, 42, 0.82);
   min-width: 0;
+  transition: filter 0.14s ease, box-shadow 0.14s ease;
+}
+
+.calendar-event:hover {
+  filter: brightness(1.18);
 }
 
 /* Month pill: time on the left, title filling the rest of one line. */
@@ -712,7 +779,7 @@
   gap: 6px;
   flex: none;
   padding: 3px 7px;
-  border-radius: 6px;
+  border-radius: 5px;
   line-height: 1.4;
 }
 
@@ -1363,6 +1430,13 @@
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.calendar-lane:hover,
+.calendar-lane-chip:hover {
+  border-color: rgba(148, 163, 184, 0.34);
+  color: var(--text);
 }
 
 .calendar-lane.active,
@@ -1447,6 +1521,8 @@
    colour, so a deadline never reads as a meeting. Overdue is red wherever it
    is drawn; a quiet weekend trading card is dimmed, never urgent. */
 .calendar-countdown-bar {
+  position: relative;
+  z-index: 20;
   padding: 6px 14px;
   border-bottom: 1px solid var(--border);
 }
@@ -1465,18 +1541,132 @@
   border-color: color-mix(in srgb, var(--countdown-color, #94a3b8) 50%, transparent);
 }
 
-.calendar-countdown-filter-row {
-  margin-top: 6px;
+/* The category filter: a floating card under the Filter button, one row per
+   category with a checkbox in the category's colour, like Google's calendar
+   list. It overlays the grid instead of pushing it down. */
+.calendar-countdown-popover {
+  position: absolute;
+  top: 44px;
+  left: 14px;
+  width: 260px;
+  max-width: calc(100% - 16px);
+  padding: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--panel, #0f172a) 92%, #1e293b);
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.6), 0 2px 6px rgba(2, 6, 23, 0.4);
+  transform-origin: top left;
+  animation: calendar-popover-in 0.14s ease-out;
 }
 
-.calendar-countdown-category.active {
-  border-color: color-mix(in srgb, var(--countdown-color, #94a3b8) 55%, transparent);
-  background: color-mix(in srgb, var(--countdown-color, #94a3b8) 16%, rgba(15, 23, 42, 0.6));
+@keyframes calendar-popover-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: none; }
 }
 
-.calendar-countdown-category.is-hidden {
-  opacity: 0.5;
-  text-decoration: line-through;
+@media (prefers-reduced-motion: reduce) {
+  .calendar-countdown-popover { animation: none; }
+}
+
+.calendar-popover-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px 8px;
+}
+
+.calendar-popover-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.calendar-popover-link {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 2px 4px;
+  border-radius: 6px;
+  color: #7dd3fc;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.calendar-popover-link:hover { background: rgba(125, 211, 252, 0.12); }
+
+.calendar-popover-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.calendar-countdown-category {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.14s ease;
+}
+
+.calendar-countdown-category:hover {
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.calendar-countdown-category-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-countdown-check {
+  position: relative;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 2px solid var(--countdown-color, #94a3b8);
+  box-sizing: border-box;
+  transition: background 0.14s ease;
+}
+
+.calendar-countdown-category.active .calendar-countdown-check {
+  background: var(--countdown-color, #94a3b8);
+}
+
+.calendar-countdown-category.active .calendar-countdown-check::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 4px;
+  height: 8px;
+  border: solid #04121f;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.calendar-countdown-category.is-hidden .calendar-countdown-category-label {
+  color: var(--muted);
 }
 
 .calendar-countdown-chip .calendar-countdown-left {
