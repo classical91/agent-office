@@ -181,6 +181,19 @@
 
       <section class="dev-link-section">
         <div class="dev-section-heading">
+          <span>AI Update</span>
+          <small>AI tools and agent release updates</small>
+        </div>
+        <div class="dev-link-grid">
+          <a class="dev-link-card" href="https://docs.openclaw.ai/releases" target="_blank" rel="noopener noreferrer">
+            <strong>OpenClaw Releases</strong>
+            <span>Latest OpenClaw releases, features, and fixes.</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="dev-link-section">
+        <div class="dev-section-heading">
           <span>API Usage</span>
           <small>Grok, Claude, and ChatGPT API usage, spend, keys, and limits</small>
         </div>
@@ -268,6 +281,47 @@
               </a>
             </div>
           </details>
+        </div>
+      </section>
+
+      <section class="dev-link-section">
+        <div class="dev-section-heading">
+          <span>AI Developers</span>
+          <small>Daily agent operations</small>
+        </div>
+        <div class="dev-link-grid">
+          <a class="dev-link-card" href="https://railway.app/" target="_blank" rel="noopener noreferrer">
+            <strong>Railway Dashboard</strong>
+            <span>Deployments, logs, variables, Postgres, service health, and production restarts.</span>
+          </a>
+          <a class="dev-link-card" href="https://platform.openai.com/" target="_blank" rel="noopener noreferrer">
+            <strong>OpenAI Platform</strong>
+            <span>API keys, usage, models, billing, and developer dashboard.</span>
+          </a>
+          <a class="dev-link-card" href="https://openrouter.ai/" target="_blank" rel="noopener noreferrer">
+            <strong>OpenRouter</strong>
+            <span>Model routing, keys, usage, and provider status.</span>
+          </a>
+          <a class="dev-link-card" href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer">
+            <strong>Claude Console</strong>
+            <span>Anthropic API keys, usage, model access, and workbench.</span>
+          </a>
+          <a class="dev-link-card" href="https://console.x.ai/" target="_blank" rel="noopener noreferrer">
+            <strong>Grok Console</strong>
+            <span>xAI API keys, model access, usage, billing, and developer tools.</span>
+          </a>
+          <a class="dev-link-card" href="https://console.x.com/" target="_blank" rel="noopener noreferrer">
+            <strong>X Developers</strong>
+            <span>X API accounts, projects, keys, usage tiers, and app credentials.</span>
+          </a>
+          <a class="dev-link-card" href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer">
+            <strong>Google Cloud Console</strong>
+            <span>Cloud services, credentials, APIs, projects, and billing.</span>
+          </a>
+          <a class="dev-link-card" data-gateway="local" href="http://localhost:18789/" target="_blank" rel="noopener noreferrer">
+            <strong>OpenClaw Gateway</strong>
+            <span>Local Agent Office gateway for OpenClaw routing and local control.</span>
+          </a>
         </div>
       </section>
 
@@ -410,46 +464,6 @@
       </section>
 
 
-      <section class="dev-link-section">
-        <div class="dev-section-heading">
-          <span>AI Developers</span>
-          <small>Daily agent operations</small>
-        </div>
-        <div class="dev-link-grid">
-          <a class="dev-link-card" href="https://railway.app/" target="_blank" rel="noopener noreferrer">
-            <strong>Railway Dashboard</strong>
-            <span>Deployments, logs, variables, Postgres, service health, and production restarts.</span>
-          </a>
-          <a class="dev-link-card" href="https://platform.openai.com/" target="_blank" rel="noopener noreferrer">
-            <strong>OpenAI Platform</strong>
-            <span>API keys, usage, models, billing, and developer dashboard.</span>
-          </a>
-          <a class="dev-link-card" href="https://openrouter.ai/" target="_blank" rel="noopener noreferrer">
-            <strong>OpenRouter</strong>
-            <span>Model routing, keys, usage, and provider status.</span>
-          </a>
-          <a class="dev-link-card" href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer">
-            <strong>Claude Console</strong>
-            <span>Anthropic API keys, usage, model access, and workbench.</span>
-          </a>
-          <a class="dev-link-card" href="https://console.x.ai/" target="_blank" rel="noopener noreferrer">
-            <strong>Grok Console</strong>
-            <span>xAI API keys, model access, usage, billing, and developer tools.</span>
-          </a>
-          <a class="dev-link-card" href="https://console.x.com/" target="_blank" rel="noopener noreferrer">
-            <strong>X Developers</strong>
-            <span>X API accounts, projects, keys, usage tiers, and app credentials.</span>
-          </a>
-          <a class="dev-link-card" href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer">
-            <strong>Google Cloud Console</strong>
-            <span>Cloud services, credentials, APIs, projects, and billing.</span>
-          </a>
-          <a class="dev-link-card" data-gateway="local" href="http://localhost:18789/" target="_blank" rel="noopener noreferrer">
-            <strong>OpenClaw Gateway</strong>
-            <span>Local Agent Office gateway for OpenClaw routing and local control.</span>
-          </a>
-        </div>
-      </section>
 
       <section class="dev-link-section">
         <div class="dev-section-heading">
@@ -629,6 +643,27 @@ switchView('dev', document.querySelector('.nav-item.active'));
     }
     Array.prototype.forEach.call(section.querySelectorAll('.dev-update-group'), function(el){
       groups.push(el);
+      var summary = el.querySelector('summary');
+      var platform = summary.textContent.trim();
+      var openAll = document.createElement('button');
+      openAll.type = 'button';
+      openAll.className = 'dev-open-all';
+      openAll.textContent = 'Open all links';
+      openAll.setAttribute('aria-label', 'Open all links for ' + platform + ' in new tabs');
+      openAll.title = 'Open every link for ' + platform + ' in new tabs. Allow pop-ups for this site if needed.';
+      openAll.addEventListener('click', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        // Keep every open synchronous with the user gesture. Include all of
+        // this platform's links even when a search hides some of its cards.
+        var urls = new Set();
+        el.querySelectorAll('.dev-link-card[href]').forEach(function(link){
+          if (urls.has(link.href)) return;
+          urls.add(link.href);
+          window.open(link.href, '_blank', 'noopener,noreferrer');
+        });
+      });
+      summary.appendChild(openAll);
       el.addEventListener('toggle', function(){
         if (el.open && !searching) closeGroups(el);
       });
@@ -636,7 +671,7 @@ switchView('dev', document.querySelector('.nav-item.active'));
     Array.prototype.forEach.call(section.querySelectorAll('.dev-link-card'), function(el){
       var group = el.closest ? el.closest('.dev-update-group') : null;
       var groupSummary = group ? group.querySelector('summary') : null;
-      var groupText = groupSummary ? groupSummary.textContent : '';
+      var groupText = groupSummary ? groupSummary.firstChild.textContent : '';
       cards.push({
         el: el,
         haystack: (el.textContent + ' ' + (el.getAttribute('href') || '') + ' ' + headingText + ' ' + groupText)

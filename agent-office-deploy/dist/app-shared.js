@@ -3402,7 +3402,12 @@ if (document.getElementById('save-drop-btn')) {
   // so the page opens on the notes rather than on a column of empty fields.
   document.getElementById('new-drop-btn').addEventListener('click', async () => {
     if (!await ensureDropsSession(true)) return;
-    if (isIosCaptureView()) toggleCapture('dropbox-reminder-capture', 'is-collapsed', 'reminder-content');
+    if (isIosCaptureView()) {
+      if (document.getElementById('dropbox-reminder-capture')?.classList.contains('is-collapsed')) {
+        window.ReminderCategories?.presetForCurrentCategory();
+      }
+      toggleCapture('dropbox-reminder-capture', 'is-collapsed', 'reminder-content');
+    }
     else toggleCapture('dropbox-quick-capture', 'is-collapsed', 'drop-title');
   });
 

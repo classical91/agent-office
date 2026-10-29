@@ -8,6 +8,7 @@
   let loaded = false;
   let saving = false;
   let retryAfter = 0;
+  let previousFilter = null;
   const el = id => document.getElementById(id);
   const ios = () => Boolean(el('dropbox-view')?.classList.contains('ios-mode'));
   const rawKey = drop => drop.category || drop.subject || 'uncategorized';
@@ -60,6 +61,10 @@
     registry = result.items;
     loaded = true;
   }
+  function presetForCurrentCategory() {
+    const select = el('reminder-category');
+    if (select) fill(select, options(), dropboxState.filters.subject || 'uncategorized');
+  }
   function refresh() {
     if (!ios()) return;
     const select = el('drop-filter-subject');
@@ -78,7 +83,10 @@
       category.setAttribute('aria-label', 'Reminder category');
       el('reminder-when').before(category);
     }
-    fill(el('reminder-category'), options(), el('reminder-category').value || 'uncategorized');
+    const filter = dropboxState.filters.subject;
+    if (filter !== previousFilter) presetForCurrentCategory();
+    else fill(el('reminder-category'), options(), el('reminder-category').value || 'uncategorized');
+    previousFilter = filter;
     if (!loaded && !loading && Date.now() > retryAfter) {
       loading = true;
       load().then(() => renderDropbox()).catch(() => { retryAfter = Date.now() + 5000; })
@@ -177,5 +185,5 @@
       el('reminder-category-fields').disabled = false;
     }
   }
-  window.ReminderCategories = { refresh, key, label, options, filterOptions, open };
+  window.ReminderCategories = { refresh, key, label, options, filterOptions, open, presetForCurrentCategory };
 })();

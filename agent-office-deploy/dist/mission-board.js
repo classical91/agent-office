@@ -36,7 +36,22 @@
   function ensureMissionControls() {
     const view = document.getElementById('dropbox-view');
     const title = document.querySelector('#dropbox-view .dropbox-toolbar h2');
-    if (title) title.textContent = view && view.classList.contains('ios-mode') ? 'Fix Queue' : 'Dropbox';
+    if (title) {
+      const iosMode = view && view.classList.contains('ios-mode');
+      title.textContent = iosMode ? 'Fix Queue' : 'Dropbox';
+      if (iosMode) {
+        // Count the whole queue, independent of search, category or status.
+        // An item appearing more than once in a response still counts once.
+        const total = new Set(dropboxState.drops
+          .filter(drop => (drop.project || '') === 'iOS')
+          .map(drop => drop.id || drop)).size;
+        const count = document.createElement('span');
+        count.className = 'fix-queue-total';
+        count.textContent = `${total} total`;
+        count.setAttribute('aria-label', `${total} ${total === 1 ? 'fix' : 'fixes'} in total`);
+        title.append(' ', count);
+      }
+    }
     document.title = `${view?.classList.contains('ios-mode') ? 'Fix Queue' : 'Dropbox'} - Agent Office`;
     if (view?.classList.contains('ios-mode')) document.getElementById('drop-search').placeholder = 'Search reminders…';
     const save = document.getElementById('save-drop-btn');
