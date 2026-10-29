@@ -434,6 +434,11 @@ test('the Fix Queue lane skips the folder wall', async t => {
   assert.deepEqual(await page.locator('.dropbox-table th').allTextContents(), ['Title', 'Reminder', 'Updated']);
   assert.equal(await page.locator('.dropbox-table tbody tr').count(), 2);
   assert.match(await page.locator('.dropbox-table').textContent(), /Renew the domain/);
+  // The seeded drop is months old and goes blue; the one just saved stays plain.
+  const updatedClass = title => page.locator('.dropbox-table tr', { hasText: title }).locator('td.col-updated').getAttribute('class');
+  assert.match(await updatedClass('Renew the domain'), /over-3-weeks/);
+  assert.doesNotMatch(await updatedClass('A note reminder without a time'), /over-3-weeks|past-month/);
+  assert.equal(await onScreen(page, '#dropbox-table-wrap .drop-age-legend'), true, 'the colour legend is missing');
   assert.deepEqual(problems, []);
 });
 
