@@ -54,27 +54,37 @@ function sidebarRows() {
   return rows;
 }
 
-test('every sidebar row can be told apart in the compact rail', () => {
-  // The rail hides labels, so a row with no data-icon collapses to an empty
-  // strip. The template is the only place this can be got wrong.
+test('every sidebar row has a scannable detail-panel badge', () => {
+  // The pale detail panel uses short badges to keep a long navigation tree
+  // scannable beside the permanent icon rail.
   const iconless = sidebarRows().filter(row => !row.includes('data-icon='));
   assert.deepStrictEqual(iconless, [], 'these sidebar rows have no data-icon');
 });
 
-test('the rail monograms are short letter tags, not emoji', () => {
-  // data-icon used to hold an emoji per row. The sidebar reads by label now
-  // and the tag is only drawn in the collapsed rail, so anything but a couple
-  // of letters is either an emoji creeping back in or too wide for a 56px rail.
+test('the detail-panel badges are short letter tags, not emoji', () => {
   const bad = sidebarRows()
     .map(row => row.match(/data-icon="([^"]*)"/)[1])
     .filter(icon => !/^[A-Z]{1,3}$/.test(icon));
-  assert.deepStrictEqual(bad, [], 'these rail monograms are not plain letter tags');
+  assert.deepStrictEqual(bad, [], 'these detail-panel badges are not plain letter tags');
 });
 
-test('the rail monograms are unique', () => {
-  // Two rows sharing a tag are indistinguishable once the rail hides labels.
+test('the detail-panel badges are unique', () => {
   const icons = sidebarRows().map(row => row.match(/data-icon="([^"]*)"/)[1]);
-  assert.strictEqual(new Set(icons).size, icons.length, 'two sidebar rows share a monogram');
+  assert.strictEqual(new Set(icons).size, icons.length, 'two sidebar rows share a badge');
+});
+
+test('the sidebar has a permanent icon rail and a full navigation panel', () => {
+  const shell = readTemplate('shell.html');
+  const rail = shell.match(/<div class="nav-rail"[\s\S]*?<div class="nav-panel/);
+  assert.ok(rail, 'the shared shell does not contain both sidebar layers');
+
+  const shortcuts = [...rail[0].matchAll(/class="nav-rail-item"[^>]*data-nav-area="([^"]+)"[^>]*>[\s\S]*?<svg/g)];
+  assert.ok(shortcuts.length >= 7, 'the shortcut rail is missing workspace destinations');
+  assert.strictEqual(
+    new Set(shortcuts.map(match => match[1])).size,
+    shortcuts.length,
+    'two shortcut-rail destinations target the same workspace area'
+  );
 });
 
 test('the shell templates cover every region the sync script replaces', () => {

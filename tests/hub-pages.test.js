@@ -32,9 +32,11 @@ test('the three pages wear the shared shell', () => {
 
 test('the sidebar links all three in-app, not off to Main Hub', () => {
   const shell = readTemplate('shell.html');
-  assert.match(shell, /<a class="nav-item" href="\/ai\.html" data-icon="AP">/);
-  assert.match(shell, /<a class="nav-item" href="\/apps\.html" data-icon="WP">/);
-  assert.match(shell, /<a class="nav-item" href="\/audits\.html" data-icon="AU"><span class="nav-item-label">Audit Log<\/span><\/a>/);
+  // Workspace-area metadata may sit between the route and its badge; the
+  // invariant is that the detail panel keeps each destination in-app.
+  assert.match(shell, /<a class="nav-item" href="\/ai\.html"[^>]*data-icon="AP">/);
+  assert.match(shell, /<a class="nav-item" href="\/apps\.html"[^>]*data-icon="WP">/);
+  assert.match(shell, /<a class="nav-item" href="\/audits\.html"[^>]*data-icon="AU"><span class="nav-item-label">Audit Log<\/span><\/a>/);
   assert.doesNotMatch(shell, /main-page-production-9927\.up\.railway\.app\/(ai|apps)\.html/);
 });
 

@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>Settings - Agent Office</title>
-<link rel="stylesheet" href="shared.css?v=stale-blue-20261029"/>
+<link rel="stylesheet" href="shared.css?v=split-rail-20261029"/>
 <!-- Restores the saved theme, sidebar state and focus mode before first paint,
      so no page flashes the default accent, a full-width sidebar, or the chrome
      of a page that opens in Focus Mode. ACCENTS mirrors THEMES in
@@ -74,67 +74,104 @@
        a page's copy drifts from it. Which row is highlighted is worked out
        from the URL by markActiveNav() in app-shared.js, so no page marks its
        own — that is what let the copies disagree in the first place. -->
-  <nav class="nav ao-scroll" aria-label="Primary">
-
-    <div class="nav-section">
-      <div class="nav-heading">Workspace</div>
-      <div class="nav-items-wrap nav-open">
-        <div class="nav-group">
-          <a class="nav-item nav-item-parent" href="/" data-nav-sub="office" data-icon="HQ"><span class="nav-item-label">OpenClaw HQ</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle OpenClaw HQ pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></a>
-          <div class="nav-sub">
-            <a class="nav-item" href="/org-chart.html" data-icon="OC"><span class="nav-item-label">Org Chart</span></a>
-            <a class="nav-item" href="/memory.html" data-icon="ME"><span class="nav-item-label">Memory</span></a>
-            <a class="nav-item" href="/agent-registry.html" data-icon="AR"><span class="nav-item-label">Agent Registry</span></a>
-            <a class="nav-item" href="/project-rooms.html" data-icon="PR"><span class="nav-item-label">Project Rooms</span></a>
-          </div>
-        </div>
-        <div class="nav-group">
-          <div class="nav-item nav-item-parent" data-nav-sub="planning" data-icon="PT" onclick="toggleNavSub(event, this)"><span class="nav-item-label">Planning Tools</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Planning Tools pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></div>
-          <div class="nav-sub">
-            <a class="nav-item" href="/?panel=mission-control" data-icon="MC"><span class="nav-item-label">Mission Control</span></a>
-            <a class="nav-item" href="/mission-board.html?view=ios" data-icon="FQ"><span class="nav-item-label">Fix Queue</span></a>
-            <a class="nav-item" href="/planning.html" data-icon="PM"><span class="nav-item-label">Planning Mode</span></a>
-            <a class="nav-item" href="/streaks.html" data-icon="ST"><span class="nav-item-label">Streaks</span></a>
-            <a class="nav-item" href="/countdowns.html" data-icon="CD"><span class="nav-item-label">Countdowns</span></a>
-          </div>
-        </div>
-        <!-- Calendar is a workspace, not one more link in a list of fifteen:
-             it sits above Dropbox at the top of the flat rows and is styled as
-             a card so it can be found without reading. It opens in Focus Mode
-             (see data-focus-default in calendar-v3.html), which is why the row
-             says so. -->
-        <a class="nav-item nav-item-feature" href="/calendar-v3.html" data-icon="CA"><span class="nav-item-label">Calendar</span><span class="nav-item-badge">Focus</span></a>
-        <a class="nav-item" href="/mission-board.html" data-icon="DB"><span class="nav-item-label">Dropbox</span></a>
-        <a class="nav-item" href="/dev.html" data-icon="DL"><span class="nav-item-label">Dev Links</span></a>
-        <a class="nav-item" href="/ai.html" data-icon="AP"><span class="nav-item-label">AI Portal</span></a>
-        <a class="nav-item" href="/ai-landscape.html" data-ai-landscape-nav="true" data-icon="AM"><span class="nav-item-label">AI Models</span></a>
-        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/prompt-builder.html" target="_blank" rel="noopener noreferrer" data-icon="PE"><span class="nav-item-label">AI Prompt Engineer</span> <span class="link-ext">&#8599;</span></a>
-        <a class="nav-item" href="/apps.html" data-icon="WP"><span class="nav-item-label">My Websites &amp; Projects</span></a>
-        <a class="nav-item" href="/audits.html" data-icon="AU"><span class="nav-item-label">Audit Log</span></a>
-        <a class="nav-item" href="/visitors.html" data-icon="VS"><span class="nav-item-label">Visitors</span></a>
+  <nav class="nav" aria-label="Primary">
+    <!-- The dark rail is always present on desktop. It gives the app a stable
+         set of workspace shortcuts while the pale panel carries the full tree. -->
+    <div class="nav-rail" aria-label="Workspace shortcuts">
+      <a class="nav-rail-brand" href="/" aria-label="Agent Office home" title="Agent Office">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16V8M9 18V6M13 15V9M17 19V5M21 14v-4"/></svg>
+      </a>
+      <div class="nav-rail-items">
+        <a class="nav-rail-item" href="/" data-nav-area="office" aria-label="OpenClaw HQ" title="OpenClaw HQ">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>
+        </a>
+        <a class="nav-rail-item" href="/calendar-v3.html" data-nav-area="calendar" aria-label="Calendar" title="Calendar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M8 3v5M16 3v5M3.5 10h17M8 14h3M13 14h3M8 17h3"/></svg>
+        </a>
+        <a class="nav-rail-item" href="/mission-board.html" data-nav-area="dropbox" aria-label="Dropbox" title="Dropbox">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 14h5l2 2h2l2-2h5"/></svg>
+        </a>
+        <a class="nav-rail-item" href="/planning.html" data-nav-area="planning" aria-label="Planning tools" title="Planning tools">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M10 20V4M15 20v-7M20 20V7"/></svg>
+        </a>
+        <a class="nav-rail-item" href="/ai.html" data-nav-area="intelligence" aria-label="AI tools" title="AI tools">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="7" width="14" height="11" rx="3"/><path d="M12 3v4M8.5 12h.01M15.5 12h.01M9 15h6M3 11v4M21 11v4"/></svg>
+        </a>
+        <a class="nav-rail-item" href="/apps.html" data-nav-area="projects" aria-label="Websites and projects" title="Websites and projects">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 6.5h7l2 2h8v10h-17z"/></svg>
+        </a>
+      </div>
+      <div class="nav-rail-bottom">
+        <a class="nav-rail-item" href="/settings.html" data-nav-area="system" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 12h2M10 12h10M4 17h7M15 17h5"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="13" cy="17" r="2"/></svg>
+        </a>
+        <button class="nav-collapse-btn nav-rail-toggle" id="nav-collapse-btn" onclick="toggleNavCompact()" aria-expanded="true" title="Collapse sidebar">
+          <span class="nav-collapse-icon" aria-hidden="true">&#171;</span>
+          <span class="nav-collapse-label">Collapse</span>
+        </button>
       </div>
     </div>
 
-    <div class="nav-section nav-section-bottom">
-      <div class="nav-heading">System</div>
-      <div class="nav-items-wrap nav-open">
-        <a class="nav-item" href="/settings.html" data-icon="SE"><span class="nav-item-label">Settings</span></a>
-        <a class="nav-link" data-dev-only="true" data-gateway="local" href="http://localhost:18789" target="_blank">
-          <div class="link-dot"></div> Gateway (local) <span class="link-ext">&#8599;</span>
-        </a>
-        <a class="nav-link" data-dev-only="true" data-gateway="lan" href="http://10.0.0.106:18789" target="_blank">
-          <div class="link-dot"></div> Gateway (LAN) <span class="link-ext">&#8599;</span>
-        </a>
+    <div class="nav-panel ao-scroll">
+      <div class="nav-panel-header">
+        <span class="nav-panel-kicker">Workspace</span>
+        <strong>Agent Office</strong>
+        <span class="nav-panel-status"><span></span> Command centre</span>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-heading">Navigate</div>
+        <div class="nav-items-wrap nav-open">
+          <div class="nav-group">
+            <a class="nav-item nav-item-parent" href="/" data-nav-area="office" data-nav-sub="office" data-icon="HQ"><span class="nav-item-label">OpenClaw HQ</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle OpenClaw HQ pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></a>
+            <div class="nav-sub">
+              <a class="nav-item" href="/org-chart.html" data-nav-area="office" data-icon="OC"><span class="nav-item-label">Org Chart</span></a>
+              <a class="nav-item" href="/memory.html" data-nav-area="office" data-icon="ME"><span class="nav-item-label">Memory</span></a>
+              <a class="nav-item" href="/agent-registry.html" data-nav-area="office" data-icon="AR"><span class="nav-item-label">Agent Registry</span></a>
+              <a class="nav-item" href="/project-rooms.html" data-nav-area="office" data-icon="PR"><span class="nav-item-label">Project Rooms</span></a>
+            </div>
+          </div>
+          <div class="nav-group">
+            <div class="nav-item nav-item-parent" data-nav-area="planning" data-nav-sub="planning" data-icon="PT" onclick="toggleNavSub(event, this)"><span class="nav-item-label">Planning Tools</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Planning Tools pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></div>
+            <div class="nav-sub">
+              <a class="nav-item" href="/?panel=mission-control" data-nav-area="planning" data-icon="MC"><span class="nav-item-label">Mission Control</span></a>
+              <a class="nav-item" href="/mission-board.html?view=ios" data-nav-area="planning" data-icon="FQ"><span class="nav-item-label">Fix Queue</span></a>
+              <a class="nav-item" href="/planning.html" data-nav-area="planning" data-icon="PM"><span class="nav-item-label">Planning Mode</span></a>
+              <a class="nav-item" href="/streaks.html" data-nav-area="planning" data-icon="ST"><span class="nav-item-label">Streaks</span></a>
+              <a class="nav-item" href="/countdowns.html" data-nav-area="planning" data-icon="CD"><span class="nav-item-label">Countdowns</span></a>
+            </div>
+          </div>
+          <a class="nav-item nav-item-feature" href="/calendar-v3.html" data-nav-area="calendar" data-icon="CA"><span class="nav-item-label">Calendar</span><span class="nav-item-badge">Focus</span></a>
+          <a class="nav-item" href="/mission-board.html" data-nav-area="dropbox" data-icon="DB"><span class="nav-item-label">Dropbox</span></a>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-heading">Tools &amp; insights</div>
+        <div class="nav-items-wrap nav-open">
+          <a class="nav-item" href="/dev.html" data-nav-area="intelligence" data-icon="DL"><span class="nav-item-label">Dev Links</span></a>
+          <a class="nav-item" href="/ai.html" data-nav-area="intelligence" data-icon="AP"><span class="nav-item-label">AI Portal</span></a>
+          <a class="nav-item" href="/ai-landscape.html" data-nav-area="intelligence" data-ai-landscape-nav="true" data-icon="AM"><span class="nav-item-label">AI Models</span></a>
+          <a class="nav-item" href="https://main-page-production-9927.up.railway.app/prompt-builder.html" target="_blank" rel="noopener noreferrer" data-nav-area="intelligence" data-icon="PE"><span class="nav-item-label">AI Prompt Engineer</span> <span class="link-ext">&#8599;</span></a>
+          <a class="nav-item" href="/apps.html" data-nav-area="projects" data-icon="WP"><span class="nav-item-label">My Websites &amp; Projects</span></a>
+          <a class="nav-item" href="/audits.html" data-nav-area="projects" data-icon="AU"><span class="nav-item-label">Audit Log</span></a>
+          <a class="nav-item" href="/visitors.html" data-nav-area="projects" data-icon="VS"><span class="nav-item-label">Visitors</span></a>
+        </div>
+      </div>
+
+      <div class="nav-section nav-section-bottom">
+        <div class="nav-heading">System</div>
+        <div class="nav-items-wrap nav-open">
+          <a class="nav-item" href="/settings.html" data-nav-area="system" data-icon="SE"><span class="nav-item-label">Settings</span></a>
+          <a class="nav-link" data-dev-only="true" data-gateway="local" href="http://localhost:18789" target="_blank">
+            <div class="link-dot"></div> Gateway (local) <span class="link-ext">&#8599;</span>
+          </a>
+          <a class="nav-link" data-dev-only="true" data-gateway="lan" href="http://10.0.0.106:18789" target="_blank">
+            <div class="link-dot"></div> Gateway (LAN) <span class="link-ext">&#8599;</span>
+          </a>
+        </div>
       </div>
     </div>
-
-    <div class="nav-footer">
-      <button class="nav-collapse-btn" id="nav-collapse-btn" onclick="toggleNavCompact()" aria-expanded="true" title="Collapse sidebar">
-        <span class="nav-collapse-icon" aria-hidden="true">&#171;</span>
-        <span class="nav-collapse-label">Collapse</span>
-      </button>
-    </div>
-
   </nav>
 
   <div class="view view--scroll ao-scroll" id="view-settings">

@@ -2115,11 +2115,23 @@ function markActiveNav() {
     }
     item.classList.toggle('active', active);
   });
+
+  // The detail row tells the permanent black rail which workspace family is
+  // current. One area can contain several pages (for example, all planning
+  // tools), so the rail stays stable while the panel supplies the exact row.
+  const activeItem = document.querySelector('.nav-panel .nav-item.active');
+  const activeArea = activeItem?.dataset.navArea || '';
+  document.querySelectorAll('.nav-rail-item').forEach(item => {
+    const active = Boolean(activeArea) && item.dataset.navArea === activeArea;
+    item.classList.toggle('active', active);
+    if (active) item.setAttribute('aria-current', 'page');
+    else item.removeAttribute('aria-current');
+  });
 }
 
-// ─── SIDEBAR COMPACT RAIL ─────────────────────────────────────
-// Collapsing to icons is a preference, so it is restored before first paint by
-// the inline script in each page's <head>; this only keeps the two in step.
+// ─── SIDEBAR DETAIL PANEL ──────────────────────────────────────
+// Compact mode keeps the permanent black shortcut rail and hides the pale
+// detail panel. The preference is restored before first paint by boot.html.
 const NAV_COMPACT_KEY = 'ao-nav-compact';
 
 function navCompactPreferred() {
@@ -2136,9 +2148,9 @@ function applyNavCompact(compact) {
     if (label) label.textContent = compact ? 'Expand' : 'Collapse';
   }
   const nav = document.querySelector('.nav');
-  if (nav) nav.setAttribute('aria-label', compact ? 'Primary (compact)' : 'Primary');
-  // In the rail the label is gone, so the row's own tooltip is the only thing
-  // naming it.
+  if (nav) nav.setAttribute('aria-label', compact ? 'Primary (shortcut rail)' : 'Primary');
+  // Preserve descriptive tooltips if a future variant reuses the detail rows
+  // without their visible labels.
   document.querySelectorAll('.nav .nav-item, .nav .nav-link').forEach(item => {
     if (!item.dataset.navTitle) {
       const text = (item.querySelector('.nav-item-label') || item).textContent.trim();
