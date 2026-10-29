@@ -1166,6 +1166,10 @@ window.AOResets = (() => {
     if (!panel) return;
     const show = state.categoryFilter === BILLS_CATEGORY && Boolean(CATEGORY_FILTERS[BILLS_CATEGORY]);
     panel.hidden = !show;
+    // resets.css turns the page into two columns, bill on the left, when it
+    // is wide enough to hold them.
+    const page = panel.closest('.rst-view');
+    if (page) page.classList.toggle('rst-view--bills', show);
     if (!show) return;
     const html = billHtml(billSummary());
     if (state.billHtml !== html) {
