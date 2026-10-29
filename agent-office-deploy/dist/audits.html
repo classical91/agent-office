@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<title>Audit Log - Agent Office</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="shared.css?v=fix-queue-20261029"/>
+<link rel="stylesheet" href="hub-pages.css?v=hub-pages-20261029"/>
+<!-- Restores the saved theme, sidebar state and focus mode before first paint,
+     so no page flashes the default accent, a full-width sidebar, or the chrome
+     of a page that opens in Focus Mode. ACCENTS mirrors THEMES in
+     app-shared.js, and the focus key mirrors focusScopeKey() there. -->
+<script>
+(function(){
+  // A theme is just an accent; shared.css derives every surface from it.
+  var ACCENTS={dark:'#6366f1',midnight:'#10b981',ocean:'#38bdf8',crimson:'#ef4444',forest:'#22c55e',amber:'#f59e0b'};
+  try{
+    var a=ACCENTS[localStorage.getItem('ao-theme')];
+    if(a) document.documentElement.style.setProperty('--accent',a);
+    if(localStorage.getItem('ao-nav-compact')==='1') document.documentElement.classList.add('nav-compact');
+    // Focus is remembered per page: this page's own choice, falling back to
+    // whether the page declares data-focus-default="on".
+    var p=location.pathname==='/index.html'?'/':location.pathname;
+    var f=localStorage.getItem('ao-focus:'+p);
+    if(f==='1'||(f===null&&document.documentElement.getAttribute('data-focus-default')==='on')){
+      document.documentElement.classList.add('ao-focus');
+    }
+  }catch(e){}
+})();
+</script>
+</head>
+<body>
+
+<!-- Mobile nav overlay -->
+<div id="mobile-overlay" class="mobile-overlay" onclick="closeMobileNav()"></div>
+
+<header class="topbar">
+  <div class="topbar-brand">
+    <button class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu" aria-label="Open navigation">&#9776;</button>
+    <a class="topbar-logo" href="/">&#11041; OPENCLAW AGENTS OFFICE</a>
+  </div>
+  <div class="topbar-meta">
+    <button class="ao-login-trigger" id="ao-login-trigger" type="button" onclick="openOfficeLogin()">Login</button>
+    <span class="topbar-stat" id="agent-state-chip">
+      <span class="ao-dot ao-dot--active"></span>
+      <span><span id="onlineCount">9</span> <span id="onlineLabel">agents online</span></span>
+    </span>
+    <span id="clock">--:--:--</span>
+    <button class="ao-btn ao-btn--sm" id="feed-toggle-btn" onclick="toggleFeedPanel()" title="Toggle activity panel" aria-pressed="false">&#9776; Agents</button>
+    <button class="ao-btn ao-btn--sm" id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode &mdash; hide panels" aria-pressed="false">&#9974; Focus</button>
+  </div>
+</header>
+
+<div class="ao-login-modal" id="ao-login-modal" role="dialog" aria-modal="true" aria-labelledby="ao-login-title" hidden>
+  <div class="ao-login-panel">
+    <div class="ao-login-kicker">Secure access</div>
+    <h2 id="ao-login-title">Agent Office Login</h2>
+    <p>Enter your password to access Agent Office.</p>
+    <form id="ao-login-form" class="ao-login-form">
+      <input id="ao-login-password" class="ao-login-input" type="password" autocomplete="current-password" placeholder="Password" required />
+      <button id="ao-login-submit" class="ao-login-submit" type="submit">Unlock</button>
+      <div id="ao-login-error" class="ao-login-error" role="alert"></div>
+    </form>
+  </div>
+</div>
+
+<div class="layout feed-collapsed">
+
+  <!-- LEFT NAV -->
+  <!-- Generated from scripts/shell/shell.html by `npm run sync:shell`. Edit
+       the template, not this copy: tests/shell-consistency.test.js fails when
+       a page's copy drifts from it. Which row is highlighted is worked out
+       from the URL by markActiveNav() in app-shared.js, so no page marks its
+       own — that is what let the copies disagree in the first place. -->
+  <nav class="nav ao-scroll" aria-label="Primary">
+
+    <div class="nav-section">
+      <div class="nav-heading">Workspace</div>
+      <div class="nav-items-wrap nav-open">
+        <div class="nav-group">
+          <a class="nav-item nav-item-parent" href="/" data-nav-sub="office" data-icon="HQ"><span class="nav-item-label">OpenClaw HQ</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle OpenClaw HQ pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></a>
+          <div class="nav-sub">
+            <a class="nav-item" href="/org-chart.html" data-icon="OC"><span class="nav-item-label">Org Chart</span></a>
+            <a class="nav-item" href="/memory.html" data-icon="ME"><span class="nav-item-label">Memory</span></a>
+            <a class="nav-item" href="/agent-registry.html" data-icon="AR"><span class="nav-item-label">Agent Registry</span></a>
+            <a class="nav-item" href="/project-rooms.html" data-icon="PR"><span class="nav-item-label">Project Rooms</span></a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <div class="nav-item nav-item-parent" data-nav-sub="planning" data-icon="PT" onclick="toggleNavSub(event, this)"><span class="nav-item-label">Planning Tools</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Planning Tools pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></div>
+          <div class="nav-sub">
+            <a class="nav-item" href="/?panel=mission-control" data-icon="MC"><span class="nav-item-label">Mission Control</span></a>
+            <a class="nav-item" href="/mission-board.html?view=ios" data-icon="FQ"><span class="nav-item-label">Fix Queue</span></a>
+            <a class="nav-item" href="/planning.html" data-icon="PM"><span class="nav-item-label">Planning Mode</span></a>
+            <a class="nav-item" href="/streaks.html" data-icon="ST"><span class="nav-item-label">Streaks</span></a>
+            <a class="nav-item" href="/countdowns.html" data-icon="CD"><span class="nav-item-label">Countdowns</span></a>
+          </div>
+        </div>
+        <!-- Calendar is a workspace, not one more link in a list of fifteen:
+             it sits above Dropbox at the top of the flat rows and is styled as
+             a card so it can be found without reading. It opens in Focus Mode
+             (see data-focus-default in calendar-v3.html), which is why the row
+             says so. -->
+        <a class="nav-item nav-item-feature" href="/calendar-v3.html" data-icon="CA"><span class="nav-item-label">Calendar</span><span class="nav-item-badge">Focus</span></a>
+        <a class="nav-item" href="/mission-board.html" data-icon="DB"><span class="nav-item-label">Dropbox</span></a>
+        <a class="nav-item" href="/dev.html" data-icon="DL"><span class="nav-item-label">Dev Links</span></a>
+        <a class="nav-item" href="/ai.html" data-icon="AP"><span class="nav-item-label">AI Portal</span></a>
+        <a class="nav-item" href="/ai-landscape.html" data-ai-landscape-nav="true" data-icon="AM"><span class="nav-item-label">AI Models</span></a>
+        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/prompt-builder.html" target="_blank" rel="noopener noreferrer" data-icon="PE"><span class="nav-item-label">AI Prompt Engineer</span> <span class="link-ext">&#8599;</span></a>
+        <a class="nav-item" href="/apps.html" data-icon="WP"><span class="nav-item-label">My Websites &amp; Projects</span></a>
+        <a class="nav-item" href="/audits.html" data-icon="AU"><span class="nav-item-label">Audit Log</span></a>
+        <a class="nav-item" href="/visitors.html" data-icon="VS"><span class="nav-item-label">Visitors</span></a>
+      </div>
+    </div>
+
+    <div class="nav-section nav-section-bottom">
+      <div class="nav-heading">System</div>
+      <div class="nav-items-wrap nav-open">
+        <a class="nav-item" href="/settings.html" data-icon="SE"><span class="nav-item-label">Settings</span></a>
+        <a class="nav-link" data-dev-only="true" data-gateway="local" href="http://localhost:18789" target="_blank">
+          <div class="link-dot"></div> Gateway (local) <span class="link-ext">&#8599;</span>
+        </a>
+        <a class="nav-link" data-dev-only="true" data-gateway="lan" href="http://10.0.0.106:18789" target="_blank">
+          <div class="link-dot"></div> Gateway (LAN) <span class="link-ext">&#8599;</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-footer">
+      <button class="nav-collapse-btn" id="nav-collapse-btn" onclick="toggleNavCompact()" aria-expanded="true" title="Collapse sidebar">
+        <span class="nav-collapse-icon" aria-hidden="true">&#171;</span>
+        <span class="nav-collapse-label">Collapse</span>
+      </button>
+    </div>
+
+  </nav>
+
+  <div class="view view--scroll ao-scroll" id="view-audits">
+    <div class="ao-page ao-page--narrow hub-page">
+      <div class="ao-page-head">
+        <div class="ao-page-heading">
+          <div class="ao-eyebrow">&#9673; AUDIT LOG</div>
+          <h1 class="ao-page-title">Audit Log</h1>
+          <p class="ao-page-sub">A simple, timestamped record of every project audit.</p>
+        </div>
+        <div class="ao-page-actions">
+          <a class="ao-btn" href="/apps.html">All apps</a>
+        </div>
+      </div>
+
+      <section aria-label="Audit filters">
+        <div class="audit-toolbar">
+          <input class="ao-input" id="search" type="search" placeholder="Search audits…" autocomplete="off" aria-label="Search audits"/>
+          <select class="ao-select" id="projectFilter" aria-label="Filter by project">
+            <option value="all">All projects</option>
+          </select>
+          <select class="ao-select" id="yearFilter" aria-label="Filter by year">
+            <option value="all">All years</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="audit-log" aria-labelledby="log-title">
+        <div class="audit-log-head">
+          <h2 class="ao-section-label" id="log-title">Recorded audits</h2>
+          <span class="audit-count" id="count"></span>
+        </div>
+        <div class="audit-column-head" aria-hidden="true"><span>Project</span><span>Audit</span><span>Audited</span></div>
+        <div id="auditRows"></div>
+        <p class="ao-empty" id="empty" hidden>No audits match those filters.</p>
+      </section>
+
+      <footer class="hub-footer">Audit history &middot; newest first</footer>
+    </div>
+  </div>
+
+  <!-- ACTIVITY FEED -->
+  <aside class="feed">
+    <div class="feed-header">
+      Activity <span class="badge" id="feedCount">0</span>
+    </div>
+    <div class="feed-list" id="feedList"></div>
+  </aside>
+
+</div>
+
+<!-- BOTTOM STATUS BAR -->
+
+<script src="app-shared.js?v=fix-queue-20261029"></script>
+<script src="audits-data.js"></script>
+<script>
+switchView('audits', document.querySelector('.nav-item.active'));
+
+(function(){
+  const AUDITS = window.AUDITS || [];
+  /* Historical and weekly records are maintained in audits-data.js. */
+
+  const rowsEl = document.getElementById("auditRows");
+  const emptyEl = document.getElementById("empty");
+  const countEl = document.getElementById("count");
+  const searchEl = document.getElementById("search");
+  const projectEl = document.getElementById("projectFilter");
+  const yearEl = document.getElementById("yearFilter");
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>'"]/g, function (char) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char];
+    });
+  }
+
+  function auditDate(value) {
+    return new Date(value.length === 10 ? value + "T12:00:00" : value);
+  }
+
+  function displayTimestamp(value) {
+    const date = auditDate(value);
+    const dateText = new Intl.DateTimeFormat(undefined, { year: "numeric", month: "short", day: "numeric" }).format(date);
+    if (value.length === 10) return { date: dateText, time: "" };
+    return {
+      date: dateText,
+      time: new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(date)
+    };
+  }
+
+  const projects = Array.from(new Set(AUDITS.map(function (audit) { return audit.project; }))).sort();
+  projects.forEach(function (project) {
+    projectEl.insertAdjacentHTML("beforeend", '<option value="' + escapeHtml(project) + '">' + escapeHtml(project) + "</option>");
+  });
+  const years = Array.from(new Set(AUDITS.map(function (audit) { return String(auditDate(audit.auditedAt).getFullYear()); }))).sort().reverse();
+  years.forEach(function (year) {
+    yearEl.insertAdjacentHTML("beforeend", '<option value="' + year + '">' + year + "</option>");
+  });
+
+  function detailSection(title, items, formatter) {
+    if (!Array.isArray(items) || !items.length) return "";
+    return '<section><h3>' + escapeHtml(title) + '</h3><ul>' +
+      items.map(function (item) { return '<li>' + formatter(item) + '</li>'; }).join("") +
+      '</ul></section>';
+  }
+  function detailText(item) { return escapeHtml(item); }
+  function detailFinding(item) {
+    const link = typeof item.evidence === "string" && /^https:\/\/github\.com\//.test(item.evidence)
+      ? ' <a href="' + escapeHtml(item.evidence) + '" target="_blank" rel="noopener noreferrer">Source</a>' : "";
+    return '<strong>' + escapeHtml(item.id || "Finding") + '</strong> · ' +
+      escapeHtml(item.summary || "") + ' <em>(' + escapeHtml(item.classification || "Review") + ')</em>' + link;
+  }
+  function renderAuditDetails(audit) {
+    if (!audit.priorityRanking && !audit.findings && !audit.previousFindings) return "";
+    const findings = audit.findings || {};
+    const counts = ["critical", "high", "medium", "low"].map(function (level) {
+      return level + ": " + (findings[level] || []).length;
+    }).join(" · ");
+    const body =
+      (audit.repository ? '<p><strong>Repository:</strong> ' + escapeHtml(audit.repository) +
+        (audit.commit ? ' · <strong>Commit:</strong> ' + escapeHtml(audit.commit.slice(0, 10)) : '') + '</p>' : '') +
+      (audit.scope ? '<p>' + escapeHtml(audit.scope) + '</p>' : '') +
+      (audit.reportSource ? '<p>' + escapeHtml(audit.reportSource) + '</p>' : '') +
+      detailSection("1. Repository Priority Ranking", audit.priorityRanking, function (item) {
+        return '<strong>' + escapeHtml(item.priority) + ' · ' + escapeHtml(item.repository) +
+          '</strong> — ' + escapeHtml(item.reason);
+      }) +
+      detailSection("3. Critical Findings", findings.critical, detailFinding) +
+      detailSection("4. High-Priority Findings", findings.high, detailFinding) +
+      detailSection("5. Medium-Priority Findings", findings.medium, detailFinding) +
+      detailSection("6. Low-Priority Findings", findings.low, detailFinding) +
+      detailSection("7. Broken or Incomplete Functionality", audit.brokenOrIncomplete, detailText) +
+      detailSection("8. Previous Findings Status", audit.previousFindings, function (item) {
+        return '<strong>' + escapeHtml(item.status) + ': ' + escapeHtml(item.finding) +
+          '</strong> — ' + escapeHtml(item.detail);
+      }) +
+      detailSection("Fixed Issues", audit.fixedIssues, detailText) +
+      detailSection("Outstanding Issues", audit.outstandingIssues, detailText) +
+      detailSection("9. Recommended Fixes (in priority order)", audit.recommendedFixes, detailText) +
+      detailSection("10. Quick Wins", audit.quickWins, detailText) +
+      detailSection("11. This Week's Focus", audit.thisWeeksFocus, detailText) +
+      detailSection("12. Safe to Defer", audit.safeToDefer, detailText) +
+      detailSection("Checks and limitations", audit.checks, detailText);
+    return '<details class="audit-details"><summary>View audit details' +
+      (audit.findings ? ' (' + escapeHtml(counts) + ')' : '') +
+      '</summary><div class="detail-body">' + body + '</div></details>';
+  }
+
+  function render() {
+    const query = searchEl.value.trim().toLowerCase();
+    const project = projectEl.value;
+    const year = yearEl.value;
+    const visible = AUDITS.slice().sort(function (a, b) {
+      return auditDate(b.auditedAt) - auditDate(a.auditedAt);
+    }).filter(function (audit) {
+      const haystack = JSON.stringify(audit).toLowerCase();
+      return (!query || haystack.indexOf(query) !== -1) &&
+        (project === "all" || audit.project === project) &&
+        (year === "all" || String(auditDate(audit.auditedAt).getFullYear()) === year);
+    });
+
+    rowsEl.innerHTML = visible.map(function (audit, index) {
+      const stamp = displayTimestamp(audit.auditedAt);
+      return '<article class="audit-row" style="--i:' + index + '">' +
+        '<div class="project"><span class="project-name">' + escapeHtml(audit.project) + "</span>" +
+        '<span class="project-note">' + escapeHtml(audit.note || "") + "</span></div>" +
+        '<span class="audit-type">' + escapeHtml(audit.type) + (audit.overallStatus ? '<small class="audit-status">' + escapeHtml(audit.overallStatus) + '</small>' : '') + "</span>" +
+        '<span class="timestamp"><time datetime="' + escapeHtml(audit.auditedAt) + '">' + escapeHtml(stamp.date) + "</time>" +
+        (stamp.time ? "<span>" + escapeHtml(stamp.time) + "</span>" : "") + "</span>" + renderAuditDetails(audit) + "</article>";
+    }).join("");
+    countEl.textContent = visible.length + (visible.length === 1 ? " audit" : " audits");
+    emptyEl.hidden = visible.length !== 0;
+  }
+
+  [searchEl, projectEl, yearEl].forEach(function (control) {
+    control.addEventListener(control.tagName === "INPUT" ? "input" : "change", render);
+  });
+  render();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<title>Apps &amp; Sites - Agent Office</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="shared.css?v=fix-queue-20261029"/>
+<link rel="stylesheet" href="hub-pages.css?v=hub-pages-20261029"/>
+<!-- Restores the saved theme, sidebar state and focus mode before first paint,
+     so no page flashes the default accent, a full-width sidebar, or the chrome
+     of a page that opens in Focus Mode. ACCENTS mirrors THEMES in
+     app-shared.js, and the focus key mirrors focusScopeKey() there. -->
+<script>
+(function(){
+  // A theme is just an accent; shared.css derives every surface from it.
+  var ACCENTS={dark:'#6366f1',midnight:'#10b981',ocean:'#38bdf8',crimson:'#ef4444',forest:'#22c55e',amber:'#f59e0b'};
+  try{
+    var a=ACCENTS[localStorage.getItem('ao-theme')];
+    if(a) document.documentElement.style.setProperty('--accent',a);
+    if(localStorage.getItem('ao-nav-compact')==='1') document.documentElement.classList.add('nav-compact');
+    // Focus is remembered per page: this page's own choice, falling back to
+    // whether the page declares data-focus-default="on".
+    var p=location.pathname==='/index.html'?'/':location.pathname;
+    var f=localStorage.getItem('ao-focus:'+p);
+    if(f==='1'||(f===null&&document.documentElement.getAttribute('data-focus-default')==='on')){
+      document.documentElement.classList.add('ao-focus');
+    }
+  }catch(e){}
+})();
+</script>
+</head>
+<body>
+
+<!-- Mobile nav overlay -->
+<div id="mobile-overlay" class="mobile-overlay" onclick="closeMobileNav()"></div>
+
+<header class="topbar">
+  <div class="topbar-brand">
+    <button class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu" aria-label="Open navigation">&#9776;</button>
+    <a class="topbar-logo" href="/">&#11041; OPENCLAW AGENTS OFFICE</a>
+  </div>
+  <div class="topbar-meta">
+    <button class="ao-login-trigger" id="ao-login-trigger" type="button" onclick="openOfficeLogin()">Login</button>
+    <span class="topbar-stat" id="agent-state-chip">
+      <span class="ao-dot ao-dot--active"></span>
+      <span><span id="onlineCount">9</span> <span id="onlineLabel">agents online</span></span>
+    </span>
+    <span id="clock">--:--:--</span>
+    <button class="ao-btn ao-btn--sm" id="feed-toggle-btn" onclick="toggleFeedPanel()" title="Toggle activity panel" aria-pressed="false">&#9776; Agents</button>
+    <button class="ao-btn ao-btn--sm" id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode &mdash; hide panels" aria-pressed="false">&#9974; Focus</button>
+  </div>
+</header>
+
+<div class="ao-login-modal" id="ao-login-modal" role="dialog" aria-modal="true" aria-labelledby="ao-login-title" hidden>
+  <div class="ao-login-panel">
+    <div class="ao-login-kicker">Secure access</div>
+    <h2 id="ao-login-title">Agent Office Login</h2>
+    <p>Enter your password to access Agent Office.</p>
+    <form id="ao-login-form" class="ao-login-form">
+      <input id="ao-login-password" class="ao-login-input" type="password" autocomplete="current-password" placeholder="Password" required />
+      <button id="ao-login-submit" class="ao-login-submit" type="submit">Unlock</button>
+      <div id="ao-login-error" class="ao-login-error" role="alert"></div>
+    </form>
+  </div>
+</div>
+
+<div class="layout feed-collapsed">
+
+  <!-- LEFT NAV -->
+  <!-- Generated from scripts/shell/shell.html by `npm run sync:shell`. Edit
+       the template, not this copy: tests/shell-consistency.test.js fails when
+       a page's copy drifts from it. Which row is highlighted is worked out
+       from the URL by markActiveNav() in app-shared.js, so no page marks its
+       own — that is what let the copies disagree in the first place. -->
+  <nav class="nav ao-scroll" aria-label="Primary">
+
+    <div class="nav-section">
+      <div class="nav-heading">Workspace</div>
+      <div class="nav-items-wrap nav-open">
+        <div class="nav-group">
+          <a class="nav-item nav-item-parent" href="/" data-nav-sub="office" data-icon="HQ"><span class="nav-item-label">OpenClaw HQ</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle OpenClaw HQ pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></a>
+          <div class="nav-sub">
+            <a class="nav-item" href="/org-chart.html" data-icon="OC"><span class="nav-item-label">Org Chart</span></a>
+            <a class="nav-item" href="/memory.html" data-icon="ME"><span class="nav-item-label">Memory</span></a>
+            <a class="nav-item" href="/agent-registry.html" data-icon="AR"><span class="nav-item-label">Agent Registry</span></a>
+            <a class="nav-item" href="/project-rooms.html" data-icon="PR"><span class="nav-item-label">Project Rooms</span></a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <div class="nav-item nav-item-parent" data-nav-sub="planning" data-icon="PT" onclick="toggleNavSub(event, this)"><span class="nav-item-label">Planning Tools</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Planning Tools pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></div>
+          <div class="nav-sub">
+            <a class="nav-item" href="/?panel=mission-control" data-icon="MC"><span class="nav-item-label">Mission Control</span></a>
+            <a class="nav-item" href="/mission-board.html?view=ios" data-icon="FQ"><span class="nav-item-label">Fix Queue</span></a>
+            <a class="nav-item" href="/planning.html" data-icon="PM"><span class="nav-item-label">Planning Mode</span></a>
+            <a class="nav-item" href="/streaks.html" data-icon="ST"><span class="nav-item-label">Streaks</span></a>
+            <a class="nav-item" href="/countdowns.html" data-icon="CD"><span class="nav-item-label">Countdowns</span></a>
+          </div>
+        </div>
+        <!-- Calendar is a workspace, not one more link in a list of fifteen:
+             it sits above Dropbox at the top of the flat rows and is styled as
+             a card so it can be found without reading. It opens in Focus Mode
+             (see data-focus-default in calendar-v3.html), which is why the row
+             says so. -->
+        <a class="nav-item nav-item-feature" href="/calendar-v3.html" data-icon="CA"><span class="nav-item-label">Calendar</span><span class="nav-item-badge">Focus</span></a>
+        <a class="nav-item" href="/mission-board.html" data-icon="DB"><span class="nav-item-label">Dropbox</span></a>
+        <a class="nav-item" href="/dev.html" data-icon="DL"><span class="nav-item-label">Dev Links</span></a>
+        <a class="nav-item" href="/ai.html" data-icon="AP"><span class="nav-item-label">AI Portal</span></a>
+        <a class="nav-item" href="/ai-landscape.html" data-ai-landscape-nav="true" data-icon="AM"><span class="nav-item-label">AI Models</span></a>
+        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/prompt-builder.html" target="_blank" rel="noopener noreferrer" data-icon="PE"><span class="nav-item-label">AI Prompt Engineer</span> <span class="link-ext">&#8599;</span></a>
+        <a class="nav-item" href="/apps.html" data-icon="WP"><span class="nav-item-label">My Websites &amp; Projects</span></a>
+        <a class="nav-item" href="/audits.html" data-icon="AU"><span class="nav-item-label">Audit Log</span></a>
+        <a class="nav-item" href="/visitors.html" data-icon="VS"><span class="nav-item-label">Visitors</span></a>
+      </div>
+    </div>
+
+    <div class="nav-section nav-section-bottom">
+      <div class="nav-heading">System</div>
+      <div class="nav-items-wrap nav-open">
+        <a class="nav-item" href="/settings.html" data-icon="SE"><span class="nav-item-label">Settings</span></a>
+        <a class="nav-link" data-dev-only="true" data-gateway="local" href="http://localhost:18789" target="_blank">
+          <div class="link-dot"></div> Gateway (local) <span class="link-ext">&#8599;</span>
+        </a>
+        <a class="nav-link" data-dev-only="true" data-gateway="lan" href="http://10.0.0.106:18789" target="_blank">
+          <div class="link-dot"></div> Gateway (LAN) <span class="link-ext">&#8599;</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-footer">
+      <button class="nav-collapse-btn" id="nav-collapse-btn" onclick="toggleNavCompact()" aria-expanded="true" title="Collapse sidebar">
+        <span class="nav-collapse-icon" aria-hidden="true">&#171;</span>
+        <span class="nav-collapse-label">Collapse</span>
+      </button>
+    </div>
+
+  </nav>
+
+  <div class="view view--scroll ao-scroll" id="view-apps">
+    <div class="ao-page hub-page">
+      <div class="ao-page-head">
+        <div class="ao-page-heading">
+          <div class="ao-eyebrow">&#9670; MY WEBSITES</div>
+          <h1 class="ao-page-title">Apps &amp; Sites</h1>
+          <p class="ao-page-sub">Every project in one place &mdash; the live site, its Railway project, and its GitHub repo.</p>
+        </div>
+        <div class="ao-page-actions">
+          <a class="ao-btn ao-btn--primary audit-link" href="/audits.html"><span aria-hidden="true">🗓️</span> Open Audit Log <span aria-hidden="true">&rarr;</span></a>
+        </div>
+      </div>
+
+      <div class="hub-toolbar">
+        <input class="ao-input hub-search" id="search" type="search" placeholder="Search apps, repos, URLs…" autocomplete="off" spellcheck="false" aria-label="Search apps and sites"/>
+        <button type="button" class="ao-chip apps-filter is-active" data-filter="all">All</button>
+        <button type="button" class="ao-chip apps-filter" data-filter="live">Visit</button>
+        <button type="button" class="ao-chip apps-filter" data-filter="github">Has repo</button>
+      </div>
+
+      <main id="sections"></main>
+      <p class="ao-empty" id="empty" hidden>No apps match that search.</p>
+
+      <footer class="hub-footer">Links open in a new tab. <span id="stats"></span></footer>
+    </div>
+  </div>
+
+  <!-- ACTIVITY FEED -->
+  <aside class="feed">
+    <div class="feed-header">
+      Activity <span class="badge" id="feedCount">0</span>
+    </div>
+    <div class="feed-list" id="feedList"></div>
+  </aside>
+
+</div>
+
+<!-- BOTTOM STATUS BAR -->
+
+<script src="app-shared.js?v=fix-queue-20261029"></script>
+<script>
+switchView('apps', document.querySelector('.nav-item.active'));
+
+(function(){
+  const SECTIONS = [
+    {
+      name: "Hub & AI",
+      apps: [
+        {
+          icon: "🏠", title: "Main Page", desc: "Jason's Hub — the daily dashboard and every site link.",
+          repo: "classical91/main-page",
+          live: "https://main-page-production-9927.up.railway.app",
+          railway: "https://railway.com/project/54b33dce-4c08-4f68-98d9-b036413314ce",
+          github: "https://github.com/classical91/main-page"
+        },
+        {
+          icon: "🏢", title: "Agent Office", desc: "3D agent office, calendar, prompt builder, and dev consoles.",
+          repo: "classical91/agent-office",
+          live: "https://agent-office.up.railway.app/",
+          railway: "https://railway.com/project/016e0c7d-696f-4bde-8461-17980bd04a7e",
+          github: "https://github.com/classical91/agent-office"
+        },
+        {
+          icon: "🎯", title: "Mission Control", desc: "Standalone mission control console.",
+          repo: "classical91/mission-control",
+          live: "https://mission-control-standalone-production.up.railway.app",
+          railway: "https://railway.com/project/8da6b690-445e-4d54-832f-548c32cb8fad",
+          github: "https://github.com/classical91/mission-control"
+        },
+        {
+          icon: "💡", title: "Idea Vault", desc: "Idea capture and storage.",
+          repo: "",
+          live: "https://idea-vault-production.up.railway.app",
+          railway: "https://railway.com/project/b4475c1e-b091-4446-ba91-48e57e639aa6",
+          github: ""
+        }
+      ]
+    },
+    {
+      name: "Daily & Wellness",
+      apps: [
+        {
+          icon: "🕉️", title: "Sacred Pathways", desc: "Daily spiritual check-in and readings.",
+          repo: "classical91/spirituality",
+          live: "https://spirituality-lite.up.railway.app",
+          railway: "https://railway.com/project/f72be775-c814-4088-8d1c-64a0fe2d338e",
+          github: "https://github.com/classical91/spirituality"
+        },
+        {
+          icon: "🌙", title: "Natal Affirmations", desc: "Affirmations generated from a natal chart.",
+          repo: "classical91/natal-affirmations",
+          live: "https://natal-affirmations-production.up.railway.app/",
+          railway: "https://railway.com/project/9f5b6688-5aee-476b-b8f3-0a616cc839f1",
+          github: "https://github.com/classical91/natal-affirmations"
+        },
+        {
+          icon: "🏋️", title: "Workout Tracker", desc: "Wellness tracker — dashboard, exercises, and workout sets.",
+          repo: "classical91/workout-tracker",
+          live: "https://workout-tracker-production-0ec7.up.railway.app",
+          railway: "https://railway.com/project/95992860-8b8c-4469-b26f-1254adb2a96f",
+          github: "https://github.com/classical91/workout-tracker"
+        },
+        {
+          icon: "🥗", title: "Nutri-Mind", desc: "Vitamins overview and work meals.",
+          repo: "classical91/diet-plan",
+          live: "https://nutri-mind-production-d054.up.railway.app/",
+          railway: "https://railway.com/project/330e335d-b7ed-49ad-bc59-6e277949e27e",
+          github: "https://github.com/classical91/diet-plan"
+        },
+        {
+          icon: "🗂️", title: "Flashcards", desc: "Flashcard study decks.",
+          repo: "classical91/flashcards",
+          live: "https://flashcards-web-production.up.railway.app/",
+          railway: "https://railway.com/project/3dd1f7ff-827f-4ddc-aa30-6837df85a3c3",
+          github: "https://github.com/classical91/flashcards"
+        },
+        {
+          icon: "📖", title: "Book Maker", desc: "Book generation and authoring tool.",
+          repo: "classical91/book-maker",
+          live: "https://book-maker-production.up.railway.app",
+          railway: "https://railway.com/project/0171e87a-85d7-44f0-81c6-980369a1f79c",
+          github: "https://github.com/classical91/book-maker"
+        }
+      ]
+    },
+    {
+      name: "Markets & Trading",
+      apps: [
+        {
+          icon: "📊", title: "Market Dashboard", desc: "Live market dashboard and News Reporter.",
+          repo: "classical91/market-dashboard",
+          live: "https://market-dashboard-production-b2f4.up.railway.app",
+          railway: "https://railway.com/project/a2e18e5e-1e3f-4db2-9f44-42c517fb2590",
+          github: "https://github.com/classical91/market-dashboard"
+        },
+        {
+          icon: "🧠", title: "Decision Engine", desc: "Trading strategy and decision engine.",
+          repo: "classical91/decide-engine",
+          live: "https://trading-strategy-production-1b41.up.railway.app/",
+          railway: "https://railway.com/project/b1ffc05e-c74a-4b24-94a2-ef6239bc5bf5",
+          github: "https://github.com/classical91/decide-engine"
+        },
+        {
+          icon: "📈", title: "TraderClaw", desc: "Trading agent service.",
+          repo: "",
+          live: "https://traderclaw-production.up.railway.app",
+          railway: "https://railway.com/project/dc5c9acb-2c73-4a1c-b4c9-82a81e2efe9f",
+          github: ""
+        },
+        {
+          icon: "📉", title: "TradingView Alerts", desc: "TradingView alert webhook handler.",
+          repo: "classical91/Tradingview",
+          live: "",
+          railway: "https://railway.com/project/12ffe333-1c42-4081-b019-dfab81472b3d",
+          github: "https://github.com/classical91/Tradingview"
+        }
+      ]
+    },
+    {
+      name: "Agents & Automation",
+      apps: [
+        {
+          icon: "🌐", title: "WebClaw", desc: "Web service hub and admin console.",
+          repo: "classical91/webclaw-service-hub",
+          live: "https://webclaw-service-hub-production.up.railway.app",
+          railway: "https://railway.com/project/3ac94b97-cca3-4550-9f53-2c8bdbc3f2ca",
+          github: "https://github.com/classical91/webclaw-service-hub"
+        },
+        {
+          icon: "🎬", title: "YouTube Claw", desc: "YouTube workflow studio.",
+          repo: "classical91/youtube-claw",
+          live: "https://youtube-claw-web-production.up.railway.app",
+          railway: "https://railway.com/project/754f5a3c-3fa2-402d-9b0b-704eea72f2d2",
+          github: "https://github.com/classical91/youtube-claw"
+        },
+        {
+          icon: "📝", title: "YT Summarizer", desc: "YouTube RSS feed and summaries.",
+          repo: "",
+          live: "https://yt-summarizer-production-4521.up.railway.app",
+          railway: "https://railway.com/project/a9662236-e548-4bab-8bd3-05dcb87193d0",
+          github: ""
+        },
+        {
+          icon: "🌾", title: "Comment Farm", desc: "Comment automation service.",
+          repo: "classical91/commentfarm",
+          live: "https://commentfarm-production-fc8b.up.railway.app",
+          railway: "https://railway.com/project/067b5254-82ba-476d-874f-d1dc40971999",
+          github: "https://github.com/classical91/commentfarm"
+        },
+        {
+          icon: "📡", title: "Broadcast Sender", desc: "Message broadcasting service.",
+          repo: "classical91/broadcast-sender",
+          live: "https://broadcast-sender-production-32be.up.railway.app",
+          railway: "https://railway.com/project/9e18538c-a385-4a59-ba28-f806c66ebb69",
+          github: "https://github.com/classical91/broadcast-sender"
+        },
+        {
+          icon: "🔎", title: "X Scraping", desc: "X / Twitter scraping service.",
+          repo: "",
+          live: "https://x-scrapping-production.up.railway.app",
+          railway: "https://railway.com/project/d01ab81d-1b8c-4c22-93aa-ea9c46aec7e1",
+          github: ""
+        },
+        {
+          icon: "🔄", title: "n8n", desc: "Self-hosted workflow automation.",
+          repo: "",
+          live: "https://primary-production-11563.up.railway.app",
+          railway: "https://railway.com/project/26a88079-68de-4932-b746-f83bddfcbc06",
+          github: ""
+        },
+        {
+          icon: "🔍", title: "RankForge", desc: "Search ranking and SEO tooling.",
+          repo: "classical91/Rank-Forge",
+          live: "https://web-production-7f6eb.up.railway.app",
+          railway: "https://railway.com/project/9dc553bb-f048-48af-981b-eaad9800471d",
+          github: "https://github.com/classical91/Rank-Forge"
+        },
+        {
+          icon: "🎵", title: "Nightwave AI Music", desc: "AI-generated music project.",
+          repo: "classical91/nightwave-ai-music",
+          live: "https://nightwave-ai-music-production.up.railway.app",
+          railway: "https://railway.com/project/4905e461-941a-4880-b8d8-256cf4265995",
+          github: "https://github.com/classical91/nightwave-ai-music"
+        }
+      ]
+    },
+    {
+      name: "Monitoring & Research",
+      apps: [
+        {
+          icon: "🌍", title: "Earth Watch", desc: "Global events and natural-event monitoring.",
+          repo: "classical91/earth-watch",
+          live: "https://earth-watch-production-e3c6.up.railway.app",
+          railway: "https://railway.com/project/d6d73954-7450-4273-8b8e-4eb40d8cea04",
+          github: "https://github.com/classical91/earth-watch"
+        },
+        {
+          icon: "🛡️", title: "Cyber / Security", desc: "Security tooling — cyber-claw and cyber-security repos.",
+          repo: "classical91/cyber-claw · classical91/cyber-security",
+          live: "https://cyber-security-production-18df.up.railway.app",
+          railway: "https://railway.com/project/241f80ab-f7a4-4a9f-bcf2-416928b07255",
+          github: "https://github.com/classical91/cyber-security",
+          github2: "https://github.com/classical91/cyber-claw"
+        },
+        {
+          icon: "🛰️", title: "Home Sentinel", desc: "Home monitoring service.",
+          repo: "",
+          live: "",
+          railway: "https://railway.com/project/39cdade6-ffcb-4838-a276-9af11c7d3881/service/dd8b992b-907e-4a82-ae1d-02923c86e2bc?environmentId=69639ebc-ea2e-47fe-8bd0-83df0f0884cb",
+          github: ""
+        },
+        {
+          icon: "🏺", title: "Archeology", desc: "Archeology research project (repo only).",
+          repo: "classical91/archeology",
+          live: "",
+          railway: "",
+          github: "https://github.com/classical91/archeology"
+        }
+      ]
+    }
+  ];
+
+  const sectionsEl = document.getElementById("sections");
+  const emptyEl = document.getElementById("empty");
+  const searchEl = document.getElementById("search");
+  let activeFilter = "all";
+  let index = 0;
+
+  function chip(url, cls, label) {
+    if (!url) {
+      return '<span class="apps-chip missing"><span class="dot"></span>No ' + label + "</span>";
+    }
+    return '<a class="apps-chip ' + cls + '" href="' + url + '" target="_blank" rel="noopener">' +
+      '<span class="dot"></span>' + label + " ↗</a>";
+  }
+
+  function card(app) {
+    const el = document.createElement("article");
+    el.className = "apps-card";
+    el.style.setProperty("--i", index++);
+    el.dataset.live = app.live ? "1" : "";
+    el.dataset.github = app.github ? "1" : "";
+    el.dataset.search = [app.title, app.desc, app.repo, app.live, app.railway, app.github]
+      .join(" ").toLowerCase();
+    el.innerHTML =
+      '<div class="apps-card-head">' +
+        '<span class="apps-icon">' + app.icon + "</span>" +
+        '<div class="apps-card-body">' +
+          "<h3>" + app.title + "</h3>" +
+          (app.repo ? '<p class="apps-repo">' + app.repo + "</p>" : "") +
+        "</div>" +
+      "</div>" +
+      '<div class="apps-links">' +
+        chip(app.live, "live", "Visit") +
+        chip(app.railway, "railway", "Railway") +
+        chip(app.github, "github", "GitHub") +
+        (app.github ? chip(app.github + "#readme", "github", "README") : "") +
+        (app.github2 ? chip(app.github2, "github", "GitHub 2") : "") +
+      "</div>";
+    return el;
+  }
+
+  SECTIONS.forEach(function (section) {
+    const wrap = document.createElement("section");
+    wrap.className = "apps-section";
+    wrap.innerHTML =
+      '<div class="apps-section-head"><h2>' + section.name + "</h2>" +
+      '<span class="apps-section-count">' + section.apps.length + "</span></div>";
+    const grid = document.createElement("div");
+    grid.className = "apps-grid";
+    section.apps.slice().sort(function (a, b) {
+      return a.title.localeCompare(b.title, undefined, { sensitivity: "base" });
+    }).forEach(function (app) { grid.appendChild(card(app)); });
+    wrap.appendChild(grid);
+    sectionsEl.appendChild(wrap);
+  });
+
+  const allApps = SECTIONS.reduce(function (n, s) { return n + s.apps.length; }, 0);
+  const withRepo = SECTIONS.reduce(function (n, s) {
+    return n + s.apps.filter(function (a) { return a.github; }).length;
+  }, 0);
+  const withLive = SECTIONS.reduce(function (n, s) {
+    return n + s.apps.filter(function (a) { return a.live; }).length;
+  }, 0);
+  document.getElementById("stats").textContent =
+    allApps + " projects · " + withLive + " live · " + withRepo + " on GitHub.";
+
+  function applyFilters() {
+    const q = searchEl.value.trim().toLowerCase();
+    let visible = 0;
+    document.querySelectorAll(".apps-section").forEach(function (section) {
+      let shown = 0;
+      section.querySelectorAll(".apps-card").forEach(function (el) {
+        const matchesFilter = activeFilter === "all" || el.dataset[activeFilter];
+        const matchesQuery = !q || el.dataset.search.indexOf(q) !== -1;
+        const show = matchesFilter && matchesQuery;
+        el.hidden = !show;
+        if (show) shown++;
+      });
+      section.hidden = shown === 0;
+      section.querySelector(".apps-section-count").textContent = shown;
+      visible += shown;
+    });
+    emptyEl.hidden = visible !== 0;
+  }
+
+  searchEl.addEventListener("input", applyFilters);
+  document.querySelectorAll(".apps-filter").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      document.querySelectorAll(".apps-filter").forEach(function (b) { b.classList.remove("is-active"); });
+      btn.classList.add("is-active");
+      activeFilter = btn.dataset.filter;
+      applyFilters();
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

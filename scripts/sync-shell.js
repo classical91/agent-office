@@ -38,6 +38,9 @@ const PAGES = [
   'calendar-v3.html',
   'countdowns.html',
   'planning.html',
+  'ai.html',
+  'apps.html',
+  'audits.html',
 ];
 
 // The two regions a page hands over. Both are delimited by markup the pages

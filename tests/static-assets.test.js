@@ -132,6 +132,18 @@ test('a real page is served as itself', async () => {
   }
 });
 
+test('the pages that came over from Main Hub are served, with their data', async () => {
+  const server = await startServer();
+  try {
+    for (const route of ['/ai.html', '/apps.html', '/audits.html', '/audits-data.js', '/hub-pages.css']) {
+      const response = await fetch(`${server.origin}${route}`);
+      assert.equal(response.status, 200, `${route} answered ${response.status}`);
+    }
+  } finally {
+    stop(server);
+  }
+});
+
 test('the old resets page points to Countdowns', async () => {
   const server = await startServer();
   try {

@@ -25,6 +25,7 @@ The 3D office is intended to be an operational view of that system, not a decora
 - **Penny execution bridge** — Mission Control goals are claimed by the authenticated desktop relay, run in a dedicated Penny session through the local OpenClaw gateway, delivered to Jason in Telegram, and written back to the Agent Office Outbox. Stale claims recover after 20 minutes; cron is not required for normal execution.
 - **Build safeguards** — code, configuration, infrastructure, scheduled-task, and deployment goals pause after read-only inspection. Penny sends the exact proposed scope to Jason and the Outbox shows **Approve build**. Only that authenticated approval requeues the same Penny session. Approved work must fetch current GitHub `main`/`master`, verify repo/remote/branch/dirty state, preserve unrelated work in a clean branch or worktree, test, commit, and push the tested source. Deployment remains separately approval-gated unless it was explicitly included.
 - **AI Landscape** — a tracker page for the AI model/tooling landscape.
+- **AI Portal, Apps & Sites and Audit Log** — the three pages that used to live on Main Hub, now in the Agent Office shell and linked from the sidebar (**AI Portal**, **My Websites & Projects**, **Audit Log**). See [Moved from Main Hub](#moved-from-main-hub).
 - **Project Rooms** — per-project overview with linked tasks, repo/deploy links, and next actions.
 - **Agent Registry** — a directory of configured agents.
 - **Resets** — countdown cards for tracked reset times.
@@ -58,6 +59,10 @@ agent-office-deploy/
     agent-registry.html        # Agent Registry page
     visitors.html              # Visitors page
     settings.html               # Settings page
+    ai.html                    # AI Portal (moved from Main Hub)
+    apps.html                  # Apps & Sites — every project's live site, Railway project and repo
+    audits.html                # Audit Log, reading its records from audits-data.js
+    hub-pages.css              # Styles for the three pages above
     shared.css                 # Design system + shared chrome/nav/view styles for all pages above
     app-shared.js              # Shared JS: agent/office data, office canvas+SVG rendering,
                                 #   view-switching, nav helpers, Dropbox/Memory/Settings/Resets logic
@@ -1021,6 +1026,23 @@ for setting it up and turning it off.
 
 The dashboard sits behind the same `DROPS_PASSPHRASE` as the Dropbox and shares
 its session cookie. Only the tracking endpoint is public.
+
+## Moved from Main Hub
+
+`ai.html`, `apps.html` and `audits.html` were Main Hub pages, and the sidebar
+sent you off-site to reach two of them. They are ordinary Agent Office pages
+now: they wear the shared shell (they are in `PAGES` in
+`scripts/sync-shell.js`), draw from the `shared.css` tokens through
+`hub-pages.css`, and sit behind the same login as every other page. Main Hub
+redirects its old URLs here, so a bookmark still lands.
+
+- **Apps & Sites** — to add or edit a project, edit the `SECTIONS` list in
+  `apps.html`. Leave `live`, `railway` or `github` empty (`""`) when a project
+  has none and the card shows that chip greyed out; `github2` adds a second repo.
+- **Audit Log** — the records are in `audits-data.js`. Append new weekly
+  records there and keep the older entries; the page sorts newest first.
+- **AI Portal** — the prompt builder and AI website shortcuts still live on
+  Main Hub, so those two cards open it in a new tab.
 
 ## OpenClaw gateway status
 
