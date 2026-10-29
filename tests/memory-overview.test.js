@@ -40,6 +40,6 @@ test('Mission Control is the first Planning Tools item', () => {
   const planning = shell.split('data-nav-sub="planning"')[1].split('</div>')[1];
 
   assert.ok(planning.indexOf('Mission Control') >= 0);
-  assert.ok(planning.indexOf('Mission Control') < planning.indexOf('Reminders'));
+  assert.ok(planning.indexOf('Mission Control') < planning.indexOf('Fix Queue'));
   assert.ok(shell.indexOf('Mission Control') > shell.indexOf('data-nav-sub="planning"'));
 });

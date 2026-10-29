@@ -1169,11 +1169,11 @@
 
   /* OPERATIONS SUMMARY
      A row of counts above the room: how many agents are working, how many are
-     stuck, what is queued, and the one thing to do next. Tiles are links or
+     stuck, what is queued, what is in the Fix Queue, and the one thing to do next. Tiles are links or
      buttons where a count has somewhere to lead. */
   .ops-summary {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(220px, 1.6fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(220px, 1.6fr);
     gap: var(--space-2);
     align-items: stretch;
   }
@@ -1248,6 +1248,8 @@
   @media (max-width: 1100px) {
     .ops-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .ops-next { grid-column: 1 / -1; }
+    /* Five count tiles leave one alone on the last row; let it have the row. */
+    .ops-fixes { grid-column: 1 / -1; }
   }
   @media (max-width: 480px) {
     .ops-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
