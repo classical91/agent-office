@@ -1446,6 +1446,14 @@
   background: color-mix(in srgb, var(--accent) 18%, rgba(15, 23, 42, 0.6));
 }
 
+.calendar-lane.is-empty {
+  opacity: 0.45;
+}
+
+.calendar-lane.is-empty:hover {
+  opacity: 0.8;
+}
+
 .calendar-lane-count {
   font-size: 10px;
   opacity: 0.7;
