@@ -123,6 +123,39 @@
 .rst-bill-next strong:not(.rst-money) { color: var(--text-strong); font-weight: 600; }
 .rst-bill-note { color: var(--text-dim); font-size: var(--fs-sm); line-height: var(--lh-normal); }
 
+/* ─── Bill beside the list ────────────────────────────────────────────── */
+
+/* On a phone the bill sits above the list. Once the page itself is wide
+   enough for both — measured on the page, not the window, so the sidebar,
+   the activity feed and Focus Mode all count — it becomes a column on the
+   left that stays in view while the cards scroll, with everything in it
+   stacked. The page widens on this view to give the cards back their room. */
+.rst-view { container-type: inline-size; }
+.rst-view.rst-view--bills { --ao-page-max: 1140px; }
+.rst-layout,
+.rst-layout-main { display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
+
+@container (min-width: 760px) {
+  .rst-view--bills .rst-layout {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-5);
+  }
+  .rst-view--bills .rst-bill {
+    position: sticky;
+    top: var(--space-4);
+    gap: var(--space-3);
+  }
+  .rst-view--bills .rst-bill-head,
+  .rst-view--bills .rst-bill-split {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+  }
+  .rst-view--bills .rst-bill-left { flex-direction: column; align-items: flex-start; gap: 0; }
+}
+
 /* ─── The list ────────────────────────────────────────────────────────── */
 
 .rst-list { display: flex; flex-direction: column; gap: var(--space-3); }
