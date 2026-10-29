@@ -36,7 +36,7 @@ const SERVER_PATH = path.join(DIST, 'server.js');
 const PASSPHRASE = 'smoke-passphrase';
 
 // Two subjects and an iOS drop: enough for a folder wall, a folder with more
-// than one note in it, and the Reminders lane that is deliberately not foldered.
+// than one note in it, and the Fix Queue lane that is deliberately not foldered.
 const SEED_DROPS = [
   ['drop-1', 'Evening Rollup 2026-08-10', 'Evening Rollup', '', '2026-08-10T21:33:45.000Z'],
   ['drop-2', 'Evening Rollup 2026-08-09', 'Evening Rollup', '', '2026-08-09T21:32:54.000Z'],
@@ -248,8 +248,8 @@ test('the Dropbox opens on folders, not on every note', async t => {
 
   const names = await page.locator('.drop-folder-name').allTextContents();
   assert.deepEqual(names, ['All Notes', 'Evening Rollup', 'Githubs']);
-  // The iOS drop belongs to Reminders and must not turn up as a folder here.
-  assert.ok(!names.includes('Reminder'), 'the Reminders lane leaked into the folder wall');
+  // The iOS drop belongs to Fix Queue and must not turn up as a folder here.
+  assert.ok(!names.includes('Reminder'), 'the Fix Queue lane leaked into the folder wall');
   assert.equal(await onScreen(page, '.dropbox-table'), false, 'notes were listed before a folder was opened');
 
   await page.locator('.drop-folder', { hasText: 'Evening Rollup' }).click();
@@ -390,9 +390,30 @@ test('a gated page can actually be logged into', async t => {
   assert.deepEqual(problems, [], 'the memory page did not survive being logged into');
 });
 
-// Reminders is the same page with a different job: one project's lane, listed
+// Fix Queue is the same page with a different job: one project's lane, listed
 // straight away, with no wall in front of it.
-test('the Reminders lane skips the folder wall', async t => {
+// The main page carries a Fix Queue tile in its summary strip, counting the
+// open iOS-lane items and leading to the lane. It runs before the lane test
+// below adds a second one.
+test('the main dashboard counts the Fix Queue and links to it', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  const { page, problems } = await openPage(t);
+  await page.goto(`${server.origin}/`, { waitUntil: 'domcontentloaded' });
+  await logIn(page);
+
+  const tile = page.locator('#ops-summary a.ops-metric[href="/mission-board.html?view=ios"]');
+  await tile.waitFor();
+  await page.waitForFunction(() => {
+    const value = document.querySelector('#ops-summary a[href="/mission-board.html?view=ios"] .ops-metric-value');
+    return value && /^\d+$/.test(value.textContent.trim());
+  });
+  assert.match(await tile.locator('.ops-metric-label').textContent(), /Fix Queue/);
+  assert.equal((await tile.locator('.ops-metric-value').textContent()).trim(), '1');
+  assert.deepEqual(problems, []);
+});
+
+test('the Fix Queue lane skips the folder wall', async t => {
   if (skipReason) return t.skip(skipReason);
 
   const { page, problems } = await openPage(t);
@@ -400,6 +421,7 @@ test('the Reminders lane skips the folder wall', async t => {
   await logIn(page);
   await page.waitForSelector('.dropbox-table');
 
+  assert.equal(await page.title(), 'Fix Queue - Agent Office');
   assert.equal(await page.locator('#new-drop-btn').textContent(), 'New Reminder');
   assert.equal(await onScreen(page, '#dropbox-reminder-capture'), false, 'the reminder form duplicated the button');
   await page.click('#new-drop-btn');
@@ -408,7 +430,7 @@ test('the Reminders lane skips the folder wall', async t => {
   await page.click('#save-reminder-btn');
   await page.waitForSelector('.dropbox-table tbody tr:nth-child(2)');
   assert.match(await page.locator('.dropbox-table').textContent(), /A note reminder without a time/);
-  assert.equal(await page.locator('.drop-folder').count(), 0, 'Reminders grew a folder wall');
+  assert.equal(await page.locator('.drop-folder').count(), 0, 'Fix Queue grew a folder wall');
   assert.deepEqual(await page.locator('.dropbox-table th').allTextContents(), ['Title', 'Reminder', 'Updated']);
   assert.equal(await page.locator('.dropbox-table tbody tr').count(), 2);
   assert.match(await page.locator('.dropbox-table').textContent(), /Renew the domain/);

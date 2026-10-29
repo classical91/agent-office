@@ -1143,7 +1143,7 @@ function renderAgentSummary() {
 // draws; the queue and the next action come from the Dropbox API, which needs
 // an unlocked session — when it is locked the two tiles say so instead of
 // showing a made-up zero.
-let opsQueue = { loaded: false, available: false, open: 0, next: null };
+let opsQueue = { loaded: false, available: false, open: 0, next: null, fixes: 0, fixesDue: 0 };
 
 function opsAgentCounts() {
   const counts = { working: 0, idle: 0, blocked: 0, offline: 0, unknown: 0 };
@@ -1163,18 +1163,21 @@ async function refreshOpsQueue() {
   try {
     const drops = await loadDrops();
     if (drops === null) {
-      opsQueue = { loaded: true, available: false, open: 0, next: null };
+      opsQueue = { loaded: true, available: false, open: 0, next: null, fixes: 0, fixesDue: 0 };
     } else {
       const open = drops.filter(opsIsOpenDrop);
       const next = open
         .map(drop => ({ drop, reminder: dropReminderInfo(drop) }))
         .filter(entry => entry.reminder)
         .sort((a, b) => a.reminder.at - b.reminder.at)[0] || null;
-      opsQueue = { loaded: true, available: true, open: open.length, next };
+      // Fix Queue is the iOS lane — the same filter its own page uses.
+      const fixes = open.filter(drop => (drop.project || '') === 'iOS');
+      const fixesDue = fixes.filter(drop => (dropReminderInfo(drop) || {}).due).length;
+      opsQueue = { loaded: true, available: true, open: open.length, next, fixes: fixes.length, fixesDue };
     }
   } catch {
     // A failed fetch is not an empty queue — say nothing rather than zero.
-    opsQueue = { loaded: true, available: false, open: 0, next: null };
+    opsQueue = { loaded: true, available: false, open: 0, next: null, fixes: 0, fixesDue: 0 };
   }
   renderOpsSummary();
 }
@@ -1207,6 +1210,11 @@ function renderOpsSummary() {
   const queueNote = opsQueue.loaded
     ? (opsQueue.available ? 'On the board' : 'Dropbox locked')
     : 'Loading…';
+  const fixValue = opsQueue.loaded && !opsQueue.available ? '—' : opsQueue.fixes;
+  const fixNote = !opsQueue.loaded ? 'Loading…'
+    : !opsQueue.available ? 'Dropbox locked'
+    : opsQueue.fixesDue ? `${opsQueue.fixesDue} due now`
+    : opsQueue.fixes ? 'Nothing due' : 'All fixed';
 
   const metric = (opts) => `
     <${opts.href ? 'a' : 'div'} class="ops-metric ${opts.tone || ''}"${opts.href ? ` href="${opts.href}"` : ''} title="${escAttr(opts.title || opts.label)}">
@@ -1232,6 +1240,11 @@ function renderOpsSummary() {
     metric({
       label: 'Queued', dot: 'queued', value: queueValue, note: queueNote,
       href: '/mission-board.html', title: 'Open items on the Mission Board',
+    }),
+    metric({
+      label: 'Fix Queue', dot: 'queued', value: fixValue, note: fixNote,
+      tone: `ops-fixes${opsQueue.fixesDue ? ' is-warn' : ''}`,
+      href: '/mission-board.html?view=ios', title: 'Website fixes waiting in the Fix Queue',
     }),
     `<a class="ops-metric ops-next ${next.tone === 'alert' ? 'is-alert' : ''}" href="/mission-board.html?reminder=due" title="Next thing that needs you">
       <span class="ops-metric-label"><span class="ao-dot ao-dot--${next.tone === 'alert' ? 'blocked' : 'queued'}"></span>Next action</span>
@@ -2090,7 +2103,7 @@ function markActiveNav() {
 
     const target = navItemPath(href);
     let active = target.path === here;
-    // Dropbox and Reminders are the same page told apart by ?view=ios.
+    // Dropbox and Fix Queue are the same page told apart by ?view=ios.
     // Mission Control is the office page with its panel open, so the two rows
     // pointing at "/" are told apart by ?panel=mission-control.
     if (active && target.path === '/') {
@@ -3041,7 +3054,7 @@ function renderDropTable() {
 
   if (!dropboxState.drops.length) {
     wrap.innerHTML = iosMode
-      ? '<div class="drop-empty"><div class="drop-empty-title">No reminders yet.</div><div class="drop-empty-copy">Choose New Reminder to add one.</div></div>'
+      ? '<div class="drop-empty"><div class="drop-empty-title">Fix Queue is empty.</div><div class="drop-empty-copy">Choose New Reminder to add one.</div></div>'
       : '<div class="drop-empty"><div class="drop-empty-title">Dropbox is clear.</div><div class="drop-empty-copy">Save your first drop using the form above.</div></div>';
     return;
   }
