@@ -1007,6 +1007,12 @@ window.AOResets = (() => {
     return '$' + (Number(amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  // Every dollar amount on the page is set in green bold, so money reads as
+  // money wherever it turns up.
+  function moneyHtml(amount) {
+    return `<strong class="rst-money">${formatMoney(amount)}</strong>`;
+  }
+
   // What one charge pays for: "month", "year", "2 weeks". '' for a one-off.
   function costPeriod(repeatDays, repeatMonths) {
     if (repeatMonths) return repeatMonths === 1 ? 'month' : repeatMonths === 12 ? 'year' : `${repeatMonths} months`;
@@ -1016,9 +1022,9 @@ window.AOResets = (() => {
     return '';
   }
 
-  function costLabel(card) {
+  function costHtml(card) {
     const period = costPeriod(card.repeatDays, card.repeatMonths);
-    return formatMoney(card.cost) + (period ? ` / ${period}` : '');
+    return moneyHtml(card.cost) + (period ? ` / ${escHtml(period)}` : '');
   }
 
   // The editor's label follows its Repeats select, whose value is days when
@@ -1132,22 +1138,22 @@ window.AOResets = (() => {
     if (!summary.count) {
       return `
         <div class="rst-bill-head"><span class="rst-bill-kicker">${escHtml(month)} bill</span></div>
-        <div class="rst-bill-left"><span class="rst-bill-amount">${formatMoney(0)}</span><span>this month</span></div>
+        <div class="rst-bill-left"><span class="rst-bill-amount">${moneyHtml(0)}</span><span>this month</span></div>
         ${unpriced || '<div class="rst-bill-note">Open a subscription and add what it costs to start this month&rsquo;s total.</div>'}`;
     }
     const percent = summary.total ? Math.round((summary.paid / summary.total) * 100) : 0;
     const next = summary.next
-      ? `Next: <strong>${escHtml(summary.next.card.title)}</strong> &middot; ${formatMoney(summary.next.card.cost)} &middot; ${escHtml(formatWhen(new Date(summary.next.at).toISOString()))} (in ${escHtml(formatRemaining(summary.next.at - now.getTime()))})`
+      ? `Next: <strong>${escHtml(summary.next.card.title)}</strong> &middot; ${moneyHtml(summary.next.card.cost)} &middot; ${escHtml(formatWhen(new Date(summary.next.at).toISOString()))} (in ${escHtml(formatRemaining(summary.next.at - now.getTime()))})`
       : `All paid for ${escHtml(month)}.`;
     return `
       <div class="rst-bill-head">
         <span class="rst-bill-kicker">${escHtml(month)} bill</span>
         <span class="rst-bill-count">${summary.paidCount} of ${summary.count} paid</span>
       </div>
-      <div class="rst-bill-left"><span class="rst-bill-amount">${formatMoney(summary.left)}</span><span>left to pay</span></div>
+      <div class="rst-bill-left"><span class="rst-bill-amount">${moneyHtml(summary.left)}</span><span>left to pay</span></div>
       <div class="rst-bill-meter" role="progressbar" aria-label="${escHtml(month)} bill paid"
            aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><span style="width: ${percent}%"></span></div>
-      <div class="rst-bill-split"><span>${formatMoney(summary.paid)} paid</span><span>${formatMoney(summary.total)} total</span></div>
+      <div class="rst-bill-split"><span>${moneyHtml(summary.paid)} paid</span><span>${moneyHtml(summary.total)} total</span></div>
       <div class="rst-bill-next">${next}</div>
       ${unpriced}`;
   }
@@ -1282,7 +1288,7 @@ window.AOResets = (() => {
               </span>
             </span>
             <span class="rst-category" data-role="category">${escHtml(categoryLabel)}</span>
-            ${card.cost ? `<span class="rst-cost" data-role="cost">${escHtml(costLabel(card))}</span>` : ''}
+            ${card.cost ? `<span class="rst-cost" data-role="cost">${costHtml(card)}</span>` : ''}
             ${card.rotation.length ? `<span class="rst-rotation" data-role="rotation">${escHtml(rotationLabel(card))}</span>` : ''}
             <span class="rst-time" data-role="time">${escHtml(timeLabel(view))}</span>
             <span class="rst-when" data-role="when">${escHtml(whenLabel(view))}</span>
