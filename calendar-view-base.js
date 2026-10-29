@@ -746,34 +746,71 @@
       }
     }
     return '<div class="calendar-countdown-bar"><div class="calendar-lane-row">' + toggle + filter + body + renderWellnessToggle() + '</div>'
-      + (filter && state.countdownFilterOpen ? renderCountdownFilterRow() : '')
+      + (filter && state.countdownFilterOpen ? renderCountdownFilterPopover() : '')
       + '</div>';
   }
 
-  function renderCountdownFilterRow() {
-    const chips = countdownCategories().map(category => {
+  // The category list floats over the grid, anchored under the Filter button,
+  // rather than opening a row that shoves the whole month down.
+  function renderCountdownFilterPopover() {
+    const rows = countdownCategories().map(category => {
       const shown = state.hiddenCountdownCategories.indexOf(category.id) === -1;
-      return '<button type="button" class="calendar-lane-chip calendar-countdown-category' + (shown ? ' active' : ' is-hidden') + '"'
+      return '<button type="button" class="calendar-countdown-category' + (shown ? ' active' : ' is-hidden') + '"'
         + ' style="--countdown-color:' + escapeHtml(category.color) + ';"'
         + ' aria-pressed="' + (shown ? 'true' : 'false') + '"'
         + ' data-countdown-category="' + escapeHtml(category.id) + '" onclick="CAL.toggleCountdownCategory(this.dataset.countdownCategory)"'
         + ' title="' + escapeHtml((shown ? 'Hide ' : 'Show ') + category.label + ' countdowns') + '">'
-        + '<span class="calendar-countdown-dot" aria-hidden="true"></span>'
-        + escapeHtml(category.label)
+        + '<span class="calendar-countdown-check" aria-hidden="true"></span>'
+        + '<span class="calendar-countdown-category-label">' + escapeHtml(category.label) + '</span>'
         + '<span class="calendar-lane-count">' + category.count + '</span>'
         + '</button>';
     }).join('');
     const reset = state.hiddenCountdownCategories.length
-      ? '<button type="button" class="calendar-lane-chip clear" onclick="CAL.showAllCountdownCategories()">Show all</button>'
+      ? '<button type="button" class="calendar-popover-link" onclick="CAL.showAllCountdownCategories()">Show all</button>'
       : '';
-    return '<div class="calendar-lane-row calendar-countdown-filter-row" role="group" aria-label="Countdown categories">'
-      + '<span class="calendar-countdown-status">Show on calendar:</span>' + chips + reset + '</div>';
+    return '<div class="calendar-countdown-popover" role="group" aria-label="Countdown categories">'
+      + '<div class="calendar-popover-head"><span class="calendar-popover-title">Show on calendar</span>' + reset + '</div>'
+      + '<div class="calendar-popover-list">' + rows + '</div>'
+      + '</div>';
+  }
+
+  // Anchor the popover under the Filter button. The chip row scrolls
+  // sideways, so the button's place is only known once it has been laid out.
+  function placeCountdownFilterPopover() {
+    const popover = document.querySelector('.calendar-countdown-popover');
+    const toggle = document.querySelector('.calendar-countdown-filter-toggle');
+    const bar = popover && popover.parentElement;
+    if (!popover || !toggle || !bar) return;
+    const barBox = bar.getBoundingClientRect();
+    const toggleBox = toggle.getBoundingClientRect();
+    const maxLeft = Math.max(8, barBox.width - popover.offsetWidth - 8);
+    popover.style.left = Math.min(Math.max(8, toggleBox.left - barBox.left), maxLeft) + 'px';
+    popover.style.top = (toggleBox.bottom - barBox.top + 6) + 'px';
   }
 
   function toggleCountdownFilter() {
     state.countdownFilterOpen = !state.countdownFilterOpen;
     render();
   }
+
+  function closeCountdownFilter() {
+    if (!state.countdownFilterOpen) return;
+    state.countdownFilterOpen = false;
+    render();
+  }
+
+  // Click anywhere else, or press Escape, and the popover goes away. Capture
+  // phase on pointerdown: a category click re-renders the popover, so by the
+  // time a bubbling click reached the document its target would be detached.
+  document.addEventListener('pointerdown', event => {
+    if (!state.countdownFilterOpen) return;
+    const target = event.target;
+    if (target && target.closest && target.closest('.calendar-countdown-popover, .calendar-countdown-filter-toggle')) return;
+    closeCountdownFilter();
+  }, true);
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeCountdownFilter();
+  });
 
   function toggleCountdownCategory(id) {
     if (!id) return;
@@ -1552,14 +1589,19 @@
       error: { tone: 'bad', label: 'Sync failed' }
     };
     const chip = map[state.syncState] || map.loading;
-    const title = state.gcalError || '';
+    // On a phone the chip shrinks to its dot, so the label rides along as the
+    // tooltip and the accessible name.
+    const title = state.gcalError || chip.label;
     return '<button class="calendar-sync-chip is-' + chip.tone + '" type="button"'
-      + (title ? ' title="' + escapeHtml(title) + '"' : '')
+      + ' title="' + escapeHtml(title) + '" aria-label="' + escapeHtml(chip.label) + '"'
       + ' onclick="CAL.openSyncPanel()">'
       + '<span class="calendar-sync-dot"></span>'
       + escapeHtml(chip.label)
       + '</button>';
   }
+
+  const CHEVRON_LEFT = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const CHEVRON_RIGHT = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   // No menu button of its own: the sidebar is reached through the focus rail
   // in Focus Mode and the topbar hamburger out of it, which is the one drawer
@@ -1569,9 +1611,9 @@
       + '<div><div class="calendar-range-main">' + escapeHtml(currentRangeLabel()) + '</div><div class="calendar-range-sub">' + escapeHtml(timezoneLabel()) + '</div></div>'
       + '<div class="calendar-toolbar-controls">'
       + '<div class="calendar-nav">'
-      + '<button class="calendar-nav-btn" onclick="CAL.navigate(-1)">Prev</button>'
       + '<button class="calendar-nav-btn" onclick="CAL.goToday()">Today</button>'
-      + '<button class="calendar-nav-btn" onclick="CAL.navigate(1)">Next</button>'
+      + '<button class="calendar-nav-btn is-icon" onclick="CAL.navigate(-1)" aria-label="Previous" title="Previous">' + CHEVRON_LEFT + '</button>'
+      + '<button class="calendar-nav-btn is-icon" onclick="CAL.navigate(1)" aria-label="Next" title="Next">' + CHEVRON_RIGHT + '</button>'
       + '</div>'
       + '<div class="calendar-view-switcher">'
       + ['day', 'week', 'month', 'agenda'].map(view => '<button class="calendar-view-btn' + (state.view === view ? ' active' : '') + '" onclick="CAL.changeView(\'' + view + '\')">' + view + '</button>').join('')
@@ -1789,6 +1831,7 @@
   }
 
   function afterRender() {
+    placeCountdownFilterPopover();
     scheduleMonthFit();
     syncTimeGridScroll();
     if (typeof requestAnimationFrame === 'function') requestAnimationFrame(syncTimeGridScroll);
@@ -3048,10 +3091,11 @@
       resetEventEditor();
       const now = new Date();
       const upcoming = state.events.find(e => parseLocalIso(e.end) >= now);
+      // The next event is picked for the detail card, but the calendar stays on
+      // today: moving the selected day to that event's date outlined a day
+      // nobody had clicked once the day's last event was over.
       if (upcoming) {
         state.selectedEventId = upcoming.id;
-        state.selectedDate = parseDateKey(dateKey(upcoming.start));
-        state.cursorDate = state.selectedDate;
       } else {
         state.selectedEventId = null;
       }

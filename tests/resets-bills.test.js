@@ -99,10 +99,12 @@ test('the summary adds up the month and counts down what is left', () => {
   assert.equal(summary.next.card.title, 'Telegram Premium');
 
   const html = billHtml(summary, now);
-  assert.match(html, /\$15\.98/);
+  assert.match(html, /<strong class="rst-money">\$15\.98<\/strong>/);
   assert.match(html, /left to pay/);
   assert.match(html, /2 of 4 paid/);
-  assert.match(html, /\$1,535\.98 total/);
+  assert.match(html, /<strong class="rst-money">\$1,535\.98<\/strong> total/);
+  assert.match(html, /<strong class="rst-money">\$1,520\.00<\/strong> paid/);
+  assert.match(html, /&middot; <strong class="rst-money">\$5\.99<\/strong> &middot;/);
 });
 
 test('once the last renewal lands the month reads as paid', () => {
@@ -137,7 +139,7 @@ test('bills without a cost are counted so the panel can ask for them', () => {
 
 test('a priced card shows its cost, and the cost field shows on bills only', () => {
   const priced = cardHtml(viewOf(bill({ cost: 5.99, resetAt: at(10, 29) })));
-  assert.match(priced, /<span class="rst-cost" data-role="cost">\$5\.99 \/ month<\/span>/);
+  assert.match(priced, /<span class="rst-cost" data-role="cost"><strong class="rst-money">\$5\.99<\/strong> \/ month<\/span>/);
   assert.match(priced, /Cost per month/);
   assert.match(priced, /data-role="cost-field">/);
 

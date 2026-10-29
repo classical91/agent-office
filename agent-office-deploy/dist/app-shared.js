@@ -992,7 +992,7 @@ const COMPACT_ROOM_SCALE = 0.62;
 
 // Who actually stands in the room. The roster selector (office-roster-
 // selector.js) owns the choice and keeps it in this browser; everything else —
-// agentState, the ops summary, the status cards, saved character looks — still
+// agentState, the ops summary, saved character looks — still
 // covers the whole roster, so leaving an agent out of the room takes nothing
 // away from them. No selector on the page, or no selection made in it, means
 // the whole roster is in the room, which is what the office did before the
@@ -1100,9 +1100,9 @@ function agentDisplayStatus(agent) {
 }
 
 // ─── AGENT STATE VOCABULARY ───────────────────────────────────
-// One set of names for what an agent is doing, used by the status cards, the
-// dots in the room and the operations summary, so the same agent is never
-// described two different ways on the same screen.
+// One set of names for what an agent is doing, used by the dots in the room
+// and the operations summary, so the same agent is never described two
+// different ways on the same screen.
 //   working  — has a task in hand
 //   idle     — online, nothing assigned
 //   blocked  — wants to work and cannot, on evidence from the agent itself
@@ -1111,11 +1111,11 @@ function agentDisplayStatus(agent) {
 //              counted as one.
 //   offline  — not running
 const AGENT_STATE = {
-  working: { label: 'Working', dot: 'dot-active', css: 'is-active', color: 'var(--state-active)' },
-  idle:    { label: 'Idle',    dot: 'dot-idle',   css: 'is-idle',   color: 'var(--state-idle)' },
-  blocked: { label: 'Blocked', dot: 'dot-blocked', css: 'is-blocked', color: 'var(--state-blocked)' },
-  offline: { label: 'Offline', dot: 'dot-offline', css: 'is-offline', color: 'var(--state-offline)' },
-  unknown: { label: 'Unknown', dot: 'dot-offline', css: 'is-offline', color: 'var(--state-offline)' },
+  working: { label: 'Working', color: 'var(--state-active)' },
+  idle:    { label: 'Idle',    color: 'var(--state-idle)' },
+  blocked: { label: 'Blocked', color: 'var(--state-blocked)' },
+  offline: { label: 'Offline', color: 'var(--state-offline)' },
+  unknown: { label: 'Unknown', color: 'var(--state-offline)' },
 };
 
 function agentOperationalState(agent) {
@@ -1131,31 +1131,9 @@ function agentStateMeta(agent) {
   return AGENT_STATE[agentOperationalState(agent)] || AGENT_STATE.offline;
 }
 
-function agentDisplayTask(agent) {
-  return openClawGatewayReachable === false ? 'Gateway disconnected' : agent.currentTask;
-}
-
-function renderStatusBar() {
-  const bar = document.getElementById('statusbar');
-  if (!bar) return;
-  bar.innerHTML = agentState.map(agent => {
-    const state = agentStateMeta(agent);
-    return `
-    <div class="status-card ${state.css}" title="${escAttr(agent.name)} — ${state.label}">
-      <div class="status-card-avatar" style="--entity-color:${agent.color};">
-        ${agent.emoji}
-      </div>
-      <div class="status-card-info">
-        <div class="status-card-name">${agent.name}</div>
-        <div class="status-card-task">${agentDisplayTask(agent)}</div>
-      </div>
-      <div class="status-card-state">
-        <div class="status-dot ${state.dot}"></div>
-        <div class="status-card-state-label">${state.label}</div>
-      </div>
-    </div>
-  `;
-  }).join('');
+// The top-bar chip and the summary above the room both read agentState, so
+// they are redrawn together whenever it changes.
+function renderAgentSummary() {
   renderTopAgentState();
   renderOpsSummary();
 }
@@ -1340,7 +1318,7 @@ function syncAgentElement(agent) {
 
   const dot = el.querySelector('.agent-status-dot');
   if (dot) {
-    // Same vocabulary as the status cards and the summary above the room.
+    // Same vocabulary as the summary above the room.
     const state = agentStateMeta(agent);
     dot.style.background = state.color;
     dot.title = state.label;
@@ -1376,7 +1354,7 @@ function updateAgentTask(agent) {
 
 function tick() {
   if (openClawGatewayReachable === false) {
-    renderStatusBar();
+    renderAgentSummary();
     renderAgents();
     return;
   }
@@ -1396,7 +1374,7 @@ function tick() {
     }
   });
 
-  renderStatusBar();
+  renderAgentSummary();
 
   renderTopAgentState();
 }
@@ -1581,7 +1559,7 @@ window.SETTINGS = (() => {
     // 'partial' stays unknown rather than true: something answered, but the
     // rest of the app should not start calling agents live on that basis.
     openClawGatewayReachable = state === 'online' ? true : state === 'offline' ? false : null;
-    renderStatusBar();
+    renderAgentSummary();
     if (document.getElementById('officesvg')) renderAgents();
     const dot = document.getElementById('settings-gateway-dot');
     const label = document.getElementById('settings-gateway-state');
@@ -1955,7 +1933,7 @@ if (document.getElementById('officesvg')) {
   if (!rebuildRoomIfResized()) renderAgents();
 }
 centerOfficeView(true);
-renderStatusBar();
+renderAgentSummary();
 
 // Kick off loops (demo tick disabled — real activity only)
 let tickInterval = null;
