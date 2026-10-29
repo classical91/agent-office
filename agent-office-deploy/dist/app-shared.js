@@ -3024,6 +3024,15 @@ function dropFormatShortDate(value) {
   return d.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+// True when the date falls in a calendar month that has already ended, so a
+// reminder last touched in September reads as stale once October starts.
+function dropIsPastMonth(value) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return false;
+  const now = new Date();
+  return d.getFullYear() * 12 + d.getMonth() < now.getFullYear() * 12 + now.getMonth();
+}
+
 function renderDropTable() {
   const wrap = document.getElementById('dropbox-table-wrap');
   if (!wrap) return;
@@ -3048,7 +3057,7 @@ function renderDropTable() {
   const secondary = iosMode || showSubject;
   // Both spellings of the timestamp ship; CSS picks one, so a phone gets
   // "Aug 10" where the desktop has room for the whole thing.
-  const updatedCell = drop => `<td class="col-updated"><span class="date-full">${dropFormatDate(drop.updated_at || drop.date)}</span><span class="date-short">${dropFormatShortDate(drop.updated_at || drop.date)}</span></td>`;
+  const updatedCell = drop => `<td class="col-updated${dropIsPastMonth(drop.updated_at || drop.date) ? ' past-month' : ''}"><span class="date-full">${dropFormatDate(drop.updated_at || drop.date)}</span><span class="date-short">${dropFormatShortDate(drop.updated_at || drop.date)}</span></td>`;
 
   wrap.innerHTML = `
     <table class="dropbox-table${secondary ? ' has-secondary' : ''}">
@@ -3098,7 +3107,7 @@ function renderDropCards() {
     <article class="drop-card ${drop.id === dropboxState.selectedId ? 'selected' : ''}" data-drop-id="${escAttr(drop.id)}">
       <div class="drop-card-header">
         <h3 class="drop-card-title">${escHTML(drop.title || 'Untitled drop')}</h3>
-        <span class="drop-card-date">${dropFormatShortDate(drop.updated_at || drop.date)}</span>
+        <span class="drop-card-date${dropIsPastMonth(drop.updated_at || drop.date) ? ' past-month' : ''}">${dropFormatShortDate(drop.updated_at || drop.date)}</span>
       </div>
       ${preview ? `<p class="drop-card-preview">${escHTML(preview)}</p>` : ''}
       ${hasMeta ? `<div class="drop-card-meta">
