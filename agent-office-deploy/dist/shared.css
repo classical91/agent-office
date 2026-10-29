@@ -2353,111 +2353,6 @@
     .office-command-btn { display: inline-flex; white-space: nowrap; }
   }
 
-  /* BOTTOM STATUS BAR */
-  .statusbar {
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    padding: var(--space-3) var(--space-4);
-    display: flex;
-    gap: var(--space-2);
-    overflow-x: auto;
-    flex-shrink: 0;
-    height: 80px;
-    align-items: center;
-    scroll-snap-type: x proximity;
-  }
-
-  .statusbar::-webkit-scrollbar { height: 3px; }
-  .statusbar::-webkit-scrollbar-track { background: transparent; }
-  .statusbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-  /* An agent card reads left to right: who, what they are on, and the state
-     spelled out. The state used to be a bare coloured dot, which asked you to
-     remember what yellow meant. */
-  .status-card {
-    background: var(--surface-hover);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-2) var(--space-3);
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    flex-shrink: 0;
-    min-width: 210px;
-    cursor: pointer;
-    scroll-snap-align: start;
-    transition: background var(--duration-fast), border-color var(--duration-fast);
-  }
-
-  .status-card:hover {
-    background: color-mix(in srgb, var(--accent) 7%, var(--surface));
-    border-color: var(--border-strong);
-  }
-  /* Blocked agents are the ones you need to find in a scrolling row. */
-  .status-card.is-blocked { border-color: color-mix(in srgb, var(--red) 40%, var(--border)); }
-
-  .status-card-avatar {
-    width: 28px; height: 28px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: var(--fs-base);
-    font-weight: 600;
-    flex-shrink: 0;
-    background: color-mix(in srgb, var(--entity-color, var(--accent)) 20%, transparent);
-    border: 1px solid color-mix(in srgb, var(--entity-color, var(--accent)) 33%, transparent);
-  }
-
-  .status-card-info { overflow: hidden; flex: 1; min-width: 0; }
-
-  .status-card-name {
-    font-size: var(--fs-xs);
-    font-weight: 600;
-    color: var(--text-strong);
-    margin-bottom: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .status-card-task {
-    font-size: var(--fs-2xs);
-    color: var(--text-dim);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .status-card-state {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: var(--space-1);
-    flex-shrink: 0;
-  }
-  .status-card-state-label {
-    font-size: 9px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: 700;
-    color: var(--text-dim);
-  }
-  .status-card.is-active .status-card-state-label { color: color-mix(in srgb, #fff 32%, var(--state-active)); }
-  .status-card.is-idle .status-card-state-label { color: color-mix(in srgb, #fff 32%, var(--state-idle)); }
-  .status-card.is-blocked .status-card-state-label { color: color-mix(in srgb, #fff 26%, var(--state-blocked)); }
-
-  .status-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-  .dot-active { background: var(--state-active); box-shadow: 0 0 5px var(--state-active); animation: pulse 2s infinite; }
-  .dot-idle { background: var(--state-idle); }
-  .dot-offline { background: var(--state-offline); }
-  .dot-blocked { background: var(--state-blocked); box-shadow: 0 0 5px color-mix(in srgb, var(--state-blocked) 60%, transparent); }
-
-
-
-
   /* ── MOBILE RESPONSIVE ─────────────────────────────── */
   @media (max-width: 768px) {
     /* The page scrolls here, but a 100vh body meant the accent wash (a
@@ -2545,7 +2440,6 @@
      chrome on the way in. The Calendar is the page that wants this: it is a
      grid that is worth every pixel of width it can get. */
   html.ao-focus body > .topbar,
-  html.ao-focus body > .statusbar,
   html.ao-focus .layout > .feed { display: none !important; }
   html.ao-focus .layout {
     --layout-nav: 0px;
