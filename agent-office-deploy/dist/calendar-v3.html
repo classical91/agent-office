@@ -30,7 +30,7 @@
   }catch(e){}
 })();
 </script>
-<link rel="stylesheet" href="calendar-view.css?v=calendar-countdown-filter-20261025"/>
+<link rel="stylesheet" href="calendar-view.css?v=calendar-month-polish-20261029"/>
 <style>
   .calendar-connection-bar {
     display: flex;
@@ -242,7 +242,7 @@ html.ao-focus .calendar-compact-board .calendar-toolbar { padding-left: 88px !im
 }
 .calendar-compact-board .calendar-toolbar-controls { gap: 6px !important; }
 .calendar-compact-board .calendar-nav { gap: 4px !important; }
-.calendar-compact-board .calendar-view-switcher { gap: 4px !important; }
+.calendar-compact-board .calendar-view-switcher { gap: 2px !important; }
 .calendar-compact-board .calendar-nav-btn,
 .calendar-compact-board .calendar-view-btn {
   height: 30px !important;
@@ -250,6 +250,14 @@ html.ao-focus .calendar-compact-board .calendar-toolbar { padding-left: 88px !im
   padding: 0 10px !important;
   border-radius: 999px !important;
   font-size: 12px !important;
+}
+.calendar-compact-board .calendar-nav-btn.is-icon {
+  width: 30px !important;
+  padding: 0 !important;
+}
+.calendar-compact-board .calendar-view-switcher .calendar-view-btn {
+  height: 26px !important;
+  min-height: 26px !important;
 }
 .calendar-compact-board .calendar-lane-bar {
   flex: 0 0 auto !important;
@@ -374,9 +382,8 @@ html.ao-focus .calendar-compact-board .calendar-toolbar { padding-left: 88px !im
     min-height: 30px !important;
     padding: 0 9px !important;
     border-radius: 999px !important;
-    font-size: 10px !important;
+    font-size: 12px !important;
     line-height: 30px !important;
-    letter-spacing: 0.12em !important;
     white-space: nowrap !important;
   }
   html.ao-focus .calendar-compact-board .calendar-month-grid {
@@ -578,7 +585,7 @@ html.ao-focus .calendar-compact-board .calendar-toolbar { padding-left: 88px !im
 <script src="app-shared.js?v=agent-state-unknown-20261009"></script>
 
 
-<script src="calendar-view.js?v=calendar-countdown-filter-20261025"></script>
+<script src="calendar-view.js?v=calendar-month-polish-20261029"></script>
 <script>
 switchView('calendar-v3', document.querySelector('.nav-item.active'));
 </script>
