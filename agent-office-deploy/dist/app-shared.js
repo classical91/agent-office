@@ -3046,6 +3046,24 @@ function dropIsPastMonth(value) {
   return d.getFullYear() * 12 + d.getMonth() < now.getFullYear() * 12 + now.getMonth();
 }
 
+const DROP_STALE_MS = 21 * 24 * 60 * 60 * 1000;
+
+// The colour an Updated date wears. Over three weeks old is blue, and wins over
+// the past-month red, so anything that old reads the same whatever the month.
+function dropAgeClass(value) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  if (Date.now() - d.getTime() > DROP_STALE_MS) return ' over-3-weeks';
+  return dropIsPastMonth(value) ? ' past-month' : '';
+}
+
+// The key to those colours, under the list they colour.
+const DROP_AGE_LEGEND = `
+  <div class="drop-age-legend" aria-label="Updated date colours">
+    <span class="drop-age-key over-3-weeks">Over 3 weeks old</span>
+    <span class="drop-age-key past-month">From an earlier month</span>
+  </div>`;
+
 function renderDropTable() {
   const wrap = document.getElementById('dropbox-table-wrap');
   if (!wrap) return;
@@ -3070,7 +3088,7 @@ function renderDropTable() {
   const secondary = iosMode || showSubject;
   // Both spellings of the timestamp ship; CSS picks one, so a phone gets
   // "Aug 10" where the desktop has room for the whole thing.
-  const updatedCell = drop => `<td class="col-updated${dropIsPastMonth(drop.updated_at || drop.date) ? ' past-month' : ''}"><span class="date-full">${dropFormatDate(drop.updated_at || drop.date)}</span><span class="date-short">${dropFormatShortDate(drop.updated_at || drop.date)}</span></td>`;
+  const updatedCell = drop => `<td class="col-updated${dropAgeClass(drop.updated_at || drop.date)}"><span class="date-full">${dropFormatDate(drop.updated_at || drop.date)}</span><span class="date-short">${dropFormatShortDate(drop.updated_at || drop.date)}</span></td>`;
 
   wrap.innerHTML = `
     <table class="dropbox-table${secondary ? ' has-secondary' : ''}">
@@ -3089,7 +3107,7 @@ function renderDropTable() {
             ${updatedCell(drop)}
           </tr>`).join('')}
       </tbody>
-    </table>`;
+    </table>${DROP_AGE_LEGEND}`;
 
   wrap.querySelectorAll('tr[data-drop-id]').forEach(row => {
     row.addEventListener('click', () => {
@@ -3120,7 +3138,7 @@ function renderDropCards() {
     <article class="drop-card ${drop.id === dropboxState.selectedId ? 'selected' : ''}" data-drop-id="${escAttr(drop.id)}">
       <div class="drop-card-header">
         <h3 class="drop-card-title">${escHTML(drop.title || 'Untitled drop')}</h3>
-        <span class="drop-card-date${dropIsPastMonth(drop.updated_at || drop.date) ? ' past-month' : ''}">${dropFormatShortDate(drop.updated_at || drop.date)}</span>
+        <span class="drop-card-date${dropAgeClass(drop.updated_at || drop.date)}">${dropFormatShortDate(drop.updated_at || drop.date)}</span>
       </div>
       ${preview ? `<p class="drop-card-preview">${escHTML(preview)}</p>` : ''}
       ${hasMeta ? `<div class="drop-card-meta">
@@ -3129,7 +3147,7 @@ function renderDropCards() {
         ${showSubject ? dropBadge(drop.subject, 'subject') : ''}
       </div>` : ''}
     </article>`;
-  }).join('');
+  }).join('') + DROP_AGE_LEGEND;
 
   wrap.querySelectorAll('[data-drop-id]').forEach(card => {
     card.addEventListener('click', () => {
