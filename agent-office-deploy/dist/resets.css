@@ -50,10 +50,17 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Every dollar amount, on a card or in the bill: green and bold. */
+.rst-money {
+  color: var(--green);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ─── This month's bill ───────────────────────────────────────────────── */
 
 /* The Subscriptions / Bills view only. The amount left is the number this
-   panel is for, so it gets the size; the meter fills green as bills go out. */
+   panel is for, so it gets the size; its colour is .rst-money's. */
 .rst-bill {
   display: flex;
   flex-direction: column;
@@ -92,7 +99,6 @@
   font-size: var(--fs-md);
 }
 .rst-bill-amount {
-  color: var(--yellow);
   font-size: var(--fs-2xl);
   font-weight: 700;
   line-height: 1.15;
@@ -114,7 +120,7 @@
 }
 .rst-bill-split { display: flex; justify-content: space-between; gap: var(--space-3); }
 .rst-bill-next { color: var(--text); font-size: var(--fs-sm); line-height: var(--lh-normal); overflow-wrap: anywhere; }
-.rst-bill-next strong { color: var(--text-strong); font-weight: 600; }
+.rst-bill-next strong:not(.rst-money) { color: var(--text-strong); font-weight: 600; }
 .rst-bill-note { color: var(--text-dim); font-size: var(--fs-sm); line-height: var(--lh-normal); }
 
 /* ─── The list ────────────────────────────────────────────────────────── */
