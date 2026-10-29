@@ -50,7 +50,9 @@
       counts.set(id, (counts.get(id) || 0) + 1);
       total += 1;
     }
-    return [['', `All categories (${total})`], ...options().map(([id, name]) => [id, `${name} (${counts.get(id) || 0})`])];
+    const ranked = options().sort(([a, aName], [b, bName]) =>
+      (counts.get(b) || 0) - (counts.get(a) || 0) || aName.localeCompare(bName));
+    return [['', `All categories (${total})`], ...ranked.map(([id, name]) => [id, `${name} (${counts.get(id) || 0})`])];
   }
   function fill(select, choices, selected) {
     select.innerHTML = choices.map(([id, name]) => `<option value="${escAttr(id)}">${escHTML(name)}</option>`).join('');
