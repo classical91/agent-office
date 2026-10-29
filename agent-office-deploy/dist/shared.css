@@ -682,15 +682,18 @@
   /* LEFT NAV */
   .nav {
     --nav-rail-size: 68px;
-    --nav-panel-bg: #f3f4f5;
-    --nav-panel-ink: #17191c;
-    --nav-panel-muted: #767b83;
+    --nav-panel-bg: color-mix(in srgb, var(--accent) 4%, var(--surface));
+    --nav-panel-raised: color-mix(in srgb, var(--accent) 8%, var(--surface-raised));
+    --nav-panel-hover: color-mix(in srgb, var(--accent) 8%, var(--surface-hover));
+    --nav-panel-ink: var(--text-strong);
+    --nav-panel-muted: var(--text-dim);
+    --nav-panel-border: color-mix(in srgb, var(--accent) 14%, var(--border));
     display: grid;
     grid-template-columns: var(--nav-rail-size) minmax(0, 1fr);
     min-width: 0;
     overflow: hidden;
     background: var(--nav-panel-bg);
-    border-right: 1px solid rgba(13, 16, 20, 0.14);
+    border-right: 1px solid var(--nav-panel-border);
     transition: grid-template-columns var(--duration) ease;
   }
 
@@ -698,8 +701,8 @@
   .nav-rail {
     min-width: 0;
     padding: 12px 10px 10px;
-    background: #08090a;
-    color: #aeb2b8;
+    background: color-mix(in srgb, var(--accent) 4%, #08090a);
+    color: var(--text-dim);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -726,9 +729,9 @@
     transition: color var(--duration-fast), background var(--duration-fast), border-color var(--duration-fast), transform var(--duration-fast);
   }
   .nav-rail-brand {
-    color: #08090a;
-    background: #f8f8f6;
-    border-color: rgba(255, 255, 255, 0.9);
+    color: var(--text-strong);
+    background: color-mix(in srgb, var(--accent) 14%, var(--surface-raised));
+    border-color: color-mix(in srgb, var(--accent) 30%, var(--border-strong));
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
   }
   .nav-rail-brand svg { width: 26px; height: 26px; }
@@ -743,7 +746,7 @@
     width: 100%;
     margin-top: auto;
     padding-top: 10px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid color-mix(in srgb, var(--accent) 18%, rgba(255, 255, 255, 0.1));
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -760,14 +763,16 @@
   }
   .nav-rail-item:hover,
   .nav-rail-toggle:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.09);
+    color: var(--text-strong);
+    background: color-mix(in srgb, var(--accent) 16%, rgba(255, 255, 255, 0.07));
     transform: translateY(-1px);
   }
   .nav-rail-item.active {
-    color: #fff;
-    background: linear-gradient(145deg, #3b3d41, #24262a);
-    border-color: rgba(255, 255, 255, 0.17);
+    color: var(--text-strong);
+    background: linear-gradient(145deg,
+      color-mix(in srgb, var(--accent) 40%, var(--surface-raised)),
+      color-mix(in srgb, var(--accent) 18%, var(--surface-sunken)));
+    border-color: color-mix(in srgb, var(--accent) 42%, var(--border-strong));
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.32), inset 0 1px rgba(255, 255, 255, 0.08);
   }
 
@@ -795,7 +800,7 @@
     flex-direction: column;
     justify-content: center;
     background: color-mix(in srgb, var(--nav-panel-bg) 94%, transparent);
-    border-bottom: 1px solid rgba(13, 16, 20, 0.08);
+    border-bottom: 1px solid var(--nav-panel-border);
     backdrop-filter: blur(14px);
   }
   .nav-panel-kicker {
@@ -807,7 +812,7 @@
     text-transform: uppercase;
   }
   .nav-panel-header strong {
-    color: #101214;
+    color: var(--nav-panel-ink);
     font-size: 21px;
     line-height: 1.2;
     letter-spacing: -0.03em;
@@ -866,7 +871,7 @@
     border-radius: 9px;
     font-size: 12.5px;
     font-weight: 500;
-    color: #35383d;
+    color: var(--text-quiet);
     cursor: pointer;
     transition: color var(--duration-fast), background var(--duration-fast), box-shadow var(--duration-fast), border-color var(--duration-fast);
     text-decoration: none;
@@ -887,8 +892,8 @@
     text-align: center;
     line-height: 1;
     border-radius: 8px;
-    background: rgba(15, 17, 20, 0.055);
-    color: #666b72;
+    background: var(--surface-hover);
+    color: var(--nav-panel-muted);
     font-size: 8.5px;
     font-weight: 800;
     letter-spacing: 0.035em;
@@ -896,19 +901,19 @@
   .nav-item:not([data-icon])::before { content: none; }
 
   .nav-item:hover {
-    color: #101214;
-    background: rgba(255, 255, 255, 0.62);
+    color: var(--nav-panel-ink);
+    background: var(--nav-panel-hover);
   }
   .nav-item.active {
-    color: #0c0e10;
-    background: #fff;
-    border-color: rgba(15, 17, 20, 0.055);
-    box-shadow: 0 5px 16px rgba(24, 28, 34, 0.09), 0 1px 2px rgba(24, 28, 34, 0.05);
+    color: var(--nav-panel-ink);
+    background: var(--nav-panel-raised);
+    border-color: color-mix(in srgb, var(--accent) 24%, var(--border));
+    box-shadow: var(--shadow-sm);
     font-weight: 650;
   }
   .nav-item.active::before {
-    color: #fff;
-    background: #17191c;
+    color: var(--text-on-accent);
+    background: var(--accent);
   }
   .nav-item .icon { font-size: var(--fs-base); }
   .nav-item-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -930,8 +935,8 @@
     flex-shrink: 0;
     transition: transform 0.2s, color var(--duration-fast), background var(--duration-fast);
   }
-  .nav-sub-chevron:hover { background: rgba(15, 17, 20, 0.06); color: #17191c; }
-  .nav-item-parent:hover .nav-sub-chevron { color: #17191c; }
+  .nav-sub-chevron:hover { background: var(--nav-panel-hover); color: var(--nav-panel-ink); }
+  .nav-item-parent:hover .nav-sub-chevron { color: var(--nav-panel-ink); }
   .nav-item-parent.collapsed .nav-sub-chevron { transform: rotate(-90deg); }
 
   /* Children hang off a hairline rather than off indentation alone, so the
@@ -941,7 +946,7 @@
     transition: max-height var(--duration) ease;
     margin-left: 23px;
     padding-left: 12px;
-    border-left: 1px solid rgba(15, 17, 20, 0.12);
+    border-left: 1px solid var(--nav-panel-border);
   }
   .nav-sub .nav-item {
     min-height: 34px;
@@ -966,7 +971,7 @@
     transition: color var(--duration-fast), background var(--duration-fast);
     text-decoration: none;
   }
-  .nav-link:hover { color: #17191c; background: rgba(255, 255, 255, 0.62); }
+  .nav-link:hover { color: var(--nav-panel-ink); background: var(--nav-panel-hover); }
   .nav-link .link-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; background: var(--accent); }
   .nav-link .link-ext { font-size: var(--fs-2xs); margin-left: auto; color: var(--text-dim); opacity: 0.7; }
   .nav-item .link-ext { font-size: var(--fs-2xs); margin-left: auto; color: var(--text-dim); opacity: 0.7; flex-shrink: 0; }
@@ -978,13 +983,16 @@
     border: none;
     border-radius: 12px;
     background: transparent;
-    color: #8d929a;
+    color: var(--text-dim);
     font-family: inherit;
     font-size: var(--fs-xs);
     cursor: pointer;
     transition: color var(--duration-fast), background var(--duration-fast);
   }
-  .nav-collapse-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.09); }
+  .nav-collapse-btn:hover {
+    color: var(--text-strong);
+    background: color-mix(in srgb, var(--accent) 16%, rgba(255, 255, 255, 0.07));
+  }
   .nav-collapse-btn .nav-collapse-icon {
     width: 18px;
     text-align: center;
@@ -1003,8 +1011,7 @@
     border: 0;
   }
 
-  /* Compact mode now means exactly what the reference shows: keep the black
-     rail, slide away the pale detail panel. */
+  /* Compact mode keeps the black rail and slides away the themed detail panel. */
   html.nav-compact .nav { grid-template-columns: var(--nav-rail-size) 0; }
   html.nav-compact .nav-panel {
     min-width: 0;
@@ -2478,7 +2485,7 @@
       display: block !important;
       position: fixed !important; top: 48px !important; left: 0 !important;
       bottom: 0 !important; width: min(90vw, 320px) !important; z-index: 9999 !important;
-      background: var(--nav-panel-bg) !important; border-right: 1px solid rgba(13, 16, 20, 0.14) !important;
+      background: var(--nav-panel-bg) !important; border-right: 1px solid var(--nav-panel-border) !important;
       overflow: hidden !important;
       box-shadow: 8px 0 40px rgba(0,0,0,0.42) !important;
       padding: 0 !important;
@@ -2545,7 +2552,7 @@
     width: min(90vw, 320px);
     z-index: 9999;
     background: var(--nav-panel-bg);
-    border-right: 1px solid rgba(13, 16, 20, 0.14);
+    border-right: 1px solid var(--nav-panel-border);
     box-shadow: 8px 0 40px rgba(0, 0, 0, 0.48);
     overflow: hidden;
     padding: 0;
@@ -2598,27 +2605,29 @@
      Calendar is a workspace you go to and stay in, not one more link in a list
      of fifteen. It reads as a card so it can be found without reading. */
   .nav-item-feature {
-    border: 1px solid rgba(15, 17, 20, 0.08);
-    background: rgba(255, 255, 255, 0.5);
-    color: #202327;
+    border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+    background: color-mix(in srgb, var(--accent) 7%, var(--surface-raised));
+    color: var(--text);
     font-weight: 600;
     margin-top: var(--space-2);
     margin-bottom: var(--space-2);
   }
   .nav-item-feature:hover {
-    background: #fff;
-    border-color: rgba(15, 17, 20, 0.12);
+    background: color-mix(in srgb, var(--accent) 13%, var(--surface-raised));
+    border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
   }
-  .nav-item-feature.active { background: #fff; }
+  .nav-item-feature.active {
+    background: color-mix(in srgb, var(--accent) 17%, var(--surface-raised));
+  }
   .nav-item-badge {
     margin-left: auto;
     flex-shrink: 0;
     font-size: var(--fs-2xs);
     text-transform: uppercase;
     letter-spacing: var(--tracking-caps);
-    color: #62676f;
-    background: #eceeef;
-    border: 1px solid rgba(15, 17, 20, 0.07);
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent);
     border-radius: var(--radius-pill);
     padding: 1px 6px;
   }
