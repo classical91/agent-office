@@ -1628,16 +1628,21 @@
     const agents = knownAgentIds();
     const projects = knownProjectIds();
     const laneButtons = LANES.map(lane => {
-      const count = lane.id === 'all'
-        ? state.events.length
-        : state.events.filter(event => {
-          const previous = state.lane;
-          state.lane = lane.id;
-          const matched = matchesLane(event);
-          state.lane = previous;
-          return matched;
-        }).length;
-      return '<button class="calendar-lane' + (state.lane === lane.id ? ' active' : '') + '" type="button"'
+      let count = state.events.length;
+      if (lane.id !== 'all') {
+        const previous = state.lane;
+        state.lane = lane.id;
+        count = state.events.filter(matchesLane).length;
+        // Countdowns are drawn in the Deadlines lane, so they count there too.
+        if (lane.id === 'deadlines') count += visibleCountdowns().length;
+        state.lane = previous;
+      }
+      const active = state.lane === lane.id;
+      // An empty lane stays clickable but reads as empty, so a row of zeros
+      // does not look like a row of broken buttons.
+      const empty = !active && lane.id !== 'all' && !count;
+      return '<button class="calendar-lane' + (active ? ' active' : '') + (empty ? ' is-empty' : '') + '" type="button"'
+        + (empty ? ' title="' + escapeHtml('Nothing in ' + lane.label + ' yet') + '"' : '')
         + ' onclick="CAL.setLane(\'' + lane.id + '\')">' + escapeHtml(lane.label)
         + '<span class="calendar-lane-count">' + count + '</span></button>';
     }).join('');
