@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>Agent Registry - Agent Office</title>
-<link rel="stylesheet" href="shared.css?v=mission-workflows-20261009"/>
+<link rel="stylesheet" href="shared.css?v=fix-queue-20261029"/>
 <!-- Restores the saved theme, sidebar state and focus mode before first paint,
      so no page flashes the default accent, a full-width sidebar, or the chrome
      of a page that opens in Focus Mode. ACCENTS mirrors THEMES in
@@ -93,7 +93,7 @@
           <div class="nav-item nav-item-parent" data-nav-sub="planning" data-icon="PT" onclick="toggleNavSub(event, this)"><span class="nav-item-label">Planning Tools</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Planning Tools pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></div>
           <div class="nav-sub">
             <a class="nav-item" href="/?panel=mission-control" data-icon="MC"><span class="nav-item-label">Mission Control</span></a>
-            <a class="nav-item" href="/mission-board.html?view=ios" data-icon="RM"><span class="nav-item-label">Reminders</span></a>
+            <a class="nav-item" href="/mission-board.html?view=ios" data-icon="FQ"><span class="nav-item-label">Fix Queue</span></a>
             <a class="nav-item" href="/planning.html" data-icon="PM"><span class="nav-item-label">Planning Mode</span></a>
             <a class="nav-item" href="/streaks.html" data-icon="ST"><span class="nav-item-label">Streaks</span></a>
             <a class="nav-item" href="/countdowns.html" data-icon="CD"><span class="nav-item-label">Countdowns</span></a>
@@ -169,7 +169,7 @@
   </div>
 </div>
 
-<script src="app-shared.js?v=agent-state-unknown-20261009"></script>
+<script src="app-shared.js?v=fix-queue-20261029"></script>
 <script src="agent-registry.js"></script>
 <script>
 switchView('agents', document.querySelector('.nav-item.active'));
