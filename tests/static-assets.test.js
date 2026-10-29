@@ -170,3 +170,17 @@ test('Dev Links places usage dashboards above platform update feeds', () => {
   assert.match(page, /platform\.claude\.com\/claude-code/);
   assert.match(page, /railway\.com\/workspace\/usage/);
 });
+
+test('Dev Links has an API Usage section for Grok, Claude, and ChatGPT', () => {
+  const page = fs.readFileSync(path.join(DIST, 'dev.html'), 'utf8');
+  const start = page.indexOf('<span>API Usage</span>');
+  const end = page.indexOf('Platform Update Feeds');
+  assert.ok(page.indexOf('Usage &amp; Billing') < start && start < end);
+  const section = page.slice(start, end);
+  assert.match(section, /<summary>Grok &middot; xAI<\/summary>/);
+  assert.match(section, /<summary>Claude &middot; Anthropic<\/summary>/);
+  assert.match(section, /<summary>ChatGPT &middot; OpenAI<\/summary>/);
+  assert.match(section, /console\.x\.ai\/team\/9a1fb5df-4e2d-4777-8403-a883dc1e3478\/usage/);
+  assert.match(section, /platform\.claude\.com\/usage/);
+  assert.match(section, /platform\.openai\.com\/settings\/organization\/usage/);
+});
