@@ -36,8 +36,8 @@
   function ensureMissionControls() {
     const view = document.getElementById('dropbox-view');
     const title = document.querySelector('#dropbox-view .dropbox-toolbar h2');
-    if (title) title.textContent = view && view.classList.contains('ios-mode') ? 'Reminders' : 'Dropbox';
-    document.title = `${view?.classList.contains('ios-mode') ? 'Reminders' : 'Dropbox'} - Agent Office`;
+    if (title) title.textContent = view && view.classList.contains('ios-mode') ? 'Fix Queue' : 'Dropbox';
+    document.title = `${view?.classList.contains('ios-mode') ? 'Fix Queue' : 'Dropbox'} - Agent Office`;
     if (view?.classList.contains('ios-mode')) document.getElementById('drop-search').placeholder = 'Search reminders…';
     const save = document.getElementById('save-drop-btn');
     if (save) save.textContent = 'Save Note';
@@ -214,7 +214,7 @@
     section.style.cssText = 'width:100%;max-width:720px;margin:0 auto;padding:24px 20px 60px;box-sizing:border-box;';
     section.innerHTML = `
       <div class="drop-detail">
-        <button type="button" id="mission-detail-back" class="drop-detail-back">← ${iosMode ? 'All reminders' : 'All tasks'}</button>
+        <button type="button" id="mission-detail-back" class="drop-detail-back">← ${iosMode ? 'Fix Queue' : 'All tasks'}</button>
         <div class="drop-detail-header">
           <h2 class="drop-detail-title">${escHTML(drop.title || 'Untitled task')}</h2>
           <div class="drop-detail-meta-row">

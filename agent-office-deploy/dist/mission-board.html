@@ -7,7 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>Dropbox - Agent Office</title>
-<link rel="stylesheet" href="shared.css?v=mission-workflows-20261009"/>
+<link rel="stylesheet" href="shared.css?v=fix-queue-20261029"/>
 <!-- Restores the saved theme, sidebar state and focus mode before first paint,
      so no page flashes the default accent, a full-width sidebar, or the chrome
      of a page that opens in Focus Mode. ACCENTS mirrors THEMES in
@@ -93,7 +93,7 @@
           <div class="nav-item nav-item-parent" data-nav-sub="planning" data-icon="PT" onclick="toggleNavSub(event, this)"><span class="nav-item-label">Planning Tools</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Planning Tools pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></div>
           <div class="nav-sub">
             <a class="nav-item" href="/?panel=mission-control" data-icon="MC"><span class="nav-item-label">Mission Control</span></a>
-            <a class="nav-item" href="/mission-board.html?view=ios" data-icon="RM"><span class="nav-item-label">Reminders</span></a>
+            <a class="nav-item" href="/mission-board.html?view=ios" data-icon="FQ"><span class="nav-item-label">Fix Queue</span></a>
             <a class="nav-item" href="/planning.html" data-icon="PM"><span class="nav-item-label">Planning Mode</span></a>
             <a class="nav-item" href="/streaks.html" data-icon="ST"><span class="nav-item-label">Streaks</span></a>
             <a class="nav-item" href="/countdowns.html" data-icon="CD"><span class="nav-item-label">Countdowns</span></a>
@@ -192,12 +192,12 @@
 
       <div class="dropbox-layout">
         <div class="dropbox-main">
-          <!-- Reminders is its own thing: something to be handed back later,
+          <!-- Fix Queue (the iOS lane) is its own thing: something to be handed back later,
                not a task to be worked. Two fields and nothing else. It has no
-               button on this page - the "Reminders" side-menu item is the way
+               button on this page - the "Fix Queue" side-menu item is the way
                in, and it opens this panel on a screen of its own. -->
           <div id="dropbox-reminder-capture" class="dropbox-reminder-capture is-collapsed">
-            <div class="capture-heading">Reminders</div>
+            <div class="capture-heading">Fix Queue</div>
             <textarea id="reminder-content" rows="3" placeholder="Remind me about…"></textarea>
             <input id="reminder-when" type="text" placeholder="When? Optional (tomorrow 9am, in 2h, friday, 6pm)" />
             <div class="dropbox-row">
@@ -274,9 +274,9 @@
 </div>
 
 <link rel="stylesheet" href="reminder-categories.css?v=category-picker-contrast-20260919"/>
-<script src="app-shared.js?v=agent-state-unknown-20261009"></script>
+<script src="app-shared.js?v=fix-queue-20261029"></script>
 <script src="reminder-categories.js?v=category-counts-20260916"></script>
-<script src="mission-board.js?v=category-counts-20260916"></script>
+<script src="mission-board.js?v=fix-queue-20261029"></script>
 <script>
 switchView('dropbox', document.querySelector('.nav-item.active'));
 </script>
