@@ -2097,7 +2097,7 @@ function markActiveNav() {
 
   document.querySelectorAll('.nav .nav-item').forEach(item => {
     const href = item.getAttribute('href');
-    // Rows that leave the app (AI Portal, My Websites) are never "where you
+    // Rows that leave the app (AI Prompt Engineer) are never "where you
     // are", and neither are the pure-button rows.
     if (!href || /^https?:/i.test(href)) { item.classList.remove('active'); return; }
 

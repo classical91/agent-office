@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<title>AI Portal - Agent Office</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="shared.css?v=stale-blue-20261029"/>
+<link rel="stylesheet" href="hub-pages.css?v=hub-pages-20261029"/>
+<!-- Restores the saved theme, sidebar state and focus mode before first paint,
+     so no page flashes the default accent, a full-width sidebar, or the chrome
+     of a page that opens in Focus Mode. ACCENTS mirrors THEMES in
+     app-shared.js, and the focus key mirrors focusScopeKey() there. -->
+<script>
+(function(){
+  // A theme is just an accent; shared.css derives every surface from it.
+  var ACCENTS={dark:'#6366f1',midnight:'#10b981',ocean:'#38bdf8',crimson:'#ef4444',forest:'#22c55e',amber:'#f59e0b'};
+  try{
+    var a=ACCENTS[localStorage.getItem('ao-theme')];
+    if(a) document.documentElement.style.setProperty('--accent',a);
+    if(localStorage.getItem('ao-nav-compact')==='1') document.documentElement.classList.add('nav-compact');
+    // Focus is remembered per page: this page's own choice, falling back to
+    // whether the page declares data-focus-default="on".
+    var p=location.pathname==='/index.html'?'/':location.pathname;
+    var f=localStorage.getItem('ao-focus:'+p);
+    if(f==='1'||(f===null&&document.documentElement.getAttribute('data-focus-default')==='on')){
+      document.documentElement.classList.add('ao-focus');
+    }
+  }catch(e){}
+})();
+</script>
+</head>
+<body>
+
+<!-- Mobile nav overlay -->
+<div id="mobile-overlay" class="mobile-overlay" onclick="closeMobileNav()"></div>
+
+<header class="topbar">
+  <div class="topbar-brand">
+    <button class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu" aria-label="Open navigation">&#9776;</button>
+    <a class="topbar-logo" href="/">&#11041; OPENCLAW AGENTS OFFICE</a>
+  </div>
+  <div class="topbar-meta">
+    <button class="ao-login-trigger" id="ao-login-trigger" type="button" onclick="openOfficeLogin()">Login</button>
+    <span class="topbar-stat" id="agent-state-chip">
+      <span class="ao-dot ao-dot--active"></span>
+      <span><span id="onlineCount">9</span> <span id="onlineLabel">agents online</span></span>
+    </span>
+    <span id="clock">--:--:--</span>
+    <button class="ao-btn ao-btn--sm" id="feed-toggle-btn" onclick="toggleFeedPanel()" title="Toggle activity panel" aria-pressed="false">&#9776; Agents</button>
+    <button class="ao-btn ao-btn--sm" id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode &mdash; hide panels" aria-pressed="false">&#9974; Focus</button>
+  </div>
+</header>
+
+<div class="ao-login-modal" id="ao-login-modal" role="dialog" aria-modal="true" aria-labelledby="ao-login-title" hidden>
+  <div class="ao-login-panel">
+    <div class="ao-login-kicker">Secure access</div>
+    <h2 id="ao-login-title">Agent Office Login</h2>
+    <p>Enter your password to access Agent Office.</p>
+    <form id="ao-login-form" class="ao-login-form">
+      <input id="ao-login-password" class="ao-login-input" type="password" autocomplete="current-password" placeholder="Password" required />
+      <button id="ao-login-submit" class="ao-login-submit" type="submit">Unlock</button>
+      <div id="ao-login-error" class="ao-login-error" role="alert"></div>
+    </form>
+  </div>
+</div>
+
+<div class="layout feed-collapsed">
+
+  <!-- LEFT NAV -->
+  <!-- Generated from scripts/shell/shell.html by `npm run sync:shell`. Edit
+       the template, not this copy: tests/shell-consistency.test.js fails when
+       a page's copy drifts from it. Which row is highlighted is worked out
+       from the URL by markActiveNav() in app-shared.js, so no page marks its
+       own — that is what let the copies disagree in the first place. -->
+  <nav class="nav ao-scroll" aria-label="Primary">
+
+    <div class="nav-section">
+      <div class="nav-heading">Workspace</div>
+      <div class="nav-items-wrap nav-open">
+        <div class="nav-group">
+          <a class="nav-item nav-item-parent" href="/" data-nav-sub="office" data-icon="HQ"><span class="nav-item-label">OpenClaw HQ</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle OpenClaw HQ pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></a>
+          <div class="nav-sub">
+            <a class="nav-item" href="/org-chart.html" data-icon="OC"><span class="nav-item-label">Org Chart</span></a>
+            <a class="nav-item" href="/memory.html" data-icon="ME"><span class="nav-item-label">Memory</span></a>
+            <a class="nav-item" href="/agent-registry.html" data-icon="AR"><span class="nav-item-label">Agent Registry</span></a>
+            <a class="nav-item" href="/project-rooms.html" data-icon="PR"><span class="nav-item-label">Project Rooms</span></a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <div class="nav-item nav-item-parent" data-nav-sub="planning" data-icon="PT" onclick="toggleNavSub(event, this)"><span class="nav-item-label">Planning Tools</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Planning Tools pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></div>
+          <div class="nav-sub">
+            <a class="nav-item" href="/?panel=mission-control" data-icon="MC"><span class="nav-item-label">Mission Control</span></a>
+            <a class="nav-item" href="/mission-board.html?view=ios" data-icon="FQ"><span class="nav-item-label">Fix Queue</span></a>
+            <a class="nav-item" href="/planning.html" data-icon="PM"><span class="nav-item-label">Planning Mode</span></a>
+            <a class="nav-item" href="/streaks.html" data-icon="ST"><span class="nav-item-label">Streaks</span></a>
+            <a class="nav-item" href="/countdowns.html" data-icon="CD"><span class="nav-item-label">Countdowns</span></a>
+          </div>
+        </div>
+        <!-- Calendar is a workspace, not one more link in a list of fifteen:
+             it sits above Dropbox at the top of the flat rows and is styled as
+             a card so it can be found without reading. It opens in Focus Mode
+             (see data-focus-default in calendar-v3.html), which is why the row
+             says so. -->
+        <a class="nav-item nav-item-feature" href="/calendar-v3.html" data-icon="CA"><span class="nav-item-label">Calendar</span><span class="nav-item-badge">Focus</span></a>
+        <a class="nav-item" href="/mission-board.html" data-icon="DB"><span class="nav-item-label">Dropbox</span></a>
+        <a class="nav-item" href="/dev.html" data-icon="DL"><span class="nav-item-label">Dev Links</span></a>
+        <a class="nav-item" href="/ai.html" data-icon="AP"><span class="nav-item-label">AI Portal</span></a>
+        <a class="nav-item" href="/ai-landscape.html" data-ai-landscape-nav="true" data-icon="AM"><span class="nav-item-label">AI Models</span></a>
+        <a class="nav-item" href="https://main-page-production-9927.up.railway.app/prompt-builder.html" target="_blank" rel="noopener noreferrer" data-icon="PE"><span class="nav-item-label">AI Prompt Engineer</span> <span class="link-ext">&#8599;</span></a>
+        <a class="nav-item" href="/apps.html" data-icon="WP"><span class="nav-item-label">My Websites &amp; Projects</span></a>
+        <a class="nav-item" href="/audits.html" data-icon="AU"><span class="nav-item-label">Audit Log</span></a>
+        <a class="nav-item" href="/visitors.html" data-icon="VS"><span class="nav-item-label">Visitors</span></a>
+      </div>
+    </div>
+
+    <div class="nav-section nav-section-bottom">
+      <div class="nav-heading">System</div>
+      <div class="nav-items-wrap nav-open">
+        <a class="nav-item" href="/settings.html" data-icon="SE"><span class="nav-item-label">Settings</span></a>
+        <a class="nav-link" data-dev-only="true" data-gateway="local" href="http://localhost:18789" target="_blank">
+          <div class="link-dot"></div> Gateway (local) <span class="link-ext">&#8599;</span>
+        </a>
+        <a class="nav-link" data-dev-only="true" data-gateway="lan" href="http://10.0.0.106:18789" target="_blank">
+          <div class="link-dot"></div> Gateway (LAN) <span class="link-ext">&#8599;</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="nav-footer">
+      <button class="nav-collapse-btn" id="nav-collapse-btn" onclick="toggleNavCompact()" aria-expanded="true" title="Collapse sidebar">
+        <span class="nav-collapse-icon" aria-hidden="true">&#171;</span>
+        <span class="nav-collapse-label">Collapse</span>
+      </button>
+    </div>
+
+  </nav>
+
+  <div class="view view--scroll ao-scroll" id="view-ai-portal">
+    <div class="ao-page hub-page">
+      <div class="ao-page-heading">
+        <div class="ao-eyebrow">&#10022; AI PORTAL</div>
+        <h1 class="ao-page-title">AI &amp; Repo Portal</h1>
+        <p class="ao-page-sub">AI tools, agent consoles, model references, and shortcut hubs.</p>
+      </div>
+
+      <main class="portal-grid">
+        <a class="portal-card" style="--i:0" href="/apps.html">
+          <span class="portal-icon" aria-hidden="true">🚀</span>
+          <span class="portal-body"><strong>Apps &amp; Sites</strong>
+          <span>Every project with its live site, Railway project, and GitHub repo.</span></span>
+          <span class="portal-chevron" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="portal-card" style="--i:1" href="/audits.html">
+          <span class="portal-icon" aria-hidden="true">🗓️</span>
+          <span class="portal-body"><strong>Audit Log</strong>
+          <span>A timestamped record of every project audit.</span></span>
+          <span class="portal-chevron" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="portal-card" style="--i:2" href="https://main-page-production-9927.up.railway.app/ai-shortcuts.html" target="_blank" rel="noopener noreferrer">
+          <span class="portal-icon" aria-hidden="true">🔗</span>
+          <span class="portal-body"><strong>AI Website Shortcuts <span class="link-ext">&#8599;</span></strong>
+          <span>Claude, Grok, ChatGPT, Gemini, and other AI site links.</span></span>
+          <span class="portal-chevron" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="portal-card" style="--i:3" href="https://main-page-production-9927.up.railway.app/prompt-builder.html" target="_blank" rel="noopener noreferrer">
+          <span class="portal-icon" aria-hidden="true">✨</span>
+          <span class="portal-body"><strong>AI Prompt Engineer <span class="link-ext">&#8599;</span></strong>
+          <span>Build and refine prompts.</span></span>
+          <button type="button" class="portal-info" id="promptInstructionsBtn" aria-label="View prompt instructions" title="View prompt instructions">i</button>
+          <span class="portal-chevron" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="portal-card" style="--i:4" href="/ai-landscape.html">
+          <span class="portal-icon" aria-hidden="true">📊</span>
+          <span class="portal-body"><strong>AI Models Specs</strong>
+          <span>Compare AI model specs and capabilities.</span></span>
+          <span class="portal-chevron" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="portal-card" style="--i:5" href="/dev.html">
+          <span class="portal-icon" aria-hidden="true">🛠️</span>
+          <span class="portal-body"><strong>Dev Links</strong>
+          <span>Developer tools and resources.</span></span>
+          <span class="portal-chevron" aria-hidden="true">&#8250;</span>
+        </a>
+      </main>
+    </div>
+  </div>
+
+  <!-- ACTIVITY FEED -->
+  <aside class="feed">
+    <div class="feed-header">
+      Activity <span class="badge" id="feedCount">0</span>
+    </div>
+    <div class="feed-list" id="feedList"></div>
+  </aside>
+
+</div>
+
+<div class="ao-modal" id="promptInstructionsModal" hidden>
+  <div class="ao-modal-sheet hub-modal" role="dialog" aria-modal="true" aria-labelledby="promptInstructionsTitle">
+    <div class="hub-modal-head">
+      <div class="ao-modal-title" id="promptInstructionsTitle">Prompt Instructions</div>
+      <button type="button" class="hub-modal-close" id="promptInstructionsClose" aria-label="Close">&times;</button>
+    </div>
+    <div class="hub-modal-body">
+      <h4>Before you start</h4>
+      <ul>
+        <li>Know your goal: what should the output do or look like?</li>
+        <li>Note any audience, tone, length, or format constraints.</li>
+      </ul>
+      <h4>Structure</h4>
+      <ol>
+        <li>State the task clearly in one or two sentences.</li>
+        <li>Give context: background info, examples, or data the model needs.</li>
+        <li>Specify the output format (list, table, code, JSON, etc.).</li>
+        <li>List constraints or things to avoid.</li>
+      </ol>
+      <h4>Refine</h4>
+      <ul>
+        <li>Test the prompt, then tighten wording based on the result.</li>
+        <li>Break multi-step tasks into smaller, ordered instructions.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM STATUS BAR -->
+
+<script src="app-shared.js?v=stale-blue-20261029"></script>
+<script>
+switchView('ai-portal', document.querySelector('.nav-item.active'));
+
+(function(){
+  var modal = document.getElementById('promptInstructionsModal');
+  function close(){ modal.hidden = true; }
+  document.getElementById('promptInstructionsBtn').addEventListener('click', function(e){
+    // The button sits inside the card's link; it opens the notes, not the link.
+    e.preventDefault();
+    e.stopPropagation();
+    modal.hidden = false;
+  });
+  document.getElementById('promptInstructionsClose').addEventListener('click', close);
+  modal.addEventListener('click', function(e){ if (e.target === modal) close(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
+})();
+</script>
+
+</body>
+</html>

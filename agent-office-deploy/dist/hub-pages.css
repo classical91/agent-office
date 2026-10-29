@@ -1,0 +1,252 @@
+/* AI Portal, Apps & Sites and the Audit Log — the three pages that came over
+   from Main Hub. They sit in the Agent Office shell and draw from its tokens,
+   so a theme change reaches them like any other page. Every rule is scoped to
+   its page's view: the pages' own class names (.project, .timestamp, .dot)
+   are generic enough to collide with something elsewhere otherwise. */
+
+.hub-page { animation: hub-enter .34s ease both; }
+.hub-footer {
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+  text-align: center;
+}
+@keyframes hub-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* ── AI Portal ─────────────────────────────────────────────── */
+
+#view-ai-portal .portal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+#view-ai-portal .portal-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-xl);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+  color: inherit;
+  text-decoration: none;
+  animation: hub-enter .4s ease both;
+  animation-delay: calc(var(--i) * 45ms);
+  transition: border-color var(--duration-fast), background var(--duration-fast), transform var(--duration-fast);
+}
+#view-ai-portal .portal-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  transform: translateY(-2px);
+}
+#view-ai-portal .portal-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  font-size: 20px;
+}
+#view-ai-portal .portal-body { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; flex: 1; }
+#view-ai-portal .portal-body strong { color: var(--text-strong); font-size: var(--fs-lg); font-weight: 650; }
+#view-ai-portal .portal-body > span { color: var(--text-dim); font-size: var(--fs-md); line-height: 1.4; }
+#view-ai-portal .portal-chevron { color: var(--accent); font-size: 22px; line-height: 1; }
+#view-ai-portal .portal-info {
+  display: grid;
+  place-items: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  font: 700 var(--fs-base) / 1 var(--font-ui);
+  cursor: pointer;
+}
+#view-ai-portal .portal-info:hover { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+
+.hub-modal { max-width: 480px; max-height: 80vh; overflow: auto; }
+.hub-modal-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.hub-modal-close {
+  border: 0;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+}
+.hub-modal-close:hover { color: var(--text-strong); }
+.hub-modal-body { color: var(--text-dim); font-size: var(--fs-base); line-height: 1.65; }
+.hub-modal-body h4 { color: var(--text-strong); font-size: var(--fs-md); margin: var(--space-4) 0 var(--space-1); }
+.hub-modal-body h4:first-child { margin-top: var(--space-2); }
+.hub-modal-body ol, .hub-modal-body ul { padding-left: var(--space-5); }
+.hub-modal-body li { margin-bottom: var(--space-1); }
+
+/* ── Apps & Sites ──────────────────────────────────────────── */
+
+#view-apps .hub-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+#view-apps .hub-search { flex: 1 1 240px; min-width: 0; height: var(--control-h-lg); }
+#view-apps .apps-filter { height: var(--control-h-lg); padding: 0 var(--space-4); }
+#view-apps .audit-link { gap: var(--space-2); text-decoration: none; }
+
+#view-apps .apps-section[hidden], #view-apps .apps-card[hidden] { display: none; }
+#view-apps .apps-section + .apps-section { margin-top: var(--space-6); }
+#view-apps .apps-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+#view-apps .apps-section-head h2 {
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+#view-apps .apps-section-count { color: var(--accent); font-size: var(--fs-sm); font-weight: 700; }
+#view-apps .apps-grid { display: grid; gap: var(--space-2); }
+
+#view-apps .apps-card {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  animation: hub-enter .4s ease both;
+  animation-delay: calc(var(--i) * 30ms);
+  transition: border-color var(--duration-fast), background var(--duration-fast);
+}
+#view-apps .apps-card:hover {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 11%, var(--surface));
+}
+#view-apps .apps-card-head { display: flex; align-items: center; gap: var(--space-3); min-width: 0; flex: 1; padding: var(--space-3); }
+#view-apps .apps-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  font-size: 16px;
+}
+#view-apps .apps-card-body { min-width: 0; flex: 1; }
+#view-apps .apps-card h3 { color: var(--text-strong); font-size: var(--fs-base); font-weight: 650; }
+#view-apps .apps-repo { margin-top: 3px; color: var(--text-dim); font: var(--fs-2xs) var(--font-mono); overflow-wrap: anywhere; }
+
+#view-apps .apps-links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; padding: var(--space-2) var(--space-3); }
+#view-apps .apps-chip {
+  --chip: var(--text-dim);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--chip) 35%, transparent);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  color: var(--chip);
+  text-decoration: none;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  transition: border-color var(--duration-fast), background var(--duration-fast);
+}
+#view-apps a.apps-chip:hover { border-color: var(--chip); background: var(--surface-hover); }
+#view-apps .apps-chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--chip); }
+#view-apps .apps-chip.live { --chip: var(--green); }
+#view-apps .apps-chip.railway { --chip: var(--purple); }
+#view-apps .apps-chip.github { --chip: var(--text); }
+#view-apps .apps-chip.missing { opacity: .4; cursor: default; }
+
+/* ── Audit Log ─────────────────────────────────────────────── */
+
+#view-audits .audit-toolbar {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 190px 150px;
+  gap: var(--space-2);
+}
+#view-audits .audit-toolbar .ao-input,
+#view-audits .audit-toolbar .ao-select { height: var(--control-h-lg); }
+
+#view-audits .audit-log-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-3); }
+#view-audits .audit-count { color: var(--text-dim); font-size: var(--fs-sm); }
+#view-audits .audit-column-head,
+#view-audits .audit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(150px, .8fr) 190px;
+  gap: var(--space-5);
+  align-items: center;
+}
+#view-audits .audit-column-head {
+  min-height: 40px;
+  padding: 0 var(--space-4);
+  color: var(--text-dim);
+  font: 700 var(--fs-2xs) / 1 var(--font-mono);
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+#view-audits .audit-row {
+  min-height: 76px;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--border);
+  animation: hub-enter .34s ease both;
+  animation-delay: calc(var(--i) * 45ms);
+  transition: background var(--duration-fast);
+}
+#view-audits .audit-row:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); }
+#view-audits .project { min-width: 0; }
+#view-audits .project-name { display: block; color: var(--text-strong); font-size: var(--fs-lg); font-weight: 650; }
+#view-audits .project-note { display: block; overflow: hidden; margin-top: 5px; color: var(--text-dim); font-size: var(--fs-sm); white-space: nowrap; text-overflow: ellipsis; }
+#view-audits .audit-type { color: var(--text-quiet); font-size: var(--fs-md); }
+#view-audits .audit-status { display: block; margin-top: 6px; color: var(--accent); font-size: var(--fs-xs); line-height: 1.4; }
+#view-audits .timestamp { color: var(--text-dim); font: var(--fs-sm) / 1.45 var(--font-mono); }
+#view-audits .timestamp time { display: block; color: var(--text); }
+
+#view-audits .audit-details { grid-column: 1 / -1; padding: var(--space-1) 0 var(--space-2); color: var(--text-dim); font-size: var(--fs-sm); line-height: 1.65; }
+#view-audits .audit-details summary { cursor: pointer; color: var(--accent); font-weight: 650; }
+#view-audits .audit-details[open] { padding-top: var(--space-3); }
+#view-audits .audit-details h3 { color: var(--text-strong); font-size: var(--fs-sm); margin: var(--space-5) 0 6px; }
+#view-audits .audit-details p { margin: 6px 0; }
+#view-audits .audit-details ul { padding-left: var(--space-5); margin: 5px 0; }
+#view-audits .audit-details li { margin: 6px 0; }
+#view-audits .audit-details a { color: var(--accent); overflow-wrap: anywhere; }
+#view-audits .audit-details strong { color: var(--text-strong); }
+#view-audits .detail-body { border-top: 1px solid var(--border); margin-top: var(--space-3); padding-top: 6px; }
+
+@media (max-width: 700px) {
+  #view-ai-portal .portal-grid { grid-template-columns: 1fr; }
+  #view-apps .apps-card { align-items: stretch; }
+  #view-apps .apps-links { max-width: 46%; align-content: center; }
+  #view-audits .audit-toolbar { grid-template-columns: 1fr 1fr; }
+  #view-audits .audit-toolbar .ao-input { grid-column: 1 / -1; }
+  #view-audits .audit-column-head { display: none; }
+  #view-audits .audit-row { grid-template-columns: minmax(0, 1fr) auto; gap: 9px var(--space-4); padding: var(--space-4) var(--space-1); }
+  #view-audits .project, #view-audits .audit-type { grid-column: 1; }
+  #view-audits .timestamp { grid-column: 2; grid-row: 1 / span 2; text-align: right; }
+}
+@media (max-width: 430px) {
+  #view-audits .audit-toolbar { grid-template-columns: 1fr; }
+  #view-audits .audit-toolbar .ao-input { grid-column: auto; }
+  #view-audits .audit-row { grid-template-columns: 1fr; }
+  #view-audits .timestamp { grid-column: 1; grid-row: auto; text-align: left; }
+  #view-audits .project-note { white-space: normal; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hub-page, .hub-page * { animation: none !important; transition: none !important; }
+}
