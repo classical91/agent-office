@@ -86,7 +86,18 @@
       .calendar-compact-board .calendar-nav-btn {
         padding-left: 8px !important;
         padding-right: 8px !important;
-        letter-spacing: 0.08em !important;
+      }
+
+      /* The sync status keeps its dot and gives its words to the nav buttons,
+         which it otherwise pushes off the toolbar. */
+      .calendar-compact-board .calendar-sync-chip {
+        flex: none !important;
+        width: 30px !important;
+        height: 30px !important;
+        padding: 0 !important;
+        gap: 0 !important;
+        justify-content: center !important;
+        font-size: 0 !important;
       }
 
       .calendar-compact-board .calendar-month-grid {
