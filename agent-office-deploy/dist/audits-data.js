@@ -1,6 +1,201 @@
 /* Structured audit history. Append new weekly records; preserve older entries. */
 window.AUDITS = [
   {
+    "id": "weekly-2026-11-01-farm-bot",
+    "project": "FarmBot",
+    "type": "Weekly repository audit",
+    "auditedAt": "2026-11-01",
+    "note": "At risk · selected X-link timed publishing restored and keyed queue-ID collision protection improved; persistent-storage and cross-path scheduling safeguards remain open.",
+    "overallStatus": "At risk — production not verified",
+    "repository": "classical91/farm-bot",
+    "defaultBranch": "main",
+    "commit": "5f13c5bd95b3af69b4dde406ec82b0b981a8a9ee",
+    "scope": "25 accessible repositories inventoried. Focused source review of FarmBot main, recent X-link changes, queue persistence, identity and scheduling, authentication, tests, CI, and previous audit. Agent Office now owns audit data; Main Hub redirects /audits.html there. Live Railway database, credentials and publication receipts were not accessible.",
+    "priorityRanking": [
+      {
+        "repository": "classical91/farm-bot",
+        "priority": "P1",
+        "reason": "Automated X/Telegram publishing and newly restored timed X-link intake; unresolved queue durability, identity and scheduling risks; seven commits on Oct 30 since the prior audited commit."
+      },
+      {
+        "repository": "classical91/agent-office",
+        "priority": "P1",
+        "reason": "Production orchestration and security surface; Audit Log moved here Oct 29 and now owns audit history; latest CI passed."
+      },
+      {
+        "repository": "classical91/market-dashboard",
+        "priority": "P1",
+        "reason": "Market-data integrity and Oct 30 change coupled to FarmClaw selected X-link timers."
+      },
+      {
+        "repository": "classical91/main-hub",
+        "priority": "P1",
+        "reason": "Central dashboard and redirects to the Agent Office Audit Log; rapid Oct 29–31 feature changes."
+      },
+      {
+        "repository": "classical91/flashcards",
+        "priority": "P2",
+        "reason": "Active Oct 31 UX changes; lower production blast radius than publishing/agent systems."
+      },
+      {
+        "repository": "classical91/diet-plan",
+        "priority": "P2",
+        "reason": "Oct 25 supplement-calendar changes; check integration and data persistence in a future pass."
+      },
+      {
+        "repository": "classical91/spirituality",
+        "priority": "P2",
+        "reason": "Oct 23 site-audit changes; follow up if deployment or checks regress."
+      },
+      {
+        "repository": "classical91/traderclaw",
+        "priority": "P2",
+        "reason": "Trading automation is sensitive to data integrity; no new default-branch commit since Sep 18 in checked history."
+      },
+      {
+        "repository": "classical91/webclaw-service-hub",
+        "priority": "P2",
+        "reason": "Service automation; lower recent activity in checked history."
+      },
+      {
+        "repository": "classical91/Rank-Forge",
+        "priority": "P3",
+        "reason": "Older and limited activity; defer absent new deployment or failures."
+      }
+    ],
+    "findings": {
+      "critical": [],
+      "high": [
+        {
+          "id": "FB-01-H1",
+          "classification": "Verified code risk; production configuration requires verification",
+          "summary": "General API still selects MemoryFarmbotRepository when getPrismaClient returns null, including missing DATABASE_URL or Prisma construction failure. /health always returns ok, /ready advertises a hard-coded memory adapter, and the API Railway healthcheck targets /health.",
+          "evidence": "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/app.ts",
+          "impact": "A misconfigured deployment can accept queue writes that disappear on restart without failing its configured healthcheck."
+        },
+        {
+          "id": "FB-01-H2",
+          "classification": "Verified remaining code path; production collision unconfirmed",
+          "summary": "Keyed generic queue inserts now allocate a free ID and are covered by a real-Postgres collision test. However, createUiQueueItem without idempotencyKey still calls insertUiQueueItem, which uses upsert({where:{id}}) and can replace an unrelated existing row on ID reuse.",
+          "evidence": "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/repositories/prisma-repository.ts",
+          "impact": "Keyless callers with colliding IDs may overwrite a queued post or reset its dispatch state; scope depends on which active intake paths omit keys."
+        }
+      ],
+      "medium": [
+        {
+          "id": "FB-01-M1",
+          "classification": "Verified missing shared lock; concurrency outcome requires database test",
+          "summary": "News-batch schedule holds 'news-schedule-manual'; newly restored X-link timed enqueue holds 'news-create-stories'; generic queue insertion holds neither. All book slots from the same manual lane, so simultaneous intakes can select overlapping dispatch times.",
+          "evidence": "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/services/farmclaw-x-links.ts"
+        },
+        {
+          "id": "FB-01-M2",
+          "classification": "Likely cross-source duplication gap",
+          "summary": "X-link intake now checks existing generic queue URLs and selected news batches, but NewsBatches.create checks other news batches and X-link receipts, not all generic queue URLs. Cross-source duplicate policy is asymmetric.",
+          "evidence": "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/services/news-batches.ts"
+        },
+        {
+          "id": "FB-01-M3",
+          "classification": "Assumption requiring verification",
+          "summary": "Actual Railway DATABASE_URL, applied migrations, dispatch worker ownership, X/Telegram credentials and end-to-end approval-to-delivery receipts could not be checked. A green CI run is not proof of production delivery.",
+          "evidence": "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/railway.json"
+        }
+      ],
+      "low": [
+        {
+          "id": "FB-01-L1",
+          "classification": "Recommendation; performance unmeasured",
+          "summary": "News batch list history uses per-batch transactions; measure latency before optimizing. No performance regression confirmed.",
+          "evidence": "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/services/news-batches.ts"
+        }
+      ]
+    },
+    "brokenOrIncomplete": [
+      "No live publishing outage verified. Production fail-closed storage and readiness are incomplete in source.",
+      "Manual-lane slot allocation is not serialized across X-link, approved news-batch and generic queue paths.",
+      "Cross-source duplicate protection and keyless queue identity handling remain incomplete."
+    ],
+    "previousFindings": [
+      {
+        "finding": "General queue memory fallback and misleading readiness",
+        "status": "Still open",
+        "detail": "app.ts still chooses MemoryFarmbotRepository when Prisma is unavailable; /health and /ready do not validate persistent storage."
+      },
+      {
+        "finding": "Generic queue ID collision overwrite",
+        "status": "Improved",
+        "detail": "Keyed intake collision now allocates an unused ID, with a real-Postgres regression test. Keyless intake still uses upsert by caller-supplied ID."
+      },
+      {
+        "finding": "Manual queue scheduling concurrency",
+        "status": "Still open",
+        "detail": "New X-link timed enqueue uses a different advisory lock from approved news-batch scheduling; generic queue insertion has neither."
+      },
+      {
+        "finding": "Cross-batch news article duplicates",
+        "status": "Improved",
+        "detail": "Canonical cross-batch news check remains; X-link enqueue adds queue/receipt checks. Full cross-source symmetry is not established."
+      },
+      {
+        "finding": "Retired FarmClaw direct queue helper",
+        "status": "No longer relevant",
+        "detail": "Legacy queue-x-link.mjs still rejects direct queueing; the new scoped /farmclaw/v1/x-links route is a different, reviewed timed-intake flow."
+      },
+      {
+        "finding": "Approval receipt and queue integrity guards",
+        "status": "Improved",
+        "detail": "Database-backed approval checks and protected news-batch routes remain; no live Railway approval/delivery verification."
+      }
+    ],
+    "fixedIssues": [
+      "Keyed generic queue ID collision is addressed in source with free-ID allocation and a real-Postgres test (keyless case remains open).",
+      "Selected FarmClaw X links again enter a timed queue through a scoped route with durable receipts; Oct 30 CI passed. Live delivery not independently verified.",
+      "Audit Log ownership moved from Main Hub to Agent Office, and Main Hub now issues a redirect; all eight prior audit records remain in structured data."
+    ],
+    "outstandingIssues": [
+      "Production API memory fallback and false-positive readiness",
+      "Keyless generic queue ID collision overwrite",
+      "Shared manual-lane scheduling lock across all intake paths",
+      "Asymmetric cross-source URL deduplication",
+      "Live Railway configuration and X/Telegram delivery smoke test"
+    ],
+    "recommendedFixes": [
+      "1. Fail closed when production PostgreSQL is missing or unusable; implement a real /ready DB probe and point Railway healthcheck to /ready.",
+      "2. Remove upsert-on-ID-collision for keyless generic queue creation; assign collision-safe server IDs or reject duplicates and test both keyed/keyless concurrent cases.",
+      "3. Use one shared transaction-level manual-lane scheduling lock for generic queue, X-link timed enqueue and approved news batches; test simultaneous connections.",
+      "4. Centralize canonical URL duplicate checks across news-batch, X-link and generic queue intakes with a documented retention window.",
+      "5. Run a controlled production smoke test for durable queue after restart, migration status, timers, X publication and Telegram receipts."
+    ],
+    "quickWins": [
+      "Add a test asserting /ready rejects memory mode in production.",
+      "Add a keyless same-ID collision regression test before changing upsert behavior.",
+      "Assert X-link and approved news-batch timers never overlap under concurrent Postgres writes."
+    ],
+    "thisWeeksFocus": [
+      "Make production queue storage fail closed and readiness truthful.",
+      "Finish keyless queue ID collision safety.",
+      "Serialize all manual-lane scheduling paths and test concurrency."
+    ],
+    "safeToDefer": [
+      "History-query optimization until measured latency justifies it.",
+      "Cosmetic UI changes unrelated to queue reliability."
+    ],
+    "checks": [
+      "FarmBot main CI succeeded on 2026-10-30 for commit 5f13c5bd (GitHub Actions run 41141939688); includes frontend and API checks with Postgres in CI.",
+      "Agent Office master CI succeeded on 2026-10-29 for commit 52ff09d (GitHub Actions run 40912347985).",
+      "Inspected FarmBot main and recent X-link changes; no new FarmBot tests or live Railway delivery checks were executed in this audit.",
+      "Main Hub source redirects /audits.html to Agent Office; external live URL verification was unavailable."
+    ],
+    "references": [
+      "https://github.com/classical91/farm-bot/actions/runs/41141939688",
+      "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/app.ts",
+      "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/repositories/prisma-repository.ts",
+      "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/services/farmclaw-x-links.ts",
+      "https://github.com/classical91/agent-office/blob/master/agent-office-deploy/dist/audits-data.js",
+      "https://github.com/classical91/main-hub/blob/main/server.js"
+    ]
+  },
+  {
     "id": "weekly-2026-10-25-farm-bot",
     "project": "FarmBot",
     "type": "Weekly repository audit",
