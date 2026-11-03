@@ -199,8 +199,12 @@ html.ao-focus .calendar-compact-board .calendar-toolbar { padding-left: 88px !im
   left: 0;
   right: 0;
   border-radius: 0 0 14px 14px;
+  background: var(--panel, #0f172a);
   box-shadow: 0 16px 34px rgba(2, 6, 23, 0.55);
 }
+/* In focus the bar drops over the toolbar, where the fixed focus rail sits, so
+   it makes the same room for the rail as the toolbar does. */
+html.ao-focus .calendar-connection-bar.is-open { padding-left: 88px; }
 #view-calendar-v3 { position: relative; }
 #view-calendar-v3,
 #calendar-app,
