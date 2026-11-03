@@ -4473,6 +4473,23 @@ const wellnessGoogleApi = {
 let wellnessSyncRunning = null;
 let lastWellnessSync = null;
 
+// Which sources are paused, from one app_settings row. Survives restarts and
+// redeploys, unlike CALENDAR_WELLNESS_SYNC_INTERVAL_MS, and pauses one source
+// without the other.
+async function loadWellnessPause(storage) {
+  return wellnessSync.normalizePause(await storage.getAppSetting(wellnessSync.PAUSE_STORAGE_KEY));
+}
+
+async function saveWellnessPause(storage, pause) {
+  const normalized = wellnessSync.normalizePause(pause);
+  if (normalized.workout || normalized.meals) {
+    await storage.setAppSetting(wellnessSync.PAUSE_STORAGE_KEY, JSON.stringify(normalized));
+  } else {
+    await storage.deleteAppSetting(wellnessSync.PAUSE_STORAGE_KEY);
+  }
+  return normalized;
+}
+
 /**
  * One pass of the workout and meal sync, or the reason it did not run. Calls
  * that land while a pass is running share it rather than starting a second.
@@ -4485,6 +4502,11 @@ function runWellnessGoogleSync() {
       lastWellnessSync = { ranAt: new Date().toISOString(), skipped: 'Neither the Wellness Tracker nor Nutri-Mind is configured.' };
       return lastWellnessSync;
     }
+    const paused = await loadWellnessPause(await storageReady);
+    if (!(config.workout.ok && !paused.workout) && !(config.meals.ok && !paused.meals)) {
+      lastWellnessSync = { ranAt: new Date().toISOString(), skipped: 'Sync to Google is paused.', paused };
+      return lastWellnessSync;
+    }
     if (!(await isGcalConnected())) {
       lastWellnessSync = { ranAt: new Date().toISOString(), skipped: 'Google Calendar is not connected.' };
       return lastWellnessSync;
@@ -4494,6 +4516,7 @@ function runWellnessGoogleSync() {
         readWellness: range => wellnessReader.read({ ...range, deployed: IS_DEPLOYED }),
         api: wellnessGoogleApi,
         timeZone: process.env.TZ,
+        paused,
       });
     } catch (error) {
       lastWellnessSync = { ranAt: new Date().toISOString(), error: (error && error.message) || 'Sync failed.' };
@@ -7609,8 +7632,37 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 200, {
         ...(await wellnessReader.read({ from: range.from, to: range.to, now, deployed: IS_DEPLOYED })),
         timezone: process.env.TZ,
-        googleSync: { auto: WELLNESS_SYNC_INTERVAL_MS > 0, intervalMs: WELLNESS_SYNC_INTERVAL_MS, last: lastWellnessSync },
+        googleSync: {
+          auto: WELLNESS_SYNC_INTERVAL_MS > 0,
+          intervalMs: WELLNESS_SYNC_INTERVAL_MS,
+          paused: await loadWellnessPause(storage),
+          last: lastWellnessSync,
+        },
       });
+      return;
+    }
+
+    // Pause or resume writing workouts and/or meals into Google. A paused
+    // source's events are left as they are; nothing is created, changed or
+    // deleted for it until it is resumed. Fields left out keep their state.
+    if (req.method === 'PUT' && pathname === '/api/calendar/wellness/sync/pause') {
+      if (!requireDropsAuth(res, req)) return;
+      const input = await readJsonBody(req);
+      if (!input || typeof input !== 'object' || Array.isArray(input)) {
+        sendJson(res, 400, { error: 'Send { "workout": true|false, "meals": true|false }.' });
+        return;
+      }
+      const current = await loadWellnessPause(storage);
+      const next = { ...current };
+      for (const key of ['workout', 'meals']) {
+        if (!(key in input)) continue;
+        if (typeof input[key] !== 'boolean') {
+          sendJson(res, 400, { error: `${key} must be true or false.` });
+          return;
+        }
+        next[key] = input[key];
+      }
+      sendJson(res, 200, { paused: await saveWellnessPause(storage, next) });
       return;
     }
 

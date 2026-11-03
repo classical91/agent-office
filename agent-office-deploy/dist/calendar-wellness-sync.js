@@ -28,6 +28,10 @@
 //
 // Days before today are never touched, so last week's events stay as a record.
 //
+// Either source can be paused (`paused: { workout, meals }`, kept in one
+// app_settings row by the server). A paused source is left exactly as it is in
+// Google: nothing of it is created, rewritten or deleted until it is resumed.
+//
 // Everything is driven through an injected `api` (list / create / patch /
 // remove), so the whole pass can be run against a fake Google in tests.
 
@@ -45,6 +49,24 @@ const COLOR_IDS = { workout: '10', meal: '5' };
 const EVENT_TYPES = { workout: 'task', meal: 'reminder' };
 // The source each kind comes from, as calendar-wellness.js reports them.
 const SOURCE_OF = { workout: 'workout', meal: 'meals' };
+// The app_settings row holding which sources are paused.
+const PAUSE_STORAGE_KEY = 'calendar.wellnessSync.paused';
+const PAUSABLE = ['workout', 'meals'];
+
+/** `{ workout, meals }` as booleans, from whatever was stored or sent. */
+function normalizePause(value) {
+  let input = value;
+  if (typeof input === 'string') {
+    try {
+      input = JSON.parse(input);
+    } catch (error) {
+      input = null;
+    }
+  }
+  const pause = {};
+  PAUSABLE.forEach(key => { pause[key] = Boolean(input && typeof input === 'object' && input[key] === true); });
+  return pause;
+}
 
 function startOfDay(date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -143,11 +165,15 @@ function kindOfKey(key) {
  * @param {object} options.sources  How each source answered: `{ workout, meals }`.
  * @param {Array}  options.existing Google events tagged `aoSource: wellness` in the window.
  * @param {string} options.timeZone
+ * @param {object} [options.paused] `{ workout, meals }`; a paused source is not touched.
  */
-function planSync({ items, sources, existing, timeZone }) {
+function planSync({ items, sources, existing, timeZone, paused }) {
+  const pause = normalizePause(paused);
+  const isPaused = kind => Boolean(pause[SOURCE_OF[kind]]);
   const desired = new Map();
   (Array.isArray(items) ? items : []).forEach(item => {
     if (!item || !item.id || !item.at || desired.has(item.id)) return;
+    if (isPaused(item.source)) return;
     desired.set(item.id, eventFor(item, timeZone));
   });
 
@@ -160,6 +186,8 @@ function planSync({ items, sources, existing, timeZone }) {
     const tags = privateOf(event);
     if (tags.aoSource !== SOURCE_TAG || !event.id) return;
     const key = tags.aoWellnessKey;
+    // Paused: its events stay exactly as they are, duplicates included.
+    if (isPaused(kindOfKey(key))) return;
     const want = desired.get(key);
     if (!want) {
       // Gone from its app. Only a source that answered may take an event away.
@@ -194,8 +222,9 @@ function planSync({ items, sources, existing, timeZone }) {
  * @param {object} options.api  `{ list({timeMin, timeMax}), create(body), patch(id, body), remove(id) }`
  * @param {Date}   [options.now]
  * @param {string} [options.timeZone]
+ * @param {object} [options.paused] `{ workout, meals }`; a paused source is not touched.
  */
-async function runWellnessSync({ readWellness, api, now = new Date(), timeZone }) {
+async function runWellnessSync({ readWellness, api, now = new Date(), timeZone, paused }) {
   const window = syncWindow(now);
   const wellness = await readWellness({ from: window.from, to: window.to, now });
   const existing = await api.list({ timeMin: window.from.toISOString(), timeMax: window.to.toISOString() });
@@ -206,6 +235,7 @@ async function runWellnessSync({ readWellness, api, now = new Date(), timeZone }
     sources: wellness.sources,
     existing,
     timeZone,
+    paused,
   });
 
   const result = { created: 0, updated: 0, deleted: 0, failed: 0, errors: [] };
@@ -228,6 +258,7 @@ async function runWellnessSync({ readWellness, api, now = new Date(), timeZone }
     from: window.from.toISOString(),
     to: window.to.toISOString(),
     sources: wellness.sources,
+    paused: normalizePause(paused),
     items: (wellness.items || []).length,
     ...result,
   };
@@ -235,8 +266,10 @@ async function runWellnessSync({ readWellness, api, now = new Date(), timeZone }
 
 module.exports = {
   HORIZON_DAYS,
+  PAUSE_STORAGE_KEY,
   SOURCE_TAG,
   eventFor,
+  normalizePause,
   planSync,
   runWellnessSync,
   syncWindow,

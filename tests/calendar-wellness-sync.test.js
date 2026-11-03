@@ -239,6 +239,54 @@ test('one failed write is reported without stopping the rest', async () => {
   assert.match(result.errors[0], /meal:2026-10-14:morning: Rate Limit Exceeded/);
 });
 
+test('a paused source is left exactly as it is in Google', async () => {
+  const google = fakeGoogle();
+  await run(google, [workout('2026-10-14'), meal('2026-10-14', 'night', 'Fresh Appetizers')]);
+  const before = byKey(google);
+
+  // Meals paused: tonight's dinner is changed and tomorrow's is new, but
+  // neither reaches Google. The workout keeps syncing.
+  const result = await wellnessSync.runWellnessSync({
+    readWellness: async () => ({
+      items: [
+        workout('2026-10-14', { title: 'Cardio · Intervals' }),
+        meal('2026-10-14', 'night', 'Salmon Bowl'),
+        meal('2026-10-15', 'morning', 'Oats'),
+      ],
+      sources: { workout: OK, meals: OK },
+    }),
+    api: google.api,
+    now: NOW,
+    timeZone: TZ,
+    paused: { meals: true },
+  });
+  assert.deepEqual(result.paused, { workout: false, meals: true });
+  assert.equal(result.created, 0);
+  assert.equal(result.updated, 1);
+  const after = byKey(google);
+  assert.equal(after.get('meal:2026-10-14:night').summary, before.get('meal:2026-10-14:night').summary);
+  assert.ok(!after.has('meal:2026-10-15:morning'));
+  assert.match(after.get('workout:2026-10-14').summary, /Intervals/);
+
+  // Paused meals are not deleted when they leave the plan either.
+  await wellnessSync.runWellnessSync({
+    readWellness: async () => ({ items: [], sources: { workout: OK, meals: OK } }),
+    api: google.api,
+    now: NOW,
+    timeZone: TZ,
+    paused: JSON.stringify({ meals: true }),
+  });
+  const last = byKey(google);
+  assert.ok(last.has('meal:2026-10-14:night'));
+  assert.ok(!last.has('workout:2026-10-14'));
+});
+
+test('stored pause values are read defensively', () => {
+  assert.deepEqual(wellnessSync.normalizePause(null), { workout: false, meals: false });
+  assert.deepEqual(wellnessSync.normalizePause('not json'), { workout: false, meals: false });
+  assert.deepEqual(wellnessSync.normalizePause({ meals: 'yes', workout: true }), { workout: true, meals: false });
+});
+
 test('workout length comes from its items, within sensible bounds', () => {
   assert.equal(wellnessSync.workoutMinutes([{ detail: '30 min' }, { detail: '10 min' }]), 40);
   assert.equal(wellnessSync.workoutMinutes([{ detail: '5–10 min' }]), 10);
@@ -296,4 +344,30 @@ test('POST /api/calendar/wellness/sync is private and says why it did not run', 
   const layer = await (await fetch(`${server.origin}/api/calendar/wellness`, { headers: { Cookie: cookie } })).json();
   assert.equal(layer.googleSync.auto, true);
   assert.equal(layer.googleSync.last.skipped, 'Google Calendar is not connected.');
+  assert.deepEqual(layer.googleSync.paused, { workout: false, meals: false });
+
+  const pauseUrl = `${server.origin}/api/calendar/wellness/sync/pause`;
+  const put = body => fetch(pauseUrl, {
+    method: 'PUT',
+    headers: { Cookie: cookie, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  assert.equal((await fetch(pauseUrl, { method: 'PUT', body: '{"workout":true}' })).status, 401);
+  assert.equal((await put({ workout: 'yes' })).status, 400);
+
+  const paused = await put({ workout: true });
+  assert.equal(paused.status, 200);
+  assert.deepEqual((await paused.json()).paused, { workout: true, meals: false });
+
+  // The only configured source is paused, so the pass does not run at all.
+  const skipped = await (await fetch(`${server.origin}/api/calendar/wellness/sync`, { method: 'POST', headers: { Cookie: cookie } })).json();
+  assert.equal(skipped.skipped, 'Sync to Google is paused.');
+  const reread = await (await fetch(`${server.origin}/api/calendar/wellness`, { headers: { Cookie: cookie } })).json();
+  assert.deepEqual(reread.googleSync.paused, { workout: true, meals: false });
+
+  // Resuming one field leaves the others as they were.
+  assert.deepEqual((await (await put({ meals: true })).json()).paused, { workout: true, meals: true });
+  assert.deepEqual((await (await put({ workout: false, meals: false })).json()).paused, { workout: false, meals: false });
+  const resumed = await (await fetch(`${server.origin}/api/calendar/wellness/sync`, { method: 'POST', headers: { Cookie: cookie } })).json();
+  assert.equal(resumed.skipped, 'Google Calendar is not connected.');
 });
