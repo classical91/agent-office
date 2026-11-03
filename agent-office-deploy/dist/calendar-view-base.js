@@ -1797,7 +1797,11 @@
         + '</button>'
         + '</div>';
     }).join('');
-    return '<div class="calendar-month-grid">' + dayNames + cells + '</div>';
+    // The week holding today gets a taller row (see calendar-v3.html), so the
+    // day you most need to read shows its whole list instead of "+N more".
+    const todayIndex = days.findIndex(day => sameDay(day, state.today));
+    const todayRow = todayIndex >= 0 ? ' data-today-row="' + Math.floor(todayIndex / 7) + '"' : '';
+    return '<div class="calendar-month-grid"' + todayRow + '>' + dayNames + cells + '</div>';
   }
 
   // How many pills fit in a month cell depends on the row height, which is a

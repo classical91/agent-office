@@ -824,6 +824,21 @@
   text-overflow: ellipsis;
 }
 
+/* Today's titles get two lines instead of an ellipsis: it is the one day you
+   read in full rather than skim. */
+.calendar-month-cell.is-today .calendar-event.small {
+  align-items: flex-start;
+}
+
+.calendar-month-cell.is-today .calendar-event.small .calendar-event-title {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+
 .calendar-event-meta {
   display: block;
   margin-top: 4px;
