@@ -239,46 +239,48 @@ test('one failed write is reported without stopping the rest', async () => {
   assert.match(result.errors[0], /meal:2026-10-14:morning: Rate Limit Exceeded/);
 });
 
-test('a paused source is left exactly as it is in Google', async () => {
-  const google = fakeGoogle();
-  await run(google, [workout('2026-10-14'), meal('2026-10-14', 'night', 'Fresh Appetizers')]);
-  const before = byKey(google);
-
-  // Meals paused: tonight's dinner is changed and tomorrow's is new, but
-  // neither reaches Google. The workout keeps syncing.
-  const result = await wellnessSync.runWellnessSync({
-    readWellness: async () => ({
-      items: [
-        workout('2026-10-14', { title: 'Cardio · Intervals' }),
-        meal('2026-10-14', 'night', 'Salmon Bowl'),
-        meal('2026-10-15', 'morning', 'Oats'),
-      ],
-      sources: { workout: OK, meals: OK },
-    }),
+test('pausing a source takes its events off Google from today on, and resuming puts them back', async () => {
+  const google = fakeGoogle([
+    // Yesterday's workout: before the window, so a record that stays.
+    {
+      id: 'old',
+      summary: 'Yesterday',
+      start: { dateTime: new Date('2026-10-13T17:30:00-07:00').toISOString() },
+      end: { dateTime: new Date('2026-10-13T18:00:00-07:00').toISOString() },
+      extendedProperties: { private: { aoSource: 'wellness', aoWellnessKey: 'workout:2026-10-13', aoWellnessHash: 'x' } },
+    },
+  ]);
+  const plan = [
+    workout('2026-10-14'),
+    workout('2026-10-15'),
+    meal('2026-10-14', 'night', 'Fresh Appetizers'),
+  ];
+  const pass = paused => wellnessSync.runWellnessSync({
+    readWellness: async () => ({ items: plan, sources: { workout: OK, meals: OK } }),
     api: google.api,
     now: NOW,
     timeZone: TZ,
-    paused: { meals: true },
+    paused,
   });
-  assert.deepEqual(result.paused, { workout: false, meals: true });
+  await pass();
+  assert.equal(byKey(google).size, 4);
+
+  // Workouts paused: every one from today on goes, even though the plan still
+  // has them. Meals and yesterday's record are untouched.
+  const result = await pass({ workout: true });
+  assert.deepEqual(result.paused, { workout: true, meals: false });
+  assert.equal(result.deleted, 2);
   assert.equal(result.created, 0);
-  assert.equal(result.updated, 1);
-  const after = byKey(google);
-  assert.equal(after.get('meal:2026-10-14:night').summary, before.get('meal:2026-10-14:night').summary);
-  assert.ok(!after.has('meal:2026-10-15:morning'));
-  assert.match(after.get('workout:2026-10-14').summary, /Intervals/);
+  assert.deepEqual(Array.from(byKey(google).keys()).sort(), ['meal:2026-10-14:night', 'workout:2026-10-13']);
 
-  // Paused meals are not deleted when they leave the plan either.
-  await wellnessSync.runWellnessSync({
-    readWellness: async () => ({ items: [], sources: { workout: OK, meals: OK } }),
-    api: google.api,
-    now: NOW,
-    timeZone: TZ,
-    paused: JSON.stringify({ meals: true }),
-  });
-  const last = byKey(google);
-  assert.ok(last.has('meal:2026-10-14:night'));
-  assert.ok(!last.has('workout:2026-10-14'));
+  // Still paused: nothing comes back on the next pass, and a stored string works.
+  const again = await pass(JSON.stringify({ workout: true }));
+  assert.equal(again.created + again.deleted + again.updated, 0);
+
+  // Resumed: the week is written back.
+  const resumed = await pass({ workout: false });
+  assert.equal(resumed.created, 2);
+  assert.ok(byKey(google).has('workout:2026-10-15'));
 });
 
 test('stored pause values are read defensively', () => {
@@ -357,11 +359,11 @@ test('POST /api/calendar/wellness/sync is private and says why it did not run', 
 
   const paused = await put({ workout: true });
   assert.equal(paused.status, 200);
-  assert.deepEqual((await paused.json()).paused, { workout: true, meals: false });
+  const pausedBody = await paused.json();
+  assert.deepEqual(pausedBody.paused, { workout: true, meals: false });
+  // Pausing runs a pass straight away, which says why it could not reach Google.
+  assert.equal(pausedBody.sync.skipped, 'Google Calendar is not connected.');
 
-  // The only configured source is paused, so the pass does not run at all.
-  const skipped = await (await fetch(`${server.origin}/api/calendar/wellness/sync`, { method: 'POST', headers: { Cookie: cookie } })).json();
-  assert.equal(skipped.skipped, 'Sync to Google is paused.');
   const reread = await (await fetch(`${server.origin}/api/calendar/wellness`, { headers: { Cookie: cookie } })).json();
   assert.deepEqual(reread.googleSync.paused, { workout: true, meals: false });
 

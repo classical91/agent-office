@@ -4502,11 +4502,8 @@ function runWellnessGoogleSync() {
       lastWellnessSync = { ranAt: new Date().toISOString(), skipped: 'Neither the Wellness Tracker nor Nutri-Mind is configured.' };
       return lastWellnessSync;
     }
+    // A paused source still gets a pass: it is what takes its events off.
     const paused = await loadWellnessPause(await storageReady);
-    if (!(config.workout.ok && !paused.workout) && !(config.meals.ok && !paused.meals)) {
-      lastWellnessSync = { ranAt: new Date().toISOString(), skipped: 'Sync to Google is paused.', paused };
-      return lastWellnessSync;
-    }
     if (!(await isGcalConnected())) {
       lastWellnessSync = { ranAt: new Date().toISOString(), skipped: 'Google Calendar is not connected.' };
       return lastWellnessSync;
@@ -7642,9 +7639,11 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // Pause or resume writing workouts and/or meals into Google. A paused
-    // source's events are left as they are; nothing is created, changed or
-    // deleted for it until it is resumed. Fields left out keep their state.
+    // Pause or resume workouts and/or meals on the calendar. Pausing deletes
+    // that source's Google events from today on and writes nothing new for it;
+    // resuming writes the week back. Either way a pass runs straight away, so
+    // the calendar changes now rather than in up to 15 minutes. Fields left out
+    // keep their state.
     if (req.method === 'PUT' && pathname === '/api/calendar/wellness/sync/pause') {
       if (!requireDropsAuth(res, req)) return;
       const input = await readJsonBody(req);
@@ -7662,7 +7661,13 @@ const server = http.createServer(async (req, res) => {
         }
         next[key] = input[key];
       }
-      sendJson(res, 200, { paused: await saveWellnessPause(storage, next) });
+      const saved = await saveWellnessPause(storage, next);
+      // A pass already under way read the old setting; let it finish, then
+      // run one that sees the new one.
+      if (wellnessSyncRunning) await wellnessSyncRunning.catch(() => {});
+      const sync = await runWellnessGoogleSync();
+      logWellnessSync(sync);
+      sendJson(res, 200, { paused: saved, sync });
       return;
     }
 

@@ -29,8 +29,9 @@
 // Days before today are never touched, so last week's events stay as a record.
 //
 // Either source can be paused (`paused: { workout, meals }`, kept in one
-// app_settings row by the server). A paused source is left exactly as it is in
-// Google: nothing of it is created, rewritten or deleted until it is resumed.
+// app_settings row by the server). Paused means "keep it off my calendar": the
+// source's events from today on are deleted and nothing new is written for it.
+// Past days are still never touched. Resuming writes the week back.
 //
 // Everything is driven through an injected `api` (list / create / patch /
 // remove), so the whole pass can be run against a fake Google in tests.
@@ -165,7 +166,7 @@ function kindOfKey(key) {
  * @param {object} options.sources  How each source answered: `{ workout, meals }`.
  * @param {Array}  options.existing Google events tagged `aoSource: wellness` in the window.
  * @param {string} options.timeZone
- * @param {object} [options.paused] `{ workout, meals }`; a paused source is not touched.
+ * @param {object} [options.paused] `{ workout, meals }`; a paused source's events are removed.
  */
 function planSync({ items, sources, existing, timeZone, paused }) {
   const pause = normalizePause(paused);
@@ -186,8 +187,11 @@ function planSync({ items, sources, existing, timeZone, paused }) {
     const tags = privateOf(event);
     if (tags.aoSource !== SOURCE_TAG || !event.id) return;
     const key = tags.aoWellnessKey;
-    // Paused: its events stay exactly as they are, duplicates included.
-    if (isPaused(kindOfKey(key))) return;
+    // Paused: taken off the calendar, whatever its app says.
+    if (isPaused(kindOfKey(key))) {
+      deletes.push({ id: event.id, key });
+      return;
+    }
     const want = desired.get(key);
     if (!want) {
       // Gone from its app. Only a source that answered may take an event away.
@@ -222,7 +226,7 @@ function planSync({ items, sources, existing, timeZone, paused }) {
  * @param {object} options.api  `{ list({timeMin, timeMax}), create(body), patch(id, body), remove(id) }`
  * @param {Date}   [options.now]
  * @param {string} [options.timeZone]
- * @param {object} [options.paused] `{ workout, meals }`; a paused source is not touched.
+ * @param {object} [options.paused] `{ workout, meals }`; a paused source's events are removed.
  */
 async function runWellnessSync({ readWellness, api, now = new Date(), timeZone, paused }) {
   const window = syncWindow(now);
