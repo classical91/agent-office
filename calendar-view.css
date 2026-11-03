@@ -599,6 +599,12 @@
   outline-offset: 2px;
 }
 
+/* The Planning Mode link sits in the toolbar as a button, not a text link. */
+.calendar-planning-link {
+  text-decoration: none;
+  text-transform: none;
+}
+
 /* Prev / next: bare chevrons, the way Google draws them. */
 .calendar-nav-btn.is-icon {
   width: 32px;

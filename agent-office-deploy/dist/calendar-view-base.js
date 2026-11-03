@@ -1742,6 +1742,7 @@
       + ['day', 'week', 'month', 'agenda'].map(view => '<button class="calendar-view-btn' + (state.view === view ? ' active' : '') + '" onclick="CAL.changeView(\'' + view + '\')">' + view + '</button>').join('')
       + '</div>'
       + syncIndicator()
+      + '<a class="calendar-nav-btn calendar-planning-link" href="/planning.html" title="Open Planning Mode">Planning Mode</a>'
       + '</div></div>';
   }
 
