@@ -306,7 +306,9 @@
     const time = Number.isNaN(at.getTime())
       ? ''
       : new Intl.DateTimeFormat('en-CA', { hour: 'numeric', minute: '2-digit' }).format(at);
-    const detail = (item.lines || []).map(line => line.text).join(' · ') || item.appLabel;
+    const detail = item.source === 'workout'
+      ? item.subtitle || item.appLabel
+      : (item.lines || []).map(line => line.text).join(' · ') || item.appLabel;
     return '<article class="calendar-mobile-day-event" style="--calendar-event-color:' + escapeHtml(item.color) + ';border-style:dashed;">'
       + '<span class="calendar-mobile-day-event-time">' + escapeHtml(time) + ' · ' + escapeHtml(item.label.toLowerCase()) + '</span>'
       + '<span class="calendar-mobile-day-event-title">' + escapeHtml(item.emoji + ' ' + item.title) + '</span>'

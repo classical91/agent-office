@@ -992,7 +992,7 @@
     return state.wellnessItems.filter(item => {
       if (synced.has(item.id) || isWellnessPaused(item)) return false;
       if (!term) return true;
-      return [item.title, item.label].concat((item.lines || []).map(line => line.text))
+      return [item.title, item.subtitle || '', item.label].concat((item.lines || []).map(line => line.text))
         .join(' ')
         .toLowerCase()
         .includes(term);
@@ -1049,7 +1049,7 @@
 
   function renderWellnessAgendaRow(item) {
     const detail = item.source === 'workout'
-      ? (item.lines || []).map(line => line.text).join(' · ')
+      ? item.subtitle || item.appLabel
       : item.appLabel;
     return '<button type="button" class="' + wellnessClasses('calendar-agenda-row calendar-countdown-row', item) + '"'
       + ' style="--countdown-color:' + escapeHtml(item.color) + ';"'
@@ -1213,6 +1213,7 @@
       + '<div class="calendar-countdown-detail-main">'
       + '<div class="calendar-detail-label">' + escapeHtml(item.emoji + ' ' + item.label) + '</div>'
       + '<div class="calendar-detail-title">' + escapeHtml(item.title) + '</div>'
+      + (item.subtitle ? '<div class="calendar-detail-meta">' + escapeHtml(item.subtitle) + '</div>' : '')
       + '<div class="calendar-detail-meta">' + escapeHtml(formatLongDate(at)) + ' · shown at ' + escapeHtml(formatTime(at)) + '</div>'
       + (lines ? '<ul class="calendar-wellness-lines">' + lines + '</ul>' : '')
       + '</div>'
