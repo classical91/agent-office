@@ -852,3 +852,47 @@ test('Mission Control imports an inventory through a preview and shows it as wor
   assert.ok(upcomingTop < sourcesTop, 'on a phone the workflows come before the source status');
   assert.deepEqual(problems, []);
 });
+
+// Pausing a source on the Workouts & meals bar takes its previews off the
+// Calendar too, and the pause chips are there with the previews switched off.
+test('pausing workouts or meals hides their previews, and needs no previews on', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  const { page } = await openPage(t);
+  const day = new Date();
+  day.setDate(day.getDate() + 1);
+  const at = hour => new Date(day.getFullYear(), day.getMonth(), day.getDate(), hour, 0).toISOString();
+  const item = (id, source, hour, title) => ({
+    id, source, title, label: source === 'meal' ? 'Night' : 'Workout', emoji: '•', at: at(hour),
+    lines: [], href: 'https://example.invalid/', appLabel: 'Test', color: '#22c55e',
+  });
+  let paused = { workout: false, meals: false };
+  await page.route('**/api/calendar/wellness?*', route => route.fulfill({
+    json: {
+      items: [item('workout:t', 'workout', 17, 'Strength'), item('meal:t:night', 'meal', 18, 'Pasta')],
+      sources: { workout: { state: 'ok' }, meals: { state: 'ok' } },
+      googleSync: { auto: true, intervalMs: 900000, paused, last: null },
+    },
+  }));
+  await page.route('**/api/calendar/wellness/sync/pause', async route => {
+    paused = { ...paused, ...route.request().postDataJSON() };
+    await route.fulfill({ json: { paused } });
+  });
+  // The previews start switched off.
+  await page.addInitScript(() => localStorage.setItem('ao-calendar-wellness', 'off'));
+  await page.goto(`${server.origin}/calendar-v3.html`, { waitUntil: 'domcontentloaded' });
+
+  const pauseWorkouts = page.getByRole('button', { name: /Pause workouts/ });
+  await pauseWorkouts.waitFor();
+  assert.equal(await page.locator('[data-wellness-id]').count(), 0, 'no previews while the layer is off');
+
+  await page.click('.calendar-wellness-toggle');
+  await page.locator('[data-wellness-id="workout:t"]').first().waitFor();
+  assert.ok(await page.locator('[data-wellness-id="meal:t:night"]').count() > 0);
+
+  await page.getByRole('button', { name: /Pause workouts/ }).click();
+  await page.getByRole('button', { name: /Resume workouts/ }).waitFor();
+  assert.deepEqual(paused, { workout: true, meals: false });
+  assert.equal(await page.locator('[data-wellness-id="workout:t"]').count(), 0, 'paused workouts are not previewed');
+  assert.ok(await page.locator('[data-wellness-id="meal:t:night"]').count() > 0, 'meals still are');
+});

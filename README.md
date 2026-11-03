@@ -286,7 +286,7 @@ All endpoints return JSON.
 | POST   | `/api/calendar/events/:id/run`    | Drive a block's agent run (session-authenticated) |
 | GET    | `/api/calendar/wellness`          | Workouts and planned meals for the range on screen, read from the Wellness Tracker and Nutri-Mind (session-authenticated) |
 | POST   | `/api/calendar/wellness/sync`     | Write this week's workouts and meals into Google Calendar now (session-authenticated) |
-| PUT    | `/api/calendar/wellness/sync/pause` | Pause or resume the Google sync per source: `{ "workout": bool, "meals": bool }` (session-authenticated) |
+| PUT    | `/api/calendar/wellness/sync/pause` | Pause (take off the calendar from today on) or resume workouts/meals: `{ "workout": bool, "meals": bool }` (session-authenticated) |
 | GET    | `/api/calendar/agent-timeline`    | Agent work grouped by agent (session-authenticated) |
 | GET    | `/api/calendar/preferences`       | Read scheduling preferences (session-authenticated) |
 | PUT    | `/api/calendar/preferences`       | Update scheduling preferences (session-authenticated) |
@@ -541,13 +541,14 @@ the six days after it:
 - days before today are never touched, so past events stay as a record;
 - an event deleted by hand in Google comes back on the next pass while the
   plan still has it — change the plan in its app instead.
-- **Pause meals** / **Pause workouts** on the layer bar stop that source
-  syncing (`PUT /api/calendar/wellness/sync/pause` with
-  `{ "meals": true }`, `{ "workout": false }`, …). A paused source's events are
-  left in Google exactly as they are: nothing is added, changed or deleted for
-  it until it is resumed, so delete any you no longer want by hand. The pause is
-  saved in `app_settings`, so it survives restarts and redeploys, and it covers
-  **Sync to Google now** too.
+- **Pause meals** / **Pause workouts** on the layer bar take that source off
+  the calendar (`PUT /api/calendar/wellness/sync/pause` with
+  `{ "meals": true }`, `{ "workout": false }`, …): its Google events from today
+  on are deleted straight away, its previews on this Calendar are hidden, and
+  nothing new is written for it while it is paused. Past days are kept as a
+  record. **Resume** writes the week back. The buttons show whether or not the
+  previews are switched on, and the pause is saved in `app_settings`, so it
+  survives restarts and redeploys.
 
 Once an item is in Google it arrives on this Calendar as an ordinary event, and
 the layer stops drawing its own marker for it, so nothing is shown twice.

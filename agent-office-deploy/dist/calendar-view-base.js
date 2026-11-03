@@ -882,7 +882,7 @@
       return;
     }
     loadCountdowns(true);
-    if (state.showWellness) loadWellness(true);
+    loadWellness(true);
   }
 
   // The time-left labels move in place; nothing else on the board re-renders.
@@ -976,6 +976,13 @@
     return keys;
   }
 
+  // Paused means "keep this off my calendar": its previews go too, not only
+  // its writes to Google.
+  function isWellnessPaused(item) {
+    const paused = (state.wellnessGoogleSync && state.wellnessGoogleSync.paused) || {};
+    return item.source === 'meal' ? Boolean(paused.meals) : Boolean(paused.workout);
+  }
+
   function visibleWellness() {
     if (!state.showWellness) return [];
     if (WELLNESS_LANES.indexOf(state.lane) === -1) return [];
@@ -983,7 +990,7 @@
     const term = state.search.trim().toLowerCase();
     const synced = syncedWellnessKeys();
     return state.wellnessItems.filter(item => {
-      if (synced.has(item.id)) return false;
+      if (synced.has(item.id) || isWellnessPaused(item)) return false;
       if (!term) return true;
       return [item.title, item.label].concat((item.lines || []).map(line => line.text))
         .join(' ')
@@ -1089,6 +1096,9 @@
       } else {
         body = wellnessSourceNotes() + renderWellnessGoogleSync();
       }
+    } else if (state.wellnessStatus === 'ready') {
+      // Pausing should not need the previews switched on first.
+      body = renderWellnessPauseChips();
     }
     return toggle + body;
   }
@@ -1111,26 +1121,31 @@
     const paused = info.paused || {};
     const isError = Boolean(last && (last.error || last.failed));
     const allPaused = Boolean(paused.workout && paused.meals);
-    // One chip per source: pressed means its Google sync is paused.
-    const pauseChips = Object.keys(WELLNESS_SOURCE_LABELS).map(key => {
+    return '<span class="calendar-countdown-status' + (isError ? ' is-error' : '') + '">' + escapeHtml(wellnessSyncSummary(last)) + '</span>'
+      + '<button type="button" class="calendar-lane-chip" onclick="CAL.syncWellnessToGoogle()"' + (state.wellnessSyncing || allPaused ? ' disabled' : '') + '>'
+      + (state.wellnessSyncing ? 'Syncing…' : 'Sync to Google now')
+      + '</button>'
+      + renderWellnessPauseChips();
+  }
+
+  // One chip per source: pressed means it is paused.
+  function renderWellnessPauseChips() {
+    const paused = (state.wellnessGoogleSync && state.wellnessGoogleSync.paused) || {};
+    return Object.keys(WELLNESS_SOURCE_LABELS).map(key => {
       const isPaused = Boolean(paused[key]);
       return '<button type="button" class="calendar-lane-chip' + (isPaused ? ' active' : '') + '"'
         + ' aria-pressed="' + (isPaused ? 'true' : 'false') + '"'
-        + ' title="' + (isPaused ? 'Resume writing ' : 'Pause writing ') + WELLNESS_SOURCE_LABELS[key].toLowerCase() + ' to Google Calendar' + '"'
+        + ' title="' + (isPaused ? 'Put ' + WELLNESS_SOURCE_LABELS[key].toLowerCase() + ' back on your calendar' : 'Take ' + WELLNESS_SOURCE_LABELS[key].toLowerCase() + ' off your calendar from today on') + '"'
         + ' onclick="CAL.setWellnessSyncPaused(\'' + key + '\', ' + (isPaused ? 'false' : 'true') + ')"'
         + (state.wellnessPauseSaving ? ' disabled' : '') + '>'
         + (isPaused ? '&#9654; Resume ' : '&#10074;&#10074; Pause ') + WELLNESS_SOURCE_LABELS[key].toLowerCase()
         + '</button>';
     }).join('');
-    return '<span class="calendar-countdown-status' + (isError ? ' is-error' : '') + '">' + escapeHtml(wellnessSyncSummary(last)) + '</span>'
-      + '<button type="button" class="calendar-lane-chip" onclick="CAL.syncWellnessToGoogle()"' + (state.wellnessSyncing || allPaused ? ' disabled' : '') + '>'
-      + (state.wellnessSyncing ? 'Syncing…' : 'Sync to Google now')
-      + '</button>'
-      + pauseChips;
   }
 
-  // Pauses or resumes one source's Google sync. Paused events stay in Google
-  // as they are; the server stops creating, changing or deleting them.
+  // Pauses or resumes one source. Pausing takes its events off Google from
+  // today on and hides its previews here; resuming writes the week back. The
+  // server runs the pass before answering, so the events are reloaded after.
   async function setWellnessSyncPaused(source, paused) {
     if (!WELLNESS_SOURCE_LABELS[source] || state.wellnessPauseSaving) return;
     state.wellnessPauseSaving = true;
@@ -1146,8 +1161,14 @@
       });
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) throw new Error(data.error || 'HTTP ' + resp.status);
-      state.wellnessGoogleSync = Object.assign({}, state.wellnessGoogleSync, { paused: data.paused });
-      setFlash(WELLNESS_SOURCE_LABELS[source] + (paused ? ' sync to Google paused.' : ' sync to Google resumed.'), 'success');
+      const sync = data.sync || null;
+      state.wellnessGoogleSync = Object.assign({}, state.wellnessGoogleSync, { paused: data.paused }, sync ? { last: sync } : {});
+      const label = WELLNESS_SOURCE_LABELS[source];
+      if (sync && sync.error) setFlash(label + (paused ? ' paused' : ' resumed') + ', but Google could not be updated: ' + sync.error, 'warn');
+      else if (sync && sync.skipped) setFlash(label + (paused ? ' paused' : ' resumed') + '. ' + sync.skipped, 'warn');
+      else if (paused) setFlash(label + ' paused and taken off your calendar' + (sync && sync.deleted ? ' (' + sync.deleted + ' removed).' : '.'), 'success');
+      else setFlash(label + ' resumed and back on your calendar' + (sync && sync.created ? ' (' + sync.created + ' added).' : '.'), 'success');
+      if (sync && !sync.error && !sync.skipped) loadGoogleEvents();
     } catch (error) {
       setFlash('Could not change the sync: ' + (error && error.message ? error.message : error), 'warn');
     } finally {
@@ -2485,7 +2506,8 @@
     // Independent of Google: a failed or missing connection costs the events,
     // never the countdowns.
     if (state.showCountdowns) loadCountdowns(false);
-    if (state.showWellness) loadWellness(false);
+    // Loaded with the layer off too, so the pause chips know where they stand.
+    loadWellness(false);
     root.innerHTML = '<div class="calendar-shell calendar-compact-shell">'
       + '<section class="calendar-stage calendar-compact-stage calendar-view-' + state.view + '">'
       + renderFlash()
