@@ -30,7 +30,7 @@
   }catch(e){}
 })();
 </script>
-<link rel="stylesheet" href="calendar-view.css?v=calendar-lane-counts-20261029"/>
+<link rel="stylesheet" href="calendar-view.css?v=calendar-today-row-20261103"/>
 <style>
   .calendar-connection-bar {
     display: flex;
@@ -292,6 +292,28 @@ html.ao-focus .calendar-connection-bar.is-open { padding-left: 88px; }
 }
 .calendar-compact-board .calendar-month-grid {
   grid-template-rows: 28px repeat(6, minmax(0, 1fr)) !important;
+}
+/* The week holding today is taller so today's events show in full rather
+   than folding into "+N more". Phones keep even rows: they show dots there. */
+@media (min-width: 641px) {
+  .calendar-compact-board .calendar-month-grid[data-today-row="0"] {
+    grid-template-rows: 28px minmax(0, 2.3fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+  .calendar-compact-board .calendar-month-grid[data-today-row="1"] {
+    grid-template-rows: 28px minmax(0, 1fr) minmax(0, 2.3fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+  .calendar-compact-board .calendar-month-grid[data-today-row="2"] {
+    grid-template-rows: 28px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2.3fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+  .calendar-compact-board .calendar-month-grid[data-today-row="3"] {
+    grid-template-rows: 28px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2.3fr) minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+  .calendar-compact-board .calendar-month-grid[data-today-row="4"] {
+    grid-template-rows: 28px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2.3fr) minmax(0, 1fr) !important;
+  }
+  .calendar-compact-board .calendar-month-grid[data-today-row="5"] {
+    grid-template-rows: 28px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 2.3fr) !important;
+  }
 }
 .calendar-compact-board .calendar-month-weekday {
   min-height: 28px !important;
@@ -626,7 +648,7 @@ html.ao-focus .calendar-connection-bar.is-open { padding-left: 88px; }
 <script src="app-shared.js?v=stale-blue-20261029"></script>
 
 
-<script src="calendar-view.js?v=calendar-lane-counts-20261029"></script>
+<script src="calendar-view.js?v=calendar-today-row-20261103"></script>
 <script>
 switchView('calendar-v3', document.querySelector('.nav-item.active'));
 </script>
