@@ -334,7 +334,8 @@
       selectedWellnessId: null,
       // How the last write into Google went (/api/calendar/wellness/sync).
       wellnessGoogleSync: null,
-      wellnessSyncing: false
+      wellnessSyncing: false,
+      wellnessPauseSaving: false
     };
   }
 
@@ -1107,11 +1108,52 @@
   function renderWellnessGoogleSync() {
     const info = state.wellnessGoogleSync || {};
     const last = info.last || null;
+    const paused = info.paused || {};
     const isError = Boolean(last && (last.error || last.failed));
+    const allPaused = Boolean(paused.workout && paused.meals);
+    // One chip per source: pressed means its Google sync is paused.
+    const pauseChips = Object.keys(WELLNESS_SOURCE_LABELS).map(key => {
+      const isPaused = Boolean(paused[key]);
+      return '<button type="button" class="calendar-lane-chip' + (isPaused ? ' active' : '') + '"'
+        + ' aria-pressed="' + (isPaused ? 'true' : 'false') + '"'
+        + ' title="' + (isPaused ? 'Resume writing ' : 'Pause writing ') + WELLNESS_SOURCE_LABELS[key].toLowerCase() + ' to Google Calendar' + '"'
+        + ' onclick="CAL.setWellnessSyncPaused(\'' + key + '\', ' + (isPaused ? 'false' : 'true') + ')"'
+        + (state.wellnessPauseSaving ? ' disabled' : '') + '>'
+        + (isPaused ? '&#9654; Resume ' : '&#10074;&#10074; Pause ') + WELLNESS_SOURCE_LABELS[key].toLowerCase()
+        + '</button>';
+    }).join('');
     return '<span class="calendar-countdown-status' + (isError ? ' is-error' : '') + '">' + escapeHtml(wellnessSyncSummary(last)) + '</span>'
-      + '<button type="button" class="calendar-lane-chip" onclick="CAL.syncWellnessToGoogle()"' + (state.wellnessSyncing ? ' disabled' : '') + '>'
+      + '<button type="button" class="calendar-lane-chip" onclick="CAL.syncWellnessToGoogle()"' + (state.wellnessSyncing || allPaused ? ' disabled' : '') + '>'
       + (state.wellnessSyncing ? 'Syncing…' : 'Sync to Google now')
-      + '</button>';
+      + '</button>'
+      + pauseChips;
+  }
+
+  // Pauses or resumes one source's Google sync. Paused events stay in Google
+  // as they are; the server stops creating, changing or deleting them.
+  async function setWellnessSyncPaused(source, paused) {
+    if (!WELLNESS_SOURCE_LABELS[source] || state.wellnessPauseSaving) return;
+    state.wellnessPauseSaving = true;
+    render();
+    try {
+      const body = {};
+      body[source] = Boolean(paused);
+      const resp = await fetch('/api/calendar/wellness/sync/pause', {
+        method: 'PUT',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(data.error || 'HTTP ' + resp.status);
+      state.wellnessGoogleSync = Object.assign({}, state.wellnessGoogleSync, { paused: data.paused });
+      setFlash(WELLNESS_SOURCE_LABELS[source] + (paused ? ' sync to Google paused.' : ' sync to Google resumed.'), 'success');
+    } catch (error) {
+      setFlash('Could not change the sync: ' + (error && error.message ? error.message : error), 'warn');
+    } finally {
+      state.wellnessPauseSaving = false;
+      render();
+    }
   }
 
   // Writes this week's workouts and meals into Google straight away, then
@@ -3392,6 +3434,7 @@
     selectWellness,
     toggleWellness,
     syncWellnessToGoogle,
+    setWellnessSyncPaused,
     getWellnessForDate: value => wellnessForDate(typeof value === 'string' ? parseDateKey(value) : value),
     // Agent Office control surface: lanes, run lifecycle, and the state the
     // Agent Assistant drawer reads.
