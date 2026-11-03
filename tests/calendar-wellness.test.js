@@ -107,12 +107,15 @@ test('workouts land on every day from today on, matched to the weekday', async (
   // Oct 14 (Wed) through Oct 25 (Sun): twelve days, none before today.
   assert.equal(workouts.length, 12);
   assert.equal(workouts[0].date, '2026-10-14');
-  assert.equal(workouts[0].title, 'Strength · Core & Lower Body Burn');
+  // Titled by the day's activities, like the Wellness Tracker's plan card;
+  // the theme and focus are the subtitle.
+  assert.equal(workouts[0].title, 'Workout 2 · Foam Roller');
+  assert.equal(workouts[0].subtitle, 'Strength · Core & Lower Body Burn');
   assert.equal(localKey(workouts[0].at), '10/14 17:30');
   assert.deepEqual(workouts[0].lines.map(line => line.text), ['Workout 2', 'Foam Roller']);
   assert.equal(workouts[0].color, '#FFD93D');
   assert.equal(workouts[0].href, 'https://workouts.example/#/weekly-plan');
-  assert.equal(workouts.find(item => item.date === '2026-10-19').title, 'Strength · Upper & Lower Dumbbell');
+  assert.equal(workouts.find(item => item.date === '2026-10-19').subtitle, 'Strength · Upper & Lower Dumbbell');
   assert.ok(workouts.every(item => item.blocksTime === false));
 });
 

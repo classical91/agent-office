@@ -178,7 +178,11 @@ function workoutLines(planDay) {
   })).filter(line => line.text);
 }
 
-/** One marker per day from the rota, the day's theme and focus as its title. */
+/**
+ * One marker per day from the rota. Its title lists the day's activities, the
+ * way the Wellness Tracker's own plan card does; the theme and focus ride
+ * along as `subtitle` for the places that have room for a second line.
+ */
 function workoutItems(week, days, { base, times, now }) {
   const byName = new Map((Array.isArray(week) ? week : []).map(planDay => [text(planDay && planDay.day, 20), planDay]));
   return days.map(day => {
@@ -193,7 +197,8 @@ function workoutItems(week, days, { base, times, now }) {
       id: `workout:${dateKey(day)}`,
       source: 'workout',
       date: dateKey(day),
-      title: [theme, focus].filter(Boolean).join(' · ') || 'Workout',
+      title: lines.map(line => line.text).join(' · '),
+      subtitle: [theme, focus].filter(Boolean).join(' · '),
       label: 'Workout',
       emoji: text(planDay.emoji, 8) || '💪',
       at: when.toISOString(),
