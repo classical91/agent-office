@@ -113,7 +113,8 @@ test('workouts land on every day from today on, matched to the weekday', async (
   assert.equal(workouts[0].subtitle, 'Strength · Core & Lower Body Burn');
   assert.equal(localKey(workouts[0].at), '10/14 17:30');
   assert.deepEqual(workouts[0].lines.map(line => line.text), ['Workout 2', 'Foam Roller']);
-  assert.equal(workouts[0].color, '#FFD93D');
+  // Every workout wears the one workout colour, not its plan day's.
+  assert.ok(workouts.every(item => item.color === '#22c55e'));
   assert.equal(workouts[0].href, 'https://workouts.example/#/weekly-plan');
   assert.equal(workouts.find(item => item.date === '2026-10-19').subtitle, 'Strength · Upper & Lower Dumbbell');
   assert.ok(workouts.every(item => item.blocksTime === false));

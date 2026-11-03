@@ -71,6 +71,57 @@
     }
   };
 
+  // Where an event came from beats what kind of event it is. Everything the
+  // Wellness Tracker, Nutri-Mind or Planning puts on the calendar wears one
+  // colour per source - the Google copy, the marker and the agenda row alike -
+  // so a week of workouts reads as workouts instead of a rainbow of plan-day
+  // colours and event types. Green and amber match the Google colours the
+  // wellness sync writes (Basil, Banana).
+  const CATEGORY_META = {
+    workout: {
+      label: 'Workout',
+      color: '#86efac',
+      surface: 'rgba(34, 197, 94, 0.20)',
+      border: 'rgba(34, 197, 94, 0.55)',
+      dot: '#22c55e'
+    },
+    diet: {
+      label: 'Diet',
+      color: '#fcd34d',
+      surface: 'rgba(245, 158, 11, 0.20)',
+      border: 'rgba(245, 158, 11, 0.55)',
+      dot: '#f59e0b'
+    },
+    planning: {
+      label: 'Planning',
+      color: '#99f6e4',
+      surface: 'rgba(20, 184, 166, 0.20)',
+      border: 'rgba(45, 212, 191, 0.55)',
+      dot: '#2dd4bf'
+    }
+  };
+
+  // The source category of a calendar event, or '' for an ordinary event.
+  function eventCategory(event) {
+    if (!event) return '';
+    const key = String(event.wellnessKey || '');
+    if (key.indexOf('workout:') === 0) return 'workout';
+    if (key.indexOf('meal:') === 0) return 'diet';
+    const meta = event.meta || {};
+    if (meta.planningItemId) return 'planning';
+    return '';
+  }
+
+  // The colours an event is drawn in: its source's when it has one, its
+  // type's otherwise.
+  function eventStyle(event) {
+    return CATEGORY_META[eventCategory(event)] || TYPE_META[event && event.type] || TYPE_META.meeting;
+  }
+
+  function wellnessCategory(item) {
+    return item && item.source === 'meal' ? 'diet' : 'workout';
+  }
+
   function startOfDay(date) {
     const d = new Date(date);
     d.setHours(0, 0, 0, 0);
@@ -953,7 +1004,9 @@
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       const data = await resp.json();
       if (ticket !== wellnessTicket) return;
-      state.wellnessItems = Array.isArray(data.items) ? data.items : [];
+      state.wellnessItems = (Array.isArray(data.items) ? data.items : []).map(item => Object.assign({}, item, {
+        color: CATEGORY_META[wellnessCategory(item)].dot
+      }));
       state.wellnessSources = data.sources || null;
       state.wellnessGoogleSync = data.googleSync || null;
       state.wellnessStatus = 'ready';
@@ -1529,9 +1582,15 @@
   }
 
   function renderLegend() {
-    return Object.keys(TYPE_META).map(type => {
+    const categories = Object.keys(CATEGORY_META).map(category => {
+      const meta = CATEGORY_META[category];
+      const count = state.events.filter(event => eventCategory(event) === category).length
+        + visibleWellness().filter(item => wellnessCategory(item) === category).length;
+      return '<span class="calendar-legend-chip"><span class="calendar-legend-swatch" style="background:' + meta.dot + '"></span>' + meta.label + ' <span class="calendar-badge">' + count + '</span></span>';
+    }).join('');
+    return categories + Object.keys(TYPE_META).map(type => {
       const meta = TYPE_META[type];
-      const count = state.events.filter(event => event.type === type).length;
+      const count = state.events.filter(event => event.type === type && !eventCategory(event)).length;
       return '<span class="calendar-legend-chip"><span class="calendar-legend-swatch" style="background:' + meta.dot + '"></span>' + meta.label + ' <span class="calendar-badge">' + count + '</span></span>';
     }).join('');
   }
@@ -1926,7 +1985,7 @@
   }
 
   function renderEventPill(event, small) {
-    const meta = TYPE_META[event.type] || TYPE_META.meeting;
+    const meta = eventStyle(event);
     const start = parseLocalIso(event.start);
     const end = parseLocalIso(event.end);
     const agentMetaFields = eventMeta(event);
@@ -1978,7 +2037,7 @@
 
   function renderEventBlock(layout) {
     const event = layout.event;
-    const meta = TYPE_META[event.type] || TYPE_META.meeting;
+    const meta = eventStyle(event);
     const start = parseLocalIso(event.start);
     const end = parseLocalIso(event.end);
     const top = ((start.getHours() + start.getMinutes() / 60) - HOUR_START) * ROW_HEIGHT + 2;
@@ -2010,7 +2069,7 @@
     }
     if (!grouped.length) return '<div class="calendar-empty" style="margin:20px;">Nothing is scheduled in this range yet.</div>';
     return '<div class="calendar-agenda">' + grouped.map(group => '<div class="calendar-agenda-group"><div class="calendar-agenda-date">' + escapeHtml(formatLongDate(group.day)) + '</div><div class="calendar-agenda-list">' + group.countdownItems.map(renderCountdownAgendaRow).join('') + group.wellnessItems.map(renderWellnessAgendaRow).join('') + group.items.map(event => {
-      const meta = TYPE_META[event.type] || TYPE_META.meeting;
+      const meta = eventStyle(event);
       const startDate = parseLocalIso(event.start);
       const endDate = parseLocalIso(event.end);
       const status = runStatusLine(event);
@@ -2046,7 +2105,7 @@
     const upcoming = nextUpcoming(3);
     if (!upcoming.length) return '<div class="calendar-empty">Your calendar is wide open.</div>';
     return upcoming.map(event => {
-      const meta = TYPE_META[event.type] || TYPE_META.meeting;
+      const meta = eventStyle(event);
       const start = parseLocalIso(event.start);
       return '<button class="calendar-next-item" onclick="CAL.selectEvent(\'' + event.id + '\')">'
         + '<div class="calendar-next-time">' + escapeHtml(formatShortDate(start)) + ' / ' + escapeHtml(formatTime(start)) + '</div>'
@@ -2417,7 +2476,7 @@
     if (state.creatingEvent) return renderNewEventForm();
     const event = selectedEvent();
     if (!event) return '<div class="calendar-empty">Select an event to see notes and quick actions.</div>';
-    const meta = TYPE_META[event.type] || TYPE_META.meeting;
+    const meta = eventStyle(event);
     const start = parseLocalIso(event.start);
     const end = parseLocalIso(event.end);
     const snoozeLabel = snoozeActionLabel(event);
@@ -3483,6 +3542,8 @@
     findEvent,
     formatRange,
     parseLocalIso,
-    TYPE_META
+    TYPE_META,
+    CATEGORY_META,
+    eventCategory
   };
 })();
