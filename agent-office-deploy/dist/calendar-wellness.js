@@ -125,10 +125,6 @@ function stateFor(when, now) {
   return when.getTime() < now.getTime() ? 'passed' : 'upcoming';
 }
 
-function safeColor(value, fallback) {
-  return /^#[0-9a-f]{3,8}$/i.test(String(value || '')) ? String(value) : fallback;
-}
-
 // ─── Config ──────────────────────────────────────────────────────────────────
 
 function isLoopback(hostname) {
@@ -203,7 +199,9 @@ function workoutItems(week, days, { base, times, now }) {
       emoji: text(planDay.emoji, 8) || '💪',
       at: when.toISOString(),
       lines,
-      color: safeColor(planDay.color, WORKOUT_COLOR),
+      // One colour for every workout, so the calendar reads them as one
+      // category; the plan day's own colour is the Wellness Tracker's.
+      color: WORKOUT_COLOR,
       state: stateFor(when, now),
       href: `${base}/#/weekly-plan`,
       appLabel: 'Wellness Tracker',
