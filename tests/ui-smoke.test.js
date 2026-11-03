@@ -540,7 +540,7 @@ test('focus is remembered per page, so the Calendar does not drag the rest of th
   assert.ok(await page.evaluate(() => document.documentElement.classList.contains('ao-focus')));
 });
 
-test('Calendar sits directly above Dropbox, out of the Planning Tools list', async t => {
+test('Countdowns, Calendar and Streaks lead the flat rows, above Dropbox and out of Planning Tools', async t => {
   if (skipReason) return t.skip(skipReason);
 
   const { page } = await openPage(t);
@@ -549,12 +549,13 @@ test('Calendar sits directly above Dropbox, out of the Planning Tools list', asy
 
   const rows = await page.evaluate(() => [...document.querySelectorAll('.nav .nav-items-wrap > .nav-item')]
     .map(item => item.querySelector('.nav-item-label').textContent.trim()));
-  assert.equal(rows[0], 'Calendar', 'Calendar leads the flat rows');
-  assert.equal(rows[1], 'Dropbox', 'and Dropbox follows it');
+  assert.deepEqual(rows.slice(0, 4), ['Countdowns', 'Calendar', 'Streaks', 'Dropbox'],
+    'Countdowns sits above Calendar, Streaks below it, then Dropbox');
 
   const submenu = await page.evaluate(() => [...document.querySelectorAll('.nav-sub .nav-item')]
     .map(item => item.querySelector('.nav-item-label').textContent.trim()));
   assert.ok(!submenu.includes('Calendar'), 'and it is no longer one more row in Planning Tools');
+  assert.ok(!submenu.includes('Countdowns') && !submenu.includes('Streaks'), 'nor are Countdowns and Streaks');
   assert.ok(submenu.includes('Planning Mode'));
 });
 
