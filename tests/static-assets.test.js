@@ -183,6 +183,15 @@ test('Dev Links places usage dashboards above platform update feeds', () => {
   assert.match(page, /railway\.com\/workspace\/usage/);
 });
 
+test('Dev Links Usage & Billing includes the X developer account', () => {
+  const page = fs.readFileSync(path.join(DIST, 'dev.html'), 'utf8');
+  const start = page.indexOf('<span>Usage &amp; Billing</span>');
+  const end = page.indexOf('<span>AI Update</span>');
+  const section = page.slice(start, end);
+  assert.match(section, /https:\/\/console\.x\.com\/accounts\/2085041362089508864/);
+  assert.match(section, />X API Usage</);
+});
+
 test('Dev Links has an API Usage section for Grok, Claude, and ChatGPT', () => {
   const page = fs.readFileSync(path.join(DIST, 'dev.html'), 'utf8');
   const start = page.indexOf('<span>API Usage</span>');
