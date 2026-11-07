@@ -511,8 +511,17 @@
     justify-content: center;
     background: rgba(0, 0, 0, 0.75);
     padding: var(--space-4);
+    /* A sheet taller than the screen (Add Countdown on a phone) scrolls inside
+       the overlay, top first, instead of being centred off both edges. */
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
+  .ao-modal > .ao-modal-sheet { margin: auto 0; flex-shrink: 0; }
   .ao-modal[hidden] { display: none; }
+  /* Keep the page behind an open sheet from scrolling under the finger. */
+  html:has(.ao-modal:not([hidden])),
+  body:has(.ao-modal:not([hidden])) { overflow: hidden; }
   .ao-modal-sheet {
     background: var(--surface);
     border: 1px solid var(--border);

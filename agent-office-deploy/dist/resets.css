@@ -377,8 +377,8 @@
    the card is open. */
 .rst-card.is-open .rst-body-inner { border-top: 1px solid var(--border); padding-top: var(--space-4); }
 
-.rst-field-row { display: flex; gap: var(--space-3); }
-.rst-field-row > .ao-field { flex: 1 1 0; min-width: 0; }
+.rst-field-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-3); }
+.rst-field-row > .ao-field { min-width: 0; }
 
 /* The Pushcut tick: the whole row is the label, so the box has a target the
    size of a phone thumb rather than 16 pixels of checkbox. */
@@ -568,6 +568,8 @@
    zoom whenever the Add Countdown sheet opened. Pin them to their column. */
 .rst-modal-sheet { overflow-x: hidden; }
 .rst-field-row .ao-input {
+  display: block;
+  width: 100%;
   min-width: 0;
   max-width: 100%;
   -webkit-appearance: none;
