@@ -562,3 +562,15 @@
 @media (prefers-reduced-motion: reduce) {
   .rst-happy-modal:not([hidden]) .rst-happy-modal-sheet { animation: none; }
 }
+
+/* iOS gives date/time inputs an intrinsic width that ignores flex sizing, so
+   the Time field spilled past the sheet, widened the page and made Safari
+   zoom whenever the Add Countdown sheet opened. Pin them to their column. */
+.rst-modal-sheet { overflow-x: hidden; }
+.rst-field-row .ao-input {
+  min-width: 0;
+  max-width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.rst-field-row .ao-input::-webkit-date-and-time-value { text-align: left; }
