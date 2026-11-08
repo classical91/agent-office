@@ -83,34 +83,40 @@ test('a one-off bill counts only if it lands this month', () => {
   assert.deepEqual(days(bill({ cost: 80, repeatMonths: 0, resetAt: at(11, 3) })), []);
 });
 
-test('the summary adds up the month and counts down what is left', () => {
+test('the bill counts only what is still to pay this month, not next month', () => {
   const cards = [
+    // Rolled over to Nov 1: its October renewal has gone out and its next is next month's.
     bill({ title: 'Rent', cost: 1500, resetAt: at(11, 1) }, 1),
     bill({ title: 'ChatGPT Plus', cost: 20, resetAt: at(11, 7) }, 2),
     bill({ title: 'Telegram Premium', cost: 5.99, resetAt: at(10, 29) }, 3),
     bill({ title: 'Pushcut', cost: 9.99, resetAt: at(10, 30) }, 4),
   ];
   const summary = billSummary(cards, now);
-  assert.equal(summary.total, 1535.98);
-  assert.equal(summary.paid, 1520);
   assert.equal(summary.left, 15.98);
-  assert.equal(summary.count, 4);
-  assert.equal(summary.paidCount, 2);
+  assert.equal(summary.count, 2);
+  assert.deepEqual([...summary.charges].map(charge => charge.card.title), ['Telegram Premium', 'Pushcut']);
   assert.equal(summary.next.card.title, 'Telegram Premium');
 
   const html = billHtml(summary, now);
   assert.match(html, /<strong class="rst-money">\$15\.98<\/strong>/);
-  assert.match(html, /left to pay/);
-  assert.match(html, /2 of 4 paid/);
-  assert.match(html, /<strong class="rst-money">\$1,535\.98<\/strong> total/);
-  assert.match(html, /<strong class="rst-money">\$1,520\.00<\/strong> paid/);
+  assert.match(html, /left to pay this month/);
+  assert.match(html, /2 bills to go/);
   assert.match(html, /&middot; <strong class="rst-money">\$5\.99<\/strong> &middot;/);
+  assert.doesNotMatch(html, /Rent|ChatGPT|1,500|\$20\.00/);
 });
 
-test('once the last renewal lands the month reads as paid', () => {
+test('a weekly bill counts only the weeks still ahead this month', () => {
+  const weekly = bill({ cost: 3, repeatMonths: 0, repeatDays: 7, resetAt: at(10, 28) });
+  const summary = billSummary([weekly], now);
+  assert.equal(summary.count, 1);
+  assert.equal(summary.left, 3);
+});
+
+test('once the last renewal lands the month has nothing left to pay', () => {
   const summary = billSummary([bill({ cost: 9.99, resetAt: at(11, 3) })], now);
   assert.equal(summary.left, 0);
-  assert.match(billHtml(summary, now), /All paid for October/);
+  assert.equal(summary.count, 0);
+  assert.match(billHtml(summary, now), /Nothing left to pay in October/);
 });
 
 test('paused, deleted, shared and other-category cards stay out of the bill', () => {
@@ -121,7 +127,7 @@ test('paused, deleted, shared and other-category cards stay out of the bill', ()
     bill({ cost: 10, resetAt: at(10, 28), category: 'holidays' }, 4),
     bill({ cost: 4, resetAt: at(10, 28) }, 5),
   ];
-  assert.equal(billSummary(cards, now).total, 4);
+  assert.equal(billSummary(cards, now).left, 4);
 });
 
 test('a bill marked done is paid up and makes no more charges', () => {
