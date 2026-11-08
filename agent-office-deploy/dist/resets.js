@@ -980,11 +980,12 @@ window.AOResets = (() => {
   // ─── This month's bill ─────────────────────────────────────────────────
   //
   // A card in Subscriptions / Bills can carry what it costs each time it
-  // renews, and that category's view adds the month up above the list: the
-  // total, what has gone out, and what is still to pay, which drops as each
-  // renewal lands. A charge counts in the month its renewal lands in, so a
-  // yearly one shows up in its own month only and a weekly one four or five
-  // times. Shared Agent Office countdowns have no cost field and are left out.
+  // renews, and that category's view adds up what is still to pay this
+  // calendar month above the list: every renewal from now to the end of the
+  // month, which drops as each one lands. A card whose next renewal is next
+  // month adds nothing - it is next month's bill, not this one's. A yearly
+  // card shows up in its own month only and a weekly one once for each week
+  // left. Shared Agent Office countdowns have no cost field and are left out.
 
   // "$9.99", "9.99", "1,299.00" and "9,99" all read; '' is no cost. NaN is a
   // value that is not a price, which the editor turns into a message.
@@ -1107,27 +1108,29 @@ window.AOResets = (() => {
     return found;
   }
 
+  // Only renewals still ahead of `now` and before the month ends are counted:
+  // what has already gone out this month is not still to pay, and the next
+  // renewal of a card that already rolled over belongs to next month's bill.
   function billSummary(cards = liveCards(), now = new Date()) {
     const bills = cards.filter(card => !card.deleted && card.source !== 'office'
       && card.id !== HAPPY_HOUR_ID && normalizeCategory(card.category) === BILLS_CATEGORY);
-    const charges = bills
-      .flatMap(card => monthCharges(card, now).map(charge => ({ card, ...charge })))
+    const due = bills
+      .flatMap(card => monthCharges(card, now).filter(charge => !charge.paid).map(charge => ({ card, ...charge })))
       .sort((a, b) => a.at - b.at);
-    const due = charges.filter(charge => !charge.paid);
     // Added in cents, so twelve $9.99s come to $119.88 and not $119.88000000000001.
-    const sum = list => list.reduce((total, charge) => total + Math.round(charge.card.cost * 100), 0) / 100;
-    const total = sum(charges);
-    const left = sum(due);
+    const left = due.reduce((total, charge) => total + Math.round(charge.card.cost * 100), 0) / 100;
     return {
       month: new Date(now.getFullYear(), now.getMonth(), 1),
-      total,
       left,
-      paid: Math.round((total - left) * 100) / 100,
-      count: charges.length,
-      paidCount: charges.length - due.length,
+      count: due.length,
+      charges: due,
       next: due[0] || null,
       unpriced: bills.filter(card => !card.cost && card.status !== 'paused').length,
     };
+  }
+
+  function billDay(at) {
+    return new Date(at).toLocaleDateString([], { month: 'short', day: 'numeric' });
   }
 
   function billHtml(summary, now = new Date()) {
@@ -1135,26 +1138,24 @@ window.AOResets = (() => {
     const unpriced = summary.unpriced
       ? `<div class="rst-bill-note">${summary.unpriced} ${summary.unpriced === 1 ? 'bill has' : 'bills have'} no cost yet &mdash; open ${summary.unpriced === 1 ? 'it' : 'one'} to add it.</div>`
       : '';
-    if (!summary.count) {
-      return `
-        <div class="rst-bill-head"><span class="rst-bill-kicker">${escHtml(month)} bill</span></div>
-        <div class="rst-bill-left"><span class="rst-bill-amount">${moneyHtml(0)}</span><span>this month</span></div>
-        ${unpriced || '<div class="rst-bill-note">Open a subscription and add what it costs to start this month&rsquo;s total.</div>'}`;
-    }
-    const percent = summary.total ? Math.round((summary.paid / summary.total) * 100) : 0;
-    const next = summary.next
-      ? `Next: <strong>${escHtml(summary.next.card.title)}</strong> &middot; ${moneyHtml(summary.next.card.cost)} &middot; ${escHtml(formatWhen(new Date(summary.next.at).toISOString()))} (in ${escHtml(formatRemaining(summary.next.at - now.getTime()))})`
-      : `All paid for ${escHtml(month)}.`;
-    return `
+    const head = `
       <div class="rst-bill-head">
         <span class="rst-bill-kicker">${escHtml(month)} bill</span>
-        <span class="rst-bill-count">${summary.paidCount} of ${summary.count} paid</span>
+        ${summary.count ? `<span class="rst-bill-count">${summary.count} ${summary.count === 1 ? 'bill' : 'bills'} to go</span>` : ''}
       </div>
-      <div class="rst-bill-left"><span class="rst-bill-amount">${moneyHtml(summary.left)}</span><span>left to pay</span></div>
-      <div class="rst-bill-meter" role="progressbar" aria-label="${escHtml(month)} bill paid"
-           aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><span style="width: ${percent}%"></span></div>
-      <div class="rst-bill-split"><span>${moneyHtml(summary.paid)} paid</span><span>${moneyHtml(summary.total)} total</span></div>
-      <div class="rst-bill-next">${next}</div>
+      <div class="rst-bill-left"><span class="rst-bill-amount">${moneyHtml(summary.left)}</span><span>left to pay this month</span></div>`;
+    if (!summary.count) {
+      return `${head}
+        <div class="rst-bill-next">Nothing left to pay in ${escHtml(month)}.</div>
+        ${unpriced}`;
+    }
+    const next = summary.next;
+    const rows = summary.charges.map(charge => `
+        <li><span class="rst-bill-item-title">${escHtml(charge.card.title)}</span><span class="rst-bill-item-day">${escHtml(billDay(charge.at))}</span>${moneyHtml(charge.card.cost)}</li>`).join('');
+    return `${head}
+      <div class="rst-bill-next">Next: <strong>${escHtml(next.card.title)}</strong> &middot; ${moneyHtml(next.card.cost)} &middot; ${escHtml(formatWhen(new Date(next.at).toISOString()))} (in ${escHtml(formatRemaining(next.at - now.getTime()))})</div>
+      <ul class="rst-bill-items">${rows}
+      </ul>
       ${unpriced}`;
   }
 
