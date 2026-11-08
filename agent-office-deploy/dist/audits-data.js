@@ -1,6 +1,185 @@
 /* Structured audit history. Append new weekly records; preserve older entries. */
 window.AUDITS = [
   {
+    "id": "weekly-2026-11-08-farm-bot",
+    "project": "FarmBot",
+    "type": "Weekly repository audit",
+    "auditedAt": "2026-11-08",
+    "note": "At risk · screenshot inbox and X rewrite paths changed Nov 7; persistent queue fallback and false readiness remain verified in source.",
+    "overallStatus": "At risk — production not verified",
+    "repository": "classical91/farm-bot",
+    "defaultBranch": "main",
+    "commit": "845d5ca27de6ef659797557a068e753330280272",
+    "scope": "25 accessible repositories inventoried; focused review of current FarmBot app.ts, Prisma initialization, health routes, Railway healthcheck, queue repository and X-link scheduling. Recent Nov 6–7 commit subjects inspected. Live production state and end-to-end tests not verified.",
+    "priorityRanking": [
+      {
+        "repository": "classical91/farm-bot",
+        "priority": "P1",
+        "reason": "Production X/Telegram publishing; active Nov 7 screenshot intake and queue changes; persistent-storage risk confirmed."
+      },
+      {
+        "repository": "classical91/agent-office",
+        "priority": "P1",
+        "reason": "Central audit history and operational dashboard; active changes."
+      },
+      {
+        "repository": "classical91/market-dashboard",
+        "priority": "P1",
+        "reason": "Market data and X/YouTube integrations; recent commits."
+      },
+      {
+        "repository": "classical91/main-hub",
+        "priority": "P1",
+        "reason": "Production entry point and dashboard routing; recent commits."
+      },
+      {
+        "repository": "classical91/mission-control",
+        "priority": "P2",
+        "reason": "Command deck orchestration surface; requires deeper review."
+      },
+      {
+        "repository": "classical91/traderclaw",
+        "priority": "P2",
+        "reason": "Trading signal integrity; important but less recent evidence."
+      },
+      {
+        "repository": "classical91/webclaw-service-hub",
+        "priority": "P2",
+        "reason": "Automation integration surface."
+      },
+      {
+        "repository": "classical91/flashcards",
+        "priority": "P2",
+        "reason": "Active user-facing project; lower operational impact."
+      },
+      {
+        "repository": "classical91/spirituality",
+        "priority": "P2",
+        "reason": "User-facing content; lower security impact."
+      },
+      {
+        "repository": "classical91/diet-plan",
+        "priority": "P3",
+        "reason": "Lower publishing blast radius."
+      }
+    ],
+    "findings": {
+      "critical": [],
+      "high": [
+        {
+          "id": "FB-08-H1",
+          "classification": "Verified finding (code); production impact unverified",
+          "summary": "Missing DATABASE_URL or Prisma constructor failure selects MemoryFarmbotRepository; /health returns ok and /ready returns ready with adapter memory. Railway probes /health.",
+          "evidence": "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/app.ts",
+          "impact": "Queue writes can be acknowledged without durable persistence if production database configuration fails."
+        }
+      ],
+      "medium": [
+        {
+          "id": "FB-08-M1",
+          "classification": "Verified code gap; concurrency consequence likely",
+          "summary": "X-link timed intake uses advisory lock news-create-stories; prior approved news scheduling uses a different lock. Shared manual-lane serialization remains unproven.",
+          "evidence": "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/services/farmclaw-x-links.ts"
+        },
+        {
+          "id": "FB-08-M2",
+          "classification": "Assumption requiring verification",
+          "summary": "New Screenshot Inbox and X rewrite/crop flows landed Nov 7; end-to-end upload, queue, and publish regression checks not executed in this audit.",
+          "evidence": "https://github.com/classical91/farm-bot/commit/845d5ca27de6ef659797557a068e753330280272"
+        },
+        {
+          "id": "FB-08-M3",
+          "classification": "Likely issue; not reconfirmed against full queue method",
+          "summary": "Previous audit flagged keyless queue ID collisions; queue repository includes keyed allocation but keyless behavior requires targeted regression verification.",
+          "evidence": "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/repositories/prisma-repository.ts"
+        }
+      ],
+      "low": [
+        {
+          "id": "FB-08-L1",
+          "classification": "Recommendation",
+          "summary": "Measure news-batch history query latency before optimizing; no observed regression.",
+          "evidence": "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/services/news-batches.ts"
+        }
+      ]
+    },
+    "brokenOrIncomplete": [
+      "Persistent storage fail-closed and truthful readiness not implemented in reviewed source.",
+      "Live screenshot-to-queue and X/Telegram delivery not independently verified.",
+      "Shared scheduling concurrency and keyless queue collision regression coverage not verified."
+    ],
+    "previousFindings": [
+      {
+        "finding": "Memory fallback and misleading readiness",
+        "status": "Still open",
+        "detail": "app.ts, health.routes.ts, prisma.ts and railway.json still demonstrate the issue."
+      },
+      {
+        "finding": "Keyless queue ID collisions",
+        "status": "Requires verification",
+        "detail": "Prior finding remains a test priority; this run did not inspect complete method implementation."
+      },
+      {
+        "finding": "Manual-lane scheduling concurrency",
+        "status": "Still open",
+        "detail": "X-link lock remains news-create-stories, distinct from previously audited news scheduling lock."
+      },
+      {
+        "finding": "Cross-source URL deduplication",
+        "status": "Requires verification",
+        "detail": "X-link code checks queue and selected batches; complete reverse-path policy not rechecked."
+      },
+      {
+        "finding": "Retired direct queue route",
+        "status": "No longer relevant",
+        "detail": "Not reinstated as active finding."
+      }
+    ],
+    "fixedIssues": [
+      "Nov 7 commit explicitly rejects non-image Screenshot Inbox uploads (code commit observed; runtime unverified).",
+      "Nov 6 commit archives rejected news previews immediately (commit observed; runtime unverified)."
+    ],
+    "outstandingIssues": [
+      "Fail-closed production persistence and real readiness probe",
+      "Shared manual-lane scheduling concurrency",
+      "Keyless queue collision verification",
+      "Screenshot Inbox and X rewrite end-to-end regression checks",
+      "Production X/Telegram receipts and Railway database configuration"
+    ],
+    "recommendedFixes": [
+      "1. Fail closed on absent/unusable production Postgres; probe database in /ready and configure Railway to use /ready.",
+      "2. Add keyless duplicate-ID and shared-lane scheduling concurrency regression tests; fix confirmed overwrite or slot races.",
+      "3. Run screenshot upload → crop → queue → dispatch and X rewrite end-to-end tests with delivery receipts.",
+      "4. Confirm symmetric canonical URL deduplication across intake paths.",
+      "5. Check deployed database/migrations and X/Telegram credential separation."
+    ],
+    "quickWins": [
+      "Add readiness regression test with missing DATABASE_URL in production mode.",
+      "Inspect keyless createUiQueueItem and add same-ID collision test.",
+      "Run non-image upload rejection test for Screenshot Inbox."
+    ],
+    "thisWeeksFocus": [
+      "Make production storage fail closed with truthful readiness.",
+      "Verify and fix queue collision/scheduling concurrency.",
+      "Regression-test new Screenshot Inbox to publication flow."
+    ],
+    "safeToDefer": [
+      "Cosmetic dashboard changes.",
+      "History-query optimization without latency evidence."
+    ],
+    "checks": [
+      "Read source from connected GitHub on 2026-11-08; no tests executed.",
+      "Recent commits through Nov 7 observed; CI and Railway deployment not independently checked.",
+      "Audit record validates as JSON before GitHub write."
+    ],
+    "references": [
+      "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/app.ts",
+      "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/routes/health.routes.ts",
+      "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/railway.json",
+      "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/services/farmclaw-x-links.ts"
+    ]
+  },
+  {
     "id": "weekly-2026-11-01-farm-bot",
     "project": "FarmBot",
     "type": "Weekly repository audit",
