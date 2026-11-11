@@ -52,10 +52,23 @@
     }
     const ranked = options().sort(([a, aName], [b, bName]) =>
       (counts.get(b) || 0) - (counts.get(a) || 0) || aName.localeCompare(bName));
-    return [['', `All categories (${total})`], ...ranked.map(([id, name]) => [id, `${name} (${counts.get(id) || 0})`])];
+    const levels = [...new Set(counts.values())].sort((a, b) => b - a);
+    return [['', `All categories (${total})`], ...ranked.map(([id, name]) => {
+      const count = counts.get(id) || 0;
+      return [id, `${name} (${count})`, countStyle(levels.indexOf(count), levels.length)];
+    })];
+  }
+  // The busiest category needs the most attention, so it gets the darkest red;
+  // each smaller count steps lighter. Empty categories are done: bold green.
+  function countStyle(rank, steps) {
+    if (rank < 0) return 'color:#4ade80;font-weight:800';
+    const lightness = Math.round(28 + (steps > 1 ? rank / (steps - 1) : 0) * (84 - 28));
+    const text = lightness < 62 ? '#fff' : '#450a0a';
+    return `background-color:hsl(0,78%,${lightness}%);color:${text};font-weight:500`;
   }
   function fill(select, choices, selected) {
-    select.innerHTML = choices.map(([id, name]) => `<option value="${escAttr(id)}">${escHTML(name)}</option>`).join('');
+    select.innerHTML = choices.map(([id, name, style]) =>
+      `<option value="${escAttr(id)}"${style ? ` style="${escAttr(style)}"` : ''}>${escHTML(name)}</option>`).join('');
     select.value = choices.some(([id]) => id === selected) ? selected : choices[0][0];
   }
   async function load() {
