@@ -89,3 +89,16 @@ test('mission filter bypasses only category when computing counts, retaining sea
   assert.deepEqual(plain(context.filteredDrops()), [work]);
   assert.deepEqual(plain(context.filteredDrops({ ignoreCategory: true })), [work, bills]);
 });
+
+test('busiest categories shade darkest red, smaller counts lighter, empty ones bold green', () => {
+  const drops = [reminder('Work'), reminder('Work'), reminder('Work'), reminder('Bills'), reminder('Other')];
+  const { api } = setup(drops);
+  const styles = Object.fromEntries(plain(api.filterOptions(drops)).map(([id, , style]) => [id, style]));
+  const lightness = style => Number(/hsl\(0,78%,(\d+)%\)/.exec(style)[1]);
+  assert.equal(styles[''], undefined, 'All categories stays plain');
+  assert.equal(lightness(styles.Work), 28);
+  assert.equal(lightness(styles.Bills), 84);
+  assert.equal(styles.Bills, styles.Other, 'equal counts share a shade');
+  assert.match(styles.Personal, /color:#4ade80;font-weight:800/);
+  assert.match(styles.uncategorized, /color:#4ade80;font-weight:800/);
+});
