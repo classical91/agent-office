@@ -26,6 +26,8 @@ const {
   happyHourShortcutTime,
   holidayCards,
   isDueSoon,
+  dayUrgency,
+  dayUrgencyLabel,
   isListView,
 } = context.window.AOResets;
 
@@ -98,20 +100,71 @@ test('after closing, happy hour advances to tomorrow\'s deal and heads-up', () =
   assert.equal(details.target.getMinutes(), 30);
 });
 
-test('active reset timers due within 24 hours share the same color', () => {
-  const soon = { state: 'active', remaining: 23 * 3600000, card: { title: 'Claude reset' } };
-  const boundary = { state: 'active', remaining: 24 * 3600000, card: { title: 'OpenAI reset' } };
-  const later = { state: 'active', remaining: 25 * 3600000, card: { title: 'Claude reset' } };
-  const paused = { state: 'paused', remaining: 23 * 3600000, card: { title: 'OpenAI reset' } };
-  const expired = { state: 'expired', remaining: -1, card: { title: 'Gemini reset' } };
+test('due today is orange; tomorrow within 24h stays yellow', () => {
+  const now = new Date(2026, 10, 12, 21, 0);
+  const makeView = (day, hour, state = 'active') => {
+    const at = new Date(2026, 10, day, hour, 0);
+    return {
+      state,
+      remaining: at.getTime() - now.getTime(),
+      card: { title: 'Claude reset', resetAt: at.toISOString() },
+    };
+  };
+  const today = makeView(12, 23);
+  const tomorrow = makeView(13, 7);
+  const later = makeView(14, 8);
+  const paused = makeView(12, 23, 'paused');
+  const expired = makeView(12, 20, 'expired');
 
-  assert.equal(isDueSoon(soon), true);
-  assert.equal(isDueSoon(boundary), true);
-  assert.equal(colorForView(soon), 'var(--yellow)');
-  assert.equal(colorForView(boundary), 'var(--yellow)');
+  assert.equal(dayUrgency(today, now), 'today');
+  assert.equal(dayUrgency(tomorrow, now), 'tomorrow');
+  assert.equal(dayUrgencyLabel('today'), 'Due today');
+  assert.equal(dayUrgencyLabel('tomorrow'), 'Tomorrow · within 24h');
+  assert.equal(colorForView(today, now), 'var(--orange)');
+  assert.equal(colorForView(tomorrow, now), 'var(--yellow)');
+  assert.equal(isDueSoon(tomorrow), true);
+  assert.equal(dayUrgency(later, now), '');
   assert.equal(isDueSoon(later), false);
-  assert.equal(isDueSoon(paused), false);
-  assert.equal(isDueSoon(expired), false);
-  assert.notEqual(colorForView(later), 'var(--yellow)');
-  assert.notEqual(colorForView(paused), 'var(--yellow)');
+  assert.equal(dayUrgency(paused, now), '');
+  assert.equal(dayUrgency(expired, now), '');
+  assert.notEqual(colorForView(paused, now), 'var(--orange)');
+});
+
+test('tomorrow changes to today at local midnight without resetting its countdown', () => {
+  const target = new Date(2026, 11, 1, 7, 0); // month boundary
+  const before = new Date(2026, 10, 30, 23, 59);
+  const after = new Date(2026, 11, 1, 0, 0);
+  const view = now => ({
+    state: 'active',
+    remaining: target.getTime() - now.getTime(),
+    card: { title: 'Morning reset', resetAt: target.toISOString() },
+  });
+  assert.equal(dayUrgency(view(before), before), 'tomorrow');
+  assert.equal(dayUrgency(view(after), after), 'today');
+  assert.equal(colorForView(view(before), before), 'var(--yellow)');
+  assert.equal(colorForView(view(after), after), 'var(--orange)');
+});
+
+test('tomorrow does not get 24-hour urgency until its rolling window begins', () => {
+  const target = new Date(2026, 10, 13, 8, 0);
+  const before = new Date(2026, 10, 12, 7, 59);
+  const onBoundary = new Date(2026, 10, 12, 8, 0);
+  const view = now => ({
+    state: 'active',
+    remaining: target.getTime() - now.getTime(),
+    card: { title: 'Tomorrow reset', resetAt: target.toISOString() },
+  });
+  assert.equal(dayUrgency(view(before), before), '');
+  assert.equal(dayUrgency(view(onBoundary), onBoundary), 'tomorrow');
+  assert.equal(colorForView(view(onBoundary), onBoundary), 'var(--yellow)');
+});
+
+test('countdowns have separate visible day badges that update during ticks', () => {
+  const source = read('resets.js');
+  const styles = read('resets.css');
+  assert.equal((source.match(/<span class="rst-day-urgency"/g) || []).length, 2);
+  assert.match(source, /node\.dataset\.dayUrgency = day/);
+  assert.match(source, /dayLabel\.textContent = dayUrgencyLabel\(day\)/);
+  assert.match(styles, /\[data-day-urgency="today"\]/);
+  assert.match(styles, /\[data-day-urgency="tomorrow"\]/);
 });
