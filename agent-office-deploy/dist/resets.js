@@ -384,7 +384,28 @@ window.AOResets = (() => {
     return Boolean(view && view.state === 'active' && view.remaining >= 0 && view.remaining <= DAY_MS);
   }
 
-  function colorForView(view) {
+  // The 24-hour window and the local calendar day are separate signals:
+  // tomorrow morning can be only a few hours away, but it is not due today.
+  // Compare local dates (not 24-hour day offsets) to handle DST and month/year ends.
+  function dayUrgency(view, now = new Date()) {
+    if (!isDueSoon(view) || !view.card || !view.card.resetAt) return '';
+    const target = new Date(view.card.resetAt);
+    if (Number.isNaN(target.getTime())) return '';
+    const sameLocalDay = (a, b) => a.getFullYear() === b.getFullYear()
+      && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    if (sameLocalDay(target, now)) return 'today';
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    return sameLocalDay(target, tomorrow) ? 'tomorrow' : '';
+  }
+
+  function dayUrgencyLabel(day) {
+    if (day === 'today') return 'Due today';
+    if (day === 'tomorrow') return 'Tomorrow · within 24h';
+    return '';
+  }
+
+  function colorForView(view, now = new Date()) {
+    if (dayUrgency(view, now) === 'today') return 'var(--orange)';
     return isDueSoon(view) ? DUE_SOON_COLOR : iconFor(view.card.title).color;
   }
 
@@ -1192,6 +1213,7 @@ window.AOResets = (() => {
     const meta = STATES[view.state];
     const icon = iconFor(card.title);
     const color = colorForView(view);
+    const day = dayUrgency(view);
     const open = state.openId === card.id;
     const bodyId = `rst-body-${escHtml(card.id)}`;
     const categoryLabel = CATEGORY_LABELS[normalizeCategory(card.category)] || CATEGORY_LABELS[''];
@@ -1211,10 +1233,10 @@ window.AOResets = (() => {
       // one step forward every time it was opened.
       const editedAt = card.targetAt || card.resetAt;
       return `
-      <article class="rst-card${open ? ' is-open' : ''}${state.savedId === card.id ? ' is-saved' : ''}${isDueSoon(view) ? ' is-due-soon' : ''}" data-id="${escHtml(card.id)}" data-state="${view.state}" style="--rst-color: ${color}">
+      <article class="rst-card${open ? ' is-open' : ''}${state.savedId === card.id ? ' is-saved' : ''}${isDueSoon(view) ? ' is-due-soon' : ''}" data-id="${escHtml(card.id)}" data-state="${view.state}" data-day-urgency="${day}" style="--rst-color: ${color}">
         <button type="button" class="rst-head" data-action="toggle" aria-expanded="${open}" aria-controls="${bodyId}">
           <span class="rst-icon" aria-hidden="true">${icon.glyph}</span>
-          <span class="rst-head-main"><span class="rst-head-top"><span class="rst-title" data-role="title">${escHtml(card.title)}</span><span class="ao-status ao-status--info rst-state">Shared</span></span><span class="rst-category">${escHtml(officeCategoryLabel(officeCategory))}</span><span class="rst-time" data-role="time">${escHtml(timeLabel(view))}</span><span class="rst-when" data-role="when">${escHtml(whenLabel(view))}</span></span>
+          <span class="rst-head-main"><span class="rst-head-top"><span class="rst-title" data-role="title">${escHtml(card.title)}</span><span class="ao-status ao-status--info rst-state">Shared</span></span><span class="rst-category">${escHtml(officeCategoryLabel(officeCategory))}</span><span class="rst-day-urgency" data-role="day-urgency"${day ? "" : " hidden"}>${escHtml(dayUrgencyLabel(day))}</span><span class="rst-time" data-role="time">${escHtml(timeLabel(view))}</span><span class="rst-when" data-role="when">${escHtml(whenLabel(view))}</span></span>
           <span class="rst-chevron" aria-hidden="true">▾</span>
         </button>
 
@@ -1281,7 +1303,7 @@ window.AOResets = (() => {
     const repeatValue = card.repeatMonths ? -card.repeatMonths : card.repeatDays;
     return `
       <article class="rst-card${open ? ' is-open' : ''}${state.savedId === card.id ? ' is-saved' : ''}${isDueSoon(view) ? ' is-due-soon' : ''}"
-               data-id="${escHtml(card.id)}" data-state="${view.state}" style="--rst-color: ${color}">
+               data-id="${escHtml(card.id)}" data-state="${view.state}" data-day-urgency="${day}" style="--rst-color: ${color}">
         <button type="button" class="rst-head" data-action="toggle" aria-expanded="${open}" aria-controls="${bodyId}">
           <span class="rst-icon" aria-hidden="true">${icon.glyph}</span>
           <span class="rst-head-main">
@@ -1295,7 +1317,7 @@ window.AOResets = (() => {
             <span class="rst-category" data-role="category">${escHtml(categoryLabel)}</span>
             ${card.cost ? `<span class="rst-cost" data-role="cost">${costHtml(card)}</span>` : ''}
             ${card.rotation.length ? `<span class="rst-rotation" data-role="rotation">${escHtml(rotationLabel(card))}</span>` : ''}
-            <span class="rst-time" data-role="time">${escHtml(timeLabel(view))}</span>
+            <span class="rst-day-urgency" data-role="day-urgency"${day ? "" : " hidden"}>${escHtml(dayUrgencyLabel(day))}</span><span class="rst-time" data-role="time">${escHtml(timeLabel(view))}</span>
             <span class="rst-when" data-role="when">${escHtml(whenLabel(view))}</span>
           </span>
           <span class="rst-chevron" aria-hidden="true">▾</span>
@@ -1482,6 +1504,13 @@ window.AOResets = (() => {
       if (title) title.textContent = card.title;
       node.style.setProperty('--rst-color', colorForView(view));
       node.classList.toggle('is-due-soon', isDueSoon(view));
+      const day = dayUrgency(view);
+      node.dataset.dayUrgency = day;
+      const dayLabel = node.querySelector('[data-role="day-urgency"]');
+      if (dayLabel) {
+        dayLabel.hidden = !day;
+        dayLabel.textContent = dayUrgencyLabel(day);
+      }
 
       const time = node.querySelector('[data-role="time"]');
       if (time) time.textContent = timeLabel(view);
@@ -2286,6 +2315,8 @@ window.AOResets = (() => {
     happyHourShortcutTime,
     isListView,
     isDueSoon,
+    dayUrgency,
+    dayUrgencyLabel,
     cardHtml,
     officeDraftFrom,
     officePatchBody,
