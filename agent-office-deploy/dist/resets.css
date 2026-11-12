@@ -177,6 +177,17 @@
   border-color: color-mix(in srgb, var(--rst-color, var(--accent)) 48%, var(--border));
   background: color-mix(in srgb, var(--rst-color, var(--accent)) 7%, var(--surface));
 }
+/* A deadline later today gets stronger emphasis than one tomorrow, even when
+   both have fewer than 24 hours left. The badge makes the difference explicit. */
+.rst-card[data-day-urgency="today"] {
+  border-color: color-mix(in srgb, var(--orange) 65%, var(--border));
+  background: color-mix(in srgb, var(--orange) 11%, var(--surface));
+  box-shadow: inset 3px 0 0 var(--orange);
+}
+.rst-card[data-day-urgency="tomorrow"] {
+  border-color: color-mix(in srgb, var(--yellow) 45%, var(--border));
+  background: color-mix(in srgb, var(--yellow) 5%, var(--surface));
+}
 /* A finished timer is information, not a thing to act on, so it is turned down
    rather than hidden. */
 .rst-card[data-state="expired"],
@@ -340,6 +351,21 @@
 .rst-card[data-state="expired"] .rst-time { color: var(--red); }
 .rst-card[data-state="completed"] .rst-time,
 .rst-card[data-state="paused"] .rst-time { color: var(--text-quiet); }
+
+.rst-day-urgency {
+  align-self: flex-start;
+  width: fit-content;
+  margin: 3px 0 2px;
+  padding: 2px 8px;
+  border: 1px solid color-mix(in srgb, var(--rst-color, var(--accent)) 44%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--rst-color, var(--accent)) 16%, transparent);
+  color: var(--rst-color, var(--accent));
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  line-height: 1.25;
+}
+.rst-day-urgency[hidden] { display: none; }
 
 .rst-when { font-size: var(--fs-sm); color: var(--text-dim); }
 
