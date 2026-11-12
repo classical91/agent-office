@@ -163,8 +163,8 @@ test('countdowns have separate visible day badges that update during ticks', () 
   const source = read('resets.js');
   const styles = read('resets.css');
   assert.equal((source.match(/data-role="day-urgency"/g) || []).length, 2);
-  assert.match(source, /node\\.dataset\\.dayUrgency = day/);
-  assert.match(source, /dayLabel\\.textContent = dayUrgencyLabel\\(day\\)/);
-  assert.match(styles, /\\[data-day-urgency="today"\\]/);
-  assert.match(styles, /\\[data-day-urgency="tomorrow"\\]/);
+  assert.match(source, /node\.dataset\.dayUrgency = day/);
+  assert.match(source, /dayLabel\.textContent = dayUrgencyLabel\(day\)/);
+  assert.match(styles, /\[data-day-urgency="today"\]/);
+  assert.match(styles, /\[data-day-urgency="tomorrow"\]/);
 });
