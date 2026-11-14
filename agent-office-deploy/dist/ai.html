@@ -100,7 +100,7 @@
         <a class="nav-rail-item" href="/ai.html" data-nav-area="intelligence" aria-label="AI tools" title="AI tools">
           <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="7" width="14" height="11" rx="3"/><path d="M12 3v4M8.5 12h.01M15.5 12h.01M9 15h6M3 11v4M21 11v4"/></svg>
         </a>
-        <a class="nav-rail-item" href="/apps.html" data-nav-area="projects" aria-label="Websites and projects" title="Websites and projects">
+        <a class="nav-rail-item" href="/apps.html" data-nav-area="projects" aria-label="Apps and sites" title="Apps and sites">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 6.5h7l2 2h8v10h-17z"/></svg>
         </a>
       </div>
@@ -154,10 +154,12 @@
         <div class="nav-items-wrap nav-open">
           <a class="nav-item" href="/dev.html" data-nav-area="intelligence" data-icon="DL"><span class="nav-item-label">Dev Links</span></a>
           <a class="nav-item" href="/ai.html" data-nav-area="intelligence" data-icon="AP"><span class="nav-item-label">AI Portal</span></a>
-          <a class="nav-item" href="/ai-landscape.html" data-nav-area="intelligence" data-ai-landscape-nav="true" data-icon="AM"><span class="nav-item-label">AI Models</span></a>
-          <a class="nav-item" href="https://main-page-production-9927.up.railway.app/prompt-builder.html" target="_blank" rel="noopener noreferrer" data-nav-area="intelligence" data-icon="PE"><span class="nav-item-label">AI Prompt Engineer</span> <span class="link-ext">&#8599;</span></a>
-          <a class="nav-item" href="/apps.html" data-nav-area="projects" data-icon="WP"><span class="nav-item-label">My Websites &amp; Projects</span></a>
-          <a class="nav-item" href="/audits.html" data-nav-area="projects" data-icon="AU"><span class="nav-item-label">Audit Log</span></a>
+          <div class="nav-group">
+            <a class="nav-item nav-item-parent" href="/apps.html" data-nav-area="projects" data-nav-sub="apps" data-icon="AS"><span class="nav-item-label">Apps &amp; Sites</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Apps &amp; Sites pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></a>
+            <div class="nav-sub">
+              <a class="nav-item" href="/audits.html" data-nav-area="projects" data-icon="AU"><span class="nav-item-label">Audit Log</span></a>
+            </div>
+          </div>
           <a class="nav-item" href="/visitors.html" data-nav-area="projects" data-icon="VS"><span class="nav-item-label">Visitors</span></a>
         </div>
       </div>
@@ -198,26 +200,32 @@
           <span>A timestamped record of every project audit.</span></span>
           <span class="portal-chevron" aria-hidden="true">&#8250;</span>
         </a>
-        <a class="portal-card" style="--i:2" href="https://main-page-production-9927.up.railway.app/ai-shortcuts.html" target="_blank" rel="noopener noreferrer">
+        <a class="portal-card" style="--i:2" href="https://market-dashboard-production-b2f4.up.railway.app/bot-commands.html" target="_blank" rel="noopener noreferrer">
+          <span class="portal-icon" aria-hidden="true">🤖</span>
+          <span class="portal-body"><strong>Bot Commands <span class="link-ext">&#8599;</span></strong>
+          <span>Command reference for the market dashboard bots.</span></span>
+          <span class="portal-chevron" aria-hidden="true">&#8250;</span>
+        </a>
+        <a class="portal-card" style="--i:3" href="https://main-page-production-9927.up.railway.app/ai-shortcuts.html" target="_blank" rel="noopener noreferrer">
           <span class="portal-icon" aria-hidden="true">🔗</span>
           <span class="portal-body"><strong>AI Website Shortcuts <span class="link-ext">&#8599;</span></strong>
           <span>Claude, Grok, ChatGPT, Gemini, and other AI site links.</span></span>
           <span class="portal-chevron" aria-hidden="true">&#8250;</span>
         </a>
-        <a class="portal-card" style="--i:3" href="https://main-page-production-9927.up.railway.app/prompt-builder.html" target="_blank" rel="noopener noreferrer">
+        <a class="portal-card" style="--i:4" href="https://main-page-production-9927.up.railway.app/prompt-builder.html" target="_blank" rel="noopener noreferrer">
           <span class="portal-icon" aria-hidden="true">✨</span>
           <span class="portal-body"><strong>AI Prompt Engineer <span class="link-ext">&#8599;</span></strong>
           <span>Build and refine prompts.</span></span>
           <button type="button" class="portal-info" id="promptInstructionsBtn" aria-label="View prompt instructions" title="View prompt instructions">i</button>
           <span class="portal-chevron" aria-hidden="true">&#8250;</span>
         </a>
-        <a class="portal-card" style="--i:4" href="/ai-landscape.html">
+        <a class="portal-card" style="--i:5" href="/ai-landscape.html">
           <span class="portal-icon" aria-hidden="true">📊</span>
           <span class="portal-body"><strong>AI Models Specs</strong>
           <span>Compare AI model specs and capabilities.</span></span>
           <span class="portal-chevron" aria-hidden="true">&#8250;</span>
         </a>
-        <a class="portal-card" style="--i:5" href="/dev.html">
+        <a class="portal-card" style="--i:6" href="/dev.html">
           <span class="portal-icon" aria-hidden="true">🛠️</span>
           <span class="portal-body"><strong>Dev Links</strong>
           <span>Developer tools and resources.</span></span>

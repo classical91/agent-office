@@ -35,8 +35,10 @@ test('the sidebar links all three in-app, not off to Main Hub', () => {
   // Workspace-area metadata may sit between the route and its badge; the
   // invariant is that the detail panel keeps each destination in-app.
   assert.match(shell, /<a class="nav-item" href="\/ai\.html"[^>]*data-icon="AP">/);
-  assert.match(shell, /<a class="nav-item" href="\/apps\.html"[^>]*data-icon="WP">/);
-  assert.match(shell, /<a class="nav-item" href="\/audits\.html"[^>]*data-icon="AU"><span class="nav-item-label">Audit Log<\/span><\/a>/);
+  assert.match(shell, /<a class="nav-item nav-item-parent" href="\/apps\.html"[^>]*data-nav-sub="apps"[^>]*><span class="nav-item-label">Apps &amp; Sites<\/span>/);
+  // Audit Log sits in the Apps & Sites dropdown rather than as its own top-level row.
+  assert.match(shell, /data-nav-sub="apps"[\s\S]*?<div class="nav-sub">\s*<a class="nav-item" href="\/audits\.html"[^>]*data-icon="AU"><span class="nav-item-label">Audit Log<\/span><\/a>\s*<\/div>/);
+  assert.doesNotMatch(shell, /AI Models|AI Prompt Engineer|My Websites/);
   assert.doesNotMatch(shell, /main-page-production-9927\.up\.railway\.app\/(ai|apps)\.html/);
 });
 
@@ -48,6 +50,7 @@ test('the AI Portal points at the in-app pages and keeps the Main Hub tools exte
   assert.match(page, /href="https:\/\/main-page-production-9927\.up\.railway\.app\/ai-shortcuts\.html" target="_blank"/);
   assert.match(page, /href="https:\/\/main-page-production-9927\.up\.railway\.app\/prompt-builder\.html" target="_blank"/);
   assert.match(page, /id="promptInstructionsModal"/);
+  assert.match(page, /href="https:\/\/market-dashboard-production-b2f4\.up\.railway\.app\/bot-commands\.html" target="_blank"[^>]*>[\s\S]*?<strong>Bot Commands/);
 });
 
 test('Apps & Sites has a prominent Audit Log link outside the project list', () => {
