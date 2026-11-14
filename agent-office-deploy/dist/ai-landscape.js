@@ -1199,25 +1199,9 @@
     }));
   }
 
-  function addAiNavItem() {
-    const nav = document.querySelector(".nav");
-    if (!nav || nav.querySelector("[data-ai-landscape-nav]")) return;
-    const firstWrap = nav.querySelector(".nav-items-wrap");
-    if (!firstWrap) return;
-    const itemEl = document.createElement("div");
-    itemEl.className = "nav-item";
-    itemEl.setAttribute("data-ai-landscape-nav", "true");
-    itemEl.setAttribute("onclick", "switchView('ai-landscape', this)");
-    itemEl.innerHTML = '<span class="icon">AI</span> AI Models';
-    const dropbox = Array.from(firstWrap.children).find(el => String(el.getAttribute("onclick") || "").includes("dropbox"));
-    firstWrap.insertBefore(itemEl, dropbox || null);
-  }
-
   function boot() {
-    // Only add the AI Models nav item; do NOT consolidate the whole sidebar
-    // into one "Site Menu" — the nav keeps its own structure (My Websites & Projects is the
-    // single dropdown, with per-site Railway/GitHub sub-dropdowns).
-    addAiNavItem();
+    // The sidebar no longer lists AI Models (it is reached from the AI Portal),
+    // so the page leaves the shared nav exactly as the shell template wrote it.
     try {
       if (typeof VIEW_HANDLERS !== "undefined") {
         VIEW_HANDLERS["ai-landscape"] = { enter: () => render(), focus: false };
