@@ -1,6 +1,172 @@
 /* Structured audit history. Append new weekly records; preserve older entries. */
 window.AUDITS = [
   {
+    "id": "weekly-2026-11-15-farm-bot",
+    "project": "FarmBot",
+    "type": "Weekly repository audit",
+    "auditedAt": "2026-11-15",
+    "note": "At risk: verified non-durable fallback and keyless queue upsert overwrite; recent TradingView and Market Dashboard intake changes increase integration test priority.",
+    "overallStatus": "At risk — production not verified",
+    "repository": "classical91/farm-bot",
+    "defaultBranch": "main",
+    "commit": "005b2a0d6dedcf7c39835ce5ffaffb163fe1fff4",
+    "scope": "Inventoried 25 accessible repositories. Reviewed FarmBot current default branch, Nov 9–14 commits, app/auth/CORS, Prisma initialization, health routes, queue insertion, API scripts, Railway configuration, and prior Nov 8 audit. Production environment, CI execution, deployment and end-to-end delivery not independently verified.",
+    "priorityRanking": [
+      {
+        "repository": "classical91/farm-bot",
+        "priority": "P1",
+        "reason": "Automated publishing and queue durability; recent TradingView converter and Market Dashboard Top 10 integration; verified storage and ID safety gaps."
+      },
+      {
+        "repository": "classical91/agent-office",
+        "priority": "P1",
+        "reason": "Operational dashboard and audit history; active changes."
+      },
+      {
+        "repository": "classical91/market-dashboard",
+        "priority": "P1",
+        "reason": "News feed provider for newly added FarmBot Top 10 intake; active changes."
+      },
+      {
+        "repository": "classical91/main-hub",
+        "priority": "P1",
+        "reason": "Production dashboard entry point and routing."
+      },
+      {
+        "repository": "classical91/mission-control",
+        "priority": "P2",
+        "reason": "Automation command deck; narrower evidence this run."
+      },
+      {
+        "repository": "classical91/traderclaw",
+        "priority": "P2",
+        "reason": "Trading integrations and data integrity."
+      },
+      {
+        "repository": "classical91/webclaw-service-hub",
+        "priority": "P2",
+        "reason": "Integration surface."
+      },
+      {
+        "repository": "classical91/spirituality",
+        "priority": "P2",
+        "reason": "User-facing application, lower publishing blast radius."
+      }
+    ],
+    "findings": {
+      "critical": [],
+      "high": [
+        {
+          "id": "FB-15-H1",
+          "classification": "Verified finding (code); production state unverified",
+          "summary": "buildApp selects MemoryFarmbotRepository when getPrismaClient returns null for missing DATABASE_URL or constructor failure. /health always returns ok and /ready always returns ready with adapter memory, independent of database state.",
+          "impact": "API may acknowledge non-durable queue writes and appear healthy while storage is unavailable.",
+          "evidence": "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/app.ts"
+        },
+        {
+          "id": "FB-15-H2",
+          "classification": "Verified finding (code); triggering collision not observed in production",
+          "summary": "createUiQueueItem without idempotencyKey calls insertUiQueueItem directly; that method uses upsert by numeric ID and updates an existing non-screenshot row, potentially overwriting a different post on ID collision.",
+          "impact": "Distinct keyless submissions sharing an ID can replace queued content or reset delivery state.",
+          "evidence": "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/repositories/prisma-repository.ts"
+        }
+      ],
+      "medium": [
+        {
+          "id": "FB-15-M1",
+          "classification": "Likely issue; concurrency reproduction needed",
+          "summary": "Queue scheduling reads latest slot and writes a new item within a transaction without an obvious shared lane-level lock; concurrent independent intake paths may select overlapping slots.",
+          "evidence": "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/repositories/prisma-repository.ts"
+        },
+        {
+          "id": "FB-15-M2",
+          "classification": "Assumption requiring verification",
+          "summary": "New TradingView article-to-X converter and Market Dashboard Top 10 news-batch ingestion landed Nov 14; full authentication, deduplication, parsing and publish receipts not smoke-tested.",
+          "evidence": "https://github.com/classical91/farm-bot/commit/3725f189a3af3651a136bc262f8b86b6b2524d15"
+        }
+      ],
+      "low": [
+        {
+          "id": "FB-15-L1",
+          "classification": "Recommendation",
+          "summary": "Measure audit/history and batch-read latency before query optimization; no performance regression verified."
+        }
+      ]
+    },
+    "brokenOrIncomplete": [
+      "Production durability guarantee and truthful readiness are incomplete in source.",
+      "Keyless ID collision safety incomplete in Prisma queue insertion.",
+      "New TradingView/Top 10 integrations require end-to-end verification; no outage confirmed."
+    ],
+    "previousFindings": [
+      {
+        "finding": "Memory fallback and misleading readiness",
+        "status": "Still open",
+        "detail": "Reconfirmed in app.ts, prisma.ts and health.routes.ts."
+      },
+      {
+        "finding": "Keyless queue ID collision",
+        "status": "Still open",
+        "detail": "Reconfirmed in createUiQueueItem and upsert update path."
+      },
+      {
+        "finding": "Shared scheduling concurrency",
+        "status": "Still open (likely issue)",
+        "detail": "No shared lock visible in queue insertion; race test needed."
+      },
+      {
+        "finding": "Screenshot Inbox validation",
+        "status": "Requires verification",
+        "detail": "No end-to-end test executed; new converter integrations now take precedence."
+      },
+      {
+        "finding": "Retired direct queue helper",
+        "status": "No longer relevant",
+        "detail": "Not included as active finding."
+      }
+    ],
+    "fixedIssues": [],
+    "outstandingIssues": [
+      "Persistent queue fallback and false readiness",
+      "Keyless queue ID overwrite",
+      "Scheduling concurrency risk",
+      "New integrations lack independently verified delivery test"
+    ],
+    "recommendedFixes": [
+      "1. Require Postgres in production; fail startup/readiness when unavailable, use DB-backed /ready for deployment health checks.",
+      "2. Replace keyless queue upsert overwrite with insert-only collision-safe ID allocation and regression tests.",
+      "3. Serialize shared dispatch-lane slot selection transactionally and test concurrent intakes.",
+      "4. Run TradingView and Market Dashboard Top 10 intake through authorization, deduplication, queue and delivery receipt smoke tests.",
+      "5. Review deployment environment, migrations and credential separation without exposing secrets."
+    ],
+    "quickWins": [
+      "Add production missing-DATABASE_URL readiness regression test.",
+      "Add two keyless posts with same ID test ensuring neither is overwritten.",
+      "Check the latest CI and smoke-test new news intake."
+    ],
+    "thisWeeksFocus": [
+      "Fail closed on unavailable persistent storage.",
+      "Eliminate keyless queue overwrites.",
+      "Test newly added TradingView and Top 10 intake end-to-end."
+    ],
+    "safeToDefer": [
+      "Cosmetic UI refactors",
+      "Unmeasured historical query optimization"
+    ],
+    "checks": {
+      "sourceInspection": "Completed",
+      "localTests": "Not executed",
+      "ci": "Not independently verified",
+      "production": "Not verified",
+      "dashboardData": "JSON parse and history count verified before write"
+    },
+    "references": [
+      "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/app.ts",
+      "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/routes/health.routes.ts",
+      "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/repositories/prisma-repository.ts"
+    ]
+  },
+  {
     "id": "weekly-2026-11-08-farm-bot",
     "project": "FarmBot",
     "type": "Weekly repository audit",
