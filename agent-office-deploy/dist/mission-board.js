@@ -226,21 +226,28 @@
     // deliberate act and waits behind Edit.
     const section = document.createElement('section');
     section.id = 'note-view-section';
+    section.className = iosMode ? 'reminder-note-view' : '';
     section.style.cssText = 'width:100%;max-width:720px;margin:0 auto;padding:24px 20px 60px;box-sizing:border-box;';
+    const backButton = `<button type="button" id="mission-detail-back" class="drop-detail-back">← ${iosMode ? 'Fix Queue' : 'All tasks'}</button>`;
+    const editButton = '<button type="button" id="mission-detail-edit" class="btn btn-secondary mission-edit-toggle" aria-expanded="false" aria-controls="mission-detail-edit-fields">Edit</button>';
+    const reminderDate = new Date(drop.date);
+    const createdLabel = iosMode && !Number.isNaN(reminderDate.getTime())
+      ? reminderDate.toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+      : dropFormatDate(drop.date);
     section.innerHTML = `
-      <div class="drop-detail">
-        <button type="button" id="mission-detail-back" class="drop-detail-back">← ${iosMode ? 'Fix Queue' : 'All tasks'}</button>
+      ${iosMode ? backButton : ''}
+      <div class="drop-detail${iosMode ? ' reminder-detail' : ''}">
+        ${iosMode ? `<div class="reminder-detail-topline"><span class="reminder-detail-kind">Reminder</span><span class="reminder-detail-state${drop.done ? ' is-done' : ''}">${drop.done ? 'Completed' : 'Open'}</span>${editButton}</div>` : backButton}
         <div class="drop-detail-header">
           <h2 class="drop-detail-title">${escHTML(drop.title || 'Untitled task')}</h2>
           <div class="drop-detail-meta-row">
-            <span>${dropFormatDate(drop.updated_at || drop.date)}</span>
-            <span class="sep">·</span>
+            ${iosMode ? '' : `<span>${dropFormatDate(drop.updated_at || drop.date)}</span><span class="sep">·</span>`}
             ${iosMode ? dropBadge(ReminderCategories.label(drop), 'subject') + dropReminderBadge(drop) : dropBadge(statusLabel(drop.status), 'status')}
             ${iosMode || !drop.subject ? '' : dropBadge(drop.subject, 'subject')}
             ${iosMode ? '' : `<span>${escHTML(drop.project || 'No project')} / ${escHTML(agentLabel(drop.agent))}</span>`}
           </div>
         </div>
-        <button type="button" id="mission-detail-edit" class="btn btn-secondary mission-edit-toggle">Edit</button>
+        ${iosMode ? '' : editButton}
         <div id="mission-detail-edit-fields" class="mission-edit-fields is-collapsed">
           ${iosMode ? `<div class="reminder-edit-fields">
             <label for="mission-reminder-title">Title</label>
@@ -257,9 +264,9 @@
             <button type="button" id="mission-reminder-save" class="btn btn-primary">Save reminder</button>
           </div>` : `<h4>Move Task</h4>${selectHtml('mission-detail-status', drop.status || 'idea', STATUSES)}`}
         </div>
-        <div class="drop-detail-content">${escHTML(drop.content || '')}</div>
+        ${iosMode && !(drop.content || '').trim() ? '' : `<div class="${iosMode ? 'reminder-detail-body' : ''}">${iosMode ? '<div class="drop-detail-section-label">Details</div>' : ''}<div class="drop-detail-content">${escHTML(drop.content || '')}</div></div>`}
         ${(drop.tags || []).length ? `<div class="drop-detail-section-label">Tags</div><div class="detail-tags">${drop.tags.map(t => dropBadge(t, 'tag')).join(' ')}</div>` : ''}
-        <p><strong>Created:</strong> ${dropFormatDate(drop.date)}</p>
+        <p class="${iosMode ? 'reminder-detail-created' : ''}"><strong>Created${iosMode ? '' : ':'}</strong> ${createdLabel}</p>
         <div class="detail-actions">
           <button id="mission-done-btn" class="btn btn-primary">${iosMode && drop.done ? 'Mark incomplete' : 'Mark Done'}</button>
           <button id="mission-archive-btn" class="btn btn-secondary">Archive</button>
@@ -281,6 +288,7 @@
       const fields = document.getElementById('mission-detail-edit-fields');
       const open = fields.classList.toggle('is-collapsed') === false;
       editToggle.textContent = open ? 'Done editing' : 'Edit';
+      editToggle.setAttribute('aria-expanded', String(open));
     });
     const update = patch => patchDrop(drop.id, patch).catch(error => handleDropboxRequestError(error, 'Could not save changes.'));
     document.getElementById('mission-detail-status')?.addEventListener('change', e => update({ status: e.target.value }));
@@ -353,3 +361,4 @@
 
   document.addEventListener('DOMContentLoaded', installMissionBoard);
 })();
+
