@@ -39,15 +39,66 @@
   flex: 1 1 260px;
   min-width: 220px;
   max-width: 420px;
-  padding: 11px 34px 11px 14px;
+  padding: 13px 62px 13px 16px;
+  min-height: 48px;
   font-size: 15px;
   font-weight: 600;
   color: var(--text-strong, #f4f6f8);
   background-color: var(--surface-raised, #1b1f24);
+  /* Explicit SVG survives native appearance resets, including mobile Safari. */
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23f4f6f8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"), linear-gradient(var(--border-strong, #45454b), var(--border-strong, #45454b));
+  background-position: right 16px center, right 48px center;
+  background-size: 22px 22px, 1px 24px;
+  background-repeat: no-repeat;
+  border-radius: 10px;
+  cursor: pointer;
   border: 1px solid color-mix(in srgb, var(--accent, #6366f1) 45%, transparent);
   box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.32));
+}
+
+/* A quiet reading card, with one primary action and a separate editing area. */
+.reminder-note-view > .drop-detail-back { margin: 0 0 20px; min-height: 44px; }
+.reminder-detail {
+  padding: 28px;
+  border: 1px solid var(--border-strong, #38383f);
+  border-radius: 18px;
+  background: var(--surface-raised, #1b1f24);
+  box-shadow: 0 12px 36px #0002;
+  overflow-wrap: anywhere;
+}
+.reminder-detail-topline { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
+.reminder-detail-kind { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-quiet, #a1a1aa); }
+.reminder-detail-state { padding: 4px 9px; border: 1px solid var(--border-strong, #45454b); border-radius: 999px; font-size: 11px; font-weight: 600; color: var(--text, #eee); }
+.reminder-detail-state.is-done { color: #86efac; background: #14532d33; border-color: #4ade8044; }
+.reminder-detail .mission-edit-toggle { margin: 0 0 0 auto; min-height: 40px; padding: 8px 14px; font-size: 13px; }
+.reminder-detail .drop-detail-header { padding: 0 0 24px; margin: 0; border-color: var(--border, #ffffff14); }
+.reminder-detail .drop-detail-title { margin-bottom: 16px; font-size: clamp(22px, 3vw, 28px); line-height: 1.3; letter-spacing: -.025em; }
+.reminder-detail .drop-detail-meta-row { gap: 8px; }
+.reminder-detail .reminder-detail-body { padding: 24px 0; }
+.reminder-detail .drop-detail-section-label { margin: 0 0 10px; }
+.reminder-detail .drop-detail-content { margin: 0; font-size: 15px; line-height: 1.8; }
+.reminder-detail .reminder-detail-created { display: flex; flex-wrap: wrap; gap: 6px; margin: 20px 0 0; font-size: 12px; line-height: 1.6; }
+.reminder-detail .reminder-detail-created strong { font-weight: 500; color: var(--muted, #a1a1aa); }
+.reminder-detail .detail-actions { gap: 10px; margin-top: 24px; padding-top: 20px; border-color: var(--border, #ffffff14); }
+.reminder-detail .detail-actions .btn { min-height: 44px; padding: 10px 16px; font-size: 13px; border-radius: 10px; }
+.reminder-detail #mission-archive-btn { border-color: var(--border-strong, #45454b); background: transparent; color: var(--text, #eee); }
+.reminder-detail #delete-drop-btn { margin-left: auto; background: transparent; border-color: transparent; }
+.reminder-detail #delete-drop-btn:hover { border-color: currentColor; }
+.reminder-detail .mission-edit-fields:not(.is-collapsed) { margin: 24px 0 0; padding: 20px; border: 1px solid var(--border-strong, #45454b); border-radius: 12px; background: var(--view-bg, #111115); }
+.reminder-detail .reminder-edit-fields label:first-child { margin-top: 0; }
+.reminder-detail :is(button, input, select, textarea):focus-visible { outline: 2px solid var(--accent, #a78bfa); outline-offset: 3px; }
+@media (max-width: 480px) {
+  .reminder-detail { padding: 20px; border-radius: 14px; }
+  .reminder-detail .detail-actions { gap: 8px; }
+  .reminder-detail .detail-actions .btn { padding-inline: 12px; }
+  .reminder-detail #mission-done-btn { flex: 1 1 100%; }
+  .reminder-detail #delete-drop-btn { margin-left: auto; }
+  .reminder-detail .mission-edit-fields:not(.is-collapsed) { padding: 14px; }
 }
 .ios-mode #drop-filter-subject:hover,
 .ios-mode #drop-filter-subject:focus {
   border-color: var(--accent, #6366f1);
 }
+
