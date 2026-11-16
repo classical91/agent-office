@@ -199,10 +199,11 @@ test('Dev Links AI Developers includes the requested consoles', () => {
   assert.match(page, />Google Cloud Console</);
 });
 
-test('Dev Links AI Developers includes GitHub access tokens', () => {
+test('Dev Links Tokens & Credentials includes GitHub access tokens', () => {
   const page = fs.readFileSync(path.join(DIST, 'dev.html'), 'utf8');
-  const start = page.indexOf('<span>AI Developers</span>');
+  const start = page.indexOf('<span>Tokens &amp; Credentials</span>');
   const end = page.indexOf('<span>Platform Update Feeds</span>');
+  assert.ok(start > -1 && start < end);
   const section = page.slice(start, end);
   assert.match(section, /https:\/\/github\.com\/settings\/personal-access-tokens/);
   assert.match(section, />GitHub Access Tokens</);
