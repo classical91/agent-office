@@ -2911,7 +2911,7 @@ async function handleStatic(req, res, pathname) {
     // instead; these files are small and this app is single-user.
     res.writeHead(200, {
       'Content-Type': MIME_TYPES[path.extname(filePath)] || 'text/plain; charset=utf-8',
-      'Cache-Control': 'no-cache',
+      'Cache-Control': pathname === '/platform-watch.html' ? 'no-store' : 'no-cache',
     });
     res.end(data);
   } catch (error) {
@@ -2920,8 +2920,9 @@ async function handleStatic(req, res, pathname) {
     // resets.css, got a page, applied none of it, and the screen looked like an
     // older version of the app rather than a broken one. A stylesheet or script
     // that is not there now says so, in the status and in the server log.
-    if (!isPageRequest(filePath)) {
-      console.warn(`Static asset missing: ${pathname}`);
+    // A missing Platform Watch deployment must not look like another app page.
+    if (!isPageRequest(filePath) || pathname === '/platform-watch.html') {
+      console.warn(`Static file missing: ${pathname}`);
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-cache' });
       res.end('Not Found');
       return;
@@ -8307,6 +8308,17 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ------------------------------------------------------------
+
+    // Keep existing bookmarks, but use a fresh canonical URL for Platform Watch.
+    // This runs before the login gate so `next` also uses the canonical page.
+    if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/intel-radar.html') {
+      res.writeHead(308, {
+        Location: `/platform-watch.html${parsedUrl.search}`,
+        'Cache-Control': 'no-store',
+      });
+      res.end();
+      return;
+    }
 
     const isWebsitePage = req.method === 'GET' && (pathname === '/' || pathname.endsWith('.html'));
     if (isWebsitePage && pathname !== '/login.html' && PASSPHRASE_HASH && !getSession(req)) {

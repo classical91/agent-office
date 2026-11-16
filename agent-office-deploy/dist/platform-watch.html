@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-page="platform-watch">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
-<title>Intel Radar - Agent Office</title>
+<title>Platform Watch - Agent Office</title>
+<link rel="canonical" href="/platform-watch.html"/>
 <link rel="stylesheet" href="shared.css?v=modal-scroll-20261107"/>
 <!-- Restores the saved theme, sidebar state and focus mode before first paint,
      so no page flashes the default accent, a full-width sidebar, or the chrome
@@ -152,7 +153,7 @@
           <a class="nav-item" href="/dev.html" data-nav-area="intelligence" data-icon="DL"><span class="nav-item-label">Dev Links</span></a>
           <a class="nav-item" href="/ai.html" data-nav-area="intelligence" data-icon="AP"><span class="nav-item-label">AI Portal</span></a>
           <a class="nav-item" href="/ai-landscape.html" data-nav-area="intelligence" data-icon="AL"><span class="nav-item-label">AI Landscape</span></a>
-          <a class="nav-item" href="/intel-radar.html" data-nav-area="intelligence" data-icon="IR"><span class="nav-item-label">Intel Radar</span></a>
+          <a class="nav-item" href="/platform-watch.html" data-nav-area="intelligence" data-icon="PW"><span class="nav-item-label">Platform Watch</span></a>
           <div class="nav-group">
             <a class="nav-item nav-item-parent" href="/apps.html" data-nav-area="projects" data-nav-sub="apps" data-icon="AS"><span class="nav-item-label">Apps &amp; Sites</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Apps &amp; Sites pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></a>
             <div class="nav-sub">
@@ -178,13 +179,13 @@
     </div>
   </nav>
 
-  <div class="view view--scroll active" id="view-intel-radar">
+  <div class="view view--scroll active" id="view-platform-watch">
 <main class="ao-page ao-page--wide intel-page">
       <section class="ao-card intel-hero">
         <div class="ao-page-head">
           <div>
-            <p class="ao-section-label">Intel Radar</p>
-            <h1 class="ao-page-title">Intel Radar</h1><p class="ao-page-sub">Track platform updates and launch your favorite searches in one pass.</p>
+            <p class="ao-section-label">Platform Watch</p>
+            <h1 class="ao-page-title">Platform Watch</h1><p class="ao-page-sub">Track platform updates and launch your favorite searches in one pass.</p>
           </div>
           <button class="ao-btn" id="refresh-watch-button" type="button">Refresh Watchlist</button>
         </div>
@@ -313,7 +314,7 @@
 <script src="app-shared.js?v=stale-blue-20261029"></script>
 <script type="module" src="src/intelRadar.js?v=1"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => switchView('intel-radar', document.querySelector('.nav-item.active')));
+document.addEventListener('DOMContentLoaded', () => switchView('platform-watch', document.querySelector('.nav-item.active')));
 </script>
 
 </body>

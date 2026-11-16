@@ -3,7 +3,7 @@
   line-height: var(--lh-normal);
 }
 
-#view-intel-radar { min-width: 0; }
+#view-platform-watch { min-width: 0; }
 .intel-page h2 { font-size: var(--fs-lg); color: var(--text-strong); }
 .intel-page .ao-section-label { margin-bottom: var(--space-2); }
 .intel-page .inline-note,
