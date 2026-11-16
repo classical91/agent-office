@@ -233,7 +233,7 @@ async function mockIntelFeeds(page) {
   }));
 }
 
-test('Intel Radar sidebar navigation and all Settings themes work on desktop and mobile', async t => {
+test('Platform Watch sidebar navigation and all Settings themes work on desktop and mobile', async t => {
   if (skipReason) return t.skip(skipReason);
   for (const width of [1440, 390]) {
     const { page, problems } = await openPage(t);
@@ -241,22 +241,33 @@ test('Intel Radar sidebar navigation and all Settings themes work on desktop and
     await mockIntelFeeds(page);
     await page.goto(`${server.origin}/ai-landscape.html`);
     if (width < 768) await page.click('.mobile-nav-toggle');
-    const intelLink = page.locator('.nav-item[href="/intel-radar.html"]');
-    assert.equal(await intelLink.innerText(), 'Intel Radar');
+    const intelLink = page.locator('.nav-item[href="/platform-watch.html"]');
+    assert.equal(await intelLink.innerText(), 'Platform Watch');
     assert.equal(await intelLink.evaluate(el => el.previousElementSibling.getAttribute('href')), '/ai-landscape.html');
     await intelLink.click();
-    await page.waitForURL('**/intel-radar.html');
-    assert.equal(await page.locator('#view-intel-radar').isVisible(), true);
-    assert.equal(await page.locator('.nav-item.active').getAttribute('href'), '/intel-radar.html');
+    await page.waitForURL('**/platform-watch.html');
+    assert.equal(await page.locator('#view-platform-watch').isVisible(), true);
+    assert.equal(await page.locator('.nav-item.active').getAttribute('href'), '/platform-watch.html');
     await page.waitForFunction(() => document.querySelector('#watch-status-pill').textContent === 'Watchlist: 5/5 live');
     assert.equal(await page.locator('.source-card').count(), 5);
     if (width < 768) assert.equal(await page.locator('.nav.mobile-open').count(), 0);
+
+    // The old bookmark must end on the watch page, never Calendar.
+    await page.goto(`${server.origin}/intel-radar.html`);
+    await page.waitForURL('**/platform-watch.html');
+    assert.equal(await page.locator('.ao-page-title').innerText(), 'Platform Watch');
+    assert.equal(await page.locator('#calendar-app').count(), 0);
+    if (width < 768) await page.click('.mobile-nav-toggle');
+    await page.locator('.nav-panel .nav-item[href="/calendar-v3.html"]').click();
+    await page.waitForURL('**/calendar-v3.html');
+    assert.equal(await page.locator('#view-calendar-v3').isVisible(), true);
+    assert.equal(await page.locator('#intel-search-form').count(), 0);
 
     const surfaces = new Set();
     for (const [theme, accent] of Object.entries({ Dark: '#6366f1', Midnight: '#10b981', Ocean: '#38bdf8', Crimson: '#ef4444', Forest: '#22c55e', Amber: '#f59e0b' })) {
       await page.goto(`${server.origin}/settings.html`);
       await page.getByRole('button', { name: new RegExp(`^${theme}`) }).click();
-      await page.goto(`${server.origin}/intel-radar.html`);
+      await page.goto(`${server.origin}/platform-watch.html`);
       const styles = await page.evaluate(() => ({
         accent: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
         panel: getComputedStyle(document.querySelector('.intel-hero')).backgroundColor,
@@ -273,7 +284,21 @@ test('Intel Radar sidebar navigation and all Settings themes work on desktop and
   }
 });
 
-test('Intel Radar search routes encode queries, keep recent searches, and launch presets', async t => {
+test('the old bookmark keeps Platform Watch as its destination through login', async t => {
+  if (skipReason) return t.skip(skipReason);
+  const { page, problems } = await openPage(t, { authenticated: false });
+  await mockIntelFeeds(page);
+  await page.goto(`${server.origin}/intel-radar.html?from=bookmark`);
+  await page.waitForURL('**/login.html?*');
+  assert.equal(new URL(page.url()).searchParams.get('next'), '/platform-watch.html?from=bookmark');
+  await logIn(page);
+  await page.waitForURL('**/platform-watch.html?from=bookmark');
+  assert.equal(await page.locator('#view-platform-watch').isVisible(), true);
+  assert.equal(await page.locator('#calendar-app').count(), 0);
+  assert.deepEqual(problems, []);
+});
+
+test('Platform Watch search routes encode queries, keep recent searches, and launch presets', async t => {
   if (skipReason) return t.skip(skipReason);
   const { page, problems } = await openPage(t);
   await mockIntelFeeds(page);
@@ -281,7 +306,7 @@ test('Intel Radar search routes encode queries, keep recent searches, and launch
     window.searchTabs = [];
     window.open = (url, target, features) => { window.searchTabs.push({ url, target, features }); return null; };
   });
-  await page.goto(`${server.origin}/intel-radar.html`);
+  await page.goto(`${server.origin}/platform-watch.html`);
   const query = 'iOS widgets & OpenClaw #tips';
   await page.fill('#intel-query', `  ${query}  `);
   await page.click('[data-search-target="youtube"]');
