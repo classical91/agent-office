@@ -132,6 +132,33 @@ test('a real page is served as itself', async () => {
   }
 });
 
+test('the old Intel URL redirects to Platform Watch and Calendar serves its own page', async () => {
+  const server = await startServer();
+  try {
+    const old = await fetch(`${server.origin}/intel-radar.html?from=bookmark`, { redirect: 'manual' });
+    assert.equal(old.status, 308);
+    assert.equal(old.headers.get('location'), '/platform-watch.html?from=bookmark');
+    assert.equal(old.headers.get('cache-control'), 'no-store');
+
+    const watch = await fetch(`${server.origin}/platform-watch.html`);
+    assert.equal(watch.status, 200);
+    assert.equal(watch.headers.get('cache-control'), 'no-store');
+    const watchPage = await watch.text();
+    assert.match(watchPage, /<title>Platform Watch - Agent Office<\/title>/);
+    assert.match(watchPage, /id="view-platform-watch"/);
+    assert.doesNotMatch(watchPage, /id="calendar-app"|src="calendar-view/);
+
+    const calendar = await fetch(`${server.origin}/calendar-v3.html`);
+    assert.equal(calendar.status, 200);
+    const calendarPage = await calendar.text();
+    assert.match(calendarPage, /id="view-calendar-v3"/);
+    assert.match(calendarPage, /id="calendar-app"/);
+    assert.doesNotMatch(calendarPage, /id="intel-search-form"/);
+  } finally {
+    stop(server);
+  }
+});
+
 test('the pages that came over from Main Hub are served, with their data', async () => {
   const server = await startServer();
   try {
