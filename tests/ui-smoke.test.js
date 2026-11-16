@@ -659,6 +659,49 @@ test('focus is remembered per page, so the Calendar does not drag the rest of th
   assert.ok(await page.evaluate(() => document.documentElement.classList.contains('ao-focus')));
 });
 
+test('the shortcut rail pins and removes pages across navigation and reloads', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  const { page, problems } = await openPage(t);
+  await page.goto(`${server.origin}/settings.html`);
+  const rail = page.locator('.nav-rail-items');
+  const customize = page.getByRole('button', { name: 'Customize shortcuts' });
+  const dialog = page.getByRole('dialog', { name: 'Pin pages to the sidebar' });
+  await customize.click();
+  assert.ok(await dialog.getByRole('checkbox', { name: 'Dropbox', exact: true }).isChecked());
+  await dialog.getByRole('checkbox', { name: 'AI Portal', exact: true }).uncheck();
+  await dialog.getByRole('checkbox', { name: 'Memory', exact: true }).check();
+  await dialog.getByRole('checkbox', { name: 'Fix Queue', exact: true }).check();
+  await dialog.getByRole('checkbox', { name: 'Audit Log', exact: true }).check();
+  await dialog.getByRole('button', { name: 'Done' }).click();
+  await dialog.waitFor({ state: 'hidden' });
+
+  assert.equal(await rail.getByRole('link', { name: 'AI tools' }).count(), 0);
+  assert.equal(await rail.getByRole('link', { name: 'Audit Log' }).getAttribute('href'), '/audits.html');
+  await rail.getByRole('link', { name: 'Memory', exact: true }).click();
+  await page.waitForURL('**/memory.html');
+  assert.equal(await rail.getByRole('link', { name: 'Memory', exact: true }).getAttribute('aria-current'), 'page');
+  await page.locator('#nav-collapse-btn').click();
+  await page.setViewportSize({ width: 1280, height: 500 });
+  assert.ok(await customize.isVisible());
+  assert.ok(await rail.evaluate(el => el.scrollHeight > el.clientHeight));
+
+  const fixQueue = rail.getByRole('link', { name: 'Fix Queue', exact: true });
+  await fixQueue.click();
+  await page.waitForURL(url => url.searchParams.get('view') === 'ios');
+  await page.reload();
+  assert.equal(await fixQueue.getAttribute('aria-current'), 'page');
+  assert.equal(await rail.getByRole('link', { name: 'Dropbox', exact: true }).getAttribute('aria-current'), null);
+  await customize.click();
+  await dialog.getByRole('checkbox', { name: 'Fix Queue', exact: true }).uncheck();
+  await page.keyboard.press('Escape');
+  await dialog.waitFor({ state: 'hidden' });
+  await page.reload();
+  await customize.waitFor();
+  assert.equal(await fixQueue.count(), 0);
+  assert.deepEqual(problems, []);
+});
+
 test('Planning Tools groups its pages and Calendar contains Planning Mode', async t => {
   if (skipReason) return t.skip(skipReason);
 

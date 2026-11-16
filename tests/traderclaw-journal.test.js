@@ -73,9 +73,11 @@ test('journal sync is token-authenticated, sanitized, and session-readable', asy
 test('journal page and shared navigation are shipped', () => {
   const page = fs.readFileSync(path.join(DIST, 'traderclaw-journal.html'), 'utf8');
   const shell = fs.readFileSync(path.join(ROOT, 'scripts', 'shell', 'shell.html'), 'utf8');
+  const sidebar = shell.match(/<nav class="nav"[\s\S]*?<\/nav>/)?.[0];
   assert.match(page, /TraderClaw Journal - Agent Office/);
   assert.match(page, /traderclaw-journal\.js/);
-  assert.doesNotMatch(shell, /href="\/traderclaw-journal\.html"/);
+  assert.ok(sidebar);
+  assert.doesNotMatch(sidebar, /href="\/traderclaw-journal\.html"/);
 });
 
 test('the phone inbox serves a journal roll-up, and only the summary of it', async () => {

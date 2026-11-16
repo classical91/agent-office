@@ -1990,41 +1990,104 @@ function navItemPath(href) {
 }
 
 function markActiveNav() {
-  const here = location.pathname === '/index.html' ? '/' : location.pathname;
-  const isIosView = new URLSearchParams(location.search).get('view') === 'ios';
-
-  document.querySelectorAll('.nav .nav-item').forEach(item => {
-    const href = item.getAttribute('href');
-    // Rows that leave the app (AI Prompt Engineer) are never "where you
-    // are", and neither are the pure-button rows.
-    if (!href || /^https?:/i.test(href)) { item.classList.remove('active'); return; }
-
+  const here = navItemPath(location.href);
+  function isCurrent(href) {
+    if (!href || /^https?:/i.test(href)) return false;
     const target = navItemPath(href);
-    let active = target.path === here;
+    if (target.path !== here.path) return false;
     // Dropbox and Fix Queue are the same page told apart by ?view=ios.
     // Mission Control is the office page with its panel open, so the two rows
     // pointing at "/" are told apart by ?panel=mission-control.
-    if (active && target.path === '/') {
-      const herePanel = new URLSearchParams(location.search).get('panel') || '';
-      active = (target.params.get('panel') || '') === herePanel;
-    }
-    if (active && target.path === '/mission-board.html') {
-      active = (target.params.get('view') === 'ios') === isIosView;
-    }
-    item.classList.toggle('active', active);
+    if (target.path === '/') return (target.params.get('panel') || '') === (here.params.get('panel') || '');
+    if (target.path === '/mission-board.html') return (target.params.get('view') === 'ios') === (here.params.get('view') === 'ios');
+    return true;
+  }
+
+  document.querySelectorAll('.nav .nav-item').forEach(item => {
+    item.classList.toggle('active', isCurrent(item.getAttribute('href')));
   });
 
-  // The detail row tells the permanent black rail which workspace family is
-  // current. One area can contain several pages (for example, all planning
-  // tools), so the rail stays stable while the panel supplies the exact row.
+  // An exact pin takes priority over the default shortcut for its workspace.
+  const shortcuts = [...document.querySelectorAll('.nav-rail-item')];
+  const currentShortcut = shortcuts.find(item => isCurrent(item.getAttribute('href')));
   const activeItem = document.querySelector('.nav-panel .nav-item.active');
-  const activeArea = activeItem?.dataset.navArea || '';
-  document.querySelectorAll('.nav-rail-item').forEach(item => {
-    const active = Boolean(activeArea) && item.dataset.navArea === activeArea;
+  const activeArea = activeItem?.dataset.navArea;
+  shortcuts.forEach(item => {
+    const active = currentShortcut ? item === currentShortcut : Boolean(activeArea) && item.dataset.navArea === activeArea;
     item.classList.toggle('active', active);
     if (active) item.setAttribute('aria-current', 'page');
     else item.removeAttribute('aria-current');
   });
+}
+
+function initNavShortcuts() {
+  const key = 'ao-nav-shortcuts';
+  const rail = document.querySelector('.nav-rail-items');
+  const trigger = document.getElementById('nav-rail-customize');
+  const dialog = document.getElementById('nav-shortcut-dialog');
+  const options = document.getElementById('nav-shortcut-options');
+  if (!rail || !trigger || !dialog || !options) return;
+
+  const shortcuts = new Map([...rail.querySelectorAll('a')].map(link => [link.getAttribute('href'), link]));
+  const defaults = [...shortcuts.keys()];
+  const names = new Map(defaults.map(href => [href, shortcuts.get(href).title]));
+  const extraPages = document.getElementById('nav-shortcut-extra-pages').content.querySelectorAll('a');
+  const detailPages = document.querySelectorAll('.nav-panel a.nav-item[href^="/"]:not([href^="//"])');
+  for (const page of [...detailPages, ...extraPages]) {
+    const href = page.getAttribute('href');
+    if (href === '/settings.html') continue;
+    const name = (page.querySelector('.nav-item-label') || page).textContent.trim();
+    names.set(href, name);
+    if (shortcuts.has(href)) continue;
+
+    const link = document.createElement('a');
+    link.className = 'nav-rail-item';
+    link.href = href;
+    link.title = name;
+    link.setAttribute('aria-label', name);
+    const icon = document.createElement('span');
+    icon.className = 'nav-rail-initials';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = page.dataset.icon || name.slice(0, 2).toUpperCase();
+    link.append(icon);
+    shortcuts.set(href, link);
+  }
+
+  let pinned = defaults;
+  function renderPins() {
+    rail.replaceChildren(...pinned.map(href => shortcuts.get(href)));
+    markActiveNav();
+  }
+
+  function restorePins() {
+    try {
+      const stored = JSON.parse(localStorage.getItem(key));
+      pinned = Array.isArray(stored) ? [...new Set(stored)].filter(href => shortcuts.has(href)) : defaults;
+    } catch {}
+    renderPins();
+    for (const input of options.querySelectorAll('input')) input.checked = pinned.includes(input.value);
+  }
+
+  const sortedPages = [...names].sort((left, right) => left[1].localeCompare(right[1]));
+  for (const [href, name] of sortedPages) {
+    const row = document.createElement('label');
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = href;
+    row.append(input, name);
+    options.append(row);
+  }
+  restorePins();
+  trigger.hidden = false;
+  trigger.addEventListener('click', () => dialog.showModal());
+  options.addEventListener('change', event => {
+    const { value, checked } = event.target;
+    pinned = checked ? [...pinned, value] : pinned.filter(href => href !== value);
+    try { localStorage.setItem(key, JSON.stringify(pinned)); } catch {}
+    renderPins();
+  });
+  window.addEventListener('pageshow', event => { if (event.persisted) restorePins(); });
+  window.addEventListener('storage', event => { if (event.key === key || event.key === null) restorePins(); });
 }
 
 // ─── SIDEBAR DETAIL PANEL ──────────────────────────────────────
@@ -2225,6 +2288,7 @@ function initOfficeLogin() {
 
 document.addEventListener('DOMContentLoaded', () => {
   initOfficeLogin();
+  initNavShortcuts();
   markActiveNav();
   applyNavCompact(navCompactPreferred());
   if (document.getElementById('ops-summary')) {

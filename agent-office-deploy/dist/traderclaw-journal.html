@@ -65,6 +65,19 @@
   </div>
 </div>
 
+<dialog class="nav-shortcut-dialog" id="nav-shortcut-dialog" aria-labelledby="nav-shortcut-title">
+  <form method="dialog">
+    <h2 id="nav-shortcut-title">Pin pages to the sidebar</h2>
+    <div class="nav-shortcut-options" id="nav-shortcut-options"></div>
+    <footer><button class="ao-btn ao-btn--primary" type="submit">Done</button></footer>
+  </form>
+  <template id="nav-shortcut-extra-pages">
+    <a href="/ai-landscape.html" data-icon="AL">AI Landscape</a>
+    <a href="/audits.html" data-icon="AU">Audit Log</a>
+    <a href="/traderclaw-journal.html" data-icon="TJ">TraderClaw Journal</a>
+  </template>
+</dialog>
+
 <div class="layout feed-collapsed">
 
   <!-- LEFT NAV -->
@@ -101,6 +114,9 @@
         </a>
       </div>
       <div class="nav-rail-bottom">
+        <button class="nav-rail-customize" id="nav-rail-customize" type="button" title="Customize shortcuts" aria-label="Customize shortcuts" aria-haspopup="dialog" aria-controls="nav-shortcut-dialog" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        </button>
         <a class="nav-rail-item" href="/settings.html" data-nav-area="system" aria-label="Settings" title="Settings">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 12h2M10 12h10M4 17h7M15 17h5"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="13" cy="17" r="2"/></svg>
         </a>
