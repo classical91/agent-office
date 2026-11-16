@@ -1,0 +1,86 @@
+.intel-page {
+  font-family: var(--font-ui);
+  line-height: var(--lh-normal);
+}
+
+#view-intel-radar { min-width: 0; }
+.intel-page h2 { font-size: var(--fs-lg); color: var(--text-strong); }
+.intel-page .ao-section-label { margin-bottom: var(--space-2); }
+.intel-page .inline-note,
+.intel-page .signal-note,
+.intel-page .empty-note { color: var(--text-dim); font-size: var(--fs-sm); }
+.intel-page .hero-status-row,
+.intel-page .intel-search-actions,
+.intel-page .preset-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.intel-page .hero-status-row .ao-badge { gap: var(--space-2); }
+.intel-page .intel-search-shell,
+.intel-page .intel-board,
+.intel-page .intel-split {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--space-5);
+}
+.intel-page .intel-search-shell { margin-top: var(--space-3); grid-template-columns: minmax(0, 1fr); }
+.intel-page .intel-search-preview { display: block; }
+.intel-page .intel-search-preview summary { color: var(--text-quiet); font-size: var(--fs-sm); cursor: pointer; }
+.intel-page .intel-search-preview[open] .preview-stack { margin: var(--space-3) 0; }
+.intel-page .intel-search-form { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.intel-page .preview-stack,
+.intel-page .preset-stack,
+.intel-page .history-list,
+.intel-page .lane-stack,
+.intel-page .source-items { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; }
+.intel-page .preview-row { display: flex; gap: var(--space-2); align-items: center; }
+.intel-page .preview-copy { flex: 1; min-width: 0; font-size: var(--fs-sm); }
+.intel-page .preview-link {
+  display: block;
+  color: var(--accent);
+  font-size: var(--fs-xs);
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+.intel-page .preview-row .ao-btn { flex-shrink: 0; }
+.intel-page .watch-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: var(--space-4); }
+.intel-page .source-card,
+.intel-page .preset-card,
+.intel-page .history-row {
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.intel-page .source-card-head,
+.intel-page .source-card-footer { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-3); }
+.intel-page .source-card-footer { margin-top: auto; align-items: center; flex-wrap: wrap; }
+.intel-page .source-card-meta { min-width: 0; }
+.intel-page .source-card-meta p { font-size: var(--fs-sm); color: var(--text-dim); margin-top: var(--space-2); }
+.intel-page .source-card-link { color: var(--text-strong); font-weight: 600; text-decoration: none; }
+.intel-page .source-item { border-top: 1px solid var(--border); padding-top: var(--space-3); }
+.intel-page .source-item-link { color: var(--accent); font-size: var(--fs-md); font-weight: 500; text-decoration: none; overflow-wrap: anywhere; }
+.intel-page a:hover { text-decoration: underline; }
+.intel-page .ao-btn:hover { text-decoration: none; }
+.intel-page .source-item-meta { font-size: var(--fs-xs); color: var(--text-dim); margin: var(--space-1) 0; }
+.intel-page .source-item-summary,
+.intel-page .preset-query,
+.intel-page .compact-copy p { color: var(--text-quiet); font-size: var(--fs-sm); overflow-wrap: anywhere; }
+.intel-page .compact-copy strong { overflow-wrap: anywhere; }
+.intel-page .shimmer-block { height: 28px; border-radius: var(--radius-sm); background: var(--surface-hover); }
+.intel-page .source-card-loading { min-height: 180px; }
+
+@media (max-width: 1200px) {
+  .intel-page .intel-search-shell,
+  .intel-page .intel-board,
+  .intel-page .intel-split { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 768px) {
+  .intel-page .ao-card { padding: var(--space-4); }
+  .intel-page .intel-search-actions .ao-btn,
+  .intel-page .preset-actions .ao-btn { flex: 1 1 auto; }
+  .intel-page .preview-row { align-items: flex-start; }
+  .intel-page .preview-row .ao-btn { padding: 0 var(--space-2); }
+  .intel-page .source-card-head { flex-wrap: wrap; }
+}
