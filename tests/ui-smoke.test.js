@@ -222,6 +222,99 @@ function pageNames() {
   return fs.readdirSync(DIST).filter(name => name.endsWith('.html')).sort();
 }
 
+async function mockIntelFeeds(page) {
+  const sources = ['YouTube', 'Apple', 'OpenClaw', 'Claude Code', 'OpenAI'].map((name, index) => ({
+    id: String(index), name, description: 'Official platform updates',
+    homepage: 'https://example.com/', status: 'ok',
+    items: [{ title: `${name} update`, url: 'https://example.com/update', publishedAt: '2026-11-15T10:00:00Z' }],
+  }));
+  await page.route('**/api/watch*', route => route.fulfill({
+    json: { generatedAt: '2026-11-15T10:00:00Z', sources },
+  }));
+}
+
+test('Intel Radar sidebar navigation and all Settings themes work on desktop and mobile', async t => {
+  if (skipReason) return t.skip(skipReason);
+  for (const width of [1440, 390]) {
+    const { page, problems } = await openPage(t);
+    await page.setViewportSize({ width, height: 900 });
+    await mockIntelFeeds(page);
+    await page.goto(`${server.origin}/ai-landscape.html`);
+    if (width < 768) await page.click('.mobile-nav-toggle');
+    const intelLink = page.locator('.nav-item[href="/intel-radar.html"]');
+    assert.equal(await intelLink.innerText(), 'Intel Radar');
+    assert.equal(await intelLink.evaluate(el => el.previousElementSibling.getAttribute('href')), '/ai-landscape.html');
+    await intelLink.click();
+    await page.waitForURL('**/intel-radar.html');
+    assert.equal(await page.locator('#view-intel-radar').isVisible(), true);
+    assert.equal(await page.locator('.nav-item.active').getAttribute('href'), '/intel-radar.html');
+    await page.waitForFunction(() => document.querySelector('#watch-status-pill').textContent === 'Watchlist: 5/5 live');
+    assert.equal(await page.locator('.source-card').count(), 5);
+    if (width < 768) assert.equal(await page.locator('.nav.mobile-open').count(), 0);
+
+    const surfaces = new Set();
+    for (const [theme, accent] of Object.entries({ Dark: '#6366f1', Midnight: '#10b981', Ocean: '#38bdf8', Crimson: '#ef4444', Forest: '#22c55e', Amber: '#f59e0b' })) {
+      await page.goto(`${server.origin}/settings.html`);
+      await page.getByRole('button', { name: new RegExp(`^${theme}`) }).click();
+      await page.goto(`${server.origin}/intel-radar.html`);
+      const styles = await page.evaluate(() => ({
+        accent: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
+        panel: getComputedStyle(document.querySelector('.intel-hero')).backgroundColor,
+        button: getComputedStyle(document.querySelector('.intel-search-actions .ao-btn--primary')).backgroundColor,
+        overflow: document.documentElement.scrollWidth > innerWidth,
+      }));
+      assert.equal(styles.accent, accent, `${theme} at ${width}px`);
+      assert.equal(styles.overflow, false, `${theme} overflows at ${width}px`);
+      surfaces.add(styles.panel);
+      assert.notEqual(styles.button, 'rgba(0, 0, 0, 0)');
+    }
+    assert.equal(surfaces.size, 6, 'card surfaces should follow all six themes');
+    assert.deepEqual(problems, []);
+  }
+});
+
+test('Intel Radar search routes encode queries, keep recent searches, and launch presets', async t => {
+  if (skipReason) return t.skip(skipReason);
+  const { page, problems } = await openPage(t);
+  await mockIntelFeeds(page);
+  await page.addInitScript(() => {
+    window.searchTabs = [];
+    window.open = (url, target, features) => { window.searchTabs.push({ url, target, features }); return null; };
+  });
+  await page.goto(`${server.origin}/intel-radar.html`);
+  const query = 'iOS widgets & OpenClaw #tips';
+  await page.fill('#intel-query', `  ${query}  `);
+  await page.click('[data-search-target="youtube"]');
+  await page.click('[data-search-target="x"]');
+  await page.locator('#intel-query').press('Enter');
+  const tabs = await page.evaluate(() => window.searchTabs);
+  assert.equal(tabs.length, 5, 'YouTube, X, and the three-tab research pack');
+  assert.equal(tabs[0].url, `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`);
+  assert.equal(tabs[1].url, `https://x.com/search?q=${encodeURIComponent(query)}&src=typed_query`);
+  assert.ok(tabs.every(tab => tab.target === '_blank' && tab.features.includes('noopener')));
+  assert.equal(await page.locator('#history-list .history-row').count(), 1, 'recent queries are deduplicated');
+  assert.equal(await page.locator('#history-count-pill').innerText(), 'Searches: 1');
+  await page.reload();
+  assert.equal(await page.locator('#history-list strong').innerText(), query);
+  for (const title of ['Latest iOS widgets', 'OpenClaw tricks', 'Top iOS shortcuts']) {
+    const preset = page.locator('.preset-card').filter({ has: page.getByText(title, { exact: true }) });
+    await preset.getByRole('button', { name: 'YouTube', exact: true }).click();
+    assert.match((await page.evaluate(() => window.searchTabs.at(-1).url)), /^https:\/\/www.youtube.com\/results\?search_query=/);
+  }
+  let refreshes = 0;
+  await page.route('**/api/watch?*', route => {
+    refreshes++;
+    assert.equal(new URL(route.request().url()).searchParams.get('refresh'), '1');
+    return route.fulfill({ status: 503, json: { error: 'Unavailable' } });
+  });
+  await page.click('#refresh-watch-button');
+  await page.waitForFunction(() => !document.querySelector('#refresh-watch-button').disabled);
+  assert.equal(refreshes, 1);
+  assert.equal(await page.locator('#watch-status-pill').innerText(), 'Watchlist: source issue');
+  // The mocked refresh failure is expected; all assets and scripts must still load.
+  assert.deepEqual(problems.filter(problem => !problem.startsWith('503 for ')), []);
+});
+
 // A page that throws on load looks fine in a curl and is blank in a browser.
 // A same-origin 404 is the half-deployed build tests/static-assets.test.js
 // guards the server side of: this is the other half, asked from the page.

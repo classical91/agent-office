@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<meta http-equiv="Expires" content="0"/>
+<title>Intel Radar - Agent Office</title>
+<link rel="stylesheet" href="shared.css?v=modal-scroll-20261107"/>
+<!-- Restores the saved theme, sidebar state and focus mode before first paint,
+     so no page flashes the default accent, a full-width sidebar, or the chrome
+     of a page that opens in Focus Mode. ACCENTS mirrors THEMES in
+     app-shared.js, and the focus key mirrors focusScopeKey() there. -->
+<script>
+(function(){
+  // A theme is just an accent; shared.css derives every surface from it.
+  var ACCENTS={dark:'#6366f1',midnight:'#10b981',ocean:'#38bdf8',crimson:'#ef4444',forest:'#22c55e',amber:'#f59e0b'};
+  try{
+    var a=ACCENTS[localStorage.getItem('ao-theme')];
+    if(a) document.documentElement.style.setProperty('--accent',a);
+    if(localStorage.getItem('ao-nav-compact')==='1') document.documentElement.classList.add('nav-compact');
+    // Focus is remembered per page: this page's own choice, falling back to
+    // whether the page declares data-focus-default="on".
+    var p=location.pathname==='/index.html'?'/':location.pathname;
+    var f=localStorage.getItem('ao-focus:'+p);
+    if(f==='1'||(f===null&&document.documentElement.getAttribute('data-focus-default')==='on')){
+      document.documentElement.classList.add('ao-focus');
+    }
+  }catch(e){}
+})();
+</script>
+<link rel="stylesheet" href="intel-radar.css?v=1"/>
+</head>
+<body>
+
+<!-- Mobile nav overlay -->
+<div id="mobile-overlay" class="mobile-overlay" onclick="closeMobileNav()"></div>
+
+<header class="topbar">
+  <div class="topbar-brand">
+    <button class="mobile-nav-toggle" onclick="toggleMobileNav()" title="Menu" aria-label="Open navigation">&#9776;</button>
+    <a class="topbar-logo" href="/">&#11041; OPENCLAW AGENTS OFFICE</a>
+  </div>
+  <div class="topbar-meta">
+    <button class="ao-login-trigger" id="ao-login-trigger" type="button" onclick="openOfficeLogin()">Login</button>
+    <span class="topbar-stat" id="agent-state-chip">
+      <span class="ao-dot ao-dot--active"></span>
+      <span><span id="onlineCount">9</span> <span id="onlineLabel">agents online</span></span>
+    </span>
+    <button class="ao-btn ao-btn--sm" id="feed-toggle-btn" onclick="toggleFeedPanel()" title="Toggle activity panel" aria-pressed="false">&#9776; Agents</button>
+    <button class="ao-btn ao-btn--sm" id="focus-btn" onclick="toggleFocusMode()" title="Focus Mode &mdash; hide panels" aria-pressed="false">&#9974; Focus</button>
+  </div>
+</header>
+
+<div class="ao-login-modal" id="ao-login-modal" role="dialog" aria-modal="true" aria-labelledby="ao-login-title" hidden>
+  <div class="ao-login-panel">
+    <div class="ao-login-kicker">Secure access</div>
+    <h2 id="ao-login-title">Agent Office Login</h2>
+    <p>Enter your password to access Agent Office.</p>
+    <form id="ao-login-form" class="ao-login-form">
+      <input id="ao-login-password" class="ao-login-input" type="password" autocomplete="current-password" placeholder="Password" required />
+      <button id="ao-login-submit" class="ao-login-submit" type="submit">Unlock</button>
+      <div id="ao-login-error" class="ao-login-error" role="alert"></div>
+    </form>
+  </div>
+</div>
+
+<div class="layout feed-collapsed">
+
+  <!-- LEFT NAV -->
+  <!-- Generated from scripts/shell/shell.html by `npm run sync:shell`. Edit
+       the template, not this copy: tests/shell-consistency.test.js fails when
+       a page's copy drifts from it. Which row is highlighted is worked out
+       from the URL by markActiveNav() in app-shared.js, so no page marks its
+       own — that is what let the copies disagree in the first place. -->
+  <nav class="nav" aria-label="Primary">
+    <!-- The dark rail is always present on desktop. It gives the app a stable
+         set of workspace shortcuts while the pale panel carries the full tree. -->
+    <div class="nav-rail" aria-label="Workspace shortcuts">
+      <a class="nav-rail-brand" href="/" aria-label="Agent Office home" title="Agent Office">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16V8M9 18V6M13 15V9M17 19V5M21 14v-4"/></svg>
+      </a>
+      <div class="nav-rail-items">
+        <a class="nav-rail-item" href="/" data-nav-area="office" aria-label="OpenClaw HQ" title="OpenClaw HQ">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>
+        </a>
+        <a class="nav-rail-item" href="/calendar-v3.html" data-nav-area="calendar" aria-label="Calendar" title="Calendar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"/><path d="M8 3v5M16 3v5M3.5 10h17M8 14h3M13 14h3M8 17h3"/></svg>
+        </a>
+        <a class="nav-rail-item" href="/mission-board.html" data-nav-area="dropbox" aria-label="Dropbox" title="Dropbox">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM4 14h5l2 2h2l2-2h5"/></svg>
+        </a>
+        <a class="nav-rail-item" href="/planning.html" data-nav-area="planning" aria-label="Planning tools" title="Planning tools">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M10 20V4M15 20v-7M20 20V7"/></svg>
+        </a>
+        <a class="nav-rail-item" href="/ai.html" data-nav-area="intelligence" aria-label="AI tools" title="AI tools">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="7" width="14" height="11" rx="3"/><path d="M12 3v4M8.5 12h.01M15.5 12h.01M9 15h6M3 11v4M21 11v4"/></svg>
+        </a>
+        <a class="nav-rail-item" href="/apps.html" data-nav-area="projects" aria-label="Apps and sites" title="Apps and sites">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 6.5h7l2 2h8v10h-17z"/></svg>
+        </a>
+      </div>
+      <div class="nav-rail-bottom">
+        <a class="nav-rail-item" href="/settings.html" data-nav-area="system" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 12h2M10 12h10M4 17h7M15 17h5"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="13" cy="17" r="2"/></svg>
+        </a>
+        <button class="nav-collapse-btn nav-rail-toggle" id="nav-collapse-btn" onclick="toggleNavCompact()" aria-expanded="true" title="Collapse sidebar">
+          <span class="nav-collapse-icon" aria-hidden="true">&#171;</span>
+          <span class="nav-collapse-label">Collapse</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="nav-panel ao-scroll">
+      <div class="nav-panel-header">
+        <span class="nav-panel-kicker">Workspace</span>
+        <strong>Agent Tools</strong>
+        <span class="nav-panel-status"><span></span> Command centre</span>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-heading">Navigate</div>
+        <div class="nav-items-wrap nav-open">
+          <div class="nav-group">
+            <a class="nav-item nav-item-parent" href="/" data-nav-area="office" data-nav-sub="office" data-icon="HQ"><span class="nav-item-label">OpenClaw HQ</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle OpenClaw HQ pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></a>
+            <div class="nav-sub">
+              <a class="nav-item" href="/org-chart.html" data-nav-area="office" data-icon="OC"><span class="nav-item-label">Org Chart</span></a>
+              <a class="nav-item" href="/memory.html" data-nav-area="office" data-icon="ME"><span class="nav-item-label">Memory</span></a>
+              <a class="nav-item" href="/agent-registry.html" data-nav-area="office" data-icon="AR"><span class="nav-item-label">Agent Registry</span></a>
+              <a class="nav-item" href="/project-rooms.html" data-nav-area="office" data-icon="PR"><span class="nav-item-label">Project Rooms</span></a>
+            </div>
+          </div>
+          <div class="nav-group">
+            <div class="nav-item nav-item-parent" data-nav-area="planning" data-nav-sub="planning" data-icon="PT" onclick="toggleNavSub(event, this)"><span class="nav-item-label">Planning Tools</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Planning Tools pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></div>
+            <div class="nav-sub">
+              <a class="nav-item" href="/?panel=mission-control" data-nav-area="planning" data-icon="MC"><span class="nav-item-label">Mission Control</span></a>
+              <a class="nav-item" href="/mission-board.html?view=ios" data-nav-area="planning" data-icon="FQ"><span class="nav-item-label">Fix Queue</span></a>
+              <a class="nav-item" href="/planning.html" data-nav-area="planning" data-icon="PM"><span class="nav-item-label">Planning Mode</span></a>
+            </div>
+          </div>
+          <a class="nav-item" href="/countdowns.html" data-nav-area="planning" data-icon="CD"><span class="nav-item-label">Countdowns</span></a>
+          <a class="nav-item nav-item-feature" href="/calendar-v3.html" data-nav-area="calendar" data-icon="CA"><span class="nav-item-label">Calendar</span><span class="nav-item-badge">Focus</span></a>
+          <a class="nav-item" href="/streaks.html" data-nav-area="planning" data-icon="ST"><span class="nav-item-label">Streaks</span></a>
+          <a class="nav-item" href="/mission-board.html" data-nav-area="dropbox" data-icon="DB"><span class="nav-item-label">Dropbox</span></a>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-heading">Tools &amp; insights</div>
+        <div class="nav-items-wrap nav-open">
+          <a class="nav-item" href="/dev.html" data-nav-area="intelligence" data-icon="DL"><span class="nav-item-label">Dev Links</span></a>
+          <a class="nav-item" href="/ai.html" data-nav-area="intelligence" data-icon="AP"><span class="nav-item-label">AI Portal</span></a>
+          <a class="nav-item" href="/ai-landscape.html" data-nav-area="intelligence" data-icon="AL"><span class="nav-item-label">AI Landscape</span></a>
+          <a class="nav-item" href="/intel-radar.html" data-nav-area="intelligence" data-icon="IR"><span class="nav-item-label">Intel Radar</span></a>
+          <div class="nav-group">
+            <a class="nav-item nav-item-parent" href="/apps.html" data-nav-area="projects" data-nav-sub="apps" data-icon="AS"><span class="nav-item-label">Apps &amp; Sites</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Apps &amp; Sites pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></a>
+            <div class="nav-sub">
+              <a class="nav-item" href="/audits.html" data-nav-area="projects" data-icon="AU"><span class="nav-item-label">Audit Log</span></a>
+            </div>
+          </div>
+          <a class="nav-item" href="/visitors.html" data-nav-area="projects" data-icon="VS"><span class="nav-item-label">Visitors</span></a>
+        </div>
+      </div>
+
+      <div class="nav-section nav-section-bottom">
+        <div class="nav-heading">System</div>
+        <div class="nav-items-wrap nav-open">
+          <a class="nav-item" href="/settings.html" data-nav-area="system" data-icon="SE"><span class="nav-item-label">Settings</span></a>
+          <a class="nav-link" data-dev-only="true" data-gateway="local" href="http://localhost:18789" target="_blank">
+            <div class="link-dot"></div> Gateway (local) <span class="link-ext">&#8599;</span>
+          </a>
+          <a class="nav-link" data-dev-only="true" data-gateway="lan" href="http://10.0.0.106:18789" target="_blank">
+            <div class="link-dot"></div> Gateway (LAN) <span class="link-ext">&#8599;</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="view view--scroll active" id="view-intel-radar">
+<main class="ao-page ao-page--wide intel-page">
+      <section class="ao-card intel-hero">
+        <div class="ao-page-head">
+          <div>
+            <p class="ao-section-label">Intel Radar</p>
+            <h1 class="ao-page-title">Intel Radar</h1><p class="ao-page-sub">Track platform updates and launch your favorite searches in one pass.</p>
+          </div>
+          <button class="ao-btn" id="refresh-watch-button" type="button">Refresh Watchlist</button>
+        </div>
+
+        <p class="inline-note" id="watch-note" role="status">
+          This watchlist pulls from official or project-owned public feeds when available, plus direct source pages
+          where feeds are missing.
+        </p>
+
+        <div class="hero-status-row">
+          <span class="ao-badge" id="watch-status-pill" role="status">Watchlist: Loading</span>
+          <span class="ao-badge" id="history-count-pill">Searches: 0</span>
+          <span class="ao-badge"><span>Sources</span><strong id="watch-source-count">5</strong></span>
+          <span class="ao-badge"><span>Last Refresh</span><strong id="watch-generated-at">Loading...</strong></span>
+          <span class="ao-badge"><span>Focus</span><strong>Apple, AI tools, and creator workflows</strong></span>
+        </div>
+
+        <div class="intel-search-shell">
+          <form class="intel-search-form" id="intel-search-form">
+            <label class="ao-label" for="intel-query">Search what you track</label>
+            <input
+              id="intel-query"
+              class="ao-input"
+              name="query"
+              type="text"
+              autocomplete="off"
+              placeholder="Try: latest iOS widgets, OpenClaw tricks, top iOS shortcuts, Claude Code workflow..."
+            />
+
+            <div class="intel-search-actions">
+              <button class="ao-btn ao-btn--primary" type="submit">Open Research Pack</button>
+              <button class="ao-btn" type="button" data-search-target="web">Search Web</button>
+              <button class="ao-btn" type="button" data-search-target="youtube">Search YouTube</button>
+              <button class="ao-btn" type="button" data-search-target="x">Search X/Twitter</button>
+              <button class="ao-btn" type="button" data-search-target="github">Search GitHub</button>
+              <button class="ao-btn" type="button" data-search-target="apple">Search Apple</button>
+            </div>
+          </form>
+
+          <details class="intel-search-preview">
+            <summary>Preview search routes</summary>
+
+            <div class="preview-stack" id="search-preview"></div>
+
+            <p class="signal-note">
+              Searches open in new tabs so you can compare the web, videos, social chatter, and repo activity side by
+              side.
+            </p>
+          </details>
+        </div>
+      </section>
+
+      <section class="intel-board">
+        <article class="ao-card">
+          <div class="ao-card-head">
+            <div>
+              <p class="ao-section-label">Live Watch</p>
+              <h2>Latest updates across your tracked platforms</h2>
+            </div>
+          </div>
+
+          <div class="intel-toolbar">
+            <p class="inline-note">
+              YouTube is sourced from the official blog sitemap. Apple, OpenAI, Claude Code, and OpenClaw come from
+              feeds or release channels.
+            </p>
+          </div>
+
+          <div class="watch-grid" id="watch-grid" aria-live="polite" aria-busy="true"></div>
+        </article>
+
+        <aside class="ao-card">
+          <div class="ao-card-head">
+            <div>
+              <p class="ao-section-label">Saved Queries</p>
+              <h2>One-click lookups for the topics you keep revisiting</h2>
+            </div>
+          </div>
+
+          <p class="inline-note">
+            Jump straight into a platform mix for your favorite topics.
+          </p>
+
+          <div class="preset-stack" id="preset-list"></div>
+        </aside>
+      </section>
+
+      <section class="intel-split">
+        <article class="ao-card">
+          <div class="ao-card-head">
+            <div>
+              <p class="ao-section-label">Recent Queries</p>
+              <h2>Pick up where you left off</h2>
+            </div>
+          </div>
+
+          <div class="history-list" id="history-list"></div>
+        </article>
+
+        <article class="ao-card">
+          <div class="ao-card-head">
+            <div>
+              <p class="ao-section-label">Research Lanes</p>
+              <h2>Fast routes for deeper sweeps</h2>
+            </div>
+          </div>
+
+          <div class="lane-stack" id="lane-list"></div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <!-- ACTIVITY FEED -->
+  <aside class="feed">
+    <div class="feed-header">
+      Activity <span class="badge" id="feedCount">0</span>
+    </div>
+    <div class="feed-list" id="feedList"></div>
+  </aside>
+
+</div>
+
+<!-- BOTTOM STATUS BAR -->
+
+<script src="app-shared.js?v=stale-blue-20261029"></script>
+<script type="module" src="src/intelRadar.js?v=1"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => switchView('intel-radar', document.querySelector('.nav-item.active')));
+</script>
+
+</body>
+</html>

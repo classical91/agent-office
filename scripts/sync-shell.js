@@ -33,6 +33,7 @@ const PAGES = [
   'streaks.html',
   'visitors.html',
   'ai-landscape.html',
+  'intel-radar.html',
   'settings.html',
   'dev.html',
   'calendar-v3.html',

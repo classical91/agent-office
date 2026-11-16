@@ -19,6 +19,7 @@ const workScheduleReader = require('./work-schedule-reader.js');
 const sharebotNewsroom = require('./sharebot-newsroom.js');
 const happyHour = require('./happy-hour.js');
 const workflowDashboard = require('./workflow-dashboard.js');
+const intelRadarWatch = require('./intel-radar-watch.js').createWatchlist();
 
 process.env.TZ = process.env.APP_TIMEZONE || 'America/Vancouver';
 
@@ -6301,6 +6302,17 @@ const server = http.createServer(async (req, res) => {
         configured: Boolean(PASSPHRASE_HASH),
         gated,
       });
+      return;
+    }
+
+    if (pathname === '/api/watch') {
+      if (!requireDropsAuth(res, req)) return;
+      if (req.method !== 'GET') {
+        sendJson(res, 405, { error: 'Use GET.' }, { Allow: 'GET' });
+        return;
+      }
+      const payload = await intelRadarWatch.getWatchPayload(parsedUrl.searchParams.get('refresh') === '1');
+      sendJson(res, 200, payload);
       return;
     }
 
