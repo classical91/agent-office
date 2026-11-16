@@ -239,11 +239,11 @@ test('Platform Watch sidebar navigation and all Settings themes work on desktop 
     const { page, problems } = await openPage(t);
     await page.setViewportSize({ width, height: 900 });
     await mockIntelFeeds(page);
-    await page.goto(`${server.origin}/ai.html`);
+    await page.goto(`${server.origin}/ai-landscape.html`);
     if (width < 768) await page.click('.mobile-nav-toggle');
     const intelLink = page.locator('.nav-item[href="/platform-watch.html"]');
     assert.equal(await intelLink.innerText(), 'Platform Watch');
-    assert.equal(await intelLink.evaluate(el => el.previousElementSibling.getAttribute('href')), '/ai.html');
+    assert.equal(await intelLink.evaluate(el => el.previousElementSibling.getAttribute('href')), '/ai-landscape.html');
     await intelLink.click();
     await page.waitForURL('**/platform-watch.html');
     assert.equal(await page.locator('#view-platform-watch').isVisible(), true);
@@ -658,20 +658,23 @@ test('focus is remembered per page, so the Calendar does not drag the rest of th
   assert.ok(await page.evaluate(() => document.documentElement.classList.contains('ao-focus')));
 });
 
-test('Planning Tools groups schedules and nests Planning Mode under Calendar', async t => {
+test('Countdowns, Calendar and Streaks lead the flat rows, above Dropbox and out of Planning Tools', async t => {
   if (skipReason) return t.skip(skipReason);
 
   const { page } = await openPage(t);
   await page.goto(`${server.origin}/planning.html`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.nav');
 
-  const planning = page.locator('.nav-panel .nav-group:has(> [data-nav-sub="planning"]) > .nav-sub');
-  const labels = await planning.locator(':scope > .nav-item > .nav-item-label, :scope > .nav-group > .nav-item > .nav-item-label').allTextContents();
-  assert.deepEqual(labels, ['Fix Queue', 'Countdowns', 'Calendar', 'Mission Control', 'Streaks']);
+  const rows = await page.evaluate(() => [...document.querySelectorAll('.nav .nav-items-wrap > .nav-item')]
+    .map(item => item.querySelector('.nav-item-label').textContent.trim()));
+  assert.deepEqual(rows.slice(0, 4), ['Countdowns', 'Calendar', 'Streaks', 'Dropbox'],
+    'Countdowns sits above Calendar, Streaks below it, then Dropbox');
 
-  const calendar = planning.locator('.nav-group:has(> [data-nav-sub="calendar"])');
-  assert.equal(await calendar.locator(':scope > .nav-sub a[href="/planning.html"] .nav-item-label').textContent(), 'Planning Mode');
-  assert.equal(await page.locator('.nav-panel .nav-items-wrap > a[href="/mission-board.html"] .nav-item-label').textContent(), 'Dropbox');
+  const submenu = await page.evaluate(() => [...document.querySelectorAll('.nav-sub .nav-item')]
+    .map(item => item.querySelector('.nav-item-label').textContent.trim()));
+  assert.ok(!submenu.includes('Calendar'), 'and it is no longer one more row in Planning Tools');
+  assert.ok(!submenu.includes('Countdowns') && !submenu.includes('Streaks'), 'nor are Countdowns and Streaks');
+  assert.ok(submenu.includes('Planning Mode'));
 });
 
 test('a planning item can be added, ticked, done and removed from the page', async t => {
