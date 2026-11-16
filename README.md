@@ -18,7 +18,6 @@ The 3D office is intended to be an operational view of that system, not a decora
 - **Planning Mode** — the weekly planning checklist you keep by hand, and the list CoachClaw reads before it builds the week. Ticking an item asks CoachClaw to find time for it; it does not mean the item is done, which is a separate state. Unticked items stay on the list and out of the week. **Build my week** places the ticked items in the time that is actually free around your calendar, your work schedule and everything else fixed, and shows the result for review — nothing reaches the calendar until you accept it. Your work schedule can be read off a photo of the rota and corrected before anything is planned around it. See [Planning Mode](#planning-mode).
 - **Countdowns** — everything with a clock on it in one page: deadlines, goals, work shifts, weekly routines and trading dates, grouped into Today / This Week / Later alongside what is next on the Google Calendar. Every card carries the time left, the category and the next action. See [Countdowns](#countdowns-1).
 - **Streaks** — every day you kept a habit up, plotted on a month grid and a year strip. Each streak carries a type (Health, Deep Work, Avoid, …) and a colour, the calendar can be filtered down to one streak or one type, and a day is marked from the day itself or from the streak's **Mark today** button. See [Streaks](#streaks-1).
-- **Visitors** — who is on your websites right now, what they are reading, and whether they have been before. One tracker script goes on any site you run; nothing is looked up against any outside service. See [Visitors](#visitors-1).
 - **Org chart** — a visual layout of the agent team.
 - **Office view** — a live operational room where clicking an agent opens its task, model, workspace, authority, state, and available controls. Penny opens Mission Control; appearance editing remains available from the inspector. When the OpenClaw gateway cannot be reached, agents read **Unknown**, not Blocked: a lost connection is not evidence that any agent failed.
 - **Mission Control** — *your scheduled workflows and latest results*: what Penny/OpenClaw and ChatGPT deliver to Jason, when each is due, and whether it arrived. Upcoming runs, latest results, confirmed failures, and every workflow with its exact schedule. Goals for Penny sit below as a secondary section. See [Mission Control workflows](#mission-control-workflows).
@@ -58,7 +57,6 @@ agent-office-deploy/
     mission-board.html         # Mission Board (Dropbox) page
     project-rooms.html         # Project Rooms page
     agent-registry.html        # Agent Registry page
-    visitors.html              # Visitors page
     settings.html               # Settings page
     ai.html                    # AI Portal (moved from Main Hub)
     apps.html                  # Apps & Sites — every project's live site, Railway project and repo
@@ -92,7 +90,6 @@ agent-office-deploy/
     calendar-google-sync.js    # Incremental Google sync (sync tokens, paging, 410 recovery)
     reminder-time.js           # Parses "tomorrow 9am" / "in 2h" into reminder timestamps
     ai-landscape.{js,css}      # AI Landscape-only logic
-    visitors.{js,css}          # Visitors dashboard
     visit-tracker.js           # The script you paste on a tracked site
     sharebot-newsroom.js       # Reads Market Dashboard newsroom health server-side
     office-control-center.js   # Agent inspector + Mission Control shell and goals (incl. ShareBot67 health)
@@ -981,11 +978,11 @@ has gone by unmarked.
 Streaks sit behind the same `DROPS_PASSPHRASE` as the Dropbox and share its
 session cookie, so unlocking either one unlocks the other.
 
-## Visitors
+## Visitor tracking API
 
-**Visitors** in the side menu answers the question a shop dashboard's live view
-answers: is anyone on the site right now, what are they reading, and have they
-been before. It works across every site you point at it, not just this one.
+The Visitors dashboard and its Settings panel have been removed. Existing
+`/visitors.html` bookmarks redirect to Office. The tracking API and stored visit
+records remain available for sites that already use the tracker.
 
 **How a visit is counted.** `visit-tracker.js` is a small script you paste on a
 site. On each page load it posts one row — the page, its title, the page that
@@ -1008,8 +1005,7 @@ is stored on the row so odd traffic can be told apart from real traffic, and
 nothing consults it. Nothing here can put a name to a visitor, and that is the
 intended ceiling — not a limitation to be lifted later.
 
-**Adding a site.** The *Track another site* panel gives you the exact snippet
-with this deployment's host filled in:
+**Adding a site.** Use the tracker snippet with your deployment's host:
 
 ```html
 <script src="https://your-agent-office-host/visit-tracker.js" defer></script>
@@ -1023,19 +1019,13 @@ changes the URL counts as the next page view.
 **Retention.** Page views are kept for 90 days and then deleted on an hourly
 sweep. Set `VISITS_RETENTION_DAYS` to change that. Storage is also capped at
 100,000 rows; set `VISITS_MAX_STORED_ROWS` to choose a smaller limit. *Delete
-all visits* on the page clears everything immediately.
+all visits* is available through authenticated `DELETE /api/visits`.
 
 Bots are filtered by user agent, though the real filter is that the tracker is
 a script — most crawlers never run it.
 
-**In Settings.** A **Website Visitors** panel on the Settings page carries the
-control side of this: whether anyone is on the sites right now, a seven-day
-snapshot, which sites are reporting in, the tracker snippet with a copy button,
-and the delete-everything button. The Visitors page is for reading; Settings is
-for setting it up and turning it off.
-
-The dashboard sits behind the same `DROPS_PASSPHRASE` as the Dropbox and shares
-its session cookie. Only the tracking endpoint is public.
+Summary and deletion endpoints require an authenticated Office session. Only
+the tracking endpoint is public.
 
 ## Moved from Main Hub
 

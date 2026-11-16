@@ -8309,6 +8309,13 @@ const server = http.createServer(async (req, res) => {
 
     // ------------------------------------------------------------
 
+    // The Visitors dashboard has been removed. Old bookmarks return to Office.
+    if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/visitors.html') {
+      res.writeHead(308, { Location: '/', 'Cache-Control': 'no-store' });
+      res.end();
+      return;
+    }
+
     // Keep existing bookmarks, but use a fresh canonical URL for Platform Watch.
     // This runs before the login gate so `next` also uses the canonical page.
     if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/intel-radar.html') {
