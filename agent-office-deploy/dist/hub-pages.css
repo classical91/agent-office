@@ -250,3 +250,9 @@
 @media (prefers-reduced-motion: reduce) {
   .hub-page, .hub-page * { animation: none !important; transition: none !important; }
 }
+
+#view-ai-portal .portal-grid { align-items: start; }
+#view-ai-portal .portal-apps-dropdown { margin: 8px 0 0 22px; padding-left: 14px; border-left: 1px solid var(--border); }
+#view-ai-portal .portal-apps-dropdown summary { cursor: pointer; padding: 8px; color: var(--text-dim); }
+#view-ai-portal .portal-apps-dropdown summary:hover { color: var(--accent); }
+#view-ai-portal .portal-apps-dropdown .portal-card { margin-top: 8px; }
