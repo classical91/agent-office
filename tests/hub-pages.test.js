@@ -31,9 +31,9 @@ test('the three pages wear the shared shell', () => {
 });
 
 test('the sidebar routes through AI Portal for apps and audits', () => {
-  const shell = readTemplate('shell.html');
-  assert.match(shell, /class="nav-item" href="\/ai\.html"/);
-  assert.doesNotMatch(shell, /data-nav-sub="apps"|data-icon="AL"|href="\/audits\.html"/);
+  const sidebar = readTemplate('shell.html').match(/<nav class="nav"[\s\S]*?<\/nav>/)?.[0] || '';
+  assert.match(sidebar, /class="nav-item" href="\/ai\.html"/);
+  assert.doesNotMatch(sidebar, /data-nav-sub="apps"|data-icon="AL"|href="\/audits\.html"/);
 });
 
 test('the AI Portal points at the in-app pages and keeps the Main Hub tools external', () => {

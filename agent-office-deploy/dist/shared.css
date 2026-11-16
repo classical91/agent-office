@@ -705,6 +705,7 @@
   }
   .nav-rail-brand,
   .nav-rail-item,
+  .nav-rail-customize:not([hidden]),
   .nav-rail-toggle {
     width: 46px;
     height: 46px;
@@ -728,7 +729,13 @@
   }
   .nav-rail-brand svg { width: 26px; height: 26px; }
   .nav-rail-items {
-    width: 100%;
+    width: calc(100% + 16px);
+    min-height: 0;
+    padding-block: 3px;
+    overflow: hidden auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-gutter: stable both-edges;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -736,6 +743,7 @@
   }
   .nav-rail-bottom {
     width: 100%;
+    flex-shrink: 0;
     margin-top: auto;
     padding-top: 10px;
     border-top: 1px solid color-mix(in srgb, var(--accent) 18%, rgba(255, 255, 255, 0.1));
@@ -754,6 +762,7 @@
     stroke-linejoin: round;
   }
   .nav-rail-item:hover,
+  .nav-rail-customize:hover,
   .nav-rail-toggle:hover {
     color: var(--text-strong);
     background: color-mix(in srgb, var(--accent) 16%, rgba(255, 255, 255, 0.07));
@@ -766,6 +775,56 @@
       color-mix(in srgb, var(--accent) 18%, var(--surface-sunken)));
     border-color: color-mix(in srgb, var(--accent) 42%, var(--border-strong));
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.32), inset 0 1px rgba(255, 255, 255, 0.08);
+  }
+  .nav-rail-initials {
+    font-size: var(--fs-xs);
+    font-weight: 650;
+    letter-spacing: 0.04em;
+  }
+  .nav-rail-customize:focus-visible,
+  .nav-rail-item:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  .nav-shortcut-dialog {
+    width: min(400px, calc(100vw - 32px));
+    padding: 0;
+    background: var(--surface-raised);
+    color: var(--text-strong);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+  }
+  .nav-shortcut-dialog::backdrop { background: #0009; }
+  .nav-shortcut-dialog form {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    max-height: min(560px, calc(100dvh - 32px));
+  }
+  .nav-shortcut-dialog h2 {
+    margin: 0;
+    padding: var(--space-4) var(--space-5);
+    border-bottom: 1px solid var(--border);
+    font-size: var(--fs-lg);
+  }
+  .nav-shortcut-options { overflow-y: auto; padding: var(--space-2) var(--space-3); }
+  .nav-shortcut-options label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 44px;
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+  .nav-shortcut-options label:hover { background: var(--surface-hover); }
+  .nav-shortcut-options input { width: 16px; height: 16px; accent-color: var(--accent); }
+  .nav-shortcut-dialog footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: var(--space-3) var(--space-5);
+    border-top: 1px solid var(--border);
   }
 
   .nav-panel {
