@@ -1,0 +1,50 @@
+.settings-section {
+  display: block;
+  padding: 0;
+}
+
+.settings-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  list-style: none;
+}
+
+.settings-section-heading::-webkit-details-marker {
+  display: none;
+}
+
+.settings-section-heading::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  margin-right: 3px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.settings-section[open] > .settings-section-heading::after {
+  transform: rotate(225deg);
+}
+
+.settings-section-heading:hover {
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+}
+
+.settings-section-heading:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.settings-section-content {
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--space-5) var(--space-5);
+}
+

@@ -266,6 +266,7 @@ test('Platform Watch sidebar navigation and all Settings themes work on desktop 
     const surfaces = new Set();
     for (const [theme, accent] of Object.entries({ Dark: '#6366f1', Midnight: '#10b981', Ocean: '#38bdf8', Crimson: '#ef4444', Forest: '#22c55e', Amber: '#f59e0b' })) {
       await page.goto(`${server.origin}/settings.html`);
+      await page.locator('summary.settings-section-heading').filter({ hasText: /^Theme$/ }).click();
       await page.getByRole('button', { name: new RegExp(`^${theme}`) }).click();
       await page.goto(`${server.origin}/platform-watch.html`);
       const styles = await page.evaluate(() => ({

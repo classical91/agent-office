@@ -8,6 +8,7 @@
 <meta http-equiv="Expires" content="0"/>
 <title>Settings - Agent Office</title>
 <link rel="stylesheet" href="shared.css?v=modal-scroll-20261107"/>
+<link rel="stylesheet" href="settings.css?v=collapsible-20261115"/>
 <!-- Restores the saved theme, sidebar state and focus mode before first paint,
      so no page flashes the default accent, a full-width sidebar, or the chrome
      of a page that opens in Focus Mode. ACCENTS mirrors THEMES in
@@ -192,117 +193,129 @@
     </div>
 
     <!-- Theme -->
-    <div class="ao-card settings-card">
-      <div class="ao-card-title">Theme</div>
-      <div class="ao-card-desc">Choose a color theme. Saved to this browser's localStorage.</div>
-      <div id="settings-theme-grid" class="ao-chips"></div>
-    </div>
+    <details class="ao-card settings-section">
+      <summary class="ao-card-title settings-section-heading">Theme</summary>
+      <div class="settings-card settings-section-content">
+        <div class="ao-card-desc">Choose a color theme. Saved to this browser's localStorage.</div>
+        <div id="settings-theme-grid" class="ao-chips"></div>
+      </div>
+    </details>
 
     <!-- Gateway URLs -->
-    <div class="ao-card settings-card">
-      <div class="ao-card-title">Gateway URLs</div>
-      <div class="ao-card-desc">Set custom gateway endpoints. Saved to Agent Office settings when available, with browser storage as fallback.</div>
-      <div class="ao-field settings-field">
-        <label class="ao-label settings-label">Local Gateway</label>
-        <input id="settings-gateway-local" type="url" placeholder="http://localhost:18789" class="ao-input" />
-      </div>
-      <div class="ao-field settings-field">
-        <label class="ao-label settings-label">LAN Gateway</label>
-        <input id="settings-gateway-lan" type="url" placeholder="http://10.0.0.106:18789" class="ao-input" />
-      </div>
-      <div class="ao-toolbar settings-actions">
-        <button onclick="SETTINGS.saveGateway()" class="ao-btn ao-btn--primary">Save Gateway URLs</button>
-        <button onclick="SETTINGS.checkGateway()" class="ao-btn">Check Local Gateway</button>
-      </div>
-      <span id="settings-gateway-msg" class="settings-saved-msg" hidden>Saved.</span>
-      <div class="ao-well settings-well-spaced">
-        <div class="ao-well--row settings-well-head">
-          <div class="ao-well-label settings-well-label-flush">Local OpenClaw Status</div>
-          <div id="settings-gateway-dot" class="ao-dot ao-dot--offline" title="Not checked"></div>
+    <details class="ao-card settings-section">
+      <summary class="ao-card-title settings-section-heading">Gateway URLs</summary>
+      <div class="settings-card settings-section-content">
+        <div class="ao-card-desc">Set custom gateway endpoints. Saved to Agent Office settings when available, with browser storage as fallback.</div>
+        <div class="ao-field settings-field">
+          <label class="ao-label settings-label">Local Gateway</label>
+          <input id="settings-gateway-local" type="url" placeholder="http://localhost:18789" class="ao-input" />
         </div>
-        <div id="settings-gateway-state" class="ao-well-value">Not checked yet.</div>
-        <div id="settings-gateway-endpoint" class="ao-well-note">http://localhost:18789</div>
-        <div id="settings-gateway-probe" class="settings-probe"></div>
+        <div class="ao-field settings-field">
+          <label class="ao-label settings-label">LAN Gateway</label>
+          <input id="settings-gateway-lan" type="url" placeholder="http://10.0.0.106:18789" class="ao-input" />
+        </div>
+        <div class="ao-toolbar settings-actions">
+          <button onclick="SETTINGS.saveGateway()" class="ao-btn ao-btn--primary">Save Gateway URLs</button>
+          <button onclick="SETTINGS.checkGateway()" class="ao-btn">Check Local Gateway</button>
+        </div>
+        <span id="settings-gateway-msg" class="settings-saved-msg" hidden>Saved.</span>
+        <div class="ao-well settings-well-spaced">
+          <div class="ao-well--row settings-well-head">
+            <div class="ao-well-label settings-well-label-flush">Local OpenClaw Status</div>
+            <div id="settings-gateway-dot" class="ao-dot ao-dot--offline" title="Not checked"></div>
+          </div>
+          <div id="settings-gateway-state" class="ao-well-value">Not checked yet.</div>
+          <div id="settings-gateway-endpoint" class="ao-well-note">http://localhost:18789</div>
+          <div id="settings-gateway-probe" class="settings-probe"></div>
+        </div>
       </div>
-    </div>
+    </details>
 
     <!-- Gateway Agents -->
-    <div class="ao-card settings-card">
-      <div class="ao-card-title">Gateway Agents</div>
-      <div class="ao-card-desc">OpenClaw agents visible to this office surface.</div>
-      <div id="settings-gateway-agents" class="ao-grid settings-agent-grid"></div>
-    </div>
+    <details class="ao-card settings-section">
+      <summary class="ao-card-title settings-section-heading">Gateway Agents</summary>
+      <div class="settings-card settings-section-content">
+        <div class="ao-card-desc">OpenClaw agents visible to this office surface.</div>
+        <div id="settings-gateway-agents" class="ao-grid settings-agent-grid"></div>
+      </div>
+    </details>
 
     <!-- Phone inbox / Shortcuts -->
-    <div id="settings-shortcuts" class="ao-card settings-card">
-      <div class="ao-card-title">Phone Inbox (iOS Shortcuts)</div>
-      <div class="ao-card-desc">Send a note or reminder to the Dropbox from your phone, and pull back whatever has come due. Authenticated with <code>SHORTCUTS_TOKEN</code>, not the Dropbox passphrase.</div>
+    <details id="settings-shortcuts" class="ao-card settings-section">
+      <summary class="ao-card-title settings-section-heading">Phone Inbox (iOS Shortcuts)</summary>
+      <div class="settings-card settings-section-content">
+        <div class="ao-card-desc">Send a note or reminder to the Dropbox from your phone, and pull back whatever has come due. Authenticated with <code>SHORTCUTS_TOKEN</code>, not the Dropbox passphrase.</div>
 
-      <div class="ao-stack">
-        <div class="ao-well">
-          <div class="ao-well-label">Status</div>
-          <div id="settings-shortcuts-state" class="ao-well-value">Checking…</div>
-        </div>
-        <div class="ao-well">
-          <div class="ao-well-label">Send (POST)</div>
-          <div id="settings-shortcuts-send" class="ao-code">—</div>
-        </div>
-        <div class="ao-well">
-          <div class="ao-well-label">Pull (GET)</div>
-          <div id="settings-shortcuts-pull" class="ao-code">—</div>
-        </div>
-        <div class="ao-well">
-          <div class="ao-well-label">Auth Header</div>
-          <div id="settings-shortcuts-header" class="ao-code">—</div>
-          <div class="ao-well-note">Value is your <code>SHORTCUTS_TOKEN</code>. Step-by-step Shortcut recipes are in the README.</div>
+        <div class="ao-stack">
+          <div class="ao-well">
+            <div class="ao-well-label">Status</div>
+            <div id="settings-shortcuts-state" class="ao-well-value">Checking…</div>
+          </div>
+          <div class="ao-well">
+            <div class="ao-well-label">Send (POST)</div>
+            <div id="settings-shortcuts-send" class="ao-code">—</div>
+          </div>
+          <div class="ao-well">
+            <div class="ao-well-label">Pull (GET)</div>
+            <div id="settings-shortcuts-pull" class="ao-code">—</div>
+          </div>
+          <div class="ao-well">
+            <div class="ao-well-label">Auth Header</div>
+            <div id="settings-shortcuts-header" class="ao-code">—</div>
+            <div class="ao-well-note">Value is your <code>SHORTCUTS_TOKEN</code>. Step-by-step Shortcut recipes are in the README.</div>
+          </div>
         </div>
       </div>
-    </div>
+    </details>
 
     <!-- Data Management -->
-    <div class="ao-card settings-card">
-      <div class="ao-card-title">Local Data</div>
-      <div class="ao-card-desc">All data is stored in this browser's localStorage. Nothing is sent to any server.</div>
-      <div class="ao-stack">
-        <div class="ao-well ao-well--row">
-          <div>
-            <div class="settings-row-name">Reset Countdowns</div>
-            <div class="settings-row-note">Clears all API reset countdown cards</div>
+    <details class="ao-card settings-section">
+      <summary class="ao-card-title settings-section-heading">Local Data</summary>
+      <div class="settings-card settings-section-content">
+        <div class="ao-card-desc">All data is stored in this browser's localStorage. Nothing is sent to any server.</div>
+        <div class="ao-stack">
+          <div class="ao-well ao-well--row">
+            <div>
+              <div class="settings-row-name">Reset Countdowns</div>
+              <div class="settings-row-note">Clears all API reset countdown cards</div>
+            </div>
+            <button onclick="SETTINGS.clearKey('agent-office-per-card-countdowns-v2', this)" class="ao-btn ao-btn--sm ao-btn--danger">Clear</button>
           </div>
-          <button onclick="SETTINGS.clearKey('agent-office-per-card-countdowns-v2', this)" class="ao-btn ao-btn--sm ao-btn--danger">Clear</button>
-        </div>
-        <div class="ao-well ao-well--row">
-          <div>
-            <div class="settings-row-name">Memory Entries</div>
-            <div class="settings-row-note">Clears all saved agent memory entries</div>
+          <div class="ao-well ao-well--row">
+            <div>
+              <div class="settings-row-name">Memory Entries</div>
+              <div class="settings-row-note">Clears all saved agent memory entries</div>
+            </div>
+            <button onclick="SETTINGS.clearKey('ao-memory', this)" class="ao-btn ao-btn--sm ao-btn--danger">Clear</button>
           </div>
-          <button onclick="SETTINGS.clearKey('ao-memory', this)" class="ao-btn ao-btn--sm ao-btn--danger">Clear</button>
-        </div>
-        <div class="ao-well ao-well--row">
-          <div>
-            <div class="settings-row-name">Nav Layout</div>
-            <div class="settings-row-note">Resets sidebar collapsed/expanded state</div>
+          <div class="ao-well ao-well--row">
+            <div>
+              <div class="settings-row-name">Nav Layout</div>
+              <div class="settings-row-note">Resets sidebar collapsed/expanded state</div>
+            </div>
+            <button onclick="SETTINGS.clearKey('nav-collapsed-state', this)" class="ao-btn ao-btn--sm ao-btn--danger">Clear</button>
           </div>
-          <button onclick="SETTINGS.clearKey('nav-collapsed-state', this)" class="ao-btn ao-btn--sm ao-btn--danger">Clear</button>
-        </div>
-        <div class="ao-well ao-well--row">
-          <div>
-            <div class="settings-row-name">All Local Data</div>
-            <div class="settings-row-note">Wipes everything stored by this app</div>
+          <div class="ao-well ao-well--row">
+            <div>
+              <div class="settings-row-name">All Local Data</div>
+              <div class="settings-row-note">Wipes everything stored by this app</div>
+            </div>
+            <button onclick="SETTINGS.clearAll()" class="ao-btn ao-btn--sm settings-btn-destructive">Clear All</button>
           </div>
-          <button onclick="SETTINGS.clearAll()" class="ao-btn ao-btn--sm settings-btn-destructive">Clear All</button>
         </div>
       </div>
-    </div>
+    </details>
 
     <!-- About -->
-    <div class="ao-card">
-      <div class="ao-card-title">About</div>
-      <div class="ao-card-desc settings-about">
-        <div>Agent Office — AI agent management dashboard</div>
-        <div class="settings-about-note">All data is local. No telemetry. No account required.</div>
+    <details class="ao-card settings-section">
+      <summary class="ao-card-title settings-section-heading">About</summary>
+      <div class="settings-card settings-section-content">
+        <div class="ao-card-desc settings-about">
+          <div>Agent Office — AI agent management dashboard</div>
+          <div class="settings-about-note">All data is local. No telemetry. No account required.</div>
+        </div>
       </div>
-    </div>
+    </details>
 
   </div>
   </div>
@@ -322,6 +335,15 @@
 <script src="app-shared.js?v=stale-blue-20261029"></script>
 <script>
 switchView('settings', document.querySelector('.nav-item.active'));
+
+// Keep direct links such as settings.html#settings-shortcuts useful.
+function revealSettingsSection() {
+  const target = document.getElementById(location.hash.slice(1));
+  const section = target?.closest('details.settings-section');
+  if (section) section.open = true;
+}
+revealSettingsSection();
+window.addEventListener('hashchange', revealSettingsSection);
 </script>
 
 </body>
