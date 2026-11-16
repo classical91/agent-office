@@ -214,6 +214,7 @@ async function runPennyGoal(goal) {
   const prompt = [
     'Mission Control goal from Jason in OpenClaw Agents Office.',
     `Goal ID: ${goal.id}`,
+    `Current claim attempt: ${goal.orchestration_attempts}`,
     '',
     goal.content,
     ...(Array.isArray(goal.links) && goal.links[0] ? [
@@ -230,7 +231,9 @@ async function runPennyGoal(goal) {
     'For approved code work: fetch the latest GitHub main/master first; verify repo, remote, branch, and dirty state; use a clean branch/worktree; preserve unrelated changes; test; commit; and push the exact tested commit to GitHub.',
     'Never deploy unless Jason separately approved deployment or the approved scope explicitly included it. Deploy only from the pushed commit and verify production.',
     'Keep Agent Office approval boundaries: no public posting, payments, real trades, production deployment, or destructive action without explicit approval.',
-    'Return one coherent final result. Your final reply will also be delivered to Jason and saved to the Agent Office Outbox.',
+    goal.id.startsWith('goal-news-')
+      ? 'This is preview-only news preparation, not code or deployment work. Follow the structured JSON receipt contract in the goal and include the current claim attempt. Never approve, queue, schedule or publish.'
+      : 'Return one coherent final result. Your final reply will also be delivered to Jason and saved to the Agent Office Outbox.',
   ].join('\n');
   const promptPath = path.join(os.tmpdir(), `agent-office-${goal.id.replace(/[^a-zA-Z0-9_-]/g, '')}.txt`);
   await fs.writeFile(promptPath, prompt, 'utf8');
@@ -263,12 +266,12 @@ async function relayOneGoal() {
     const result = await runPennyGoal(goal);
     const needsApproval = result.includes('[BUILD_APPROVAL_REQUIRED]');
     await officeRequest(`/api/orchestration/goals/${encodeURIComponent(goal.id)}`, {
-      method: 'PATCH', body: JSON.stringify({ status: needsApproval ? 'needs_approval' : 'completed', result }),
+      method: 'PATCH', body: JSON.stringify({ status: needsApproval ? 'needs_approval' : 'completed', result, attempt: goal.orchestration_attempts }),
     });
     console.log(`${new Date().toISOString()} ${needsApproval ? 'paused for approval' : 'completed'} Mission Control goal ${goal.id}`);
   } catch (error) {
     await officeRequest(`/api/orchestration/goals/${encodeURIComponent(goal.id)}`, {
-      method: 'PATCH', body: JSON.stringify({ status: 'failed', error: error.message }),
+      method: 'PATCH', body: JSON.stringify({ status: 'failed', error: error.message, attempt: goal.orchestration_attempts }),
     }).catch(reportError => console.error(`${new Date().toISOString()} could not report goal failure: ${reportError.message}`));
     console.error(`${new Date().toISOString()} failed Mission Control goal ${goal.id}: ${error.message}`);
   }
