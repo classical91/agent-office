@@ -199,6 +199,15 @@ test('Dev Links AI Developers includes the requested consoles', () => {
   assert.match(page, />Google Cloud Console</);
 });
 
+test('Dev Links AI Developers includes GitHub access tokens', () => {
+  const page = fs.readFileSync(path.join(DIST, 'dev.html'), 'utf8');
+  const start = page.indexOf('<span>AI Developers</span>');
+  const end = page.indexOf('<span>Platform Update Feeds</span>');
+  const section = page.slice(start, end);
+  assert.match(section, /https:\/\/github\.com\/settings\/personal-access-tokens/);
+  assert.match(section, />GitHub Access Tokens</);
+});
+
 test('Dev Links places usage dashboards above platform update feeds', () => {
   const page = fs.readFileSync(path.join(DIST, 'dev.html'), 'utf8');
   assert.ok(page.indexOf('Usage &amp; Billing') < page.indexOf('Platform Update Feeds'));
