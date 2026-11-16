@@ -199,7 +199,7 @@ test('Dev Links AI Developers includes the requested consoles', () => {
   assert.match(page, />Google Cloud Console</);
 });
 
-test('Dev Links Tokens & Credentials includes GitHub access tokens', () => {
+test('Dev Links Tokens & Credentials includes GitHub, Railway, and OpenClaw credentials', () => {
   const page = fs.readFileSync(path.join(DIST, 'dev.html'), 'utf8');
   const start = page.indexOf('<span>Tokens &amp; Credentials</span>');
   const end = page.indexOf('<span>Platform Update Feeds</span>');
@@ -207,6 +207,10 @@ test('Dev Links Tokens & Credentials includes GitHub access tokens', () => {
   const section = page.slice(start, end);
   assert.match(section, /https:\/\/github\.com\/settings\/personal-access-tokens/);
   assert.match(section, />GitHub Access Tokens</);
+  assert.match(section, /https:\/\/railway\.com\/workspace\/tokens/);
+  assert.match(section, />Railway Tokens</);
+  assert.match(section, /http:\/\/127\.0\.0\.1:18789\/settings\/secrets/);
+  assert.match(section, />OpenClaw Secrets</);
 });
 
 test('Dev Links places usage dashboards above platform update feeds', () => {
