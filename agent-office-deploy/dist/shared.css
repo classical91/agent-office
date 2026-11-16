@@ -622,17 +622,6 @@
     min-width: 0;
   }
 
-  .topbar-logo {
-    font-family: var(--font-pixel);
-    font-size: var(--fs-xs);
-    color: var(--accent);
-    letter-spacing: 0.05em;
-    text-decoration: none;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
   .topbar-meta {
     display: flex;
     gap: var(--space-3);
