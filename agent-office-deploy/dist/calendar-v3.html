@@ -581,14 +581,18 @@ html.ao-focus .calendar-connection-bar.is-open { padding-left: 88px; }
           <div class="nav-group">
             <div class="nav-item nav-item-parent" data-nav-area="planning" data-nav-sub="planning" data-icon="PT" onclick="toggleNavSub(event, this)"><span class="nav-item-label">Planning Tools</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Planning Tools pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></div>
             <div class="nav-sub">
-              <a class="nav-item" href="/?panel=mission-control" data-nav-area="planning" data-icon="MC"><span class="nav-item-label">Mission Control</span></a>
               <a class="nav-item" href="/mission-board.html?view=ios" data-nav-area="planning" data-icon="FQ"><span class="nav-item-label">Fix Queue</span></a>
-              <a class="nav-item" href="/planning.html" data-nav-area="planning" data-icon="PM"><span class="nav-item-label">Planning Mode</span></a>
+              <a class="nav-item" href="/countdowns.html" data-nav-area="planning" data-icon="CD"><span class="nav-item-label">Countdowns</span></a>
+              <div class="nav-group">
+                <a class="nav-item nav-item-parent nav-item-feature" href="/calendar-v3.html" data-nav-area="calendar" data-nav-sub="calendar" data-icon="CA"><span class="nav-item-label">Calendar</span><span class="nav-item-badge">Focus</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Calendar pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></a>
+                <div class="nav-sub">
+                  <a class="nav-item" href="/planning.html" data-nav-area="planning" data-icon="PM"><span class="nav-item-label">Planning Mode</span></a>
+                </div>
+              </div>
+              <a class="nav-item" href="/?panel=mission-control" data-nav-area="planning" data-icon="MC"><span class="nav-item-label">Mission Control</span></a>
+              <a class="nav-item" href="/streaks.html" data-nav-area="planning" data-icon="ST"><span class="nav-item-label">Streaks</span></a>
             </div>
           </div>
-          <a class="nav-item" href="/countdowns.html" data-nav-area="planning" data-icon="CD"><span class="nav-item-label">Countdowns</span></a>
-          <a class="nav-item nav-item-feature" href="/calendar-v3.html" data-nav-area="calendar" data-icon="CA"><span class="nav-item-label">Calendar</span><span class="nav-item-badge">Focus</span></a>
-          <a class="nav-item" href="/streaks.html" data-nav-area="planning" data-icon="ST"><span class="nav-item-label">Streaks</span></a>
           <a class="nav-item" href="/mission-board.html" data-nav-area="dropbox" data-icon="DB"><span class="nav-item-label">Dropbox</span></a>
         </div>
       </div>
