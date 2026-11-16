@@ -1,4 +1,5 @@
 const http = require('http');
+const { handleNewsBatchIntegration, isNewsGoal } = require('./news-batch-integration.js');
 const https = require('https');
 const fs = require('fs/promises');
 const path = require('path');
@@ -1227,13 +1228,14 @@ function buildRecurringOverridePatch(body) {
 }
 
 function createFileStorage() {
-  return {
+  const storage = {
     async listDrops() {
       const drops = await loadDropsFromFile();
       return drops.map(toClientDrop);
     },
-    async createDrop(drop) {
+    async createDrop(drop, { idempotent = false } = {}) {
       const drops = await loadDropsFromFile();
+      if (idempotent && drops.some(item => item.id === drop.id)) return null;
       drops.unshift(drop);
       await saveDropsToFile(drops);
       return toClientDrop(drop);
@@ -1283,7 +1285,7 @@ function createFileStorage() {
       const drops = await loadDropsFromFile();
       const goal = drops
         .filter(drop => {
-          const stale = drop.orchestration_status === 'running' &&
+          const stale = !isNewsGoal(drop.id) && drop.orchestration_status === 'running' &&
             Date.now() - new Date(drop.orchestration_claimed_at || 0).getTime() > STALE_CLAIM_MS;
           return drop.agent === 'oss' && drop.subject === 'Mission Control' &&
             drop.priority === 'urgent' &&
@@ -1299,10 +1301,10 @@ function createFileStorage() {
       await saveDropsToFile(drops);
       return toClientDrop(goal);
     },
-    async updateOrchestrationGoal(id, patch) {
+    async updateOrchestrationGoal(id, patch, attempt = null) {
       const drops = await loadDropsFromFile();
       const goal = drops.find(drop => drop.id === id && drop.agent === 'oss' && drop.subject === 'Mission Control');
-      if (!goal) return null;
+      if (!goal || (isNewsGoal(id) && (goal.orchestration_status !== 'running' || goal.orchestration_attempts !== attempt))) return null;
       Object.assign(goal, patch, { updated_at: new Date().toISOString() });
       if (patch.orchestration_status === 'completed') {
         goal.status = 'done';
@@ -1314,6 +1316,7 @@ function createFileStorage() {
       return toClientDrop(goal);
     },
     async editMissionGoal(id, patch) {
+      if (isNewsGoal(id)) return null;
       const drops = await loadDropsFromFile();
       const goal = drops.find(drop => drop.id === id && drop.agent === 'oss' && drop.subject === 'Mission Control');
       if (!goal || goal.orchestration_status === 'running' || goal.orchestration_status === 'completed') return null;
@@ -1325,6 +1328,7 @@ function createFileStorage() {
     // working on: deleting a live claim would leave a running session reporting
     // back to a row that no longer exists. An abandoned claim is not live.
     async deleteMissionGoal(id) {
+      if (isNewsGoal(id)) return { deleted: false, reason: 'integration' };
       const drops = await loadDropsFromFile();
       const goal = drops.find(drop => drop.id === id && drop.agent === 'oss' && drop.subject === 'Mission Control');
       if (!goal) return { deleted: false, reason: 'missing' };
@@ -1337,6 +1341,7 @@ function createFileStorage() {
     // Moves a goal between Penny's queue and the inventory archive. Refused
     // while Penny holds a live claim on it, and only from the states named.
     async setMissionGoalState(id, { from, status, priority }) {
+      if (isNewsGoal(id)) return null;
       const drops = await loadDropsFromFile();
       const goal = drops.find(drop => drop.id === id && drop.agent === 'oss' && drop.subject === 'Mission Control');
       if (!goal || !from.includes(goal.orchestration_status)) return null;
@@ -1368,6 +1373,7 @@ function createFileStorage() {
       return toClientDrop(goal);
     },
     async deleteDrop(id) {
+      if (isNewsGoal(id)) return false;
       const drops = await loadDropsFromFile();
       const nextDrops = drops.filter(drop => drop.id !== id);
       const deleted = nextDrops.length !== drops.length;
@@ -1375,6 +1381,7 @@ function createFileStorage() {
       return deleted;
     },
     async updateDropDone(id, done) {
+      if (isNewsGoal(id)) return null;
       const drops = await loadDropsFromFile();
       const drop = drops.find(item => item.id === id);
       if (!drop) return null;
@@ -1385,6 +1392,7 @@ function createFileStorage() {
       return toClientDrop(drop);
     },
     async updateDrop(id, patch) {
+      if (isNewsGoal(id)) return null;
       const drops = await loadDropsFromFile();
       const drop = drops.find(item => item.id === id);
       if (!drop) return null;
@@ -1703,6 +1711,12 @@ function createFileStorage() {
       return visits.length;
     },
   };
+  for (const name of Object.keys(storage)) {
+    if (!/Drop|Goal/.test(name)) continue;
+    const operation = storage[name];
+    storage[name] = (...args) => queueFileWrite(`${DROPS_FILE}.operations`, () => operation(...args));
+  }
+  return storage;
 }
 
 function postgresHost(connectionString) {
@@ -2082,13 +2096,14 @@ async function createPostgresStorage() {
       `);
       return result.rows.map(toClientDrop);
     },
-    async createDrop(drop) {
+    async createDrop(drop, { idempotent = false } = {}) {
       const result = await pool.query(
         `
           INSERT INTO drops (id, title, subject, category, project, agent, status, tags, links,
                              content, priority, done, remind_at, created_at, updated_at,
                              orchestration_status, orchestration_session_key, orchestration_rank)
           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$14,$15,$16,$17)
+          ${idempotent ? 'ON CONFLICT (id) DO NOTHING' : ''}
           RETURNING id, title, subject, category, project, agent, status, tags, links,
                     content, priority, done, remind_at, created_at AS date, updated_at,
                     orchestration_status, orchestration_result, orchestration_error,
@@ -2103,7 +2118,7 @@ async function createPostgresStorage() {
           drop.orchestration_status || '', drop.orchestration_session_key || '', drop.orchestration_rank || 3,
         ]
       );
-      return toClientDrop(result.rows[0]);
+      return result.rows[0] ? toClientDrop(result.rows[0]) : null;
     },
     // See the file-storage note: the guard and the insert are one statement so a
     // duplicate poll cannot slip between them. The partial unique index behind
@@ -2190,7 +2205,7 @@ async function createPostgresStorage() {
           SELECT id FROM drops
           WHERE agent = 'oss' AND subject = 'Mission Control' AND priority = 'urgent' AND orchestration_attempts < 3
             AND (orchestration_status = 'queued' OR
-                 (orchestration_status = 'running' AND orchestration_claimed_at < NOW() - INTERVAL '20 minutes'))
+                 (orchestration_status = 'running' AND id NOT LIKE 'goal-news-%' AND orchestration_claimed_at < NOW() - INTERVAL '20 minutes'))
           ORDER BY orchestration_rank DESC, created_at ASC
           FOR UPDATE SKIP LOCKED
           LIMIT 1
@@ -2221,6 +2236,7 @@ async function createPostgresStorage() {
       return result.rows[0] ? toClientDrop(result.rows[0]) : null;
     },
     async editMissionGoal(id, patch) {
+      if (isNewsGoal(id)) return null;
       const result = await pool.query(`
         UPDATE drops
         SET title = $2, content = $3, links = $4, priority = $5, updated_at = NOW()
@@ -2236,6 +2252,7 @@ async function createPostgresStorage() {
       return result.rows[0] ? toClientDrop(result.rows[0]) : null;
     },
     async deleteMissionGoal(id) {
+      if (isNewsGoal(id)) return { deleted: false, reason: 'integration' };
       const result = await pool.query(`
         DELETE FROM drops
         WHERE id = $1 AND agent = 'oss' AND subject = 'Mission Control'
@@ -2257,6 +2274,7 @@ async function createPostgresStorage() {
       return { deleted: false, reason: existing.rows[0] ? 'running' : 'missing' };
     },
     async setMissionGoalState(id, { from, status, priority }) {
+      if (isNewsGoal(id)) return null;
       const result = await pool.query(`
         UPDATE drops
         SET orchestration_status = $2::varchar, priority = $3::varchar, updated_at = NOW()
@@ -2287,7 +2305,7 @@ async function createPostgresStorage() {
       `, [ids, ids.length]);
       return true;
     },
-    async updateOrchestrationGoal(id, patch) {
+    async updateOrchestrationGoal(id, patch, attempt = null) {
       const result = await pool.query(`
         UPDATE drops
         -- $2 is cast on every use. Assigned to a varchar column and compared to
@@ -2302,20 +2320,23 @@ async function createPostgresStorage() {
                           ELSE status END,
             done = CASE WHEN $2::varchar = 'completed' THEN TRUE ELSE done END
         WHERE id = $1 AND agent = 'oss' AND subject = 'Mission Control'
+          AND ($6::boolean = FALSE OR (orchestration_status = 'running' AND orchestration_attempts = $7::integer))
         RETURNING id, title, subject, category, project, agent, status, tags, links,
                   content, priority, done, remind_at, created_at AS date, updated_at,
                   orchestration_status, orchestration_result, orchestration_error,
                   orchestration_session_key, orchestration_claimed_at,
                   orchestration_completed_at, orchestration_attempts, orchestration_rank,
                   orchestration_build_approved, orchestration_approved_at, orchestration_calendar_event_id
-      `, [id, patch.orchestration_status, patch.orchestration_result || '', patch.orchestration_error || '', patch.orchestration_completed_at || null]);
+      `, [id, patch.orchestration_status, patch.orchestration_result || '', patch.orchestration_error || '', patch.orchestration_completed_at || null, isNewsGoal(id), attempt]);
       return result.rows[0] ? toClientDrop(result.rows[0]) : null;
     },
     async deleteDrop(id) {
+      if (isNewsGoal(id)) return false;
       const result = await pool.query('DELETE FROM drops WHERE id = $1', [id]);
       return result.rowCount > 0;
     },
     async updateDropDone(id, done) {
+      if (isNewsGoal(id)) return null;
       const nextStatus = done ? 'archived' : 'idea';
       const result = await pool.query(
         `
@@ -2330,6 +2351,7 @@ async function createPostgresStorage() {
       return result.rows[0] ? toClientDrop(result.rows[0]) : null;
     },
     async updateDrop(id, patch) {
+      if (isNewsGoal(id)) return null;
       const allowed = {
         title: 'title',
         subject: 'subject',
@@ -6278,6 +6300,8 @@ const server = http.createServer(async (req, res) => {
   try {
     const storage = await storageReady;
 
+    if (await handleNewsBatchIntegration({ req, res, pathname, storage, readJsonBody, sendJson })) return;
+
     if (req.method === 'GET' && pathname === '/api/session') {
       const activeSession = getSession(req);
       const hint = parseCookies(req)[SESSION_HINT_COOKIE];
@@ -6529,8 +6553,8 @@ const server = http.createServer(async (req, res) => {
       }
       const removal = await storage.deleteMissionGoal(id);
       if (!removal.deleted) {
-        sendJson(res, removal.reason === 'running' ? 409 : 404, {
-          error: removal.reason === 'running'
+        sendJson(res, ['running', 'integration'].includes(removal.reason) ? 409 : 404, {
+          error: removal.reason === 'integration' ? 'News integration tickets are retained for idempotency and cannot be deleted.' : removal.reason === 'running'
             ? 'Penny is working on this goal. Wait for the run to finish or fail before deleting it.'
             : 'Goal not found.',
         });
@@ -6564,9 +6588,9 @@ const server = http.createServer(async (req, res) => {
         orchestration_result: cleanText(input.result, 40000),
         orchestration_error: cleanText(input.error, 5000),
         orchestration_completed_at: state === 'needs_approval' ? null : new Date().toISOString(),
-      });
+      }, input.attempt);
       if (!goal) {
-        sendJson(res, 404, { error: 'Goal not found.' });
+        sendJson(res, isNewsGoal(id) ? 409 : 404, { error: isNewsGoal(id) ? 'Stale or missing news claim attempt.' : 'Goal not found.' });
         return;
       }
       // Penny's own report is the only thing that finishes a calendar block.

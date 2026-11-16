@@ -1,5 +1,32 @@
 # OpenClaw Agents Office
 
+### Market Dashboard news requests
+
+The optional `GET/POST /api/integrations/news-batches/:requestId` bridge accepts
+only a dedicated bearer `NEWS_BATCH_SERVICE_TOKEN` of at least 32 characters.
+Set the same secret on Market Dashboard; never use `GATEWAY_TOKEN` for intake.
+It creates one deterministic `goal-news-<request UUID>` Mission Control goal,
+owned by Penny (`oss`), instructing her to assign preview-only Top 10 preparation
+to FarmClaw (`commentfarm`). It cannot approve, schedule or publish news, create
+arbitrary goals, or access other Agent Office APIs.
+
+Deploy the updated `scripts/openclaw-heartbeat.js` to the OpenClaw host alongside
+this server: it sends the claim attempt with each result. News results with a
+missing/stale attempt, or after completion, return 409. News claims are never
+automatically reclaimed when old: reconcile the existing session/child run and
+stable FarmBot batch ID before any manual retry. Integration goals cannot be deleted, edited or moved to reference: their IDs
+are retained for idempotency. The dashboard verifies
+the structured FarmClaw execution receipt against an independent FarmBot read-back
+before showing Preview Ready; an agent completion alone is insufficient.
+
+No schema migration is needed: PostgreSQL uses the existing drops primary key
+for idempotent insertion and an atomic conditional result update. The development
+file fallback serializes drop operations; production still requires PostgreSQL.
+Run `node --test tests/news-batch-integration.test.js tests/orchestration-bridge.test.js
+tests/calendar-penny-execution.test.js` and the PostgreSQL tests with a scratch
+`DATABASE_URL` before deployment. This change does not authorize deployment or
+publication; existing approval boundaries remain in place.
+
 A multi-page web app that acts as the command center for OpenClaw agents, tasks, routes, rollups, memory, planning, and the org chart of Jason's AI team.
 
 ## Ownership and command model

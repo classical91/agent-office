@@ -56,6 +56,7 @@ async function startServer(t) {
     APP_TIMEZONE: 'UTC',
     DROPS_PASSPHRASE: PASSPHRASE,
     GATEWAY_TOKEN,
+    NEWS_BATCH_SERVICE_TOKEN: 'postgres-news-token-'.repeat(3),
     DATABASE_URL,
     // Calendar blocks stay file-backed either way; only the orchestration
     // storage under test is PostgreSQL.
@@ -70,6 +71,12 @@ async function startServer(t) {
   const cookie = login.headers.get('set-cookie').split(';')[0];
 
   const api = {
+    news(method, route, body) {
+      return fetch(`${server.origin}${route}`, { method,
+        headers: { Authorization: `Bearer ${'postgres-news-token-'.repeat(3)}`, 'Content-Type': 'application/json' },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+    },
     as(method, route, body) {
       return fetch(`${server.origin}${route}`, {
         method,
@@ -269,4 +276,27 @@ test('a goal moves to workflow reference and back on PostgreSQL, and is never cl
   // A live claim is never pulled out from under Penny.
   await api.relay('POST', '/api/orchestration/goals/claim');
   assert.equal((await api.as('POST', `/api/orchestration/goals/${encodeURIComponent(inventory.id)}/reference`, {})).status, 409);
+});
+
+
+test('news intake and attempt-fenced result writes round-trip on PostgreSQL', { skip }, async t => {
+  const api = await startServer(t);
+  const requestId = '00000000-0000-4000-8000-000000000003';
+  const route = `/api/integrations/news-batches/${requestId}`;
+  const input = { clientBatchId: `dashboard-top10-2026-11-16-ondemand-${requestId.replace(/-/g, '')}`,
+    requestedAt: '2026-11-16T10:00:00.000Z', windowHours: 48, instructions: 'Prefer original sources.' };
+  const responses = await Promise.all(Array.from({ length: 5 }, () => api.news('POST', route, input)));
+  assert.ok(responses.every(response => response.status === 200));
+  const tickets = await Promise.all(responses.map(response => response.json()));
+  assert.equal(new Set(tickets.map(ticket => ticket.goalId)).size, 1);
+  assert.equal((await (await api.as('GET', '/api/orchestration/goals')).json()).length, 1);
+  const goal = (await (await api.relay('POST', '/api/orchestration/goals/claim')).json()).goal;
+  const resultRoute = `/api/orchestration/goals/${goal.id}`;
+  assert.equal((await api.relay('PATCH', resultRoute, { status: 'completed', result: '{}', attempt: 99 })).status, 409);
+  assert.equal((await api.relay('PATCH', resultRoute, { status: 'completed', result: '{"attempt":1}', attempt: 1 })).status, 200);
+  assert.equal((await api.relay('PATCH', resultRoute, { status: 'failed', error: 'late', attempt: 1 })).status, 409);
+  const receipt = await (await api.news('GET', route)).json();
+  assert.equal(receipt.status, 'completed');
+  assert.equal(receipt.execution.attempt, 1);
+  assert.deepEqual(receipt.result, { attempt: 1 });
 });
