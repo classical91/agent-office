@@ -35,11 +35,9 @@ test('memory filters accept legacy display names and current agent ids', () => {
   assert.match(app, /canonicalAgentId\(e\.agent\) === activeAgent/);
 });
 
-test('Mission Control is the first Planning Tools item', () => {
+test('Mission Control is available under Planning Tools', () => {
   const shell = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'shell', 'shell.html'), 'utf8');
-  const planning = shell.split('data-nav-sub="planning"')[1].split('</div>')[1];
+  const planning = shell.split('data-nav-sub="planning"')[1].split('href="/mission-board.html" data-nav-area="dropbox"')[0];
 
-  assert.ok(planning.indexOf('Mission Control') >= 0);
-  assert.ok(planning.indexOf('Mission Control') < planning.indexOf('Fix Queue'));
-  assert.ok(shell.indexOf('Mission Control') > shell.indexOf('data-nav-sub="planning"'));
+  assert.match(planning, /href="\/\?panel=mission-control"[^>]*><span class="nav-item-label">Mission Control<\/span>/);
 });
