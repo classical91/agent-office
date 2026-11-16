@@ -31,7 +31,6 @@ const PAGES = [
   'project-rooms.html',
   'mission-board.html',
   'streaks.html',
-  'visitors.html',
   'ai-landscape.html',
   'platform-watch.html',
   'settings.html',
@@ -51,7 +50,7 @@ const REGIONS = [
     name: 'stylesheet',
     template: 'stylesheet.html',
     // Just the link. Pages that add their own stylesheet after it (streaks,
-    // visitors, ai-landscape) keep it where they put it.
+    // ai-landscape) keep it where they put it.
     pattern: /<link rel="stylesheet" href="shared\.css[^"]*"\/>/,
   },
   {

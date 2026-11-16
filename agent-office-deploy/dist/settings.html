@@ -158,7 +158,6 @@
               <a class="nav-item" href="/audits.html" data-nav-area="projects" data-icon="AU"><span class="nav-item-label">Audit Log</span></a>
             </div>
           </div>
-          <a class="nav-item" href="/visitors.html" data-nav-area="projects" data-icon="VS"><span class="nav-item-label">Visitors</span></a>
         </div>
       </div>
 
@@ -251,40 +250,6 @@
           <div class="ao-well-label">Auth Header</div>
           <div id="settings-shortcuts-header" class="ao-code">—</div>
           <div class="ao-well-note">Value is your <code>SHORTCUTS_TOKEN</code>. Step-by-step Shortcut recipes are in the README.</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Website visitors -->
-    <div id="settings-visitors" class="ao-card settings-card">
-      <div class="ao-card-title">Website Visitors</div>
-      <div class="ao-card-desc">Who is on your sites, from the tracker script below. A visitor is a random id their own browser keeps — nothing is looked up against any outside service. Full detail is on the <a href="/visitors.html" style="color:var(--accent); text-decoration:none;">Visitors page</a>.</div>
-
-      <div class="ao-stack">
-        <div class="ao-well">
-          <div class="ao-well-label">Status</div>
-          <div id="settings-visitors-state" class="ao-well-value">Checking…</div>
-          <div id="settings-visitors-snapshot" class="ao-well-note"></div>
-        </div>
-
-        <div class="ao-well">
-          <div class="ao-well-label">Tracker Snippet</div>
-          <div id="settings-visitors-snippet" class="ao-code">—</div>
-          <div class="ao-well-note">Paste before <code>&lt;/body&gt;</code> on any site you run. It shows up here on its first visitor.</div>
-          <button onclick="SETTINGS.copyTrackerSnippet(this)" class="ao-btn ao-btn--sm settings-btn-spaced">Copy snippet</button>
-        </div>
-
-        <div class="ao-well">
-          <div class="ao-well-label">Tracked Sites</div>
-          <div id="settings-visitors-sites" class="ao-well-value">—</div>
-        </div>
-
-        <div class="ao-well ao-well--row">
-          <div>
-            <div class="settings-row-name">Recorded Visits</div>
-            <div id="settings-visitors-retention" class="settings-row-note">Page views are deleted automatically after a set number of days.</div>
-          </div>
-          <button onclick="SETTINGS.clearVisits(this)" class="ao-btn ao-btn--sm ao-btn--danger">Delete all</button>
         </div>
       </div>
     </div>
