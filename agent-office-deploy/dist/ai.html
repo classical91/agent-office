@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="shared.css?v=modal-scroll-20261107"/>
-<link rel="stylesheet" href="hub-pages.css?v=hub-pages-20261029"/>
+<link rel="stylesheet" href="hub-pages.css?v=hub-pages-20261116"/>
 <!-- Restores the saved theme, sidebar state and focus mode before first paint,
      so no page flashes the default accent, a full-width sidebar, or the chrome
      of a page that opens in Focus Mode. ACCENTS mirrors THEMES in
@@ -156,17 +156,10 @@
       <div class="nav-section">
         <div class="nav-heading">Tools &amp; insights</div>
         <div class="nav-items-wrap nav-open">
-          <a class="nav-item" href="http://127.0.0.1:18789/automations" data-icon="AT"><span class="nav-item-label">Automations</span></a>
+          <a class="nav-item" href="http://127.0.0.1:18789/automations" data-icon="AT"><span class="nav-item-label">OpenClaw Automations</span></a>
           <a class="nav-item" href="/dev.html" data-nav-area="intelligence" data-icon="DL"><span class="nav-item-label">Dev Links</span></a>
           <a class="nav-item" href="/ai.html" data-nav-area="intelligence" data-icon="AP"><span class="nav-item-label">AI Portal</span></a>
-          <a class="nav-item" href="/ai-landscape.html" data-nav-area="intelligence" data-icon="AL"><span class="nav-item-label">AI Landscape</span></a>
           <a class="nav-item" href="/platform-watch.html" data-nav-area="intelligence" data-icon="PW"><span class="nav-item-label">Platform Watch</span></a>
-          <div class="nav-group">
-            <a class="nav-item nav-item-parent" href="/apps.html" data-nav-area="projects" data-nav-sub="apps" data-icon="AS"><span class="nav-item-label">Apps &amp; Sites</span><span class="nav-sub-chevron" role="button" tabindex="0" aria-label="Toggle Apps &amp; Sites pages" aria-expanded="true" onclick="toggleNavSub(event, this)" onkeydown="toggleNavSub(event, this)">&#9662;</span></a>
-            <div class="nav-sub">
-              <a class="nav-item" href="/audits.html" data-nav-area="projects" data-icon="AU"><span class="nav-item-label">Audit Log</span></a>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -194,18 +187,23 @@
       </div>
 
       <main class="portal-grid">
-        <a class="portal-card" style="--i:0" href="/apps.html">
-          <span class="portal-icon" aria-hidden="true">🚀</span>
-          <span class="portal-body"><strong>Apps &amp; Sites</strong>
-          <span>Every project with its live site, Railway project, and GitHub repo.</span></span>
-          <span class="portal-chevron" aria-hidden="true">&#8250;</span>
-        </a>
-        <a class="portal-card" style="--i:1" href="/audits.html">
-          <span class="portal-icon" aria-hidden="true">🗓️</span>
-          <span class="portal-body"><strong>Audit Log</strong>
-          <span>A timestamped record of every project audit.</span></span>
-          <span class="portal-chevron" aria-hidden="true">&#8250;</span>
-        </a>
+        <div class="portal-apps-group">
+          <a class="portal-card" style="--i:0" href="/apps.html">
+            <span class="portal-icon" aria-hidden="true">🚀</span>
+            <span class="portal-body"><strong>Apps &amp; Sites</strong>
+            <span>Every project with its live site, Railway project, and GitHub repo.</span></span>
+            <span class="portal-chevron" aria-hidden="true">&#8250;</span>
+          </a>
+          <details class="portal-apps-dropdown">
+            <summary>Audit Log</summary>
+            <a class="portal-card" style="--i:0" href="/audits.html">
+              <span class="portal-icon" aria-hidden="true">🗓️</span>
+              <span class="portal-body"><strong>Audit Log</strong>
+              <span>A timestamped record of every project audit.</span></span>
+              <span class="portal-chevron" aria-hidden="true">&#8250;</span>
+            </a>
+          </details>
+        </div>
         <a class="portal-card" style="--i:2" href="https://market-dashboard-production-b2f4.up.railway.app/bot-commands.html" target="_blank" rel="noopener noreferrer">
           <span class="portal-icon" aria-hidden="true">🤖</span>
           <span class="portal-body"><strong>Bot Commands <span class="link-ext">&#8599;</span></strong>
