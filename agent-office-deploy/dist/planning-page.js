@@ -32,6 +32,7 @@ window.AOPlanning = (() => {
 
   const state = {
     items: [],
+    savingList: false,
     counts: { total: 0, scheduled: 0, completed: 0, parked: 0 },
     editingId: '',
     draftDays: [],
@@ -137,11 +138,26 @@ window.AOPlanning = (() => {
 
   // ─── Actions ───────────────────────────────────────────────────────────
 
+  async function changeList(work, fallback) {
+    if (state.savingList || state.locked || !state.loaded) return;
+    state.savingList = true;
+    renderLibrary();
+    try {
+      await withErrors(async () => {
+        await work();
+        await load();
+      }, fallback);
+    } finally {
+      state.savingList = false;
+      render();
+    }
+  }
+
   async function addItem() {
     const input = el('planning-new-title');
     const title = (input && input.value || '').trim();
     if (!title) return;
-    await withErrors(async () => {
+    await changeList(async () => {
       await requestJson('/api/planning', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -150,11 +166,27 @@ window.AOPlanning = (() => {
         body: JSON.stringify({ title, schedule_this_week: true }),
       });
       input.value = '';
-      await load();
-      render();
       const refocus = el('planning-new-title');
       if (refocus) refocus.focus();
     }, 'Could not add that planning item.');
+  }
+
+  function libraryItem(activity) {
+    return state.items.find(item => item.title.trim().toLowerCase() === activity.title.toLowerCase());
+  }
+
+  async function toggleLibraryActivity(groupIndex, activityIndex) {
+    if (state.savingList || state.locked || !state.loaded) return;
+    const group = (window.AOPlanningLibrary || [])[groupIndex];
+    const activity = group && group.activities[activityIndex];
+    if (!activity) return;
+    const existing = libraryItem(activity);
+    if (existing) return removeItem(existing.id);
+    await changeList(() => requestJson('/api/planning', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(activity.input),
+    }), 'Could not add that activity.');
   }
 
   async function patch(id, body) {
@@ -184,15 +216,14 @@ window.AOPlanning = (() => {
   }
 
   async function removeItem(id) {
+    if (state.savingList || state.locked || !state.loaded) return;
     const item = state.items.find(entry => entry.id === id);
     if (!item) return;
-    if (!confirm(`Delete "${item.title}" from your planning list?`)) return;
-    await withErrors(async () => {
+    if (!confirm(`Remove "${item.title}" from your planning list? You can add it again later.`)) return;
+    await changeList(async () => {
       await requestJson(`/api/planning/${encodeURIComponent(id)}`, { method: 'DELETE' });
       if (state.editingId === id) state.editingId = '';
-      await load();
-      render();
-    }, 'Could not delete that planning item.');
+    }, 'Could not remove that planning item.');
   }
 
   function openEditor(id) {
@@ -427,7 +458,7 @@ window.AOPlanning = (() => {
       <div class="planning-item-actions">
         <button class="planning-btn planning-btn--sm" onclick="AOPlanning.toggleCompleted('${id}')">${item.completed ? 'Not done' : 'Done'}</button>
         <button class="planning-btn planning-btn--sm" onclick="AOPlanning.openEditor('${id}')">Edit</button>
-        <button class="planning-btn planning-btn--sm planning-btn--danger" onclick="AOPlanning.removeItem('${id}')">Delete</button>
+        <button class="planning-btn planning-btn--sm planning-btn--danger" onclick="AOPlanning.removeItem('${id}')">Remove</button>
       </div>
     </div>`;
   }
@@ -447,6 +478,35 @@ window.AOPlanning = (() => {
       <span class="planning-stat planning-stat--scheduled"><b>${counts.scheduled || 0}</b> to schedule</span>
       <span class="planning-stat"><b>${counts.parked || 0}</b> kept for later</span>
       <span class="planning-stat"><b>${counts.completed || 0}</b> done</span>`;
+  }
+
+  function renderLibrary() {
+    const disabled = state.locked || !state.loaded || state.savingList;
+    const addButton = el('planning-add-button');
+    if (addButton) addButton.disabled = disabled;
+    const wrap = el('planning-library');
+    if (!wrap) return;
+    // Keep the group the user is browsing open after an add/remove or refresh.
+    const openGroups = new Set(Array.from(wrap.querySelectorAll('details[open]'))
+      .map(group => group.dataset.group));
+    const firstRender = !wrap.querySelector('details');
+    wrap.innerHTML = (window.AOPlanningLibrary || []).map((group, groupIndex) => `
+      <details class="planning-library-group" data-group="${groupIndex}"
+        ${openGroups.has(String(groupIndex)) || (firstRender && groupIndex === 0) ? 'open' : ''}>
+        <summary>${escHtml(group.title)} <span class="planning-group-note">${group.activities.length} options</span></summary>
+        <div class="planning-library-options">${group.activities.map((activity, activityIndex) => {
+          const added = !state.locked && libraryItem(activity);
+          return `<div class="planning-library-option">
+            <div class="planning-item-body">
+              <div class="planning-item-title">${escHtml(activity.title)}</div>
+              <div class="planning-item-notes">${escHtml(activity.duration)} · ${escHtml(activity.frequency)}</div>
+            </div>
+            <button type="button" class="planning-btn planning-btn--sm${added ? ' planning-btn--danger' : ''}"
+              ${disabled ? 'disabled' : ''} aria-label="${added ? 'Remove' : 'Add'} ${escHtml(activity.title)} ${added ? 'from' : 'to'} my list"
+              onclick="AOPlanning.toggleLibraryActivity(${groupIndex}, ${activityIndex})">${added ? 'Remove from list' : 'Add to list'}</button>
+          </div>`;
+        }).join('')}</div>
+      </details>`).join('');
   }
 
   function renderBrief() {
@@ -556,6 +616,7 @@ window.AOPlanning = (() => {
 
   function render() {
     const list = el('planning-list');
+    renderLibrary();
     renderSummary();
     renderWeek();
     // Drawn before the early returns below: the work schedule has its own
@@ -919,7 +980,7 @@ window.AOPlanning = (() => {
 
   return {
     init, unlock, render,
-    addItem, toggleSchedule, toggleCompleted, removeItem,
+    addItem, toggleSchedule, toggleCompleted, removeItem, toggleLibraryActivity,
     openEditor, closeEditor, saveEditor, toggleDraftDay,
     buildWeek, rescheduleBlock, dropBlock, sendBack, discardWeek, acceptWeek,
     editWorkSchedule, cancelWorkEdit, addWorkShift, removeWorkShift, toggleWorkDay,

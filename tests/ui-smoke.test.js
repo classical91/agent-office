@@ -677,7 +677,7 @@ test('Countdowns, Calendar and Streaks lead the flat rows, above Dropbox and out
   assert.ok(submenu.includes('Planning Mode'));
 });
 
-test('a planning item can be added, ticked, done and deleted from the page', async t => {
+test('a planning item can be added, ticked, done and removed from the page', async t => {
   if (skipReason) return t.skip(skipReason);
 
   const { page, problems } = await openPage(t);
@@ -686,7 +686,7 @@ test('a planning item can be added, ticked, done and deleted from the page', asy
   await page.waitForSelector('#planning-new-title');
 
   await page.fill('#planning-new-title', 'Workout 3 times');
-  await page.click('.planning-btn--primary');
+  await page.click('#planning-add-button');
   const item = page.locator('.planning-item', { hasText: 'Workout 3 times' });
   await item.waitFor();
   assert.ok(await item.locator('.planning-check').isChecked(), 'a new item is asking to be scheduled');
@@ -702,8 +702,58 @@ test('a planning item can be added, ticked, done and deleted from the page', asy
   await page.waitForSelector('.planning-chip--done');
 
   page.once('dialog', dialog => dialog.accept());
-  await page.locator('.planning-item', { hasText: 'Workout 3 times' }).getByText('Delete', { exact: true }).click();
+  await page.locator('.planning-item', { hasText: 'Workout 3 times' }).getByText('Remove', { exact: true }).click();
   await page.waitForSelector('.planning-item', { state: 'detached' });
+  assert.deepEqual(problems, []);
+});
+
+test('planning library activities persist, avoid duplicates and can be removed and added again', async t => {
+  if (skipReason) return t.skip(skipReason);
+  const { page, problems } = await openPage(t);
+  await page.goto(`${server.origin}/planning.html`, { waitUntil: 'domcontentloaded' });
+  await logIn(page);
+  await page.waitForFunction(() => !document.getElementById('planning-add-button').disabled);
+  assert.equal(await page.locator('.planning-library-option').count(), 39);
+  assert.equal(await page.locator('.planning-library-group').count(), 4);
+
+  const title = 'Gratitude journaling';
+  const add = () => page.getByRole('button', { name: `Add ${title} to my list`, exact: true });
+  const remove = () => page.getByRole('button', { name: `Remove ${title} from my list`, exact: true });
+  const item = page.locator('.planning-item', { hasText: title });
+  assert.equal(await item.count(), 0, 'suggestions are optional, not automatically saved');
+
+  // Two immediate invocations must not race into two persisted copies.
+  await page.evaluate(() => Promise.all([
+    AOPlanning.toggleLibraryActivity(0, 2), AOPlanning.toggleLibraryActivity(0, 2),
+  ]));
+  await remove().waitFor();
+  assert.equal(await item.count(), 1);
+  assert.equal(await item.locator('.planning-check').isChecked(), false);
+  assert.match(await item.textContent(), /Suggested frequency: Daily/);
+  assert.match(await item.textContent(), /10 min/);
+  assert.match(await item.textContent(), /Morning/);
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await remove().waitFor();
+  assert.equal(await item.count(), 1, 'the server keeps the chosen activity');
+  assert.equal(await item.locator('.planning-check').isChecked(), false);
+
+  // Removing can be cancelled, and either list or library can remove it.
+  page.once('dialog', dialog => dialog.dismiss());
+  await remove().click();
+  assert.equal(await item.count(), 1);
+  page.once('dialog', dialog => dialog.accept());
+  await item.getByRole('button', { name: 'Remove', exact: true }).click();
+  await item.waitFor({ state: 'detached' });
+  await add().click();
+  await item.waitFor();
+  page.once('dialog', dialog => dialog.accept());
+  await remove().click();
+  await item.waitFor({ state: 'detached' });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForFunction(() => !document.getElementById('planning-add-button').disabled);
+  assert.equal(await item.count(), 0, 'removal persists too');
+  assert.equal(await add().count(), 1, 'the suggestion remains available');
   assert.deepEqual(problems, []);
 });
 

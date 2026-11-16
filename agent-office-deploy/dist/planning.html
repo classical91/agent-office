@@ -8,7 +8,7 @@
 <meta http-equiv="Expires" content="0"/>
 <title>Planning Mode - Agent Office</title>
 <link rel="stylesheet" href="shared.css?v=modal-scroll-20261107"/>
-<link rel="stylesheet" href="planning.css?v=work-schedule-20261003"/>
+<link rel="stylesheet" href="planning.css?v=activity-library-20261116"/>
 <!-- Restores the saved theme, sidebar state and focus mode before first paint,
      so no page flashes the default accent, a full-width sidebar, or the chrome
      of a page that opens in Focus Mode. ACCENTS mirrors THEMES in
@@ -204,15 +204,29 @@
       </div>
 
       <div class="planning-panel">
-        <div class="planning-panel-title">Add to the list</div>
+        <div class="planning-panel-title">Add your own activity</div>
         <div class="planning-add">
           <input class="planning-input" id="planning-new-title" type="text" maxlength="200"
-            placeholder="e.g. Workout 3 times" autocomplete="off"/>
-          <button class="planning-btn planning-btn--primary" onclick="AOPlanning.addItem()">Add</button>
+            placeholder="e.g. Workout 3 times" aria-label="New activity title" autocomplete="off"/>
+          <button id="planning-add-button" class="planning-btn planning-btn--primary" onclick="AOPlanning.addItem()">Add</button>
         </div>
       </div>
 
       <div class="planning-panel">
+        <div class="planning-panel-title">Activity library</div>
+        <div class="planning-sub">
+          Choose from 39 ideas for your day and week. Add the ones you want to keep,
+          then tick them in My planning list when you want CoachClaw to find time for them.
+          Remove an activity whenever you like; these suggestions stay available to add again.
+          Durations start at the lower end of each range and can be changed with Edit.
+          Frequencies are guidance: each ticked item currently proposes one calendar block.
+        </div>
+        <div id="planning-library"></div>
+      </div>
+
+      <div class="planning-panel">
+        <div class="planning-panel-title">My planning list</div>
+        <div class="planning-sub">Add your own activity above or choose from the library. Use Remove on any item to take it off your list.</div>
         <div id="planning-list"></div>
       </div>
 
@@ -271,7 +285,8 @@
 <!-- BOTTOM STATUS BAR -->
 
 <script src="app-shared.js?v=stale-blue-20261029"></script>
-<script src="planning-page.js?v=work-schedule-20261003"></script>
+<script src="planning-library.js?v=activity-library-20261116"></script>
+<script src="planning-page.js?v=activity-library-20261116"></script>
 <script>
 switchView('planning', document.querySelector('.nav-item.active'));
 </script>

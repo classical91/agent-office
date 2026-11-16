@@ -1,0 +1,82 @@
+// Optional activities for Planning Mode. Nothing is saved or scheduled until
+// the user adds an activity and then ticks it for the week.
+window.AOPlanningLibrary = [
+  {
+    title: 'Morning — Foundation and energy',
+    time: 'morning',
+    activities: [
+      ['Morning hygiene + hydration', 15, '15 min', 'Daily'],
+      ['Morning affirmations + visualization', 10, '10–15 min', 'Daily'],
+      ['Gratitude journaling', 10, '10 min', 'Daily'],
+      ['Meditation + breathing', 10, '10–20 min', 'Daily'],
+      ['Yoga + mobility', 15, '15–30 min', 'Daily'],
+      ['Strength workout', 45, '45–60 min', '3× weekly'],
+      ['Market Scan + TraderClaw', 30, '30 min', 'Weekdays'],
+      ['Breakfast + nutrition', 30, '30 min', 'Daily'],
+      ['Daily priorities + planning', 10, '10 min', 'Daily'],
+      ['Psychology reading', 30, '30 min', '3× weekly'],
+    ],
+  },
+  {
+    title: 'Daytime — Productivity and personal development',
+    time: 'afternoon',
+    activities: [
+      ['FarmBot development/review', 60, '60–90 min', '2–3× weekly'],
+      ['Agent Office improvements', 60, '60 min', '2× weekly'],
+      ['WebClaw prospecting + outreach', 60, '60–120 min', '2–3× weekly'],
+      ['Ebook writing + publishing', 60, '60–90 min', '2× weekly'],
+      ['AI tools + coding education', 45, '45 min', '2× weekly'],
+      ['Psychology coursework or self-study', 60, '60 min', '3× weekly'],
+      ['Meal preparation', 30, '30–60 min', 'As needed'],
+      ['Outdoor walk + fresh air', 20, '20–30 min', 'Daily'],
+      ['Financial planning + budgeting', 30, '30 min', 'Weekly'],
+      ['Creative brainstorming', 20, '20–30 min', '2× weekly'],
+    ],
+  },
+  {
+    title: 'Evening — Relationships, enjoyment and reflection',
+    time: 'evening',
+    activities: [
+      ['Dinner + kitchen cleanup', 45, '45 min', 'Daily'],
+      ['TraderClaw evening review', 20, '20–30 min', 'Weekdays'],
+      ['GitHub PRs + project status', 30, '30 min', '2× weekly'],
+      ['Socializing / connecting with others', 30, '30–60 min', '3× weekly'],
+      ['Gaming / recreation', 60, '60–120 min', '2–3× weekly'],
+      ['Reading for pleasure', 20, '20–30 min', 'Daily'],
+      ['Emotional reflection + journaling', 10, '10–15 min', 'Daily'],
+      ['Prepare for tomorrow', 10, '10 min', 'Daily'],
+      ['Relaxation / screen-free wind-down', 30, '30–45 min', 'Daily'],
+    ],
+  },
+  {
+    title: 'Weekly — Bigger activities and life maintenance',
+    time: '',
+    activities: [
+      ['Weekly audit with ChatGPT', 60, '60 min', 'Sunday'],
+      ['Weekly scheduling with CoachClaw', 30, '30 min', 'Sunday'],
+      ['Groceries + household shopping', 60, '60 min', 'Weekly'],
+      ['Batch meal preparation', 90, '90 min', 'Weekly'],
+      ['Cleaning + laundry', 60, '60 min', 'Weekly'],
+      ['Nature walk or local adventure', 60, '1–2 hours', 'Weekly'],
+      ['Social outing or community activity', 60, '1–3 hours', 'Weekly'],
+      ['Review business goals + revenue', 45, '45 min', 'Weekly'],
+      ['Personal growth + belief reflection', 30, '30 min', 'Weekly'],
+      ['Creative hobby / music production', 60, '60–90 min', 'Weekly'],
+    ],
+  },
+].map(group => ({
+  title: group.title,
+  activities: group.activities.map(([title, minutes, duration, frequency]) => ({
+    title,
+    duration,
+    frequency,
+    input: {
+      title,
+      estimated_duration: minutes,
+      preferred_time: group.time,
+      preferred_days: frequency === 'Weekdays' ? [1, 2, 3, 4, 5] : frequency === 'Sunday' ? [7] : [],
+      notes: `Suggested frequency: ${frequency}. Suggested duration: ${duration}.`,
+      schedule_this_week: false,
+    },
+  })),
+}));
