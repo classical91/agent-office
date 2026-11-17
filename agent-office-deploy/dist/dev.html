@@ -694,6 +694,28 @@ switchView('dev', document.querySelector('.nav-item.active'));
     });
   }
 
+  function createOpenAll(scope, label){
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'dev-open-all';
+    button.textContent = 'Open all websites';
+    button.setAttribute('aria-label', 'Open all websites for ' + label + ' in new tabs');
+    button.title = 'Open every website for ' + label + ' in new tabs. Allow pop-ups for this site if needed.';
+    button.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      // Open synchronously with the click, including cards hidden by search
+      // or collapsed menus. Deduplicate within this section or platform only.
+      var urls = new Set();
+      scope.querySelectorAll('.dev-link-card[href]').forEach(function(link){
+        if (urls.has(link.href)) return;
+        urls.add(link.href);
+        window.open(link.href, '_blank', 'noopener,noreferrer');
+      });
+    });
+    return button;
+  }
+
   sections.forEach(function(section){
     var heading = section.querySelector('.dev-section-heading');
     var headingText = heading ? heading.textContent : '';
@@ -716,31 +738,20 @@ switchView('dev', document.querySelector('.nav-item.active'));
         e.preventDefault();
         setSectionCollapsed(section, !section.classList.contains('is-collapsed'), true);
       });
+      // Keep the two actions separate so the open-all button is available
+      // while collapsed and is not nested inside the heading's button role.
+      var header = document.createElement('div');
+      header.className = 'dev-section-header';
+      heading.parentNode.insertBefore(header, heading);
+      header.appendChild(heading);
+      header.appendChild(createOpenAll(section, titleText));
       setSectionCollapsed(section, readSavedCollapsed(section), false);
     }
     Array.prototype.forEach.call(section.querySelectorAll('.dev-update-group'), function(el){
       groups.push(el);
       var summary = el.querySelector('summary');
       var platform = summary.textContent.trim();
-      var openAll = document.createElement('button');
-      openAll.type = 'button';
-      openAll.className = 'dev-open-all';
-      openAll.textContent = 'Open all links';
-      openAll.setAttribute('aria-label', 'Open all links for ' + platform + ' in new tabs');
-      openAll.title = 'Open every link for ' + platform + ' in new tabs. Allow pop-ups for this site if needed.';
-      openAll.addEventListener('click', function(e){
-        e.preventDefault();
-        e.stopPropagation();
-        // Keep every open synchronous with the user gesture. Include all of
-        // this platform's links even when a search hides some of its cards.
-        var urls = new Set();
-        el.querySelectorAll('.dev-link-card[href]').forEach(function(link){
-          if (urls.has(link.href)) return;
-          urls.add(link.href);
-          window.open(link.href, '_blank', 'noopener,noreferrer');
-        });
-      });
-      summary.appendChild(openAll);
+      summary.appendChild(createOpenAll(el, platform));
       el.addEventListener('toggle', function(){
         if (el.open && !searching) closeGroups(el);
       });

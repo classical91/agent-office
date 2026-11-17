@@ -3851,6 +3851,19 @@
   margin-top: 26px;
 }
 
+.dev-section-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.dev-section-header .dev-section-heading {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
 .dev-section-heading {
   display: flex;
   align-items: end;
@@ -4071,6 +4084,18 @@
   }
 
   .dev-search-count { text-align: right; }
+
+  .dev-section-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .dev-section-header .dev-section-heading {
+    flex-basis: 100%;
+  }
+
+  .dev-section-header > .dev-open-all { margin-left: 0; }
 
   .dev-section-heading {
     align-items: flex-start;
