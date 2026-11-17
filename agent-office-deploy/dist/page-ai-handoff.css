@@ -1,0 +1,8 @@
+.ai-handoff { margin: 18px 0; padding: 16px; }
+.ai-handoff > summary { cursor: pointer; font-weight: 650; }
+.ai-handoff-body { display: grid; gap: 10px; margin-top: 14px; min-width: 0; }
+.ai-handoff-body p { margin: 0; color: var(--muted); line-height: 1.5; }
+.ai-handoff-body textarea { width: 100%; min-width: 0; box-sizing: border-box; resize: vertical; }
+.ai-handoff-preview { font-family: monospace; font-size: 12px; overflow-wrap: anywhere; }
+.ai-handoff-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.ai-handoff-status { font-size: 13px; }

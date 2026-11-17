@@ -116,6 +116,21 @@ const historyCountPill = document.querySelector("#history-count-pill");
 const watchNote = document.querySelector("#watch-note");
 
 let history = loadHistory();
+let watchSnapshot = { status: 'loading', generatedAt: null, sources: [] };
+const handoff = window.AOPageHandoff.mount({
+  host: document.querySelector('#ai-handoff'),
+  title: 'Platform Watch',
+  defaultRequest: 'Review these platform updates for improvements to Agent Office and my agent workflows. Verify the relevant official release notes, prioritize useful changes, and implement applicable updates with tests.',
+  sourceFiles: ['agent-office-deploy/dist/platform-watch.html', 'agent-office-deploy/dist/src/intelRadar.js', 'agent-office-deploy/dist/intel-radar-watch.js'],
+  getSnapshot: () => ({
+    query: normalizeQuery(queryInput.value),
+    searchRoutes: normalizeQuery(queryInput.value) ? previewTargetIds.map(id => ({
+      target: SEARCH_TARGETS[id].label,
+      urls: SEARCH_TARGETS[id].buildUrls(normalizeQuery(queryInput.value))
+    })) : [],
+    watchlist: watchSnapshot
+  })
+});
 
 function createElement(tagName, className, textContent) {
   const element = document.createElement(tagName);
@@ -338,6 +353,8 @@ function createStatusPill(label, tone) {
 }
 
 function renderWatchLoading() {
+  watchSnapshot = { status: 'loading', generatedAt: null, sources: [] };
+  handoff.refresh();
   watchGrid.setAttribute("aria-busy", "true");
   watchStatusPill.textContent = "Watchlist: Loading";
   watchGrid.replaceChildren();
@@ -355,6 +372,19 @@ function renderWatchLoading() {
 
 function renderWatchlist(payload) {
   const sources = Array.isArray(payload.sources) ? payload.sources : [];
+  watchSnapshot = {
+    status: sources.every(source => source.status === 'ok') && sources.length ? 'ready' : 'partial',
+    generatedAt: payload.generatedAt || null,
+    sources: sources.map(source => ({
+      name: source.name, homepage: source.homepage, description: source.description,
+      status: source.status, fetchedAt: source.fetchedAt, error: source.error,
+      items: (source.items || []).map(item => ({
+        title: item.title, url: item.url, summary: item.summary,
+        publishedAt: item.publishedAt, category: item.category
+      }))
+    }))
+  };
+  handoff.refresh();
   watchGrid.replaceChildren();
 
   watchSourceCount.textContent = String(sources.length);
@@ -417,6 +447,11 @@ function renderWatchlist(payload) {
 }
 
 function renderWatchError(error) {
+  watchSnapshot = {
+    status: 'unavailable', generatedAt: null, sources: [],
+    error: error instanceof Error ? error.message : 'The watchlist could not be loaded.'
+  };
+  handoff.refresh();
   watchGrid.replaceChildren();
   watchStatusPill.textContent = "Watchlist: source issue";
   watchStatusPill.className = "ao-badge ao-badge--warn";
@@ -458,6 +493,7 @@ renderLanes();
 renderWatchLoading();
 
 queryInput.addEventListener("input", () => {
+  handoff.refresh();
   renderSearchPreview(queryInput.value);
   renderPresetList(queryInput.value);
 });
