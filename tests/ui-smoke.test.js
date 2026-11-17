@@ -1108,3 +1108,49 @@ test('pausing workouts or meals hides their previews, and needs no previews on',
   assert.equal(await page.locator('[data-wellness-id="workout:t"]').count(), 0, 'paused workouts are not previewed');
   assert.ok(await page.locator('[data-wellness-id="meal:t:night"]').count() > 0, 'meals still are');
 });
+
+// The folder actions send exactly the notes in the open folder. The calls are
+// answered here rather than by the server, so the seeded notes the other tests
+// rely on are still there afterwards; tests/drops-folders-api.test.js covers
+// what the server does with them.
+test('a folder can be emptied or deleted from inside it', async t => {
+  if (skipReason) return t.skip(skipReason);
+
+  const { page, problems } = await openPage(t);
+  const sent = [];
+  await page.route('**/api/drops/bulk-*', route => {
+    sent.push({ path: new URL(route.request().url()).pathname, body: route.request().postDataJSON() });
+    return route.fulfill({ json: { ok: true } });
+  });
+  const dialogs = [];
+  page.on('dialog', dialog => { dialogs.push(dialog.message()); dialog.accept(); });
+
+  await page.goto(`${server.origin}/mission-board.html`, { waitUntil: 'domcontentloaded' });
+  await logIn(page);
+  await page.waitForSelector('.drop-folder');
+
+  // All Notes is every folder at once, so it offers neither action.
+  await page.locator('.drop-folder', { hasText: 'All Notes' }).click();
+  await page.waitForSelector('.dropbox-table');
+  assert.equal(await page.locator('#drop-folder-empty, #drop-folder-delete').count(), 0);
+  await page.click('#drop-folder-back');
+
+  await page.locator('.drop-folder', { hasText: 'Evening Rollup' }).click();
+  await page.click('#drop-folder-empty');
+  await page.waitForSelector('.drop-folder');
+  assert.match(dialogs[0], /Delete all 2 notes in "Evening Rollup"/);
+
+  await page.locator('.drop-folder', { hasText: 'Githubs' }).click();
+  await page.click('#drop-folder-delete');
+  await page.waitForSelector('.drop-folder');
+  assert.match(dialogs[1], /moved to General/);
+
+  assert.equal(sent.length, 2);
+  assert.deepEqual(sent[0], { path: '/api/drops/bulk-delete', body: { ids: ['drop-1', 'drop-2'] } });
+  // An earlier test files a note into Githubs, so drop-3 need not be alone.
+  assert.equal(sent[1].path, '/api/drops/bulk-move');
+  assert.equal(sent[1].body.subject, 'General');
+  assert.ok(sent[1].body.ids.includes('drop-3'));
+  assert.ok(!sent[1].body.ids.some(id => ['drop-1', 'drop-2', 'drop-4'].includes(id)), 'a note from another folder was sent');
+  assert.deepEqual(problems, []);
+});

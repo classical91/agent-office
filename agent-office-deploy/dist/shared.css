@@ -3438,6 +3438,7 @@
   }
   .drop-folder-crumb { font-size: 15px; font-weight: 700; color: var(--text); }
   .drop-folder-count { font-size: 12px; color: var(--muted); }
+  .drop-folder-actions { display: inline-flex; gap: 8px; margin-left: auto; align-self: center; flex-wrap: wrap; }
 
   .dropbox-table { width: 100%; border-collapse: collapse; font-size: 13px; }
   .dropbox-table th,

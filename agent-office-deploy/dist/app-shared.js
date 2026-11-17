@@ -2925,11 +2925,79 @@ function renderDropFolderBar(gridOpen) {
   const shown = getFilteredDrops().length;
   const label = dropboxState.folder === null ? 'Search results' : dropFolderLabel(dropboxState.folder);
   bar.classList.remove('hidden');
+  const folder = dropboxState.folder;
+  // All Notes and search results are not folders anyone filed into, so there is
+  // nothing there to delete as a folder.
+  const ownFolder = folder !== null && folder !== DROP_FOLDER_ALL;
+  // Unfiled notes have no subject to give up, so that drawer can only be emptied.
+  const canKeepNotes = ownFolder && folder !== DROP_FOLDER_UNFILED && folder !== 'General';
   bar.innerHTML = `
     <button type="button" id="drop-folder-back" class="drop-folder-back">&larr; All folders</button>
     <span class="drop-folder-crumb">${escHTML(label)}</span>
-    <span class="drop-folder-count">${dropNoteCount(shown)}</span>`;
+    <span class="drop-folder-count">${dropNoteCount(shown)}</span>
+    ${ownFolder ? `
+    <span class="drop-folder-actions">
+      <button type="button" id="drop-folder-empty" class="ao-btn ao-btn--sm ao-btn--danger">Remove all notes</button>
+      ${canKeepNotes ? '<button type="button" id="drop-folder-delete" class="ao-btn ao-btn--sm ao-btn--danger">Delete folder</button>' : ''}
+    </span>` : ''}`;
   bar.querySelector('#drop-folder-back').addEventListener('click', closeDropFolder);
+  bar.querySelector('#drop-folder-empty')?.addEventListener('click', () => emptyDropFolder(folder));
+  bar.querySelector('#drop-folder-delete')?.addEventListener('click', () => deleteDropFolder(folder));
+}
+
+// Every note filed in a folder, by the same rule the folder wall counts them
+// with, so the number in the confirm is the number on the tile.
+function dropFolderNotes(folder) {
+  return dropboxState.drops.filter(drop => {
+    if ((drop.project || '') === 'iOS') return false;
+    const subject = (drop.subject || '').trim();
+    return folder === DROP_FOLDER_UNFILED ? !subject : subject === folder;
+  });
+}
+
+async function runDropFolderAction(url, body, fallbackMessage) {
+  if (!await ensureDropsSession(true)) return false;
+  try {
+    await requestJson(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch (error) {
+    handleDropboxRequestError(error, fallbackMessage);
+    return false;
+  }
+  const drops = await loadDrops().catch(() => null);
+  if (drops !== null) dropboxState.drops = drops;
+  return true;
+}
+
+// Deletes every note in the folder. A folder is only the subject its notes
+// share, so once the last note goes the folder goes with it.
+async function emptyDropFolder(folder) {
+  const notes = dropFolderNotes(folder);
+  const name = dropFolderLabel(folder);
+  if (!notes.length) { closeDropFolder(); return; }
+  if (!confirm(`Delete all ${dropNoteCount(notes.length)} in "${name}"? This cannot be undone.`)) return;
+  const ok = await runDropFolderAction(`${DROPS_API}/bulk-delete`, { ids: notes.map(drop => drop.id) }, 'Failed to remove the notes.');
+  if (ok) closeDropFolder();
+}
+
+// Removes the folder but keeps its notes, which move to General — the subject
+// a note gets when it is filed without one.
+async function deleteDropFolder(folder) {
+  const notes = dropFolderNotes(folder);
+  const name = dropFolderLabel(folder);
+  if (!notes.length) { closeDropFolder(); return; }
+  const message = `Delete the folder "${name}"?\n\nIts ${dropNoteCount(notes.length)} will be kept and moved to General.`
+    + '\nTo delete the notes too, use "Remove all notes" instead.';
+  if (!confirm(message)) return;
+  const ok = await runDropFolderAction(`${DROPS_API}/bulk-move`, { ids: notes.map(drop => drop.id), subject: 'General' }, 'Failed to delete the folder.');
+  if (ok) {
+    // The pin was on a folder that no longer exists.
+    if (isDropFolderPinned(folder)) toggleDropFolderPin(folder);
+    closeDropFolder();
+  }
 }
 
 function syncDropboxChrome() {
