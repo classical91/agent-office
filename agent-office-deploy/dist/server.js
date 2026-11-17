@@ -741,6 +741,22 @@ function validatePatchInput(input) {
   return { ok: true, value: patch };
 }
 
+const MAX_BULK_DROPS = 1000;
+
+function validateBulkDropInput(input, needsSubject) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return { ok: false, error: 'Body must be a JSON object.' };
+  }
+  if (!Array.isArray(input.ids) || !input.ids.length) return { ok: false, error: 'ids must be a non-empty array.' };
+  if (input.ids.length > MAX_BULK_DROPS) return { ok: false, error: `At most ${MAX_BULK_DROPS} notes at a time.` };
+  const ids = [...new Set(input.ids.map(id => (typeof id === 'string' ? id.trim() : '')))];
+  if (ids.some(id => !id)) return { ok: false, error: 'Every id must be a non-empty string.' };
+  if (!needsSubject) return { ok: true, ids };
+  // Same rule as PATCH: a note always has a subject, and General is the default.
+  const subject = cleanText(input.subject, 100) || 'General';
+  return { ok: true, ids, subject };
+}
+
 function validateProjectInput(input, partial = false) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return { ok: false, error: 'Project body must be a JSON object.' };
   const name = cleanText(input.name, 120);
@@ -1379,6 +1395,31 @@ function createFileStorage() {
       const deleted = nextDrops.length !== drops.length;
       if (deleted) await saveDropsToFile(nextDrops);
       return deleted;
+    },
+    // One read and one write for the whole batch: the file store is not guarded
+    // against overlapping writes, so a folder is never emptied note by note.
+    async deleteDrops(ids) {
+      const doomed = new Set(ids.filter(id => !isNewsGoal(id)));
+      const drops = await loadDropsFromFile();
+      const nextDrops = drops.filter(drop => !doomed.has(drop.id));
+      const deleted = drops.length - nextDrops.length;
+      if (deleted) await saveDropsToFile(nextDrops);
+      return deleted;
+    },
+    async moveDrops(ids, subject) {
+      const moving = new Set(ids.filter(id => !isNewsGoal(id)));
+      const drops = await loadDropsFromFile();
+      const now = new Date().toISOString();
+      let moved = 0;
+      drops.forEach(drop => {
+        if (!moving.has(drop.id)) return;
+        drop.subject = subject;
+        drop.category = subject;
+        drop.updated_at = now;
+        moved += 1;
+      });
+      if (moved) await saveDropsToFile(drops);
+      return moved;
     },
     async updateDropDone(id, done) {
       if (isNewsGoal(id)) return null;
@@ -2334,6 +2375,21 @@ async function createPostgresStorage() {
       if (isNewsGoal(id)) return false;
       const result = await pool.query('DELETE FROM drops WHERE id = $1', [id]);
       return result.rowCount > 0;
+    },
+    async deleteDrops(ids) {
+      const live = ids.filter(id => !isNewsGoal(id));
+      if (!live.length) return 0;
+      const result = await pool.query('DELETE FROM drops WHERE id = ANY($1::text[])', [live]);
+      return result.rowCount;
+    },
+    async moveDrops(ids, subject) {
+      const live = ids.filter(id => !isNewsGoal(id));
+      if (!live.length) return 0;
+      const result = await pool.query(
+        'UPDATE drops SET subject = $2, category = $2, updated_at = NOW() WHERE id = ANY($1::text[])',
+        [live, subject]
+      );
+      return result.rowCount;
     },
     async updateDropDone(id, done) {
       if (isNewsGoal(id)) return null;
@@ -6968,6 +7024,26 @@ const server = http.createServer(async (req, res) => {
       });
 
       sendJson(res, 201, drop);
+      return;
+    }
+
+    // A folder is only the subject its notes share, so the folder actions are
+    // batch operations on notes: the page sends the ids it is showing, and only
+    // those are touched.
+    if (req.method === 'POST' && (pathname === '/api/drops/bulk-delete' || pathname === '/api/drops/bulk-move')) {
+      if (!requireDropsAuth(res, req)) return;
+
+      const payload = validateBulkDropInput(await readJsonBody(req), pathname.endsWith('move'));
+      if (!payload.ok) {
+        sendJson(res, 400, { error: payload.error });
+        return;
+      }
+
+      if (pathname.endsWith('delete')) {
+        sendJson(res, 200, { ok: true, deleted: await storage.deleteDrops(payload.ids) });
+      } else {
+        sendJson(res, 200, { ok: true, moved: await storage.moveDrops(payload.ids, payload.subject) });
+      }
       return;
     }
 
