@@ -7,6 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
 <title>Audit Log - Agent Office</title>
+<link rel="stylesheet" href="page-ai-handoff.css?v=1"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
@@ -218,6 +219,8 @@
         </div>
       </section>
 
+      <div id="ai-handoff"></div>
+
       <section class="audit-log" aria-labelledby="log-title">
         <div class="audit-log-head">
           <h2 class="ao-section-label" id="log-title">Recorded audits</h2>
@@ -246,6 +249,7 @@
 
 <script src="app-shared.js?v=stale-blue-20261029"></script>
 <script src="audits-data.js"></script>
+<script src="page-ai-handoff.js?v=1"></script>
 <script>
 switchView('audits', document.querySelector('.nav-item.active'));
 
@@ -259,6 +263,19 @@ switchView('audits', document.querySelector('.nav-item.active'));
   const searchEl = document.getElementById("search");
   const projectEl = document.getElementById("projectFilter");
   const yearEl = document.getElementById("yearFilter");
+  let visibleAudits = [];
+  const handoff = window.AOPageHandoff.mount({
+    host: document.getElementById('ai-handoff'),
+    title: 'Audit Log',
+    defaultRequest: 'Review these audit findings, prioritize the highest-impact issues, and implement verified fixes in the affected repositories. Recheck each finding against current source before changing it.',
+    sourceFiles: ['agent-office-deploy/dist/audits.html', 'agent-office-deploy/dist/audits-data.js'],
+    getSnapshot: () => ({
+      filters: { search: searchEl.value, project: projectEl.value, year: yearEl.value },
+      matchingAudits: visibleAudits.length,
+      totalAudits: AUDITS.length,
+      audits: visibleAudits
+    })
+  });
 
   function escapeHtml(value) {
     return String(value).replace(/[&<>'"]/g, function (char) {
@@ -351,6 +368,8 @@ switchView('audits', document.querySelector('.nav-item.active'));
         (year === "all" || String(auditDate(audit.auditedAt).getFullYear()) === year);
     });
 
+    visibleAudits = visible;
+    handoff.refresh();
     rowsEl.innerHTML = visible.map(function (audit, index) {
       const stamp = displayTimestamp(audit.auditedAt);
       return '<article class="audit-row" style="--i:' + index + '">' +

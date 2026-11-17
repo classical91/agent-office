@@ -32,6 +32,7 @@
 })();
 </script>
 <link rel="stylesheet" href="intel-radar.css?v=1"/>
+<link rel="stylesheet" href="page-ai-handoff.css?v=1"/>
 </head>
 <body>
 
@@ -250,6 +251,8 @@
         </div>
       </section>
 
+      <div id="ai-handoff"></div>
+
       <section class="intel-board">
         <article class="ao-card">
           <div class="ao-card-head">
@@ -324,7 +327,8 @@
 <!-- BOTTOM STATUS BAR -->
 
 <script src="app-shared.js?v=stale-blue-20261029"></script>
-<script type="module" src="src/intelRadar.js?v=1"></script>
+<script src="page-ai-handoff.js?v=1"></script>
+<script type="module" src="src/intelRadar.js?v=2"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => switchView('platform-watch', document.querySelector('.nav-item.active')));
 </script>
