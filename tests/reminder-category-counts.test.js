@@ -29,14 +29,15 @@ function setup(drops, registry = null) {
 const reminder = (category, extra = {}) => ({ project: 'iOS', category, ...extra });
 const plain = value => JSON.parse(JSON.stringify(value));
 
-test('counts include every reminder category, zero counts and Uncategorized, excluding tasks', () => {
+test('counts include every non-empty reminder category and Uncategorized, excluding tasks', () => {
   const drops = [reminder('Work'), reminder('Work'), reminder('Bills'), reminder(''), reminder('Imported'), { project: 'Other', category: 'Work' }];
   const { api } = setup(drops);
   const result = Object.fromEntries(plain(api.filterOptions(drops)));
   assert.equal(result[''], 'All categories (5)');
   assert.equal(result.Work, 'Work (2)');
   assert.equal(result.Bills, 'Bills (1)');
-  assert.equal(result.Personal, 'Personal (0)');
+  assert.equal(result.Personal, undefined, 'empty categories are hidden from the filter');
+  assert.equal(Object.fromEntries(plain(api.options())).Personal, 'Personal', 'but stay available to assign and manage');
   assert.equal(result.uncategorized, 'Uncategorized (1)');
   assert.equal(result.Imported, 'Imported (1)');
   assert.equal(Object.fromEntries(plain(api.options())).Work, 'Work', 'assignment choices have no counts');
@@ -45,7 +46,8 @@ test('counts include every reminder category, zero counts and Uncategorized, exc
 test('counts use the supplied search/time-filtered subset and update after removal or reassignment', () => {
   const drops = [reminder('Work'), reminder('Bills')];
   const { api } = setup(drops);
-  assert.equal(Object.fromEntries(plain(api.filterOptions([drops[1]]))).Work, 'Work (0)');
+  assert.equal(Object.fromEntries(plain(api.filterOptions([drops[1]]))).Work, undefined);
+  assert.equal(Object.fromEntries(plain(api.filterOptions([drops[1]], 'Work'))).Work, 'Work (0)', 'the active filter stays listed at zero');
   drops[0].category = 'Bills';
   assert.equal(Object.fromEntries(plain(api.filterOptions(drops))).Bills, 'Bills (2)');
   drops.pop();
@@ -90,15 +92,15 @@ test('mission filter bypasses only category when computing counts, retaining sea
   assert.deepEqual(plain(context.filteredDrops({ ignoreCategory: true })), [work, bills]);
 });
 
-test('busiest categories shade darkest red, smaller counts lighter, empty ones bold green', () => {
+test('busiest categories shade darkest red, smaller counts lighter, an empty active filter bold green', () => {
   const drops = [reminder('Work'), reminder('Work'), reminder('Work'), reminder('Bills'), reminder('Other')];
   const { api } = setup(drops);
-  const styles = Object.fromEntries(plain(api.filterOptions(drops)).map(([id, , style]) => [id, style]));
+  const styles = Object.fromEntries(plain(api.filterOptions(drops, 'Personal')).map(([id, , style]) => [id, style]));
   const lightness = style => Number(/hsl\(0,78%,(\d+)%\)/.exec(style)[1]);
   assert.equal(styles[''], undefined, 'All categories stays plain');
   assert.equal(lightness(styles.Work), 28);
   assert.equal(lightness(styles.Bills), 84);
   assert.equal(styles.Bills, styles.Other, 'equal counts share a shade');
   assert.match(styles.Personal, /color:#4ade80;font-weight:800/);
-  assert.match(styles.uncategorized, /color:#4ade80;font-weight:800/);
+  assert.equal(styles.uncategorized, undefined, 'empty categories are not listed');
 });

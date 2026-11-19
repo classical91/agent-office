@@ -38,7 +38,10 @@
   function options() {
     return [['uncategorized', 'Uncategorized'], ...items().filter(item => !item.deleted).map(item => [item.id, item.label])];
   }
-  function filterOptions(reminders) {
+  // Only categories with reminders appear in the filter; empty ones stay in
+  // Manage categories until deleted there. The active filter stays listed even
+  // at zero so a search that empties it does not silently drop the selection.
+  function filterOptions(reminders, selected = '') {
     const categories = items();
     const deleted = new Set(categories.filter(item => item.deleted).map(item => item.id));
     const counts = new Map();
@@ -50,7 +53,7 @@
       counts.set(id, (counts.get(id) || 0) + 1);
       total += 1;
     }
-    const ranked = options().sort(([a, aName], [b, bName]) =>
+    const ranked = options().filter(([id]) => counts.get(id) || id === selected).sort(([a, aName], [b, bName]) =>
       (counts.get(b) || 0) - (counts.get(a) || 0) || aName.localeCompare(bName));
     const levels = [...new Set(counts.values())].sort((a, b) => b - a);
     return [['', `All categories (${total})`], ...ranked.map(([id, name]) => {
@@ -84,7 +87,7 @@
     if (!ios()) return;
     const select = el('drop-filter-subject');
     select.setAttribute('aria-label', 'Filter reminders by category');
-    fill(select, filterOptions(getFilteredDrops({ ignoreCategory: true })), dropboxState.filters.subject);
+    fill(select, filterOptions(getFilteredDrops({ ignoreCategory: true }), dropboxState.filters.subject), dropboxState.filters.subject);
     dropboxState.filters.subject = select.value;
     if (!el('reminder-category-manage')) {
       const button = document.createElement('button');
