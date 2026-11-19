@@ -276,17 +276,19 @@
         ${iosMode && !(drop.content || '').trim() ? '' : `<div class="${iosMode ? 'reminder-detail-body' : ''}">${iosMode ? '<div class="drop-detail-section-label">Details</div>' : ''}<div class="drop-detail-content">${escHTML(drop.content || '')}</div></div>`}
         ${(drop.tags || []).length ? `<div class="drop-detail-section-label">Tags</div><div class="detail-tags">${drop.tags.map(t => dropBadge(t, 'tag')).join(' ')}</div>` : ''}
         <p class="${iosMode ? 'reminder-detail-created' : ''}"><strong>Created${iosMode ? '' : ':'}</strong> ${createdLabel}</p>
-        <div class="detail-actions mission-actions-footer">${editButton}</div>
+        <div class="detail-actions mission-actions-footer"><button type="button" id="mission-go-back" class="btn btn-secondary mission-edit-toggle">Go back</button>${editButton}</div>
       </div>`;
 
     view.appendChild(section);
     view.scrollTop = 0;
 
-    document.getElementById('mission-detail-back').addEventListener('click', () => {
+    const goBack = () => {
       dropboxState.selectedId = null;
       renderDropbox();
       view.scrollTop = 0;
-    });
+    };
+    document.getElementById('mission-detail-back').addEventListener('click', goBack);
+    document.getElementById('mission-go-back').addEventListener('click', goBack);
 
     const menuToggle = document.getElementById('mission-actions-toggle');
     const menuList = document.getElementById('mission-actions-list');
