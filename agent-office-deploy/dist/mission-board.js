@@ -229,7 +229,17 @@
     section.className = iosMode ? 'reminder-note-view' : '';
     section.style.cssText = 'width:100%;max-width:720px;margin:0 auto;padding:24px 20px 60px;box-sizing:border-box;';
     const backButton = `<button type="button" id="mission-detail-back" class="drop-detail-back">← ${iosMode ? 'Fix Queue' : 'All tasks'}</button>`;
-    const editButton = '<button type="button" id="mission-detail-edit" class="btn btn-secondary mission-edit-toggle" aria-expanded="false" aria-controls="mission-detail-edit-fields">Edit</button>';
+    // Edit, Done, Archive and Delete live together in one Actions menu so the
+    // note itself stays the focus of the card.
+    const editButton = `<div class="mission-actions-menu">
+      <button type="button" id="mission-actions-toggle" class="btn btn-secondary mission-edit-toggle" aria-haspopup="menu" aria-expanded="false" aria-controls="mission-actions-list">Actions <span aria-hidden="true">▾</span></button>
+      <div id="mission-actions-list" class="mission-actions-list" role="menu" hidden>
+        <button type="button" role="menuitem" id="mission-detail-edit" aria-expanded="false" aria-controls="mission-detail-edit-fields">Edit</button>
+        <button type="button" role="menuitem" id="mission-done-btn">${iosMode && drop.done ? 'Mark incomplete' : 'Mark Done'}</button>
+        <button type="button" role="menuitem" id="mission-archive-btn">Archive</button>
+        <button type="button" role="menuitem" id="delete-drop-btn" class="is-danger">Delete</button>
+      </div>
+    </div>`;
     const reminderDate = new Date(drop.date);
     const createdLabel = iosMode && !Number.isNaN(reminderDate.getTime())
       ? reminderDate.toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
@@ -237,7 +247,7 @@
     section.innerHTML = `
       ${iosMode ? backButton : ''}
       <div class="drop-detail${iosMode ? ' reminder-detail' : ''}">
-        ${iosMode ? `<div class="reminder-detail-topline"><span class="reminder-detail-kind">Reminder</span><span class="reminder-detail-state${drop.done ? ' is-done' : ''}">${drop.done ? 'Completed' : 'Open'}</span>${editButton}</div>` : backButton}
+        ${iosMode ? `<div class="reminder-detail-topline"><span class="reminder-detail-kind">Reminder</span><span class="reminder-detail-state${drop.done ? ' is-done' : ''}">${drop.done ? 'Completed' : 'Open'}</span></div>` : backButton}
         <div class="drop-detail-header">
           <h2 class="drop-detail-title">${escHTML(drop.title || 'Untitled task')}</h2>
           <div class="drop-detail-meta-row">
@@ -247,7 +257,6 @@
             ${iosMode ? '' : `<span>${escHTML(drop.project || 'No project')} / ${escHTML(agentLabel(drop.agent))}</span>`}
           </div>
         </div>
-        ${iosMode ? '' : editButton}
         <div id="mission-detail-edit-fields" class="mission-edit-fields is-collapsed">
           ${iosMode ? `<div class="reminder-edit-fields">
             <label for="mission-reminder-title">Title</label>
@@ -267,11 +276,7 @@
         ${iosMode && !(drop.content || '').trim() ? '' : `<div class="${iosMode ? 'reminder-detail-body' : ''}">${iosMode ? '<div class="drop-detail-section-label">Details</div>' : ''}<div class="drop-detail-content">${escHTML(drop.content || '')}</div></div>`}
         ${(drop.tags || []).length ? `<div class="drop-detail-section-label">Tags</div><div class="detail-tags">${drop.tags.map(t => dropBadge(t, 'tag')).join(' ')}</div>` : ''}
         <p class="${iosMode ? 'reminder-detail-created' : ''}"><strong>Created${iosMode ? '' : ':'}</strong> ${createdLabel}</p>
-        <div class="detail-actions">
-          <button id="mission-done-btn" class="btn btn-primary">${iosMode && drop.done ? 'Mark incomplete' : 'Mark Done'}</button>
-          <button id="mission-archive-btn" class="btn btn-secondary">Archive</button>
-          <button id="delete-drop-btn" class="btn btn-danger">Delete</button>
-        </div>
+        <div class="detail-actions mission-actions-footer">${editButton}</div>
       </div>`;
 
     view.appendChild(section);
@@ -283,12 +288,37 @@
       view.scrollTop = 0;
     });
 
+    const menuToggle = document.getElementById('mission-actions-toggle');
+    const menuList = document.getElementById('mission-actions-list');
+    const setMenu = open => {
+      menuList.hidden = !open;
+      menuToggle.setAttribute('aria-expanded', String(open));
+      if (open) {
+        menuList.querySelector('button')?.focus();
+        setTimeout(() => document.addEventListener('click', onOutside, { once: true }));
+      }
+    };
+    const onOutside = event => {
+      if (menuList.hidden) return;
+      if (menuList.contains(event.target) || menuToggle.contains(event.target)) {
+        document.addEventListener('click', onOutside, { once: true });
+        return;
+      }
+      setMenu(false);
+    };
+    menuToggle.addEventListener('click', () => setMenu(menuList.hidden));
+    menuList.addEventListener('click', event => { if (event.target.closest('button')) setMenu(false); });
+    menuList.addEventListener('keydown', event => {
+      if (event.key === 'Escape') { setMenu(false); menuToggle.focus(); }
+    });
+
     const editToggle = document.getElementById('mission-detail-edit');
     editToggle.addEventListener('click', () => {
       const fields = document.getElementById('mission-detail-edit-fields');
       const open = fields.classList.toggle('is-collapsed') === false;
       editToggle.textContent = open ? 'Done editing' : 'Edit';
       editToggle.setAttribute('aria-expanded', String(open));
+      if (open) fields.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     });
     const update = patch => patchDrop(drop.id, patch).catch(error => handleDropboxRequestError(error, 'Could not save changes.'));
     document.getElementById('mission-detail-status')?.addEventListener('change', e => update({ status: e.target.value }));
