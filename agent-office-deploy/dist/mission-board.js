@@ -247,7 +247,7 @@
     section.innerHTML = `
       ${iosMode ? backButton : ''}
       <div class="drop-detail${iosMode ? ' reminder-detail' : ''}">
-        ${iosMode ? `<div class="reminder-detail-topline"><span class="reminder-detail-kind">Reminder</span><span class="reminder-detail-state${drop.done ? ' is-done' : ''}">${drop.done ? 'Completed' : 'Open'}</span>${editButton}</div>` : backButton}
+        ${iosMode ? `<div class="reminder-detail-topline"><span class="reminder-detail-kind">Reminder</span><span class="reminder-detail-state${drop.done ? ' is-done' : ''}">${drop.done ? 'Completed' : 'Open'}</span></div>` : backButton}
         <div class="drop-detail-header">
           <h2 class="drop-detail-title">${escHTML(drop.title || 'Untitled task')}</h2>
           <div class="drop-detail-meta-row">
@@ -257,7 +257,6 @@
             ${iosMode ? '' : `<span>${escHTML(drop.project || 'No project')} / ${escHTML(agentLabel(drop.agent))}</span>`}
           </div>
         </div>
-        ${iosMode ? '' : editButton}
         <div id="mission-detail-edit-fields" class="mission-edit-fields is-collapsed">
           ${iosMode ? `<div class="reminder-edit-fields">
             <label for="mission-reminder-title">Title</label>
@@ -277,6 +276,7 @@
         ${iosMode && !(drop.content || '').trim() ? '' : `<div class="${iosMode ? 'reminder-detail-body' : ''}">${iosMode ? '<div class="drop-detail-section-label">Details</div>' : ''}<div class="drop-detail-content">${escHTML(drop.content || '')}</div></div>`}
         ${(drop.tags || []).length ? `<div class="drop-detail-section-label">Tags</div><div class="detail-tags">${drop.tags.map(t => dropBadge(t, 'tag')).join(' ')}</div>` : ''}
         <p class="${iosMode ? 'reminder-detail-created' : ''}"><strong>Created${iosMode ? '' : ':'}</strong> ${createdLabel}</p>
+        <div class="detail-actions mission-actions-footer">${editButton}</div>
       </div>`;
 
     view.appendChild(section);

@@ -3504,9 +3504,10 @@
   }
   .mission-edit-toggle { align-self: flex-start; margin: 4px 0 2px; }
   .mission-edit-fields.is-collapsed { display: none; }
-  .mission-actions-menu { position: relative; align-self: flex-start; }
+  .mission-actions-footer { justify-content: flex-end; }
+  .mission-actions-menu { position: relative; margin-left: auto; }
   .mission-actions-menu .mission-edit-toggle { display: inline-flex; align-items: center; gap: 6px; }
-  .mission-actions-list { position: absolute; top: calc(100% + 6px); right: 0; z-index: 20; min-width: 180px; display: flex; flex-direction: column; padding: 6px; border: 1px solid var(--border-strong, #45454b); border-radius: 12px; background: var(--surface-raised, #1b1f24); box-shadow: 0 12px 32px #0006; }
+  .mission-actions-list { position: absolute; bottom: calc(100% + 6px); right: 0; z-index: 20; min-width: 180px; display: flex; flex-direction: column; padding: 6px; border: 1px solid var(--border-strong, #45454b); border-radius: 12px; background: var(--surface-raised, #1b1f24); box-shadow: 0 12px 32px #0006; }
   .mission-actions-list[hidden] { display: none; }
   .mission-actions-list button { min-height: 44px; padding: 10px 14px; border: 0; border-radius: 8px; background: transparent; color: var(--text, #eee); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
   .mission-actions-list button:hover, .mission-actions-list button:focus-visible { background: var(--surface-hover, #ffffff12); }
