@@ -583,6 +583,13 @@ test('opening a note takes the screen, and Back returns to its folder', async t 
   await page.click('#mission-detail-back');
   await page.waitForSelector('.dropbox-table');
   assert.equal(await page.locator('.drop-folder-crumb').textContent(), 'Evening Rollup');
+
+  // The card carries its own Go back button, beside Actions, that does the same.
+  await page.locator('.dropbox-table tbody tr').first().click();
+  await page.waitForSelector('#note-view-section');
+  await page.locator('.mission-actions-footer').getByRole('button', { name: 'Go back', exact: true }).click();
+  await page.waitForSelector('.dropbox-table');
+  assert.equal(await page.locator('#note-view-section').count(), 0, 'Go back left the task open');
   assert.deepEqual(problems, []);
 });
 
