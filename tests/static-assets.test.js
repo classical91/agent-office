@@ -255,6 +255,10 @@ test('Dev Links Usage & Billing has an AI Usage dropdown', () => {
   const menu = section.slice(section.indexOf('<summary>AI Usage</summary>'), section.indexOf('</details>'));
   assert.match(menu, /claude\.ai\/new#settings\/usage/);
   assert.match(menu, /chatgpt\.com\/codex\/cloud\/settings\/analytics#usage/);
+  assert.match(menu, /railway\.com\/workspace\/usage/);
+  assert.match(menu, /console\.x\.com\/accounts\/2085041362089508864/);
+  // Every usage link lives in the menu; none are left loose in the section.
+  assert.equal((section.match(/dev-link-card/g) || []).length, (menu.match(/dev-link-card/g) || []).length);
 });
 
 test('Dev Links AI Usage menu can be opened directly with #ai-usage', () => {
