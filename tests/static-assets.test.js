@@ -247,23 +247,21 @@ test('Dev Links has an API Usage section for Grok, Claude, and ChatGPT', () => {
   assert.match(section, /platform\.openai\.com\/settings\/organization\/usage/);
 });
 
-test('Dev Links Usage & Billing has an AI Usage dropdown', () => {
+test('Dev Links Usage & Billing lists each usage link as its own card', () => {
   const page = fs.readFileSync(path.join(DIST, 'dev.html'), 'utf8');
   const start = page.indexOf('<span>Usage &amp; Billing</span>');
   const end = page.indexOf('<span>AI Update</span>');
   const section = page.slice(start, end);
-  const menu = section.slice(section.indexOf('<summary>AI Usage</summary>'), section.indexOf('</details>'));
-  assert.match(menu, /claude\.ai\/new#settings\/usage/);
-  assert.match(menu, /chatgpt\.com\/codex\/cloud\/settings\/analytics#usage/);
-  assert.match(menu, /railway\.com\/workspace\/usage/);
-  assert.match(menu, /console\.x\.com\/accounts\/2085041362089508864/);
-  // Every usage link lives in the menu; none are left loose in the section.
-  assert.equal((section.match(/dev-link-card/g) || []).length, (menu.match(/dev-link-card/g) || []).length);
+  assert.doesNotMatch(section, /<details/);
+  assert.match(section, />Claude Usage</);
+  assert.match(section, />Codex Cloud Usage</);
+  assert.match(section, />Railway Usage</);
+  assert.match(section, />X API Usage</);
 });
 
-test('Dev Links AI Usage menu can be opened directly with #ai-usage', () => {
+test('Dev Links #ai-usage opens the Usage & Billing section', () => {
   const page = fs.readFileSync(path.join(DIST, 'dev.html'), 'utf8');
-  assert.match(page, /<details class="dev-update-group" id="ai-usage">\s*<summary>AI Usage<\/summary>/);
+  assert.match(page, /<section class="dev-link-section" id="ai-usage">\s*<div class="dev-section-heading">\s*<span>Usage &amp; Billing<\/span>/);
   assert.match(page, /function openFromHash\(\)/);
   assert.match(page, /addEventListener\('hashchange', openFromHash\)/);
 });
