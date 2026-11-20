@@ -256,3 +256,10 @@ test('Dev Links Usage & Billing has an AI Usage dropdown', () => {
   assert.match(menu, /claude\.ai\/new#settings\/usage/);
   assert.match(menu, /chatgpt\.com\/codex\/cloud\/settings\/analytics#usage/);
 });
+
+test('Dev Links AI Usage menu can be opened directly with #ai-usage', () => {
+  const page = fs.readFileSync(path.join(DIST, 'dev.html'), 'utf8');
+  assert.match(page, /<details class="dev-update-group" id="ai-usage">\s*<summary>AI Usage<\/summary>/);
+  assert.match(page, /function openFromHash\(\)/);
+  assert.match(page, /addEventListener\('hashchange', openFromHash\)/);
+});

@@ -216,7 +216,7 @@
           <small>Model, API, and infrastructure usage</small>
         </div>
         <div class="dev-update-groups">
-          <details class="dev-update-group">
+          <details class="dev-update-group" id="ai-usage">
             <summary>AI Usage</summary>
             <div class="dev-link-grid">
               <a class="dev-link-card" href="https://claude.ai/new#settings/usage" target="_blank" rel="noopener noreferrer">
@@ -844,6 +844,23 @@ switchView('dev', document.querySelector('.nav-item.active'));
   });
 
   applyFilter();
+
+  // A link to a menu's id (dev.html#ai-usage) opens that menu, expands its
+  // section, and brings it into view.
+  function openFromHash(){
+    var id = decodeURIComponent(location.hash.slice(1));
+    if (!id) return;
+    var group = document.getElementById(id);
+    if (!group || !group.classList.contains('dev-update-group')) return;
+    var section = group.closest('.dev-link-section');
+    if (section) setSectionCollapsed(section, false);
+    closeGroups(group);
+    group.open = true;
+    var summary = group.querySelector('summary');
+    (summary || group).scrollIntoView({ block: 'start' });
+  }
+  window.addEventListener('hashchange', openFromHash);
+  openFromHash();
 })();
 </script>
 
