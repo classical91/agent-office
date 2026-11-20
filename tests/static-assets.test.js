@@ -246,3 +246,13 @@ test('Dev Links has an API Usage section for Grok, Claude, and ChatGPT', () => {
   assert.match(section, /platform\.claude\.com\/usage/);
   assert.match(section, /platform\.openai\.com\/settings\/organization\/usage/);
 });
+
+test('Dev Links Usage & Billing has an AI Usage dropdown', () => {
+  const page = fs.readFileSync(path.join(DIST, 'dev.html'), 'utf8');
+  const start = page.indexOf('<span>Usage &amp; Billing</span>');
+  const end = page.indexOf('<span>AI Update</span>');
+  const section = page.slice(start, end);
+  const menu = section.slice(section.indexOf('<summary>AI Usage</summary>'), section.indexOf('</details>'));
+  assert.match(menu, /claude\.ai\/new#settings\/usage/);
+  assert.match(menu, /chatgpt\.com\/codex\/cloud\/settings\/analytics#usage/);
+});

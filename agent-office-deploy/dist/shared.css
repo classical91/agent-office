@@ -3937,6 +3937,11 @@
   align-items: start;
 }
 
+/* A section can lead with its menus and still list plain cards below them. */
+.dev-update-groups + .dev-link-grid {
+  margin-top: 12px;
+}
+
 .dev-update-group {
   position: relative;
   border: 1px solid var(--border);
