@@ -383,6 +383,14 @@ switchView('audits', document.querySelector('.nav-item.active'));
     emptyEl.hidden = visible.length !== 0;
   }
 
+  // Links from elsewhere (Main Hub's System Logs) can open this log on one
+  // project: ?project=<name> picks it in the filter when it is one of the
+  // listed projects, and is ignored otherwise.
+  try {
+    const wanted = new URLSearchParams(location.search).get("project");
+    if (wanted && projects.indexOf(wanted) !== -1) projectEl.value = wanted;
+  } catch (error) {}
+
   [searchEl, projectEl, yearEl].forEach(function (control) {
     control.addEventListener(control.tagName === "INPUT" ? "input" : "change", render);
   });

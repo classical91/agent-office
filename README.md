@@ -89,6 +89,7 @@ agent-office-deploy/
     ai.html                    # AI Portal (moved from Main Hub)
     apps.html                  # Apps & Sites — every project's live site, Railway project and repo
     audits.html                # Audit Log, reading its records from audits-data.js
+    audits-summary.js          # Read-only audit summary for Main Hub (/api/integrations/audits/summary)
     hub-pages.css              # Styles for the three pages above
     shared.css                 # Design system + shared chrome/nav/view styles for all pages above
     app-shared.js              # Shared JS: agent/office data, office canvas+SVG rendering,
@@ -1069,6 +1070,49 @@ redirects its old URLs here, so a bookmark still lands.
   has none and the card shows that chip greyed out; `github2` adds a second repo.
 - **Audit Log** — the records are in `audits-data.js`. Append new weekly
   records there and keep the older entries; the page sorts newest first.
+  `/audits.html?project=<name>` opens the log filtered to that project (an
+  unknown name is ignored); Main Hub's System Logs links here that way.
+
+### Audit summary for Main Hub
+
+`GET /api/integrations/audits/summary` is a read-only summary of the same
+`audits-data.js` the Audit Log page reads, for Main Hub's System Logs
+**GitHub Audits** card. There is no second audit history to keep in step: a
+record appended to `audits-data.js` and deployed shows up in Main Hub within
+its five-minute cache.
+
+- **Credential** — a dedicated bearer `AUDITS_SUMMARY_TOKEN`, at least 32
+  characters (`openssl rand -hex 32`). Set the same value on Main Hub as
+  `AGENT_OFFICE_AUDITS_TOKEN`. Without it the route answers 503; a wrong or
+  missing bearer gets 401. The Office login cookie does not open it, and the
+  token opens nothing else. Only `GET`/`HEAD`; anything else is 405.
+- **Never executed** — `audits-summary.js` cuts the array out of
+  `window.AUDITS = [...]` and reads it with `JSON.parse`, so the file must stay
+  plain JSON after the assignment (it is today). A file that is not is reported
+  as a 500 and logged, rather than guessed at. Parsed once per file change.
+- **What it counts** — `totals.records` (after dropping exact duplicate ids),
+  `totals.projects` (one per repository; a FarmBot record that names no
+  repository still counts as `classical91/farm-bot` because other FarmBot
+  records name it), and per repository its latest audit, with
+  critical/high/medium/low counts from that audit only. Older audits are listed
+  as history and never added to current counts.
+- **Missing is not zero** — each audit has `findingsState`: `reported` (all
+  four severity lists present), `unverified` (a findings section in an
+  unexpected shape; its counts are not trusted), or `missing` (no findings
+  recorded — `counts` is `null`). Historical summary records such as the
+  security audit fall in `missing`.
+- **What leaves** — ids, project, repository, type, dates, status, note
+  (trimmed), up to five top findings (id, severity, summary, classification,
+  evidence link), `checks.production`, and up to five references. Links are
+  `https` only. Scope essays, recommended fixes and priority rankings stay in
+  the Audit Log.
+
+```bash
+curl -H "Authorization: Bearer $AUDITS_SUMMARY_TOKEN" \
+  https://agent-office.up.railway.app/api/integrations/audits/summary
+```
+
+Tests: `node --test tests/audits-summary.test.js`.
 - **AI Portal** — the prompt builder and AI website shortcuts still live on
   Main Hub, so those two cards open it in a new tab.
 
@@ -1467,6 +1511,9 @@ Dropbox-related variables:
   Office sessions; **required on any deployed host**
 - `SHORTCUTS_TOKEN` — enables the phone inbox; 16 characters minimum, and the
   server logs `Phone inbox: on` at startup once it is set
+- `AUDITS_SUMMARY_TOKEN` — enables the read-only audit summary Main Hub's
+  System Logs reads (`/api/integrations/audits/summary`); 32 characters
+  minimum, the same value as Main Hub's `AGENT_OFFICE_AUDITS_TOKEN`
 - `APP_TIMEZONE` — the timezone reminder phrases like "tomorrow 9am" are read
   in (defaults to `America/Vancouver`)
 - `VISITS_ALLOWED_HOSTS` — comma-separated hostnames allowed to submit public
