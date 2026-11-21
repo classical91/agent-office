@@ -5035,9 +5035,11 @@ async function handleShortcutsRequest(req, res, url, storage) {
   // no field to put one in.
   // This month's bill — the Subscriptions / Bills view on countdowns.html,
   // worked out by the same month-bill.js the page draws it with, for Main
-  // Hub's System Logs. Titles, costs and due times only.
+  // Hub's System Logs. Titles, costs and due times only. ?tz= is the
+  // reader's IANA time zone, so the month ends where it ends for them; an
+  // unknown one falls back to APP_TIMEZONE.
   if (req.method === 'GET' && pathname === '/api/shortcuts/month-bill') {
-    sendJson(res, 200, await buildMonthBillPayload(storage, now));
+    sendJson(res, 200, await buildMonthBillPayload(storage, now, monthBill.validTimeZone(url.searchParams.get('tz'))));
     return true;
   }
 
@@ -5339,12 +5341,13 @@ async function deletedCountdownCategories(storage) {
   }
 }
 
-async function buildMonthBillPayload(storage, now = new Date()) {
+async function buildMonthBillPayload(storage, now = new Date(), timeZone = '') {
   const deleted = await deletedCountdownCategories(storage);
   const cards = (await loadResetTimers(storage)).map(monthBill.billCard).filter(Boolean);
   const summary = monthBill.billSummary(cards, now, {
     isBill: card => card.id !== happyHour.HAPPY_HOUR_ID && card.category === monthBill.BILLS_CATEGORY
       && !deleted.has(card.category),
+    timeZone,
   });
   return monthBill.billPayload(summary, { now, timezone: process.env.TZ || '' });
 }

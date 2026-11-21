@@ -229,3 +229,43 @@ test('countdowns.html?category=<id> opens on that category without saving it', (
   assert.match(source, /new URLSearchParams\(window\.location\.search\)\.get\('category'\)/);
   assert.match(source, /if \(linked && CATEGORY_FILTERS\[linked\]\) state\.categoryFilter = linked;/);
 });
+
+test("the month ends where the reader's ends: a renewal just after midnight on the 1st is next month's", () => {
+  // Run as if on a Vancouver server, read from Toronto, as Main Hub does.
+  const script = `
+    const monthBill = require(${JSON.stringify(path.join(DIST, 'month-bill.js'))});
+    const now = new Date('2026-11-21T17:00:00Z');
+    const records = [
+      { id: 'claude', title: 'Claude Pro', category: 'subscriptions-bills', repeatMonths: 1, resetAt: '2026-12-01T05:59:00Z', cost: 31.16 },
+      { id: 'later', title: 'Later in Nov', category: 'subscriptions-bills', repeatMonths: 1, resetAt: '2026-11-28T15:00:00Z', cost: 10 },
+    ];
+    const cards = records.map(monthBill.billCard);
+    const pay = tz => monthBill.billPayload(monthBill.billSummary(cards, now, { timeZone: tz }), { now, timezone: process.env.TZ });
+    // Just before midnight Dec 1 in Toronto, it is already December there.
+    const edge = new Date('2026-12-01T05:30:00Z');
+    const edgePay = monthBill.billPayload(monthBill.billSummary(cards, edge, { timeZone: 'America/Toronto' }), { now: edge });
+    console.log(JSON.stringify({
+      server: pay(''), toronto: pay('America/Toronto'), bogus: pay('Not/AZone'), edge: edgePay,
+      bad: [monthBill.validTimeZone('../etc'), monthBill.validTimeZone(''), monthBill.validTimeZone('America/Toronto')],
+    }));`;
+  const { execFileSync } = require('node:child_process');
+  const out = JSON.parse(execFileSync(process.execPath, ['-e', script], { env: { ...process.env, TZ: 'America/Vancouver' } }).toString());
+
+  // Vancouver's November still holds 9:59 PM Nov 30 there; Toronto's does not.
+  assert.equal(out.server.left, 41.16);
+  assert.equal(out.toronto.timezone, 'America/Toronto');
+  assert.equal(out.toronto.month, '2026-11');
+  assert.equal(out.toronto.month_label, 'November');
+  assert.equal(out.toronto.left, 10);
+  assert.deepEqual(out.toronto.charges.map(c => c.title), ['Later in Nov']);
+  // An unknown zone is the server's month, never an error.
+  assert.equal(out.bogus.left, 41.16);
+  assert.equal(out.bogus.timezone, 'America/Vancouver');
+  // At 12:30 AM Dec 1 in Toronto the bill is December's: the 12:59 AM renewal
+  // once, stepped on Toronto's clock (Jan 1 is January's), and the 28th's.
+  assert.equal(out.edge.month, '2026-12');
+  assert.equal(out.edge.month_label, 'December');
+  assert.deepEqual(out.edge.charges.map(c => [c.title, c.at]),
+    [['Claude Pro', '2026-12-01T05:59:00.000Z'], ['Later in Nov', '2026-12-28T15:00:00.000Z']]);
+  assert.deepEqual(out.bad, ['', '', 'America/Toronto']);
+});
