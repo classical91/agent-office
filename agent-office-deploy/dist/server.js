@@ -1,5 +1,6 @@
 const http = require('http');
 const { handleNewsBatchIntegration, isNewsGoal } = require('./news-batch-integration.js');
+const { handleAuditsSummaryIntegration } = require('./audits-summary.js');
 const https = require('https');
 const fs = require('fs/promises');
 const path = require('path');
@@ -6357,6 +6358,9 @@ const server = http.createServer(async (req, res) => {
     const storage = await storageReady;
 
     if (await handleNewsBatchIntegration({ req, res, pathname, storage, readJsonBody, sendJson })) return;
+    // Main Hub's System Logs reads the Audit Log through this, server to server,
+    // with its own token. Read-only; audits-data.js stays the only history.
+    if (await handleAuditsSummaryIntegration({ req, res, pathname, sendJson })) return;
 
     if (req.method === 'GET' && pathname === '/api/session') {
       const activeSession = getSession(req);
@@ -8487,6 +8491,15 @@ storageReady.then(async storage => {
     console.warn(`Phone inbox: disabled — SHORTCUTS_TOKEN is shorter than ${SHORTCUTS_TOKEN_MIN_LENGTH} characters.`);
   } else {
     console.log('Phone inbox: on at /api/shortcuts/*');
+  }
+
+  const auditsSummaryToken = String(process.env.AUDITS_SUMMARY_TOKEN || '').trim();
+  if (!auditsSummaryToken) {
+    console.log('Audit summary integration: off (set AUDITS_SUMMARY_TOKEN to serve /api/integrations/audits/summary)');
+  } else if (auditsSummaryToken.length < 32) {
+    console.warn('Audit summary integration: disabled — AUDITS_SUMMARY_TOKEN is shorter than 32 characters.');
+  } else {
+    console.log('Audit summary integration: on at /api/integrations/audits/summary');
   }
 })).catch(error => {
   console.error('Agent Office startup failed:', error.message);
