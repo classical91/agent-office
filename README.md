@@ -90,6 +90,7 @@ agent-office-deploy/
     apps.html                  # Apps & Sites — every project's live site, Railway project and repo
     audits.html                # Audit Log, reading its records from audits-data.js
     audits-summary.js          # Read-only audit summary for Main Hub (/api/integrations/audits/summary)
+    month-bill.js              # This month's bill: countdowns page and /api/shortcuts/month-bill
     hub-pages.css              # Styles for the three pages above
     shared.css                 # Design system + shared chrome/nav/view styles for all pages above
     app-shared.js              # Shared JS: agent/office data, office canvas+SVG rendering,
@@ -718,6 +719,16 @@ paid, and shared Agent Office countdowns have no cost and are not counted.
 The cost is stored on the timer record like any other field, so it syncs
 between devices through `/api/reset-timers`. **+ New Countdown** from that view
 starts the new card in Subscriptions / Bills, repeating every month.
+
+The arithmetic is in `month-bill.js`, loaded by `countdowns.html` (before
+`resets.js`) and by the server. `GET /api/shortcuts/month-bill` — behind the
+phone-inbox token like every `/api/shortcuts/*` route — answers with the same
+bill from the timers saved on the server: `month`, `month_label`, `left`,
+`count`, `unpriced`, `next` and up to 31 `charges`, each only a title, a cost
+and when it lands (no webhook URL, no notes). Months are the server's
+`APP_TIMEZONE`. Main Hub's System Logs shows it as its bill card, and never
+adds up a bill of its own. `countdowns.html?category=subscriptions-bills` opens
+the page on this view without changing the saved filter; Main Hub links there.
 
 #### Happy Hour
 

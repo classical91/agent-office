@@ -18,6 +18,7 @@ const context = { Date, console, setInterval, clearInterval };
 context.window = context;
 vm.runInNewContext(read('happy-hour.js'), context);
 vm.runInNewContext(read('timer-rotation.js'), context);
+vm.runInNewContext(read('month-bill.js'), context);
 vm.runInNewContext(read('resets.js'), context);
 const { normalizeCard, readCost, monthCharges, billSummary, billHtml, cardHtml, viewOf } = context.window.AOResets;
 
