@@ -41,9 +41,6 @@ window.AOResets = (() => {
   const BILLS_CATEGORY = 'subscriptions-bills';
   const MAX_COST = 1000000;
   const COST_ERROR = 'Enter the cost as an amount, like 9.99.';
-  // How far monthCharges() will step to find a renewal. countdowns.js and
-  // reset-timers.js draw the same line.
-  const MAX_STEPS = 5000;
   // The Happy Hour schedule lives in happy-hour.js, which the server loads too —
   // Main Hub's Daily Dashboard shows the same meal and the same countdown, and
   // one schedule in two places is one schedule too many. This page renders it;
@@ -1079,75 +1076,25 @@ window.AOResets = (() => {
     syncCostField(el('rst-new-cost-field'), el('rst-new-category').value, el('rst-new-repeat').value);
   }
 
-  function monthBounds(now = new Date()) {
-    return {
-      start: new Date(now.getFullYear(), now.getMonth(), 1).getTime(),
-      end: new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime(),
-    };
+  // The arithmetic lives in month-bill.js, which the server loads too: Main
+  // Hub's System Logs shows this same bill from /api/shortcuts/month-bill, and
+  // one bill worked out in two places is one too many. Looked up when a bill
+  // is worked out, not when this file loads, so nothing else here needs it.
+  function monthBill() {
+    if (!window.AOMonthBill) throw new Error('month-bill.js must load before the bill is drawn.');
+    return window.AOMonthBill;
   }
 
-  // The renewal `steps` repeats away from the one the card points at. Each is
-  // worked out from that one rather than from the last, so a bill due on the
-  // 31st comes back to the 31st after a short month instead of creeping to
-  // the 28th. A card that skips weekends is charged where the renewal lands,
-  // and a monthly one counts from the day it was due, as it rolls forward.
-  function shiftedRenewal(card, steps) {
-    const date = new Date(card.repeatMonths && card.skipWeekends && card.shiftedFrom ? card.shiftedFrom : card.resetAt);
-    if (card.repeatMonths) addMonths(date, card.repeatMonths * steps);
-    else date.setDate(date.getDate() + card.repeatDays * steps);
-    return card.skipWeekends ? Date.parse(landing(date, true).resetAt) : date.getTime();
-  }
-
-  /**
-   * The charges a card makes this calendar month, local time, oldest first.
-   *
-   * A charge is paid once its time has passed. A card marked done is paid up:
-   * its renewals this month up to the one it stopped on count as paid, and it
-   * makes no more. A paused card is on hold and makes none.
-   */
   function monthCharges(card, now = new Date()) {
-    if (card.deleted || card.source === 'office' || card.status === 'paused' || !card.cost) return [];
-    const base = Date.parse(card.resetAt);
-    if (Number.isNaN(base)) return [];
-    const { start, end } = monthBounds(now);
-    const done = card.status === 'completed';
-    const charge = at => ({ at, paid: done || at <= now.getTime() });
-    if (!card.repeatDays && !card.repeatMonths) return base >= start && base < end ? [charge(base)] : [];
-
-    // Back to the last renewal before this month, then forward through it.
-    let steps = 0;
-    for (let guard = 0; guard < MAX_STEPS && shiftedRenewal(card, steps) >= start; guard += 1) steps -= 1;
-    const found = [];
-    for (let guard = 0; guard < MAX_STEPS; guard += 1) {
-      steps += 1;
-      const at = shiftedRenewal(card, steps);
-      if (at >= end || (done && at > base)) break;
-      // A daily card that skips weekends lands Saturday's and Sunday's
-      // renewals on Monday too, and Monday is charged once.
-      if (at >= start && !found.some(item => item.at === at)) found.push(charge(at));
-    }
-    return found;
+    return monthBill().monthCharges(card, now);
   }
 
-  // Only renewals still ahead of `now` and before the month ends are counted:
-  // what has already gone out this month is not still to pay, and the next
-  // renewal of a card that already rolled over belongs to next month's bill.
+  // This page's bills are the Subscriptions / Bills cards as this page files
+  // them: its own category registry decides, and Happy Hour is never a bill.
   function billSummary(cards = liveCards(), now = new Date()) {
-    const bills = cards.filter(card => !card.deleted && card.source !== 'office'
-      && card.id !== HAPPY_HOUR_ID && normalizeCategory(card.category) === BILLS_CATEGORY);
-    const due = bills
-      .flatMap(card => monthCharges(card, now).filter(charge => !charge.paid).map(charge => ({ card, ...charge })))
-      .sort((a, b) => a.at - b.at);
-    // Added in cents, so twelve $9.99s come to $119.88 and not $119.88000000000001.
-    const left = due.reduce((total, charge) => total + Math.round(charge.card.cost * 100), 0) / 100;
-    return {
-      month: new Date(now.getFullYear(), now.getMonth(), 1),
-      left,
-      count: due.length,
-      charges: due,
-      next: due[0] || null,
-      unpriced: bills.filter(card => !card.cost && card.status !== 'paused').length,
-    };
+    return monthBill().billSummary(cards, now, {
+      isBill: card => card.id !== HAPPY_HOUR_ID && normalizeCategory(card.category) === BILLS_CATEGORY,
+    });
   }
 
   function billDay(at) {
@@ -2246,6 +2193,13 @@ window.AOResets = (() => {
       } catch {}
       const savedCategory = readPreference(CATEGORY_FILTER_KEY, CATEGORY_FILTERS, 'all');
       state.categoryFilter = savedCategory;
+      // A link can open the page on one category (Main Hub's System Logs links
+      // its bill here with ?category=subscriptions-bills). It is not saved as
+      // the preference, and a category the page does not have is ignored.
+      try {
+        const linked = new URLSearchParams(window.location.search).get('category');
+        if (linked && CATEGORY_FILTERS[linked]) state.categoryFilter = linked;
+      } catch {}
       state.cards = loadCards();
       saveCards();
 

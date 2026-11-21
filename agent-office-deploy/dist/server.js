@@ -14,6 +14,7 @@ const calendarCountdowns = require('./calendar-countdowns.js');
 const calendarWellness = require('./calendar-wellness.js');
 const wellnessSync = require('./calendar-wellness-sync.js');
 const resetTimers = require('./reset-timers.js');
+const monthBill = require('./month-bill.js');
 const planning = require('./planning.js');
 const planningWeek = require('./planning-week.js');
 const workSchedule = require('./work-schedule.js');
@@ -5032,6 +5033,14 @@ async function handleShortcutsRequest(req, res, url, storage) {
   // Nothing in here carries a webhook URL. selectShortcutTimers() is the only
   // way a timer reaches this response, and it hands back a projection that has
   // no field to put one in.
+  // This month's bill — the Subscriptions / Bills view on countdowns.html,
+  // worked out by the same month-bill.js the page draws it with, for Main
+  // Hub's System Logs. Titles, costs and due times only.
+  if (req.method === 'GET' && pathname === '/api/shortcuts/month-bill') {
+    sendJson(res, 200, await buildMonthBillPayload(storage, now));
+    return true;
+  }
+
   if (req.method === 'GET' && pathname === '/api/shortcuts/reset-timers') {
     const stored = await loadResetTimers(storage);
     const state = resetTimers.normalizeStateFilter(url.searchParams.get('state') || 'active');
@@ -5318,6 +5327,27 @@ const resetTimerAllowTarget = (() => {
 // One cycle at a time. A slow Pushcut must not let the next tick start a second
 // send of the same occurrence before the first one has been written down.
 let resetTimerCycleRunning = false;
+
+// A category deleted in Manage categories files nothing, as on the page: a
+// card still carrying that id is not a bill until it is filed again.
+async function deletedCountdownCategories(storage) {
+  try {
+    const saved = JSON.parse(await storage.getAppSetting('countdown-categories.v1') || 'null');
+    return new Set((Array.isArray(saved) ? saved : []).filter(item => item && item.deleted).map(item => String(item.id)));
+  } catch {
+    return new Set();
+  }
+}
+
+async function buildMonthBillPayload(storage, now = new Date()) {
+  const deleted = await deletedCountdownCategories(storage);
+  const cards = (await loadResetTimers(storage)).map(monthBill.billCard).filter(Boolean);
+  const summary = monthBill.billSummary(cards, now, {
+    isBill: card => card.id !== happyHour.HAPPY_HOUR_ID && card.category === monthBill.BILLS_CATEGORY
+      && !deleted.has(card.category),
+  });
+  return monthBill.billPayload(summary, { now, timezone: process.env.TZ || '' });
+}
 
 async function loadResetTimers(storage) {
   return resetTimers.parseStoredTimers(await storage.getAppSetting(resetTimers.STORAGE_KEY));

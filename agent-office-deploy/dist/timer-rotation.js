@@ -191,6 +191,7 @@
     MAX_ITEMS,
     MAX_ITEM_LENGTH,
     MAX_ROLL_STEPS,
+    addMonths,
     currentRotation,
     followingOccurrence,
     isWeekend,
