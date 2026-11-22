@@ -1,6 +1,172 @@
 /* Structured audit history. Append new weekly records; preserve older entries. */
 window.AUDITS = [
   {
+    "id": "weekly-2026-11-22-farm-bot",
+    "project": "FarmBot",
+    "type": "Weekly repository audit",
+    "auditedAt": "2026-11-22",
+    "note": "At risk: non-durable fallback and keyless queue ID overwrite remain verified; CI passed Nov 21; new screenshot summary route requires integration verification.",
+    "overallStatus": "At risk — production unverified",
+    "repository": "classical91/farm-bot",
+    "defaultBranch": "main",
+    "commit": "48bb63d6ac8050bd1805d7423390b767e5836495",
+    "scope": "Inventoried 25 accessible repositories; compared six priority repositories' recent commits. Reviewed FarmBot default branch app, Prisma init, health/readiness, Railway config, queue insertion, package scripts, recent screenshot-summary commit and recent GitHub Actions CI. Production DB, credentials, delivery receipts and live Railway deployment not independently checked.",
+    "priorityRanking": [
+      {
+        "repository": "classical91/farm-bot",
+        "priority": "P1",
+        "reason": "Production publishing; verified queue durability and overwrite risks; active integration changes"
+      },
+      {
+        "repository": "classical91/agent-office",
+        "priority": "P1",
+        "reason": "Owns audit data and operational dashboard; recent changes"
+      },
+      {
+        "repository": "classical91/market-dashboard",
+        "priority": "P1",
+        "reason": "Rapid development and publishing integration dependency"
+      },
+      {
+        "repository": "classical91/main-hub",
+        "priority": "P1",
+        "reason": "Production entry point and system logs; active changes"
+      },
+      {
+        "repository": "classical91/mission-control",
+        "priority": "P2",
+        "reason": "Automation command deck; older default-branch activity"
+      },
+      {
+        "repository": "classical91/traderclaw",
+        "priority": "P2",
+        "reason": "Trading signal integrity; less recent default-branch activity"
+      },
+      {
+        "repository": "classical91/webclaw-service-hub",
+        "priority": "P2",
+        "reason": "Integration service; not deeply reviewed"
+      },
+      {
+        "repository": "classical91/spirituality",
+        "priority": "P2",
+        "reason": "User-facing application; lower publishing impact"
+      }
+    ],
+    "findings": {
+      "critical": [],
+      "high": [
+        {
+          "id": "FB-22-H1",
+          "classification": "Verified code finding; production impact unverified",
+          "summary": "buildApp chooses MemoryFarmbotRepository when getPrismaClient returns null for absent DATABASE_URL or constructor failure. /health always returns ok, /ready always reports memory, and Railway checks /health.",
+          "impact": "Non-durable queue writes can be accepted without a failing health probe.",
+          "evidence": "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/app.ts"
+        },
+        {
+          "id": "FB-22-H2",
+          "classification": "Verified code finding; production collision not observed",
+          "summary": "Keyless createUiQueueItem uses insertUiQueueItem, whose upsert updates existing non-screenshot records on numeric ID collision.",
+          "impact": "One queued post may overwrite another and reset delivery state.",
+          "evidence": "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/repositories/prisma-repository.ts"
+        }
+      ],
+      "medium": [
+        {
+          "id": "FB-22-M1",
+          "classification": "Likely issue",
+          "summary": "Queue slot selection reads latest scheduled item inside a transaction without an obvious shared lane-level lock for generic inserts; concurrency test required.",
+          "evidence": "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/repositories/prisma-repository.ts"
+        },
+        {
+          "id": "FB-22-M2",
+          "classification": "Assumption requiring verification",
+          "summary": "Nov 21 Screenshot Inbox read-only summary route for Main Hub System Logs requires end-to-end authorization and dashboard validation.",
+          "evidence": "https://github.com/classical91/farm-bot/commit/48bb63d6ac8050bd1805d7423390b767e5836495"
+        }
+      ],
+      "low": [
+        {
+          "id": "FB-22-L1",
+          "classification": "Recommendation",
+          "summary": "Measure history query latency before optimizing; no regression established."
+        }
+      ]
+    },
+    "brokenOrIncomplete": [
+      "Fail-closed production persistence and truthful readiness remain incomplete.",
+      "Keyless queue ID collision safety remains incomplete.",
+      "Screenshot summary route to Main Hub needs live integration validation."
+    ],
+    "previousFindings": [
+      {
+        "finding": "Memory fallback and misleading readiness",
+        "status": "Still open",
+        "detail": "Reconfirmed in app.ts, prisma.ts, health.routes.ts and railway.json."
+      },
+      {
+        "finding": "Keyless queue ID overwrite",
+        "status": "Still open",
+        "detail": "Reconfirmed in createUiQueueItem and upsert update path."
+      },
+      {
+        "finding": "Shared scheduling concurrency",
+        "status": "Still open (likely)",
+        "detail": "Generic slot selection lacks demonstrated lane-wide lock; no race reproduced."
+      },
+      {
+        "finding": "TradingView and Top 10 integration",
+        "status": "Requires verification",
+        "detail": "Not independently smoke-tested; no new fix claimed."
+      },
+      {
+        "finding": "Retired direct queue helper",
+        "status": "No longer relevant",
+        "detail": "Not counted as active."
+      }
+    ],
+    "fixedIssues": [],
+    "outstandingIssues": [
+      "Non-durable memory fallback and inaccurate readiness",
+      "Keyless queue ID overwrite",
+      "Potential scheduling race",
+      "New screenshot summary integration not verified"
+    ],
+    "recommendedFixes": [
+      "1. Require PostgreSQL for production startup; make /ready verify database and configure Railway to probe /ready.",
+      "2. Make keyless queue insertion collision-safe, never overwrite a distinct row, and add regression tests.",
+      "3. Serialize lane slot allocation with a shared transactional lock and test concurrent intake.",
+      "4. Verify Screenshot Inbox summary authorization and Main Hub rendering; run publishing delivery smoke tests."
+    ],
+    "quickWins": [
+      "Add production missing-DATABASE_URL readiness test.",
+      "Add keyless same-ID overwrite regression test.",
+      "Check screenshot-summary API response authorization in staging."
+    ],
+    "thisWeeksFocus": [
+      "Fail closed on missing/unavailable persistent storage.",
+      "Prevent keyless queue overwrites.",
+      "Verify screenshot-summary and queue integration."
+    ],
+    "safeToDefer": [
+      "Cosmetic refactoring",
+      "History query optimization without measured latency"
+    ],
+    "checks": {
+      "sourceInspection": "Completed from GitHub default branch",
+      "localTests": "Not executed; connector does not run code",
+      "ci": "FarmBot CI successful 2026-11-21, https://github.com/classical91/farm-bot/actions/runs/44934103420",
+      "production": "Not verified",
+      "dashboardData": "JSON parsed and historical count preserved before write"
+    },
+    "references": [
+      "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/app.ts",
+      "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/lib/prisma.ts",
+      "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/routes/health.routes.ts",
+      "https://github.com/classical91/farm-bot/blob/main/services/farmbot-api/src/repositories/prisma-repository.ts"
+    ]
+  },
+  {
     "id": "weekly-2026-11-15-farm-bot",
     "project": "FarmBot",
     "type": "Weekly repository audit",
