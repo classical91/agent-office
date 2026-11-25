@@ -47,6 +47,18 @@
   line-height: 1.65;
 }
 
+.ai-updated {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.ai-updated time {
+  color: var(--text);
+}
+
 .ai-notice-stack {
   display: grid;
   gap: 10px;
@@ -338,7 +350,18 @@
 
 .ai-card.open .ai-card-body {
   display: block;
+}
+
+/* Only the card that was just opened animates: the page re-renders on every
+   click and keystroke, and replaying this on every open card flickers. */
+.ai-card.open.ai-just-opened .ai-card-body {
   animation: aiReveal 0.22s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-card.open.ai-just-opened .ai-card-body {
+    animation: none;
+  }
 }
 
 @keyframes aiReveal {
@@ -511,7 +534,24 @@
   transform: translate(-50%, 50%);
 }
 
-.ai-dot:hover::after {
+.ai-dot {
+  cursor: default;
+}
+
+.ai-dot:hover,
+.ai-dot:focus-visible {
+  z-index: 3;
+}
+
+.ai-dot:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
+/* Tooltip. Dots near the right or top edge open it inwards, so the chart's
+   overflow: hidden does not cut it off. */
+.ai-dot:hover::after,
+.ai-dot:focus-visible::after {
   content: attr(data-label);
   position: absolute;
   left: 14px;
@@ -526,6 +566,52 @@
   padding: 8px 10px;
   font-size: 11px;
   line-height: 1.4;
+}
+
+.ai-dot.ai-dot-flip-x:hover::after,
+.ai-dot.ai-dot-flip-x:focus-visible::after {
+  left: auto;
+  right: 14px;
+}
+
+.ai-dot.ai-dot-flip-y:hover::after,
+.ai-dot.ai-dot-flip-y:focus-visible::after {
+  bottom: auto;
+  top: 12px;
+}
+
+.ai-chart-frame {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 1fr auto;
+  gap: 6px 8px;
+}
+
+.ai-chart-frame .ai-chart {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.ai-axis {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ai-axis-y {
+  grid-column: 1;
+  grid-row: 1;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  text-align: right;
+}
+
+.ai-axis-x {
+  grid-column: 2;
+  grid-row: 2;
+  text-align: right;
 }
 
 .ai-matrix {

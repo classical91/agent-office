@@ -35,14 +35,14 @@
       bestFor: "Long-form writing, careful analysis, codebases, agents, and thoughtful reasoning",
       strengths: ["Writing", "Coding", "Reasoning", "Long context"],
       api: "Public API",
-      apiNote: "Developer API across the Opus, Sonnet, and Haiku tiers, plus the Agent SDK.",
+      apiNote: "Developer API across the Opus, Sonnet, Haiku, and Fable tiers, plus the Agent SDK.",
       limits: "Flagship Opus tier is expensive; tighter free-tier message caps.",
       generalUseCases: ["Long-form writing and editing", "Codebase reasoning and agentic coding", "Business planning and analysis", "Document summarization and careful explanations"],
       submodels: [
-        model("Claude Opus 4.8", "Latest flagship", "Top Claude model tier for hard reasoning, coding, long-running agents, and premium-quality outputs.", "Best for hardest coding jobs, strategic analysis, and deep writing", "High", "Heavy"),
-        model("Claude Sonnet 5", "Balanced", "Newest Sonnet-family model (June 2026) with big coding and agentic gains — ~63% SWE-Bench Pro — at introductory $2/$10 pricing.", "Best for most day-to-day coding, writing, analysis, and assistant workflows", "Medium", "Moderate"),
-        model("Claude Haiku 4.5", "Fast", "Lightweight Claude model tuned for speed, throughput, and lower-cost assistant flows.", "Best for summaries, support bots, routing, and quick responses", "Low", "Light"),
-        model("Fable 5", "Creative", "Claude-family model line geared toward creative, expressive, and conversational output; redeployed July 2026.", "Best for creative writing, character, and expressive assistant experiences", "Medium", "Moderate")
+        model("Claude Opus 5.5", "Latest flagship", "Top Claude 5 model tier for hard reasoning, coding, long-running agents, and premium-quality outputs.", "Best for hardest coding jobs, strategic analysis, and deep writing", "High", "Heavy"),
+        model("Claude Sonnet 5.5", "Balanced", "Mid-tier Claude 5 model balancing capability, speed, and cost for everyday coding and agentic work.", "Best for most day-to-day coding, writing, analysis, and assistant workflows", "Medium", "Moderate"),
+        model("Claude Haiku 5.5", "Fast", "Lightweight Claude 5 model tuned for speed, throughput, and lower-cost assistant flows.", "Best for summaries, support bots, routing, and quick responses", "Low", "Light"),
+        model("Fable 5.2", "Creative", "Claude-family model line geared toward creative, expressive, and conversational output.", "Best for creative writing, character, and expressive assistant experiences", "Medium", "Moderate")
       ]
     },
     {
@@ -265,14 +265,14 @@
       group: "AI Video",
       kind: "Text / image to video",
       website: "https://sora.com/",
-      bestFor: "Immersive short video generation from text and images with strong scene detail",
-      strengths: ["Realism", "Prompting", "Audio", "Scenes"],
-      api: "Public API",
-      apiNote: "Being wound down: the Sora web/app experiences were discontinued April 26, 2026, and the Sora API is scheduled to shut down September 24, 2026.",
-      limits: "Deprecated — plan migrations to Veo, Kling, or Runway; access, clip length, and cost were volatile through the wind-down.",
+      bestFor: "Retired — kept for reference; use Veo, Kling, or Runway instead",
+      strengths: ["Retired", "Realism", "Audio", "Scenes"],
+      api: "Shut down",
+      apiNote: "Retired: the Sora web/app experiences were discontinued April 26, 2026, and the Sora API shut down September 24, 2026.",
+      limits: "No longer available — migrate to Veo, Kling, or Runway.",
       generalUseCases: ["Text-to-video concepts and visual ideation", "Image-to-video animation", "Short social and narrative clips", "Product visuals and mood exploration"],
       submodels: [
-        model("Sora 2", "Being retired", "OpenAI video model for detailed dynamic clips from text or images with audio; the Sora app is retired and the API shuts down September 24, 2026.", "Best for rich short-form visual concepts — migrate off before the API sunset", "High", "Heavy")
+        model("Sora 2", "Retired", "OpenAI video model for detailed dynamic clips from text or images with audio; the Sora app was retired and the API shut down on September 24, 2026.", "Best for rich short-form visual concepts — migrate off before the API sunset", "High", "Heavy")
       ]
     },
     {
@@ -907,16 +907,102 @@
       updateLinks: [{"label": "OpenAI Agents SDK releases", "url": "https://github.com/openai/openai-agents-python/releases"}, {"label": "Anthropic release notes", "url": "https://docs.anthropic.com/en/release-notes/overview"}],
       website: "https://www.agentmail.to/",
       group: "MCP-Compatible Tools",
-      kind: "Memory / email / skills",
-      bestFor: "Agent memory, programmatic email, and reusable skills",
-      strengths: ["Memory", "Email", "Skills", "Retrieval"],
+      kind: "Memory / email",
+      bestFor: "Agent memory and programmatic email",
+      strengths: ["Memory", "Email", "Retrieval"],
       api: "Tools / libraries",
-      apiNote: "Building blocks like agent email, markdown memory search, and skill repos.",
+      apiNote: "Building blocks like agent email and markdown memory search. Skill repositories now live under Skills & Plugins.",
       limits: "Mix-and-match maturity; vet each component before trusting it.",
-      generalUseCases: ["Programmatic agent email (AgentMail)", "Local markdown memory and retrieval (QMD)", "Discovering and installing skills (ClawHub)", "Composing agent infrastructure"],
+      generalUseCases: ["Programmatic agent email (AgentMail)", "Local markdown memory and retrieval (QMD)", "Composing agent infrastructure"],
       submodels: [
         model("AgentMail", "Agent email", "Dedicated email client for agents to send and receive email programmatically.", "Best for agent outbound/inbound email workflows", "Low", "Light"),
-        model("QMD", "Memory / retrieval", "Local hybrid search engine for markdown memory using keyword, vector, and reranking.", "Best for agent memory and local knowledge search", "Free / open", "Light"),
+        model("QMD", "Memory / retrieval", "Local hybrid search engine for markdown memory using keyword, vector, and reranking.", "Best for agent memory and local knowledge search", "Free / open", "Light")
+      ]
+    },
+
+    // -------------------------------------------------------- Skills & Plugins
+    {
+      name: "Claude Code Skills",
+      company: "Anthropic",
+      updateLinks: [{"label": "Claude Code changelog", "url": "https://code.claude.com/docs/en/changelog"}, {"label": "anthropics/skills", "url": "https://github.com/anthropics/skills"}],
+      website: "https://code.claude.com/docs/en/skills",
+      group: "Skills & Plugins",
+      kind: "Agent Skills (SKILL.md)",
+      bestFor: "Packaging a repeatable workflow, house style, or checklist so Claude follows it every time",
+      strengths: ["SKILL.md", "Reusable", "Shareable", "Auto-loaded"],
+      api: "Claude Code + Agent SDK",
+      apiNote: "A skill is a folder with a SKILL.md file (YAML frontmatter plus instructions, optionally scripts and reference files). Claude loads it when the task matches, or you invoke it with /skill-name.",
+      limits: "A skill can run scripts and steer the agent: read third-party skills before installing them.",
+      generalUseCases: ["Team workflows (deploys, reviews, releases) written once and reused", "House style for docs, decks, and reports", "Bundling helper scripts with the instructions that use them", "Sharing skills across a team through a repo"],
+      submodels: [
+        model("Agent Skills", "Skill format", "Folders with a SKILL.md that Claude Code discovers in the project, your user folder, or an installed plugin.", "Best for turning a repeated prompt or procedure into a one-word command", "Free / open", "Very light"),
+        model("anthropics/skills", "Example library", "Anthropic's public repository of example Agent Skills, the skill spec, and a starter template. It can be added as a plugin marketplace.", "Best for starting points and seeing how good skills are written", "Free / open", "Very light")
+      ]
+    },
+    {
+      name: "Claude Code Plugins",
+      company: "Anthropic",
+      updateLinks: [{"label": "Claude Code changelog", "url": "https://code.claude.com/docs/en/changelog"}, {"label": "Install and manage plugins", "url": "https://code.claude.com/docs/en/discover-plugins"}],
+      website: "https://code.claude.com/docs/en/plugins",
+      group: "Skills & Plugins",
+      kind: "Plugins + marketplaces",
+      bestFor: "Installing a bundle of skills, agents, hooks, and MCP servers as one unit",
+      strengths: ["Bundles", "Marketplaces", "Hooks", "MCP"],
+      api: "Claude Code",
+      apiNote: "A plugin is a directory of skills, agents, hooks, and MCP servers. Install with /plugin or claude plugin install, from a marketplace (a git repo listing plugins).",
+      limits: "Plugins can add hooks and MCP servers that run code: install from marketplaces you trust.",
+      generalUseCases: ["Rolling out the same tooling to every repo or teammate", "Adding MCP servers together with the skills that use them", "Running a private team marketplace", "Installing Anthropic's official plugins"],
+      submodels: [
+        model("Plugins", "Bundle format", "Skills, agents, hooks, and MCP servers packaged together and installed, updated, or removed as one unit.", "Best for sharing a complete setup rather than single skills", "Free / open", "Very light"),
+        model("claude-plugins-official", "Official marketplace", "Anthropic-managed directory of Claude Code plugins, with Anthropic's own plugins and vetted third-party ones.", "Best for finding plugins that have been reviewed", "Free / open", "Very light", [{"label": "claude-plugins-official", "url": "https://github.com/anthropics/claude-plugins-official"}])
+      ]
+    },
+    {
+      name: "Codex skills",
+      company: "OpenAI",
+      updateLinks: [{"label": "Codex releases", "url": "https://github.com/openai/codex/releases"}],
+      website: "https://github.com/openai/codex",
+      group: "Skills & Plugins",
+      kind: "Codex CLI extensions",
+      bestFor: "Reusable instructions and tools for OpenAI's Codex CLI",
+      strengths: ["Codex", "Reusable", "Local", "Terminal"],
+      api: "Codex CLI",
+      apiNote: "Codex CLI can be extended with local skills and MCP servers; check the Codex docs for the current skill format.",
+      limits: "Formats and install steps are still changing: check the release notes before relying on one.",
+      generalUseCases: ["Repeating a repo procedure in Codex", "Giving Codex project-specific tools through MCP", "Keeping Codex and Claude Code workflows in step"],
+      submodels: [
+        model("Codex skills", "Skill format", "Local skills and MCP servers that extend what Codex CLI can do in a project.", "Best for teams that use Codex alongside other coding agents", "Free / open", "Very light")
+      ]
+    },
+    {
+      name: "Gemini CLI extensions",
+      company: "Google",
+      updateLinks: [{"label": "Gemini CLI releases", "url": "https://github.com/google-gemini/gemini-cli/releases"}],
+      website: "https://github.com/google-gemini/gemini-cli",
+      group: "Skills & Plugins",
+      kind: "Gemini CLI extensions",
+      bestFor: "Adding MCP servers, commands, and context to Gemini CLI as installable packages",
+      strengths: ["Gemini", "MCP", "Commands", "Installable"],
+      api: "Gemini CLI",
+      apiNote: "Extensions package MCP servers, custom commands, and context files so Gemini CLI can install them in one step.",
+      limits: "Extensions can run MCP servers locally: review them before installing.",
+      generalUseCases: ["Connecting Gemini CLI to Google Cloud and other services", "Sharing custom commands with a team", "Bundling MCP servers with their instructions"],
+      submodels: [
+        model("Gemini CLI extensions", "Extension format", "Installable packages of MCP servers, commands, and context for Gemini CLI.", "Best for Google-stack terminal workflows", "Free / open", "Very light")
+      ]
+    },
+    {
+      name: "ClawHub",
+      company: "OpenClaw community",
+      group: "Skills & Plugins",
+      kind: "Skill repository",
+      bestFor: "Finding and installing community-built skills for OpenClaw agents",
+      strengths: ["OpenClaw", "Community", "Discovery", "Skills"],
+      api: "Skill registry",
+      apiNote: "Repository for finding and installing community-built skills.",
+      limits: "Community skills are unreviewed: read each one before giving it to an agent.",
+      generalUseCases: ["Discovering skills for Penny and the specialists", "Installing community workflows", "Workflow setup for new agents"],
+      submodels: [
         model("ClawHub", "Skill repository", "Repository for finding and installing community-built skills.", "Best for skill discovery and workflow setup", "Free / open", "Very light")
       ]
     }
@@ -930,7 +1016,8 @@
     "Browser Agents",
     "Automation Agents",
     "CLI Agents",
-    "MCP-Compatible Tools"
+    "MCP-Compatible Tools",
+    "Skills & Plugins"
   ];
 
   const categoryCopy = {
@@ -941,13 +1028,24 @@
     "Browser Agents": "Agents that drive a real browser — click, type, fill forms, and test UI.",
     "Automation Agents": "Workflow and automation builders that chain AI with apps, APIs, and schedules.",
     "CLI Agents": "Terminal-first tools for deploying, operating, and managing projects.",
-    "MCP-Compatible Tools": "Model Context Protocol connectors and SDKs that give agents safe tool and data access."
+    "MCP-Compatible Tools": "Model Context Protocol connectors and SDKs that give agents safe tool and data access.",
+    "Skills & Plugins": "Reusable skills, plugins, and extensions that teach agents a workflow or bundle their tools, and the marketplaces to find them."
   };
+
+  // Change this whenever the catalog entries are edited. It is shown at the top
+  // of the page so a reader can tell how fresh the catalog is.
+  const CATALOG_UPDATED = "2026-11-25";
+
+  function formatCatalogDate(iso) {
+    const [y, m, d] = iso.split("-").map(Number);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${d} ${months[m - 1]} ${y}`;
+  }
 
   const costMap = { "Very low": 1, "Free / open": 1, "Low": 2, "Open weights": 2, "Medium": 3, "High": 4, "Subscription / tiered": 3, "Bundled / enterprise": 3, "Enterprise variable": 3 };
   const burnMap = { "Very light": 1, "Light": 2, "Light to moderate": 2.5, "Moderate": 3, "Moderate to heavy": 3.5, "Heavy": 4, "Very heavy": 5, "Opaque": 3, "Variable": 3 };
   const categoryFilters = ["All"].concat(categoryOrder);
-  const state = { category: "All", query: "", openCards: new Set(), collapsedGroups: new Set(), activeModels: {} };
+  const state = { category: "All", query: "", openCards: new Set(), collapsedGroups: new Set(), activeModels: {}, justOpened: null };
   let rendered = false;
 
   function model(name, badge, desc, use, cost, burn, updateLinks = []) {
@@ -983,7 +1081,7 @@
         ai.company,
         ai.group,
         ai.kind,
-        ai.website,
+        ai.website || "",
         ai.bestFor,
         ai.api,
         ai.apiNote,
@@ -1017,11 +1115,12 @@
           <div>
             <div class="ai-kicker">Agent Office model & agent catalog</div>
             <h1 class="ai-title">AI Models</h1>
-            <p class="ai-subtitle">A working catalog of AI models and agents with direct update-log links, grouped by category — chatbots, coding, research, browser, automation, CLI, and MCP tools. Each card shows what it is best for, its strengths, its limits, whether it has API access, and a relative cost tier. Cost comparison graph is at the bottom.</p>
+            <p class="ai-updated">Last updated <time datetime="${CATALOG_UPDATED}">${formatCatalogDate(CATALOG_UPDATED)}</time></p>
+            <p class="ai-subtitle">A working catalog of AI models and agents with direct update-log links, grouped by category — chatbots, coding, research, browser, automation, CLI, MCP tools, and skills & plugins. Each card shows what it is best for, its strengths, its limits, whether it has API access, and a relative cost tier. Cost comparison graph is at the bottom.</p>
           </div>
           <div class="ai-notice-stack">
             <div class="ai-notice warning">Models and agents change frequently. Treat these as editable catalog entries and refresh provider data before making buying decisions.</div>
-            <div class="ai-notice">Security note: only connect trusted MCP servers; review permissions before giving agents file, browser, database, repo, or API access.</div>
+            <div class="ai-notice">Security note: only connect trusted MCP servers and install skills or plugins you have read; review permissions before giving agents file, browser, database, repo, or API access.</div>
           </div>
         </header>
 
@@ -1035,12 +1134,13 @@
         ${chartSection()}
       </div>
     `;
+    state.justOpened = null;
     bindControls(root);
     rendered = true;
   }
 
   function pill(type, value, active) {
-    return `<button class="ai-pill ${active ? "active" : ""}" data-${type}="${esc(value)}" type="button">${esc(value)}</button>`;
+    return `<button class="ai-pill ${active ? "active" : ""}" data-${type}="${esc(value)}" type="button" aria-pressed="${active ? "true" : "false"}">${esc(value)}</button>`;
   }
 
   function categoryGroupsSection(list) {
@@ -1055,7 +1155,7 @@
     const collapsed = state.collapsedGroups.has(cat);
     return `
       <section class="ai-cat-group ${collapsed ? "collapsed" : ""}" data-cat-group="${esc(cat)}">
-        <button class="ai-cat-head" type="button" data-toggle-group="${esc(cat)}">
+        <button class="ai-cat-head" type="button" data-toggle-group="${esc(cat)}" aria-expanded="${collapsed ? "false" : "true"}">
           <div>
             <h2 class="ai-cat-title">${esc(cat)}</h2>
             <p class="ai-cat-copy">${esc(categoryCopy[cat] || "")}</p>
@@ -1078,8 +1178,8 @@
     const active = ai.submodels.find(m => m.name === activeName) || ai.submodels[0];
     const hasTabs = ai.submodels.length > 1;
     return `
-      <article class="ai-card ${open ? "open" : ""}" data-ai-card="${esc(ai.name)}">
-        <button class="ai-card-button" type="button" data-toggle-card="${esc(ai.name)}">
+      <article class="ai-card ${open ? "open" : ""}${open && state.justOpened === ai.name ? " ai-just-opened" : ""}" data-ai-card="${esc(ai.name)}">
+        <button class="ai-card-button" type="button" data-toggle-card="${esc(ai.name)}" aria-expanded="${open ? "true" : "false"}">
           <div class="ai-card-top">
             <div>
               <div class="ai-company">${esc(ai.company)}</div>
@@ -1095,7 +1195,7 @@
         </button>
         <div class="ai-card-links">${updateLinksFor(ai, active)}</div>
         <div class="ai-card-body">
-          ${hasTabs ? `<div class="ai-model-tabs">${ai.submodels.map(m => `<button class="ai-pill ${m.name === active.name ? "active" : ""}" data-model-ai="${esc(ai.name)}" data-model-name="${esc(m.name)}" type="button">${esc(m.name)}</button>`).join("")}</div>` : ""}
+          ${hasTabs ? `<div class="ai-model-tabs">${ai.submodels.map(m => `<button class="ai-pill ${m.name === active.name ? "active" : ""}" data-model-ai="${esc(ai.name)}" data-model-name="${esc(m.name)}" type="button" aria-pressed="${m.name === active.name ? "true" : "false"}">${esc(m.name)}</button>`).join("")}</div>` : ""}
           <div class="ai-model-detail">
             <div class="ai-model-title"><span>${esc(active.name)}</span><span>${esc(active.badge)}</span></div>
             <p class="ai-model-copy">${esc(active.desc)}</p>
@@ -1111,7 +1211,6 @@
           </div>
           ${ai.website ? `<a class="ai-card-link" href="${esc(ai.website)}" target="_blank" rel="noopener noreferrer">Open website</a>` : ""}
           <p class="ai-model-copy ai-api-note">${esc(ai.apiNote)}</p>
-          ${updateLinksFor(ai, active)}
           <ul class="ai-use-list">${ai.generalUseCases.map(use => `<li>${esc(use)}</li>`).join("")}</ul>
         </div>
       </article>
@@ -1121,13 +1220,14 @@
   function matrixSection() {
     const rows = [
       ["Hard reasoning", "ChatGPT / Claude", "Gemini / Grok"],
-      ["AI video generation", "Runway / Sora / Google Flow", "Luma / Kling / Pika"],
+      ["AI video generation", "Runway / Google Flow", "Kling / Luma / Pika"],
       ["Coding agent", "Claude Code / Codex CLI", "Cursor / Aider"],
       ["Current web research", "Perplexity", "Deep Research modes"],
       ["Browser automation", "Playwright MCP / Agent-Browser", "Computer-use agents"],
       ["Workflow automation", "n8n / LangGraph", "Copilot Studio"],
       ["Deploy from terminal", "Railway / Vercel CLI", "GitHub CLI"],
       ["Safe tool access", "MCP connectors", "Claude Agent SDK"],
+      ["Reusable skills / plugins", "Claude Code Skills / Plugins", "ClawHub / Codex skills"],
       ["Low-cost open model", "DeepSeek / Qwen", "Mistral / Llama"]
     ];
     return `
@@ -1143,12 +1243,25 @@
   }
 
   function chartSection() {
-    const dots = graphData().map(point => {
-      const left = ((point.cost - 0.5) / 4) * 100;
-      const bottom = ((point.burn - 0.5) / 5) * 100;
+    // Cost and burn are coarse tiers, so dozens of models land on the same
+    // spot. Fan the points that share a spot out in a small ring so each one
+    // can be seen and hovered.
+    const points = graphData();
+    const byCell = new Map();
+    points.forEach(point => {
+      const key = `${point.cost}|${point.burn}`;
+      if (!byCell.has(key)) byCell.set(key, []);
+      byCell.get(key).push(point);
+    });
+    const dots = [...byCell.values()].flatMap(cell => cell.map((point, i) => {
+      const ring = cell.length > 1 ? Math.min(7, 2 + cell.length * 0.45) : 0;
+      const angle = (i / cell.length) * Math.PI * 2;
+      const left = ((point.cost - 0.5) / 4) * 100 + Math.cos(angle) * ring * 0.6;
+      const bottom = ((point.burn - 0.5) / 5) * 100 + Math.sin(angle) * ring;
       const label = `${point.name} / ${point.platform} / Cost: ${point.costLabel} / Burn: ${point.burnLabel}`;
-      return `<span class="ai-dot" style="left:${left}%; bottom:${bottom}%;" data-label="${esc(label)}"></span>`;
-    }).join("");
+      const flip = `${left > 55 ? " ai-dot-flip-x" : ""}${bottom > 65 ? " ai-dot-flip-y" : ""}`;
+      return `<span class="ai-dot${flip}" tabindex="0" role="img" aria-label="${esc(label)}" style="left:${left.toFixed(2)}%; bottom:${bottom.toFixed(2)}%;" data-label="${esc(label)}"></span>`;
+    })).join("");
     return `
       <section class="ai-section">
         <div class="ai-section-head">
@@ -1157,9 +1270,22 @@
             <p class="ai-section-copy">Each dot is a model or agent. Bottom-left is cheaper and lighter; top-right is expensive and heavy. Relative tiers, not exact billing quotes. Filtered by: ${esc(state.category)}</p>
           </div>
         </div>
-        <div class="ai-chart" aria-label="Cost versus API burn scatter plot">${dots}</div>
+        <div class="ai-chart-frame">
+          <span class="ai-axis ai-axis-y">API burn →</span>
+          <div class="ai-chart" role="group" aria-label="Cost versus API burn scatter plot">${dots}</div>
+          <span class="ai-axis ai-axis-x">Token cost →</span>
+        </div>
       </section>
     `;
+  }
+
+  // Every control re-renders the whole page, which would otherwise drop
+  // keyboard focus back to <body>. Re-focus the same control afterwards.
+  function renderKeepingFocus(attr, value) {
+    render();
+    const match = [...document.querySelectorAll(`#ai-landscape-root [${attr}]`)]
+      .find(el => el.getAttribute(attr) === value);
+    if (match) match.focus({ preventScroll: true });
   }
 
   function bindControls(root) {
@@ -1177,25 +1303,25 @@
     }
     root.querySelectorAll("[data-category]").forEach(button => button.addEventListener("click", () => {
       state.category = button.dataset.category;
-      render();
+      renderKeepingFocus("data-category", button.dataset.category);
     }));
     root.querySelectorAll("[data-toggle-group]").forEach(button => button.addEventListener("click", () => {
       const name = button.dataset.toggleGroup;
       if (state.collapsedGroups.has(name)) state.collapsedGroups.delete(name);
       else state.collapsedGroups.add(name);
-      render();
+      renderKeepingFocus("data-toggle-group", name);
     }));
     root.querySelectorAll("[data-toggle-card]").forEach(button => button.addEventListener("click", () => {
       const name = button.dataset.toggleCard;
       if (state.openCards.has(name)) state.openCards.delete(name);
-      else state.openCards.add(name);
-      render();
+      else { state.openCards.add(name); state.justOpened = name; }
+      renderKeepingFocus("data-toggle-card", name);
     }));
     root.querySelectorAll("[data-model-ai]").forEach(button => button.addEventListener("click", event => {
       event.stopPropagation();
       state.openCards.add(button.dataset.modelAi);
       state.activeModels[button.dataset.modelAi] = button.dataset.modelName;
-      render();
+      renderKeepingFocus("data-model-name", button.dataset.modelName);
     }));
   }
 

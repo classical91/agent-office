@@ -187,6 +187,14 @@ test('every card draws the character the room draws', async t => {
 
   // A card whose canvas is blank is a card that has not drawn anything, which
   // is how a roster ends up as a wall of empty slabs on a slow load.
+  // Sprites are painted from img.onload, so a card fills in a moment after the
+  // panel opens; reading at once raced the image decode on slower CI runners.
+  // Give them a bounded wait - a card that never paints still fails below.
+  await page.waitForFunction(() => [...document.querySelectorAll('.roster-card-pixel')].every(canvas => {
+    const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+    for (let index = 3; index < data.length; index += 4) if (data[index] > 12) return true;
+    return false;
+  }), null, { timeout: 5000 }).catch(() => {});
   const painted = await page.$$eval('.roster-card-pixel', canvases => canvases.map(canvas => {
     const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
     for (let index = 3; index < data.length; index += 4) if (data[index] > 12) return true;
