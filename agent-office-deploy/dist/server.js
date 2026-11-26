@@ -4959,6 +4959,45 @@ function shortcutsTextReport(items, scope) {
   return [heading, ...lines].join('\n');
 }
 
+// The category a Fix Queue reminder is listed under: '' for Uncategorized,
+// including one whose category has since been deleted.
+function fixQueueCategoryId(drop, registry) {
+  const raw = drop.category || drop.subject || '';
+  if (!raw || raw === 'uncategorized') return '';
+  return registry.some(item => item.id === raw && item.deleted) ? '' : raw;
+}
+
+// The Fix Queue read back as the screen shows it: one block per category in
+// registry order, Uncategorized last, empty categories left out.
+function groupFixQueue(items, drops, registry) {
+  const byId = new Map(drops.map(drop => [drop.id, drop]));
+  const order = registry.filter(item => !item.deleted).map(item => item.id);
+  const groups = new Map();
+  for (const item of items) {
+    const id = fixQueueCategoryId(byId.get(item.id) || {}, registry);
+    if (!groups.has(id)) groups.set(id, { category: item.category_label, count: 0, items: [] });
+    const group = groups.get(id);
+    group.count += 1;
+    group.items.push(item);
+  }
+  const rank = id => (id === '' ? Number.MAX_SAFE_INTEGER : order.indexOf(id) === -1 ? order.length : order.indexOf(id));
+  return [...groups.entries()]
+    .sort(([a, ga], [b, gb]) => rank(a) - rank(b) || ga.category.localeCompare(gb.category))
+    .map(([, group]) => group);
+}
+
+function fixQueueText(groups, total, category) {
+  if (!total) return category ? `Nothing in ${category}.` : 'Fix Queue is empty.';
+  const lines = [`Fix Queue · ${total} ${total === 1 ? 'item' : 'items'}`];
+  for (const group of groups) {
+    lines.push('', `${group.category} (${group.count})`);
+    for (const item of group.items) {
+      lines.push(`• ${item.title}${item.due_relative ? ` — ${item.due_relative}` : ''}`);
+    }
+  }
+  return lines.join('\n');
+}
+
 function shortcutsGoalsText(items) {
   if (!items.length) return 'No goals queued for Penny.';
   const heading = `${items.length} ${items.length === 1 ? 'goal' : 'goals'}`;
@@ -5224,6 +5263,53 @@ async function handleShortcutsRequest(req, res, url, storage) {
     return true;
   }
 
+  // Everything open in the Fix Queue, grouped by category. due= takes the same
+  // scopes as /api/shortcuts/drops but defaults to `any`: the question here is
+  // "what is in there?", not "what has come due?".
+  if (req.method === 'GET' && pathname === '/api/shortcuts/fix-queue') {
+    const scope = String(url.searchParams.get('due') || 'any').toLowerCase();
+    if (!['now', 'today', 'all', 'upcoming', 'any'].includes(scope)) {
+      sendJson(res, 400, { error: 'due must be one of now, today, upcoming, all, or any.' });
+      return true;
+    }
+    const requestedLimit = Number.parseInt(url.searchParams.get('limit') || '', 10);
+    const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
+      ? Math.min(requestedLimit, SHORTCUTS_MAX_LIMIT)
+      : SHORTCUTS_MAX_LIMIT;
+
+    const registry = await loadReminderCategoryRegistry(storage);
+    let drops = (await storage.listDrops()).filter(drop => drop.project === 'iOS');
+    const categoryFilter = String(url.searchParams.get('category') || '').trim();
+    let categoryName = '';
+    if (categoryFilter) {
+      const resolved = resolveShortcutCategory(registry, categoryFilter);
+      if (!resolved.ok) {
+        sendJson(res, 400, { error: resolved.error });
+        return true;
+      }
+      categoryName = resolved.id ? registry.find(item => item.id === resolved.id).label : 'Uncategorized';
+      drops = drops.filter(drop => fixQueueCategoryId(drop, registry) === resolved.id);
+    }
+
+    const selected = selectShortcutDrops(drops, scope, now);
+    const categoryLabels = await loadReminderCategoryLabels(storage);
+    const items = selected.slice(0, limit).map(drop => toShortcutItem(drop, now, req, categoryLabels));
+    const groups = groupFixQueue(items, drops, registry);
+
+    if (String(url.searchParams.get('format') || '') === 'text') {
+      sendText(res, 200, fixQueueText(groups, items.length, categoryName));
+      return true;
+    }
+    sendJson(res, 200, {
+      scope,
+      count: items.length,
+      total: selected.length,
+      generated_at: now.toISOString(),
+      categories: groups,
+    });
+    return true;
+  }
+
   if (req.method === 'GET' && pathname === '/api/shortcuts/drops') {
     const scope = String(url.searchParams.get('due') || 'now').toLowerCase();
     if (!['now', 'today', 'all', 'upcoming', 'any'].includes(scope)) {
@@ -5245,13 +5331,7 @@ async function handleShortcutsRequest(req, res, url, storage) {
         sendJson(res, 400, { error: resolved.error });
         return true;
       }
-      const deleted = new Set(registry.filter(item => item.deleted).map(item => item.id));
-      drops = drops.filter(drop => {
-        if (drop.project !== 'iOS') return false;
-        const raw = drop.category || drop.subject || '';
-        const id = deleted.has(raw) || raw === 'uncategorized' ? '' : raw;
-        return id === resolved.id;
-      });
+      drops = drops.filter(drop => drop.project === 'iOS' && fixQueueCategoryId(drop, registry) === resolved.id);
     }
     const selected = selectShortcutDrops(drops, scope, now).slice(0, limit);
     const categoryLabels = await loadReminderCategoryLabels(storage);
@@ -7068,6 +7148,7 @@ const server = http.createServer(async (req, res) => {
         countdowns_url: `${origin}/api/shortcuts/countdowns?limit=5&format=text`,
         reset_timers_url: `${origin}/api/shortcuts/reset-timers?limit=5&format=text`,
         categories_url: `${origin}/api/shortcuts/categories?format=text`,
+        fix_queue_url: `${origin}/api/shortcuts/fix-queue?format=text`,
         header: 'X-Shortcuts-Token',
       });
       return;

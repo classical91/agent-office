@@ -1372,6 +1372,37 @@ narrows any pull to one category.
 
 For one fixed category, skip steps 1 and 2 and type the name into `category`.
 
+**Pulling a category back.** `GET /api/shortcuts/fix-queue?format=text` returns
+the whole open Fix Queue grouped by category, in the order the categories are
+listed, Uncategorized last:
+
+```
+Fix Queue · 4 items
+
+Work (1)
+• Send the report
+
+House (2)
+• Fix the gutter — 2h overdue
+• Paint the fence
+
+Uncategorized (1)
+• Loose end
+```
+
+`category=House` narrows it to one category, `due=` takes the same scopes as
+below (default `any`: everything open), and `limit=` caps it at up to 100.
+Without `format=text` it returns JSON: `categories` is a list of
+`{ category, count, items }`, with each item in the same shape as
+`/api/shortcuts/drops`.
+
+**Shortcut: "What's in the Fix Queue?"** Get the category list as in steps 1–2
+above, then **Get Contents of URL** →
+`…/api/shortcuts/fix-queue?format=text&category=` + Chosen Item, header
+`X-Shortcuts-Token` → **Show Result**. Put a **URL Encode** action on the
+Chosen Item first if any category name has a space or an `&` in it. For
+everything at once, leave `category` off.
+
 ### Pulling it back
 
 `GET /api/shortcuts/drops` returns the due reminders by default. `due=` picks
