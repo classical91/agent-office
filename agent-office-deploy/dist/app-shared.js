@@ -3133,6 +3133,11 @@ function renderDropTable() {
   // Both spellings of the timestamp ship; CSS picks one, so a phone gets
   // "Aug 10" where the desktop has room for the whole thing.
   const updatedCell = drop => `<td class="col-updated${dropAgeClass(drop.updated_at || drop.date)}"><span class="date-full">${dropFormatDate(drop.updated_at || drop.date)}</span><span class="date-short">${dropFormatShortDate(drop.updated_at || drop.date)}</span></td>`;
+  // A phone hides the Updated column when a second column takes its place, so
+  // the date (and its age colour) rides under the title there instead.
+  const titleDate = drop => secondary
+    ? `<span class="title-date${dropAgeClass(drop.updated_at || drop.date)}">${dropFormatShortDate(drop.updated_at || drop.date)}</span>`
+    : '';
 
   wrap.innerHTML = `
     <table class="dropbox-table${secondary ? ' has-secondary' : ''}">
@@ -3144,7 +3149,7 @@ function renderDropTable() {
       <tbody>
         ${items.map(drop => `
           <tr data-drop-id="${escAttr(drop.id)}" class="${drop.id === dropboxState.selectedId ? 'selected' : ''}">
-            <td>${escHTML(drop.title || 'Untitled drop')}${iosMode && window.ReminderCategories ? `<div>${dropBadge(ReminderCategories.label(drop), 'subject')}</div>` : ''}</td>
+            <td>${escHTML(drop.title || 'Untitled drop')}${iosMode && window.ReminderCategories ? `<div>${dropBadge(ReminderCategories.label(drop), 'subject')}</div>` : ''}${titleDate(drop)}</td>
             ${iosMode
               ? `<td class="col-reminder">${dropReminderBadge(drop)}</td>`
               : showSubject ? `<td class="col-subject">${dropBadge(drop.subject, 'subject')}</td>` : ''}

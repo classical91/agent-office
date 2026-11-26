@@ -3449,6 +3449,7 @@
   .dropbox-table .col-subject { width: 200px; }
   .dropbox-table .col-updated { width: 200px; white-space: nowrap; }
   .dropbox-table .date-short { display: none; }
+  .dropbox-table .title-date { display: none; }
   .dropbox-table tr[data-drop-id] { cursor: pointer; }
   .dropbox-table tr[data-drop-id]:hover { background: rgba(255,255,255,0.03); }
   .dropbox-table tr.selected { background: rgba(124,92,255,0.12); }
@@ -3547,6 +3548,9 @@
     .dropbox-table th,
     .dropbox-table td { padding: 10px 6px; overflow-wrap: anywhere; }
     .dropbox-table.has-secondary .col-updated { display: none; }
+    .dropbox-table.has-secondary .title-date { display: block; margin-top: 4px; font-size: 11px; color: var(--muted); }
+    .dropbox-table.has-secondary .title-date.past-month { color: var(--red); font-weight: 700; }
+    .dropbox-table.has-secondary .title-date.over-3-weeks { color: var(--blue); font-weight: 700; }
     .dropbox-table .date-full { display: none; }
     .dropbox-table .date-short { display: inline; }
     .dropbox-table th:nth-child(1) { width: 68%; }
