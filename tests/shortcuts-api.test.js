@@ -210,6 +210,111 @@ test('a reminder carries the name of its category, not only the id', async t => 
   assert.equal(byTitle['Loose'].category_label, 'Uncategorized');
 });
 
+test('a Shortcut files a Fix Queue reminder under a category by its name', async t => {
+  const server = await startServer({
+    settings: {
+      'reminder-categories.v1': JSON.stringify([
+        { id: 'Work', label: 'Work', deleted: false },
+        { id: 'custom-house', label: 'House', deleted: false },
+        { id: 'custom-gone', label: 'Gone', deleted: true },
+      ]),
+    },
+  });
+  t.after(() => stop(server));
+
+  // The list a "Choose from List" step reads: one live name per line.
+  const list = await send(server.origin, '/api/shortcuts/categories?format=text');
+  assert.equal(list.status, 200);
+  assert.equal(await list.text(), 'Work\nHouse\nUncategorized');
+
+  // The name, in any case, lands in the existing category's id.
+  const named = await send(server.origin, '/api/shortcuts/drops?format=text', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: 'Fix the gutter', category: 'house' }),
+  });
+  assert.equal(named.status, 201);
+  assert.equal(await named.text(), 'Saved: Fix the gutter → House');
+
+  await send(server.origin, '/api/shortcuts/drops', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: 'Send the report', category: 'Work' }),
+  });
+
+  const all = await pull(server.origin, 'due=any');
+  const gutter = all.items.find(item => item.title === 'Fix the gutter');
+  assert.equal(gutter.category, 'custom-house');
+  assert.equal(gutter.category_label, 'House');
+
+  // A typo is refused with the names, not filed under a look-alike category.
+  const typo = await send(server.origin, '/api/shortcuts/drops', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: 'Lost one', category: 'Hosue' }),
+  });
+  assert.equal(typo.status, 400);
+  assert.match((await typo.json()).error, /Work, House, Uncategorized/);
+  // A deleted category's name is no longer offered either.
+  const gone = await send(server.origin, '/api/shortcuts/drops?text=x&category=Gone', { method: 'POST' });
+  assert.equal(gone.status, 400);
+
+  const house = await pull(server.origin, 'due=any&category=House');
+  assert.deepEqual(house.items.map(item => item.title), ['Fix the gutter']);
+});
+
+test('the Fix Queue comes back grouped by category', async t => {
+  const server = await startServer({
+    settings: {
+      'reminder-categories.v1': JSON.stringify([
+        { id: 'Work', label: 'Work', deleted: false },
+        { id: 'custom-house', label: 'House', deleted: false },
+      ]),
+    },
+  });
+  t.after(() => stop(server));
+
+  for (const body of [
+    { text: 'Fix the gutter', category: 'House', remind: '2026-01-01T09:00:00Z' },
+    { text: 'Paint the fence', category: 'House' },
+    { text: 'Send the report', category: 'Work' },
+    { text: 'Loose end' },
+    { text: 'Not a fix', project: 'Elsewhere' },
+  ]) {
+    const response = await send(server.origin, '/api/shortcuts/drops', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    assert.equal(response.status, 201);
+  }
+
+  const text = await (await send(server.origin, '/api/shortcuts/fix-queue?format=text')).text();
+  assert.equal(text, [
+    'Fix Queue · 4 items', '',
+    'Work (1)', '• Send the report', '',
+    'House (2)', '• Fix the gutter — ' + text.match(/Fix the gutter — (.+)/)[1], '• Paint the fence', '',
+    'Uncategorized (1)', '• Loose end',
+  ].join('\n'));
+  assert.match(text, /overdue/);
+
+  const json = await (await send(server.origin, '/api/shortcuts/fix-queue')).json();
+  assert.deepEqual(json.categories.map(group => [group.category, group.count]),
+    [['Work', 1], ['House', 2], ['Uncategorized', 1]]);
+
+  const house = await (await send(server.origin, '/api/shortcuts/fix-queue?category=house&format=text')).text();
+  assert.match(house, /^Fix Queue · 2 items\n\nHouse \(2\)/);
+
+  const due = await (await send(server.origin, '/api/shortcuts/fix-queue?due=now')).json();
+  assert.deepEqual(due.categories.map(group => group.items.map(item => item.title)), [['Fix the gutter']]);
+
+  const empty = await (await send(server.origin, '/api/shortcuts/fix-queue?category=Work&due=now&format=text')).text();
+  assert.equal(empty, 'Nothing in Work.');
+
+  const typo = await send(server.origin, '/api/shortcuts/fix-queue?category=Wrok');
+  assert.equal(typo.status, 400);
+});
+
 test('format=text returns a list a Shortcut can show as-is', async t => {
   const server = await startServer();
   t.after(() => stop(server));

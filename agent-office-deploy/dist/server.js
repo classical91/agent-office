@@ -4848,6 +4848,40 @@ async function loadReminderCategoryLabels(storage) {
   return new Map(items.map(item => [item.id, item.deleted ? 'Uncategorized' : item.label]));
 }
 
+// The registry as the Fix Queue screen shows it: saved entries, or the
+// defaults before anything has been saved. Deleted entries stay as tombstones.
+async function loadReminderCategoryRegistry(storage) {
+  try {
+    const saved = await storage.getAppSetting('reminder-categories.v1');
+    const registry = saved ? JSON.parse(saved) : null;
+    if (Array.isArray(registry)) return registry;
+  } catch {
+    // Fall through to the defaults, as the browser does.
+  }
+  return REMINDER_CATEGORY_DEFAULTS.map(id => ({ id, label: id, deleted: false }));
+}
+
+// A Shortcut names a category the way Jason sees it ("House"), not by the
+// "custom-<uuid>" id the registry files it under. Resolve the name to that id
+// so the reminder lands in the existing category instead of starting a
+// look-alike one. An exact id still works, so older Shortcuts keep working.
+// A name that matches nothing is refused with the list, rather than quietly
+// creating a stray category out of a typo.
+function resolveShortcutCategory(registry, raw) {
+  const wanted = String(raw ?? '').trim();
+  if (!wanted || ['uncategorized', 'none'].includes(wanted.toLowerCase())) return { ok: true, id: '' };
+  const byId = registry.find(item => item.id === wanted);
+  if (byId) return { ok: true, id: byId.id };
+  const lower = wanted.toLowerCase();
+  const byLabel = registry.find(item => !item.deleted && item.label.trim().toLowerCase() === lower);
+  if (byLabel) return { ok: true, id: byLabel.id };
+  const names = registry.filter(item => !item.deleted).map(item => item.label);
+  return {
+    ok: false,
+    error: `No Fix Queue category called "${wanted.slice(0, 60)}". Use one of: ${names.concat('Uncategorized').join(', ')}.`,
+  };
+}
+
 function shortcutCategoryLabel(drop, labels) {
   const id = drop.category || drop.subject || '';
   if (!id) return drop.project === 'iOS' ? 'Uncategorized' : '';
@@ -4923,6 +4957,45 @@ function shortcutsTextReport(items, scope) {
     return `• ${item.title}${when}`;
   });
   return [heading, ...lines].join('\n');
+}
+
+// The category a Fix Queue reminder is listed under: '' for Uncategorized,
+// including one whose category has since been deleted.
+function fixQueueCategoryId(drop, registry) {
+  const raw = drop.category || drop.subject || '';
+  if (!raw || raw === 'uncategorized') return '';
+  return registry.some(item => item.id === raw && item.deleted) ? '' : raw;
+}
+
+// The Fix Queue read back as the screen shows it: one block per category in
+// registry order, Uncategorized last, empty categories left out.
+function groupFixQueue(items, drops, registry) {
+  const byId = new Map(drops.map(drop => [drop.id, drop]));
+  const order = registry.filter(item => !item.deleted).map(item => item.id);
+  const groups = new Map();
+  for (const item of items) {
+    const id = fixQueueCategoryId(byId.get(item.id) || {}, registry);
+    if (!groups.has(id)) groups.set(id, { category: item.category_label, count: 0, items: [] });
+    const group = groups.get(id);
+    group.count += 1;
+    group.items.push(item);
+  }
+  const rank = id => (id === '' ? Number.MAX_SAFE_INTEGER : order.indexOf(id) === -1 ? order.length : order.indexOf(id));
+  return [...groups.entries()]
+    .sort(([a, ga], [b, gb]) => rank(a) - rank(b) || ga.category.localeCompare(gb.category))
+    .map(([, group]) => group);
+}
+
+function fixQueueText(groups, total, category) {
+  if (!total) return category ? `Nothing in ${category}.` : 'Fix Queue is empty.';
+  const lines = [`Fix Queue · ${total} ${total === 1 ? 'item' : 'items'}`];
+  for (const group of groups) {
+    lines.push('', `${group.category} (${group.count})`);
+    for (const item of group.items) {
+      lines.push(`• ${item.title}${item.due_relative ? ` — ${item.due_relative}` : ''}`);
+    }
+  }
+  return lines.join('\n');
 }
 
 function shortcutsGoalsText(items) {
@@ -5141,6 +5214,16 @@ async function handleShortcutsRequest(req, res, url, storage) {
       return true;
     }
 
+    // Fix Queue reminders file under a category from the registry.
+    if (built.value.project === 'iOS' && built.value.subject) {
+      const resolved = resolveShortcutCategory(await loadReminderCategoryRegistry(storage), built.value.subject);
+      if (!resolved.ok) {
+        sendJson(res, 400, { error: resolved.error });
+        return true;
+      }
+      built.value.subject = resolved.id;
+    }
+
     const payload = validateDropInput(built.value);
     if (!payload.ok) {
       sendJson(res, 400, { error: payload.error });
@@ -5155,12 +5238,75 @@ async function handleShortcutsRequest(req, res, url, storage) {
       title: await uniqueDropTitle(storage, payload.value.title),
     });
 
-    const item = toShortcutItem(drop, now, req);
+    const item = toShortcutItem(drop, now, req, await loadReminderCategoryLabels(storage));
     if (String(url.searchParams.get('format') || '') === 'text') {
-      sendText(res, 201, item.due_relative ? `Saved: ${item.title} (${item.due_relative})` : `Saved: ${item.title}`);
+      const where = drop.project === 'iOS' ? ` → ${item.category_label}` : '';
+      sendText(res, 201, item.due_relative
+        ? `Saved: ${item.title}${where} (${item.due_relative})`
+        : `Saved: ${item.title}${where}`);
       return true;
     }
     sendJson(res, 201, item);
+    return true;
+  }
+
+  // The Fix Queue's categories, for a Shortcut's "Choose from List". Text is
+  // one name per line, which Shortcuts splits into a list by itself.
+  if (req.method === 'GET' && pathname === '/api/shortcuts/categories') {
+    const names = (await loadReminderCategoryRegistry(storage))
+      .filter(item => !item.deleted).map(item => item.label).concat('Uncategorized');
+    if (String(url.searchParams.get('format') || '') === 'text') {
+      sendText(res, 200, names.join('\n'));
+      return true;
+    }
+    sendJson(res, 200, { count: names.length, categories: names });
+    return true;
+  }
+
+  // Everything open in the Fix Queue, grouped by category. due= takes the same
+  // scopes as /api/shortcuts/drops but defaults to `any`: the question here is
+  // "what is in there?", not "what has come due?".
+  if (req.method === 'GET' && pathname === '/api/shortcuts/fix-queue') {
+    const scope = String(url.searchParams.get('due') || 'any').toLowerCase();
+    if (!['now', 'today', 'all', 'upcoming', 'any'].includes(scope)) {
+      sendJson(res, 400, { error: 'due must be one of now, today, upcoming, all, or any.' });
+      return true;
+    }
+    const requestedLimit = Number.parseInt(url.searchParams.get('limit') || '', 10);
+    const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
+      ? Math.min(requestedLimit, SHORTCUTS_MAX_LIMIT)
+      : SHORTCUTS_MAX_LIMIT;
+
+    const registry = await loadReminderCategoryRegistry(storage);
+    let drops = (await storage.listDrops()).filter(drop => drop.project === 'iOS');
+    const categoryFilter = String(url.searchParams.get('category') || '').trim();
+    let categoryName = '';
+    if (categoryFilter) {
+      const resolved = resolveShortcutCategory(registry, categoryFilter);
+      if (!resolved.ok) {
+        sendJson(res, 400, { error: resolved.error });
+        return true;
+      }
+      categoryName = resolved.id ? registry.find(item => item.id === resolved.id).label : 'Uncategorized';
+      drops = drops.filter(drop => fixQueueCategoryId(drop, registry) === resolved.id);
+    }
+
+    const selected = selectShortcutDrops(drops, scope, now);
+    const categoryLabels = await loadReminderCategoryLabels(storage);
+    const items = selected.slice(0, limit).map(drop => toShortcutItem(drop, now, req, categoryLabels));
+    const groups = groupFixQueue(items, drops, registry);
+
+    if (String(url.searchParams.get('format') || '') === 'text') {
+      sendText(res, 200, fixQueueText(groups, items.length, categoryName));
+      return true;
+    }
+    sendJson(res, 200, {
+      scope,
+      count: items.length,
+      total: selected.length,
+      generated_at: now.toISOString(),
+      categories: groups,
+    });
     return true;
   }
 
@@ -5176,7 +5322,17 @@ async function handleShortcutsRequest(req, res, url, storage) {
       ? Math.min(requestedLimit, SHORTCUTS_MAX_LIMIT)
       : SHORTCUTS_DEFAULT_LIMIT;
 
-    const drops = await storage.listDrops();
+    let drops = await storage.listDrops();
+    const categoryFilter = String(url.searchParams.get('category') || '').trim();
+    if (categoryFilter) {
+      const registry = await loadReminderCategoryRegistry(storage);
+      const resolved = resolveShortcutCategory(registry, categoryFilter);
+      if (!resolved.ok) {
+        sendJson(res, 400, { error: resolved.error });
+        return true;
+      }
+      drops = drops.filter(drop => drop.project === 'iOS' && fixQueueCategoryId(drop, registry) === resolved.id);
+    }
     const selected = selectShortcutDrops(drops, scope, now).slice(0, limit);
     const categoryLabels = await loadReminderCategoryLabels(storage);
     const items = selected.map(drop => toShortcutItem(drop, now, req, categoryLabels));
@@ -6991,6 +7147,8 @@ const server = http.createServer(async (req, res) => {
         status_url: `${origin}/api/shortcuts/status`,
         countdowns_url: `${origin}/api/shortcuts/countdowns?limit=5&format=text`,
         reset_timers_url: `${origin}/api/shortcuts/reset-timers?limit=5&format=text`,
+        categories_url: `${origin}/api/shortcuts/categories?format=text`,
+        fix_queue_url: `${origin}/api/shortcuts/fix-queue?format=text`,
         header: 'X-Shortcuts-Token',
       });
       return;

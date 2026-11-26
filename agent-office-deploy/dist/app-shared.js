@@ -1747,6 +1747,8 @@ window.SETTINGS = (() => {
           : 'Off — set SHORTCUTS_TOKEN on the server to a long random string.');
       set('settings-shortcuts-send', setup.send_url);
       set('settings-shortcuts-pull', setup.pull_text_url);
+      set('settings-shortcuts-categories', setup.categories_url);
+      set('settings-shortcuts-fix-queue', setup.fix_queue_url);
       set('settings-shortcuts-header', setup.header);
     } catch {
       set('settings-shortcuts-state', 'Could not reach the server.');
