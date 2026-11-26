@@ -558,6 +558,12 @@ test('the Fix Queue lane skips the folder wall', async t => {
   assert.match(await updatedClass('Renew the domain'), /over-3-weeks/);
   assert.doesNotMatch(await updatedClass('A note reminder without a time'), /over-3-weeks|past-month/);
   assert.equal(await onScreen(page, '#dropbox-table-wrap .drop-age-legend'), true, 'the colour legend is missing');
+  // A phone hides the Updated column, so the coloured date shows under the title.
+  await page.setViewportSize({ width: 390, height: 844 });
+  const titleDate = page.locator('.dropbox-table tr', { hasText: 'Renew the domain' }).locator('.title-date');
+  assert.equal(await titleDate.isVisible(), true, 'the date is missing under the title on a phone');
+  assert.match(await titleDate.getAttribute('class'), /over-3-weeks/);
+  assert.equal(await titleDate.evaluate(el => getComputedStyle(el).fontWeight), '700');
   assert.deepEqual(problems, []);
 });
 
