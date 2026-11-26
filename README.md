@@ -1344,6 +1344,34 @@ selection, or a photo caption straight in)
 Add it to the Home Screen or say "Hey Siri, Drop it" and the note is in the
 Dropbox before you have put the phone down.
 
+### Sending into a Fix Queue category
+
+Phone drops go to the Fix Queue. Add `category` with the category's name as it
+appears on the Fix Queue screen (`House`, `Work`, …), in any case, and the
+reminder is filed under it, including categories made in **Manage categories**.
+`Uncategorized` or `none` files it without one. A name that matches no live
+category is refused with a 400 that lists the valid ones, so a typo never
+starts a stray category.
+
+`GET /api/shortcuts/categories?format=text` returns the current names, one per
+line (drop `format=text` for JSON), and `GET /api/shortcuts/drops?category=House`
+narrows any pull to one category.
+
+**Shortcut: "Fix it later"** (pick the category from a list)
+
+1. **Get Contents of URL**: `https://your-app.up.railway.app/api/shortcuts/categories?format=text`,
+   Method `GET`, header `X-Shortcuts-Token` = your token.
+2. **Split Text** by New Lines, then **Choose from List**.
+3. **Ask for Input**: Text, prompt "What needs fixing?" (or use `Shortcut Input`
+   from the share sheet).
+4. **Ask for Input**: Text, prompt "Remind me when? (blank = no reminder)".
+5. **Get Contents of URL**: `https://your-app.up.railway.app/api/shortcuts/drops?format=text`,
+   Method `POST`, header `X-Shortcuts-Token`, Request Body `JSON`: `text` = step 3,
+   `category` = Chosen Item, `remind` = step 4.
+6. **Show Notification** with the result, for example `Saved: Fix the gutter → House (in 2h)`.
+
+For one fixed category, skip steps 1 and 2 and type the name into `category`.
+
 ### Pulling it back
 
 `GET /api/shortcuts/drops` returns the due reminders by default. `due=` picks
