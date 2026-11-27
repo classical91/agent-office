@@ -35,6 +35,7 @@ const PAGES = [
   'platform-watch.html',
   'settings.html',
   'dev.html',
+  'tools.html',
   'calendar-v3.html',
   'countdowns.html',
   'planning.html',
