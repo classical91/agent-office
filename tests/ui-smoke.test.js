@@ -553,16 +553,16 @@ test('the Fix Queue lane skips the folder wall', async t => {
   assert.deepEqual(await page.locator('.dropbox-table th').allTextContents(), ['Title', 'Reminder', 'Updated']);
   assert.equal(await page.locator('.dropbox-table tbody tr').count(), 2);
   assert.match(await page.locator('.dropbox-table').textContent(), /Renew the domain/);
-  // The seeded drop is months old and goes blue; the one just saved stays plain.
+  // The seeded drop is from an earlier month and goes red; the one just saved stays plain.
   const updatedClass = title => page.locator('.dropbox-table tr', { hasText: title }).locator('td.col-updated').getAttribute('class');
-  assert.match(await updatedClass('Renew the domain'), /over-3-weeks/);
+  assert.match(await updatedClass('Renew the domain'), /past-month/);
   assert.doesNotMatch(await updatedClass('A note reminder without a time'), /over-3-weeks|past-month/);
   assert.equal(await onScreen(page, '#dropbox-table-wrap .drop-age-legend'), true, 'the colour legend is missing');
   // A phone hides the Updated column, so the coloured date shows under the title.
   await page.setViewportSize({ width: 390, height: 844 });
   const titleDate = page.locator('.dropbox-table tr', { hasText: 'Renew the domain' }).locator('.title-date');
   assert.equal(await titleDate.isVisible(), true, 'the date is missing under the title on a phone');
-  assert.match(await titleDate.getAttribute('class'), /over-3-weeks/);
+  assert.match(await titleDate.getAttribute('class'), /past-month/);
   assert.equal(await titleDate.evaluate(el => getComputedStyle(el).fontWeight), '700');
   assert.deepEqual(problems, []);
 });

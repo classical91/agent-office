@@ -3092,13 +3092,14 @@ function dropIsPastMonth(value) {
 
 const DROP_STALE_MS = 21 * 24 * 60 * 60 * 1000;
 
-// The colour an Updated date wears. Over three weeks old is blue, and wins over
-// the past-month red, so anything that old reads the same whatever the month.
+// The colour an Updated date wears. Anything from an earlier month is red, and
+// wins over blue, so September reads red in November. Blue marks what is over
+// three weeks old but still from this month.
 function dropAgeClass(value) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return '';
-  if (Date.now() - d.getTime() > DROP_STALE_MS) return ' over-3-weeks';
-  return dropIsPastMonth(value) ? ' past-month' : '';
+  if (dropIsPastMonth(value)) return ' past-month';
+  return Date.now() - d.getTime() > DROP_STALE_MS ? ' over-3-weeks' : '';
 }
 
 // The key to those colours, under the list they colour.
